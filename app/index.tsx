@@ -135,22 +135,88 @@ export default function LandingScreen() {
               Share anonymously when you need privacy, or connect with your name when you&apos;re ready. Request care, share wisdom and reflections, send encouragement — choose your level of visibility in a safe, gentle space
             </Text>
           </View>
+        </View>
 
-          {/* Crisis-Aware Care */}
-          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+        {/* Your Daily Practice Section */}
+        <View style={styles.dailyPracticeSection}>
+          <View style={styles.sectionHeader}>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              Your Daily Practice
+            </Text>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={24}
+              color={colors.primary}
+            />
+          </View>
+
+          {/* Check-In Card */}
+          <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
-                ios_icon_name="star.fill"
-                android_material_icon_name="star"
+                ios_icon_name="message.fill"
+                android_material_icon_name="chat"
                 size={28}
                 color="#FFFFFF"
               />
             </View>
-            <Text style={[styles.featureTitle, { color: textColor }]}>
-              Crisis-Aware Care
+            <Text style={[styles.practiceTitle, { color: textColor }]}>
+              Check-In
             </Text>
-            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
-              Clear mental health boundaries with 988 Suicide & Crisis Lifeline integration when serious support is needed
+            <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
+              Share what&apos;s on your heart and mind with a specialized AI companion trained to help you navigate physical, spiritual, and emotional pain. It helps you notice what&apos;s happening in your body, explore how you&apos;re feeling, and offers gentle practices like meditation, prayer, breathing, movement, and other self-care techniques. Conversations maintain context across 24-hour threads for deeper exploration.
+            </Text>
+            <Text style={[styles.practiceNote, { color: textSecondaryColor }]}>
+              The AI recognizes when you&apos;re anxious, restless, heavy, or tense and can guide you through brief 5-30 second calming practices with step-by-step instructions.
+            </Text>
+          </View>
+
+          {/* Daily Gift Card */}
+          <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.practiceTitle, { color: textColor }]}>
+              Daily Gift
+            </Text>
+            <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
+              Open scripture with contemplative reflection grounded in the liturgical calendar. Each week brings a new theme with seven curated scripture passages. Create art-based reflections using drawing tools, collage capabilities, or voice journaling. Tag your mood and body sensations to track patterns over time.
+            </Text>
+            <Text style={[styles.practiceNote, { color: textSecondaryColor }]}>
+              Ambient sounds (rain, ocean, forest, flowing stream, soft piano, wind chimes, Tibetan singing bowl) accompany your reflections.
+            </Text>
+          </View>
+
+          {/* Somatic Playground Card */}
+          <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="figure.walk"
+                android_material_icon_name="directions-walk"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.practiceTitle, { color: textColor }]}>
+              Somatic Playground
+            </Text>
+            <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
+              Explore embodied practices through guided exercises in breath work, grounding, progressive muscle relaxation, body scanning, and gentle movement. Track your practice with achievement badges and reflection prompts. Build a personal library of techniques that help you return to your body and trust its wisdom.
+            </Text>
+            <Text style={[styles.practiceNote, { color: textSecondaryColor }]}>
+              Earn badges for consistency, variety, and depth of practice as you develop your somatic awareness.
             </Text>
           </View>
         </View>
@@ -260,6 +326,47 @@ const styles = StyleSheet.create({
   featureDescription: {
     fontSize: typography.body,
     lineHeight: 24,
+  },
+  dailyPracticeSection: {
+    marginTop: spacing.xxl,
+    gap: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+  },
+  practiceCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  practiceTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  practiceDescription: {
+    fontSize: typography.body,
+    lineHeight: 24,
+    marginBottom: spacing.sm,
+  },
+  practiceNote: {
+    fontSize: typography.bodySmall,
+    lineHeight: 20,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
   },
   importantCard: {
     borderRadius: borderRadius.lg,
