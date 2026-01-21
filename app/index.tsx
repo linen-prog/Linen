@@ -28,11 +28,12 @@ export default function LandingScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
           <IconSymbol 
             ios_icon_name="heart.fill"
             android_material_icon_name="favorite"
-            size={48}
+            size={64}
             color={colors.primary}
           />
           <Text style={[styles.title, { color: textColor }]}>
@@ -43,76 +44,144 @@ export default function LandingScreen() {
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              What Linen Is
-            </Text>
-            <Text style={[styles.sectionText, { color: textSecondaryColor }]}>
-              Linen is a companion for spiritual reflection, contemplative prayer, and embodied presence. Rooted in Christian scripture and tradition, it invites you to notice how God speaks through your body, emotions, and daily experiences.
-            </Text>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              What Linen Is Not
-            </Text>
-            <Text style={[styles.sectionText, { color: textSecondaryColor }]}>
-              Linen is not medical care, mental health treatment, or therapy. It does not diagnose, treat, or provide clinical advice. It is a spiritual practice tool, not a substitute for professional help.
-            </Text>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              Care & Safety
-            </Text>
-            <Text style={[styles.sectionText, { color: textSecondaryColor }]}>
-              If you are experiencing a mental health crisis or thoughts of self-harm, please reach out for immediate support:
-            </Text>
-            <Text style={[styles.crisisText, { color: colors.primary }]}>
-              U.S. 988 Suicide & Crisis Lifeline
-            </Text>
-            <Text style={[styles.sectionText, { color: textSecondaryColor }]}>
-              Linen encourages you to seek real-world support from trusted friends, family, spiritual directors, counselors, or healthcare providers when needed.
-            </Text>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              Who Linen Is For
-            </Text>
-            <Text style={[styles.sectionText, { color: textSecondaryColor }]}>
-              Linen is for those who:
-            </Text>
-            <View style={styles.bulletList}>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Want to be more in touch with your body&apos;s communication and wisdom
-              </Text>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Are ready to gently tend to old wounds and memories held in your body
-              </Text>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Want contemplative prayer alongside faithful study
-              </Text>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Are drawn to creative expression as spiritual practice
-              </Text>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Long for embodied faith that honors your whole self
-              </Text>
-              <Text style={[styles.bullet, { color: textSecondaryColor }]}>
-                • Need community care that feels safe and intimate
-              </Text>
+        {/* Feature Cards Grid */}
+        <View style={styles.featuresGrid}>
+          {/* Scripture-Rooted Spiritual Companion */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={28}
+                color="#FFFFFF"
+              />
             </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Scripture-Rooted Spiritual Companion
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              An AI companion rooted in scripture that helps you notice how God speaks through embodied prayer, weaving God&apos;s word into the conversation as it guides you through sensation, emotion, and prayer—drawing you nearer to the One who shaped you in love and calls you beloved
+            </Text>
           </View>
 
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <Text style={[styles.quoteText, { color: colors.primary }]}>
-              &quot;While other faith apps focus on your mind, Linen invites your whole body into the conversation with God. Through gentle somatic awareness, creative reflection, and contemplative practice, discover a faith that breathes, moves, and feels.&quot;
+          {/* Creative Expression */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="paintbrush.fill"
+                android_material_icon_name="brush"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Creative Expression
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              Draw, collage, and voice journal your spiritual journey with 7 brush types, photo uploads, and rich artistic tools
+            </Text>
+          </View>
+
+          {/* Somatic Practices */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="wind"
+                android_material_icon_name="air"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Somatic Practices
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              From breath work to grounding exercises, come home to your body and trust its wisdom through guided practices, reflections, and achievement badges
+            </Text>
+          </View>
+
+          {/* Liturgical Grounding */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="book.fill"
+                android_material_icon_name="menu-book"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Liturgical Grounding
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              Daily scripture reflections follow the church calendar&apos;s seasonal rhythms with thematic coherence and color shifts
+            </Text>
+          </View>
+
+          {/* Compassionate Care Community */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="person.2.fill"
+                android_material_icon_name="group"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Compassionate Care Community
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              Share anonymously when you need privacy, or connect with your name when you&apos;re ready. Request care, share wisdom and reflections, send encouragement — choose your level of visibility in a safe, gentle space
+            </Text>
+          </View>
+
+          {/* Crisis-Aware Care */}
+          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+              <IconSymbol 
+                ios_icon_name="star.fill"
+                android_material_icon_name="star"
+                size={28}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text style={[styles.featureTitle, { color: textColor }]}>
+              Crisis-Aware Care
+            </Text>
+            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
+              Clear mental health boundaries with 988 Suicide & Crisis Lifeline integration when serious support is needed
             </Text>
           </View>
         </View>
 
+        {/* What Linen Is Not */}
+        <View style={[styles.importantCard, { backgroundColor: cardBg }]}>
+          <Text style={[styles.importantTitle, { color: textColor }]}>
+            What Linen Is Not
+          </Text>
+          <Text style={[styles.importantText, { color: textSecondaryColor }]}>
+            Linen is not medical care, mental health treatment, or therapy. It does not diagnose, treat, or provide clinical advice. It is a spiritual practice tool, not a substitute for professional help.
+          </Text>
+        </View>
+
+        {/* Care & Safety */}
+        <View style={[styles.importantCard, { backgroundColor: cardBg }]}>
+          <Text style={[styles.importantTitle, { color: textColor }]}>
+            Care & Safety
+          </Text>
+          <Text style={[styles.importantText, { color: textSecondaryColor }]}>
+            If you are experiencing a mental health crisis or thoughts of self-harm, please reach out for immediate support:
+          </Text>
+          <Text style={[styles.crisisText, { color: colors.primary }]}>
+            U.S. 988 Suicide & Crisis Lifeline
+          </Text>
+          <Text style={[styles.importantText, { color: textSecondaryColor }]}>
+            Linen encourages you to seek real-world support from trusted friends, family, spiritual directors, counselors, or healthcare providers when needed.
+          </Text>
+        </View>
+
+        {/* Continue Button */}
         <TouchableOpacity 
           style={styles.continueButton}
           onPress={handleContinue}
@@ -123,6 +192,7 @@ export default function LandingScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: textSecondaryColor }]}>
             By continuing, you acknowledge that Linen is a spiritual practice tool and not a substitute for professional medical or mental health care.
@@ -141,42 +211,72 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
+  heroSection: {
     alignItems: 'center',
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: typography.semibold,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  tagline: {
-    fontSize: typography.body,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    paddingTop: spacing.xxl * 2,
+    paddingBottom: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
-  section: {
-    gap: spacing.lg,
+  title: {
+    fontSize: 56,
+    fontWeight: typography.semibold,
     marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    letterSpacing: -1,
   },
-  card: {
+  tagline: {
+    fontSize: typography.h4,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 28,
+    paddingHorizontal: spacing.md,
+  },
+  featuresGrid: {
+    gap: spacing.lg,
+    marginTop: spacing.xl,
+  },
+  featureCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
-  sectionTitle: {
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  featureTitle: {
     fontSize: typography.h3,
     fontWeight: typography.semibold,
     marginBottom: spacing.sm,
   },
-  sectionText: {
+  featureDescription: {
+    fontSize: typography.body,
+    lineHeight: 24,
+  },
+  importantCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  importantTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  importantText: {
     fontSize: typography.body,
     lineHeight: 24,
     marginBottom: spacing.sm,
@@ -185,20 +285,6 @@ const styles = StyleSheet.create({
     fontSize: typography.h4,
     fontWeight: typography.semibold,
     marginVertical: spacing.sm,
-  },
-  bulletList: {
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  bullet: {
-    fontSize: typography.body,
-    lineHeight: 24,
-  },
-  quoteText: {
-    fontSize: typography.body,
-    lineHeight: 26,
-    fontStyle: 'italic',
-    textAlign: 'center',
   },
   continueButton: {
     backgroundColor: colors.primary,
