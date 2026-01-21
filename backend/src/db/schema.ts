@@ -32,6 +32,18 @@ export const checkInMessages = pgTable('check_in_messages', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Conversation prayers table
+export const conversationPrayers = pgTable('conversation_prayers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conversationId: uuid('conversation_id')
+    .notNull()
+    .references(() => checkInConversations.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  isSaid: boolean('is_said').default(false).notNull(),
+  isShared: boolean('is_shared').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Daily gifts table
 export const dailyGifts = pgTable(
   'daily_gifts',

@@ -1,81 +1,141 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 
-const LINEN_SYSTEM_PROMPT = `You are Linen, a gentle spiritual companion rooted in Christian tradition and faith. Your role is to offer prayerful presence and embodied awareness—not advice, diagnosis, or therapy.
+const LINEN_SYSTEM_PROMPT = `You are Linen, a warm, perceptive relational somatics companion grounded in Christian spirituality. Your role is to offer embodied presence and gentle guidance toward noticing, not fixing.
 
-Core Principles:
-- Gentle, unhurried, and deeply compassionate tone
-- Root all wisdom in Christian scripture and prayer
-- Focus on embodied awareness: help users notice sensations in their body, emotions, and how God speaks through these experiences
-- Weave scripture naturally into conversations, not as answers but as companions to their experience
-- Offer prayerful presence—be a safe space for their inner experience
-- Never give medical advice, therapy, or diagnosis
-- Encourage external support (call 988 if distress escalates)
-- Avoid productivity framing, urgency, or "fixing" mindset
-- Use slow, calm, spacious responses that create room for reflection
+Foundation:
+- You understand trauma-informed somatic psychology ("The Body Keeps the Score")
+- You're fluent in therapeutic modalities: IFS (Internal Family Systems), SE (Somatic Experiencing), EMDR, Polyvagal Theory, Sensorimotor Psychotherapy, AEDP (Accelerated Experiential Dynamic Psychotherapy), CFT (Coherence Therapy)
+- You recognize patterns and gentle teach about them as you go
+- You root all guidance in Christian spirituality and scripture
+- You are NOT a therapist—you're a companion and witness
 
-Conversation Style:
-- Ask open, curious questions that invite deeper awareness
-- Help them notice what they're feeling, where they feel it in their body
-- Connect their experience to scripture and prayer naturally
-- Validate their experience with gentle compassion
-- Suggest practices like breathing, noticing, or brief prayers
-- Leave space for silence and reflection
-- Remember that their feelings are valid and that God is present in struggle
+Response Style - Vary dramatically:
+- Some responses 1-2 sentences, some full paragraphs
+- Use gentle humor when appropriate and authentic
+- Match the emotional pacing of the person
+- Sometimes offer questions, sometimes observations, sometimes just presence
+
+Somatic Awareness (Core):
+- Help people notice what's happening in their body: sensations, temperature, texture, rhythm, breath, posture
+- Connect physical sensations to emotions: "Where do you feel that in your body?"
+- Notice nervous system states: activation, shutdown, ventral vagal calm
+- Name patterns gently: "I'm noticing..." rather than "You are..."
+- Suggest embodied practices: breathing, movement, noticing, grounding
 
 Scripture Integration:
-- Use psalms and passages about comfort, presence, and embodied faith
-- Include verses like Psalm 23, Romans 8:28, Isaiah 40:28-31
-- Let scripture speak to their inner experience, not as answers but as companions
-- Honor their questions and doubts—faith includes struggle
+- Weave scripture naturally as companion to their experience, not as answers
+- Use Psalms (especially 23, 27, 42, 139), Isaiah, Romans 8, Philippians 4:6-7
+- Let scripture speak into their somatic experience
+- Honor doubt and struggle as part of faith
 
-Red Flags (Escalate Support):
-- If they mention suicidal ideation, self-harm, or severe distress, compassionately suggest calling 988
-- If they describe symptoms of serious mental health crises, encourage professional support
-- Always validate their experience before suggesting outside help
+Conversation Flow - Adapt based on message count:
+- First 3-5 messages: Deep curiosity about their experience. Help them notice what's happening in their body. Ask: "What do you notice physically?"
+- As conversation develops (6-8 exchanges): Gently teach about what you notice. Name patterns. Connect sensations to emotions and life patterns.
+- After 8-10 exchanges: Consider gently guiding toward an embodied practice with scripture (breathing, body scan, movement)
+- By 10+ messages: Warmly suggest they might explore the Daily Gift practice or one of the Somatic exercises to continue their practice
 
-Remember: You are not a therapist. You are a companion offering presence, prayer, and the wisdom of the Christian tradition.`;
+Therapeutic Recognition:
+- Identify patterns and dynamics gently
+- Notice when someone needs more support than you can offer
+- Suggest professional support when appropriate (therapist, counselor, spiritual director)
+- Do NOT mention crisis resources—the system handles that separately
+- Recognize trauma responses without diagnosing
+
+Core Posture:
+- You are fully present and attentive
+- You create safety through consistency and gentleness
+- You trust the person's own wisdom
+- You honor their pace and rhythm
+- You believe God is present in struggle and sensation
+
+Remember: You are witnessing someone's experience of God in their body. That's holy work.`;
+
 
 export function registerCheckInRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
-  // Start a new check-in conversation
+  // Start a new check-in conversation (or return existing if within 24 hours)
   app.fastify.post(
     '/api/check-in/start',
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      app.logger.info({ userId: session.user.id }, 'Starting check-in conversation');
+      app.logger.info({ userId: session.user.id }, 'Starting/resuming check-in conversation');
 
       try {
-        const [conversation] = await app.db
-          .insert(schema.checkInConversations)
-          .values({
-            userId: session.user.id,
-          })
-          .returning();
+        // Check for active conversation (created within last 24 hours)
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Create initial assistant message
-        const initialMessage = "Peace to you. What's on your heart today?";
-        await app.db.insert(schema.checkInMessages).values({
-          conversationId: conversation.id,
-          role: 'assistant',
-          content: initialMessage,
-        });
+        const existingConversation = await app.db
+          .select()
+          .from(schema.checkInConversations)
+          .where(
+            and(
+              eq(schema.checkInConversations.userId, session.user.id),
+              sql`${schema.checkInConversations.createdAt} > ${twentyFourHoursAgo}`
+            )
+          )
+          .orderBy(desc(schema.checkInConversations.createdAt))
+          .limit(1);
 
-        app.logger.info(
-          { conversationId: conversation.id, userId: session.user.id },
-          'Check-in conversation started'
-        );
+        let conversation;
+        let isNewConversation = false;
+
+        if (existingConversation.length > 0) {
+          // Resume existing conversation
+          conversation = existingConversation[0];
+          app.logger.info(
+            { conversationId: conversation.id, userId: session.user.id },
+            'Resumed existing conversation'
+          );
+        } else {
+          // Create new conversation
+          const [newConversation] = await app.db
+            .insert(schema.checkInConversations)
+            .values({
+              userId: session.user.id,
+            })
+            .returning();
+
+          conversation = newConversation;
+          isNewConversation = true;
+
+          // Create initial assistant message
+          const initialMessage = "Peace to you. What's on your heart today?";
+          await app.db.insert(schema.checkInMessages).values({
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: initialMessage,
+          });
+
+          app.logger.info(
+            { conversationId: conversation.id, userId: session.user.id },
+            'New check-in conversation started'
+          );
+        }
+
+        // Get all messages for this conversation
+        const messages = await app.db
+          .select()
+          .from(schema.checkInMessages)
+          .where(eq(schema.checkInMessages.conversationId, conversation.id))
+          .orderBy(schema.checkInMessages.createdAt);
 
         return reply.send({
           conversationId: conversation.id,
-          message: initialMessage,
+          messages: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            createdAt: m.createdAt,
+          })),
+          isNewConversation,
         });
       } catch (error) {
         app.logger.error(
@@ -293,6 +353,207 @@ export function registerCheckInRoutes(app: App) {
         app.logger.error(
           { err: error, userId: session.user.id, conversationId: id },
           'Failed to fetch conversation'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Detect crisis keywords in a message
+  app.fastify.post(
+    '/api/check-in/detect-crisis',
+    async (
+      request: FastifyRequest<{ Body: { message: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const { message } = request.body;
+
+      app.logger.info({ messageLength: message.length }, 'Checking for crisis keywords');
+
+      try {
+        const crisisKeywords = [
+          'kill myself',
+          'suicide',
+          'end my life',
+          'want to die',
+          'harm myself',
+          'harm someone',
+          'hurt myself',
+          'hurt someone',
+        ];
+
+        const messageLower = message.toLowerCase();
+        const foundKeywords = crisisKeywords.filter((keyword) =>
+          messageLower.includes(keyword)
+        );
+
+        const isCrisis = foundKeywords.length > 0;
+
+        app.logger.info(
+          { isCrisis, keywordCount: foundKeywords.length },
+          'Crisis detection complete'
+        );
+
+        return reply.send({
+          isCrisis,
+          keywords: foundKeywords,
+        });
+      } catch (error) {
+        app.logger.error({ err: error }, 'Failed to detect crisis');
+        throw error;
+      }
+    }
+  );
+
+  // Generate a prayer from conversation context
+  app.fastify.post(
+    '/api/check-in/generate-prayer',
+    async (
+      request: FastifyRequest<{ Body: { conversationId: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { conversationId } = request.body;
+
+      app.logger.info(
+        { userId: session.user.id, conversationId },
+        'Generating prayer from conversation'
+      );
+
+      try {
+        // Verify conversation belongs to user
+        const conversation = await app.db.query.checkInConversations.findFirst({
+          where: and(
+            eq(schema.checkInConversations.id, conversationId as any),
+            eq(schema.checkInConversations.userId, session.user.id)
+          ),
+        });
+
+        if (!conversation) {
+          app.logger.warn(
+            { userId: session.user.id, conversationId },
+            'Conversation not found or unauthorized'
+          );
+          return reply.status(404).send({ error: 'Conversation not found' });
+        }
+
+        // Get last 10 messages from conversation
+        const messages = await app.db
+          .select()
+          .from(schema.checkInMessages)
+          .where(eq(schema.checkInMessages.conversationId, conversationId as any))
+          .orderBy(schema.checkInMessages.createdAt);
+
+        const lastMessages = messages.slice(-10);
+
+        // Format messages for AI
+        const conversationText = lastMessages
+          .map(
+            (m) => `${m.role === 'user' ? 'Person' : 'Companion'}: ${m.content}`
+          )
+          .join('\n');
+
+        const prayerPrompt = `Based on this conversation between a person and a spiritual companion, write a short, heartfelt prayer (2-4 sentences) in first person ("I" language) that:
+- Names specific feelings or struggles shared
+- Is embodied and honest, not artificially positive
+- Is rooted in Christian tradition
+- Feels like it comes from the person's own heart
+
+Conversation:
+${conversationText}
+
+Write only the prayer, nothing else.`;
+
+        const { text: prayerText } = await generateText({
+          model: gateway('openai/gpt-4o'),
+          prompt: prayerPrompt,
+        });
+
+        // Save prayer to database
+        const [prayer] = await app.db
+          .insert(schema.conversationPrayers)
+          .values({
+            conversationId: conversationId as any,
+            content: prayerText,
+          })
+          .returning();
+
+        app.logger.info(
+          { prayerId: prayer.id, conversationId, userId: session.user.id },
+          'Prayer generated and saved'
+        );
+
+        return reply.send({
+          prayer: prayerText,
+          prayerId: prayer.id,
+        });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, conversationId },
+          'Failed to generate prayer'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Get prayers for a conversation
+  app.fastify.get(
+    '/api/check-in/conversation/:id/prayers',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { id } = request.params;
+
+      app.logger.info({ userId: session.user.id, conversationId: id }, 'Fetching prayers');
+
+      try {
+        // Verify conversation belongs to user
+        const conversation = await app.db.query.checkInConversations.findFirst({
+          where: and(
+            eq(schema.checkInConversations.id, id as any),
+            eq(schema.checkInConversations.userId, session.user.id)
+          ),
+        });
+
+        if (!conversation) {
+          app.logger.warn(
+            { userId: session.user.id, conversationId: id },
+            'Conversation not found or unauthorized'
+          );
+          return reply.status(404).send({ error: 'Conversation not found' });
+        }
+
+        const prayers = await app.db
+          .select()
+          .from(schema.conversationPrayers)
+          .where(eq(schema.conversationPrayers.conversationId, id as any))
+          .orderBy(schema.conversationPrayers.createdAt);
+
+        app.logger.info(
+          { userId: session.user.id, conversationId: id, count: prayers.length },
+          'Prayers retrieved'
+        );
+
+        return reply.send(
+          prayers.map((p) => ({
+            id: p.id,
+            content: p.content,
+            createdAt: p.createdAt,
+            isShared: p.isShared,
+            isSaid: p.isSaid,
+          }))
+        );
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, conversationId: id },
+          'Failed to fetch prayers'
         );
         throw error;
       }
