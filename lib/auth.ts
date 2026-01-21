@@ -4,7 +4,11 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const API_URL = "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev";
+// Get backend URL from app.json configuration
+const API_URL = Constants.expoConfig?.extra?.backendUrl || "";
+
+// Log the API URL for debugging
+console.log('[Auth] Backend URL configured:', API_URL);
 
 export const BEARER_TOKEN_KEY = "linen_bearer_token";
 

@@ -1,10 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Switch, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Switch, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+
+interface SomaticExercise {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  duration: string;
+  instructions: string;
+}
 
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
@@ -19,6 +28,10 @@ export default function DailyGiftScreen() {
   const [hasReflected, setHasReflected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [dailyGiftId, setDailyGiftId] = useState<string | null>(null);
+  
+  const [somaticExercises, setSomaticExercises] = useState<SomaticExercise[]>([]);
+  const [selectedExercise, setSelectedExercise] = useState<SomaticExercise | null>(null);
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
 
   useEffect(() => {
     const loadDailyGift = async () => {
@@ -41,7 +54,6 @@ export default function DailyGiftScreen() {
         setHasReflected(response.hasReflected);
       } catch (error) {
         console.error('Failed to load daily gift:', error);
-        // Use defaults on error
         setScriptureText('Be still, and know that I am God.');
         setScriptureReference('Psalm 46:10');
         setReflectionPrompt('Where in your body do you feel stillness today? What does it feel like to simply be, without doing?');
@@ -49,7 +61,19 @@ export default function DailyGiftScreen() {
       }
     };
 
+    const loadSomaticExercises = async () => {
+      try {
+        const { authenticatedGet } = await import('@/utils/api');
+        const exercises = await authenticatedGet<SomaticExercise[]>('/api/somatic/exercises');
+        console.log('Somatic exercises loaded:', exercises);
+        setSomaticExercises(exercises);
+      } catch (error) {
+        console.error('Failed to load somatic exercises:', error);
+      }
+    };
+
     loadDailyGift();
+    loadSomaticExercises();
   }, []);
 
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -81,14 +105,43 @@ export default function DailyGiftScreen() {
     } catch (error) {
       console.error('Failed to save reflection:', error);
       setIsLoading(false);
-      // Optionally show an error message to the user
     }
+  };
+
+  const handleExercisePress = (exercise: SomaticExercise) => {
+    console.log('User selected somatic exercise:', exercise.title);
+    setSelectedExercise(exercise);
+    setShowExerciseModal(true);
+  };
+
+  const handleCompleteExercise = async () => {
+    if (!selectedExercise) return;
+    
+    console.log('User completed somatic exercise:', selectedExercise.title);
+    
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/somatic/complete', {
+        exerciseId: selectedExercise.id,
+      });
+      console.log('Exercise completion recorded');
+    } catch (error) {
+      console.error('Failed to record exercise completion:', error);
+    }
+    
+    setShowExerciseModal(false);
+    setSelectedExercise(null);
   };
 
   const scriptureDisplay = scriptureText;
   const referenceDisplay = scriptureReference;
   const promptDisplay = reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
+
+  const groundingExercises = somaticExercises.filter(e => e.category === 'Grounding');
+  const breathExercises = somaticExercises.filter(e => e.category === 'Breath');
+  const movementExercises = somaticExercises.filter(e => e.category === 'Movement');
+  const releaseExercises = somaticExercises.filter(e => e.category === 'Release');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -135,6 +188,149 @@ export default function DailyGiftScreen() {
             {promptDisplay}
           </Text>
         </View>
+
+        {somaticExercises.length > 0 && (
+          <View style={[styles.somaticSection, { backgroundColor: cardBg }]}>
+            <View style={styles.somaticHeader}>
+              <IconSymbol 
+                ios_icon_name="figure.mind.and.body"
+                android_material_icon_name="self-improvement"
+                size={32}
+                color={colors.accent}
+              />
+              <Text style={[styles.somaticTitle, { color: textColor }]}>
+                Somatic Practices
+              </Text>
+            </View>
+            <Text style={[styles.somaticSubtitle, { color: textSecondaryColor }]}>
+              Gentle body-based practices to support your reflection
+            </Text>
+
+            {groundingExercises.length > 0 && (
+              <View style={styles.categorySection}>
+                <Text style={[styles.categoryTitle, { color: textColor }]}>
+                  Grounding
+                </Text>
+                {groundingExercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise.id}
+                    style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                    onPress={() => handleExercisePress(exercise)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exerciseContent}>
+                      <Text style={[styles.exerciseTitle, { color: textColor }]}>
+                        {exercise.title}
+                      </Text>
+                      <Text style={[styles.exerciseDuration, { color: textSecondaryColor }]}>
+                        {exercise.duration}
+                      </Text>
+                    </View>
+                    <IconSymbol 
+                      ios_icon_name="chevron.right"
+                      android_material_icon_name="chevron-right"
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {breathExercises.length > 0 && (
+              <View style={styles.categorySection}>
+                <Text style={[styles.categoryTitle, { color: textColor }]}>
+                  Breath
+                </Text>
+                {breathExercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise.id}
+                    style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                    onPress={() => handleExercisePress(exercise)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exerciseContent}>
+                      <Text style={[styles.exerciseTitle, { color: textColor }]}>
+                        {exercise.title}
+                      </Text>
+                      <Text style={[styles.exerciseDuration, { color: textSecondaryColor }]}>
+                        {exercise.duration}
+                      </Text>
+                    </View>
+                    <IconSymbol 
+                      ios_icon_name="chevron.right"
+                      android_material_icon_name="chevron-right"
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {movementExercises.length > 0 && (
+              <View style={styles.categorySection}>
+                <Text style={[styles.categoryTitle, { color: textColor }]}>
+                  Movement
+                </Text>
+                {movementExercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise.id}
+                    style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                    onPress={() => handleExercisePress(exercise)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exerciseContent}>
+                      <Text style={[styles.exerciseTitle, { color: textColor }]}>
+                        {exercise.title}
+                      </Text>
+                      <Text style={[styles.exerciseDuration, { color: textSecondaryColor }]}>
+                        {exercise.duration}
+                      </Text>
+                    </View>
+                    <IconSymbol 
+                      ios_icon_name="chevron.right"
+                      android_material_icon_name="chevron-right"
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {releaseExercises.length > 0 && (
+              <View style={styles.categorySection}>
+                <Text style={[styles.categoryTitle, { color: textColor }]}>
+                  Release
+                </Text>
+                {releaseExercises.map((exercise) => (
+                  <TouchableOpacity
+                    key={exercise.id}
+                    style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                    onPress={() => handleExercisePress(exercise)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exerciseContent}>
+                      <Text style={[styles.exerciseTitle, { color: textColor }]}>
+                        {exercise.title}
+                      </Text>
+                      <Text style={[styles.exerciseDuration, { color: textSecondaryColor }]}>
+                        {exercise.duration}
+                      </Text>
+                    </View>
+                    <IconSymbol 
+                      ios_icon_name="chevron.right"
+                      android_material_icon_name="chevron-right"
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {!hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
@@ -205,6 +401,78 @@ export default function DailyGiftScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={showExerciseModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowExerciseModal(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: bgColor }]}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              onPress={() => setShowExerciseModal(false)}
+              style={styles.closeButton}
+            >
+              <IconSymbol 
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {selectedExercise && (
+            <ScrollView 
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="figure.mind.and.body"
+                  android_material_icon_name="self-improvement"
+                  size={56}
+                  color={colors.accent}
+                />
+              </View>
+
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {selectedExercise.title}
+              </Text>
+
+              <View style={[styles.modalBadge, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.modalBadgeText, { color: colors.primary }]}>
+                  {selectedExercise.duration}
+                </Text>
+              </View>
+
+              <Text style={[styles.modalDescription, { color: textSecondaryColor }]}>
+                {selectedExercise.description}
+              </Text>
+
+              <View style={[styles.modalInstructionsCard, { backgroundColor: cardBg }]}>
+                <Text style={[styles.modalInstructionsTitle, { color: textColor }]}>
+                  Instructions
+                </Text>
+                <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
+                  {selectedExercise.instructions}
+                </Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.completeButton}
+                onPress={handleCompleteExercise}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.completeButtonText}>
+                  Complete Practice
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -260,6 +528,58 @@ const styles = StyleSheet.create({
   promptText: {
     fontSize: typography.body,
     lineHeight: 24,
+  },
+  somaticSection: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  somaticHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  somaticTitle: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+  },
+  somaticSubtitle: {
+    fontSize: typography.bodySmall,
+    marginBottom: spacing.lg,
+    lineHeight: 20,
+  },
+  categorySection: {
+    marginBottom: spacing.lg,
+  },
+  categoryTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  exerciseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  exerciseContent: {
+    flex: 1,
+  },
+  exerciseTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+    marginBottom: spacing.xs,
+  },
+  exerciseDuration: {
+    fontSize: typography.bodySmall,
   },
   reflectionCard: {
     borderRadius: borderRadius.lg,
@@ -342,5 +662,73 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  closeButton: {
+    padding: spacing.sm,
+  },
+  modalContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  modalIconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  modalBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.lg,
+  },
+  modalBadgeText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+  },
+  modalDescription: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.lg,
+  },
+  modalInstructionsCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  modalInstructionsTitle: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  modalInstructions: {
+    fontSize: typography.body,
+    lineHeight: 24,
+  },
+  completeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
 });

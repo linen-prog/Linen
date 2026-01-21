@@ -36,26 +36,47 @@ export default function AuthScreen() {
     setIsLoading(true);
     
     try {
-      // Register/login with backend
-      const response = await apiPost<{ user: { id: string; email: string; firstName?: string }; token: string }>(
+      // Register/login with backend - this creates the user if they don't exist
+      // The backend should return a token according to the API spec
+      const response = await apiPost<{ 
+        success: boolean;
+        user: { id: string; email: string; name?: string };
+        token?: string;
+        isNewUser: boolean;
+      }>(
         '/api/auth/register',
         { email: email.trim(), firstName: firstName.trim() || undefined }
       );
 
       console.log('Auth successful:', response);
 
-      // Store token
-      if (Platform.OS === 'web') {
-        localStorage.setItem('linen_bearer_token', response.token);
-      } else {
-        await SecureStore.setItemAsync('linen_bearer_token', response.token);
-      }
+      if (response.success && response.user) {
+        // Store the auth token
+        // If the backend returns a token, use it. Otherwise, use the user ID as a fallback
+        const authToken = response.token || response.user.id;
+        
+        if (Platform.OS === 'web') {
+          localStorage.setItem('linen_bearer_token', authToken);
+        } else {
+          await SecureStore.setItemAsync('linen_bearer_token', authToken);
+        }
 
-      // Navigate to home
-      router.replace('/(tabs)');
+        console.log('User authenticated successfully:', response.user);
+        console.log('Auth token stored:', authToken ? 'Yes' : 'No');
+        
+        // Navigate to home
+        router.replace('/(tabs)');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('Auth failed:', error);
-      Alert.alert('Authentication Failed', 'Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error details:', errorMessage);
+      Alert.alert(
+        'Authentication Failed', 
+        'Unable to sign in. Please check your email and try again.'
+      );
       setIsLoading(false);
     }
   };
