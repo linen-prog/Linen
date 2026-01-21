@@ -105,3 +105,28 @@ export const communityPrayers = pgTable(
     uniqueIndex('community_prayers_post_user_unique').on(table.postId, table.userId),
   ]
 );
+
+// Somatic exercises table
+export const somaticExercises = pgTable('somatic_exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  category: text('category', {
+    enum: ['grounding', 'breath', 'movement', 'release'],
+  }).notNull(),
+  duration: text('duration').notNull(),
+  instructions: text('instructions').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Somatic completions table
+export const somaticCompletions = pgTable('somatic_completions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => {
+    return { id: true } as any;
+  }, { onDelete: 'cascade' }),
+  exerciseId: uuid('exercise_id')
+    .notNull()
+    .references(() => somaticExercises.id, { onDelete: 'cascade' }),
+  completedAt: timestamp('completed_at').defaultNow().notNull(),
+});
