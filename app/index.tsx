@@ -60,7 +60,7 @@ export default function LandingScreen() {
               Scripture-Rooted Spiritual Companion
             </Text>
             <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
-              An AI companion rooted in scripture that helps you notice how God speaks through embodied prayer, weaving God&apos;s word into the conversation as it guides you through sensation, emotion, and prayer—drawing you nearer to the One who shaped you in love and calls you beloved
+              An AI companion rooted in scripture and trained in many types of therapy—mainly somatic—that helps you notice how God speaks through embodied prayer, weaving God&apos;s word into the conversation as it guides you through sensation, emotion, and prayer—drawing you nearer to the One who shaped you in love and calls you beloved
             </Text>
           </View>
 
