@@ -36,7 +36,15 @@ export default function CommunityScreen() {
     
     try {
       const { authenticatedGet } = await import('@/utils/api');
-      const response = await authenticatedGet<Post[]>(`/api/community/posts?category=${category}`);
+      
+      let endpoint = '';
+      if (category === 'my-shared') {
+        endpoint = '/api/community/my-posts';
+      } else {
+        endpoint = `/api/community/posts?category=${category}`;
+      }
+      
+      const response = await authenticatedGet<Post[]>(endpoint);
       console.log('Posts loaded:', response);
       setPosts(response.map(post => ({
         ...post,
@@ -112,6 +120,7 @@ export default function CommunityScreen() {
     { id: 'wisdom', label: 'Wisdom', icon: 'menu-book' as const },
     { id: 'care', label: 'Care', icon: 'favorite' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
+    { id: 'my-shared', label: 'My Shared', icon: 'person' as const },
   ];
 
   return (

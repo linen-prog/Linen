@@ -93,6 +93,14 @@ export default function RootLayout() {
             <WidgetProvider>
               <GestureHandlerRootView>
               <Stack>
+                {/* Landing/Orientation screen */}
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                {/* Auth screen */}
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+                {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
+                <Stack.Screen name="check-in" options={{ headerShown: false }} />
+                {/* Daily Gift screen */}
+                <Stack.Screen name="daily-gift" options={{ headerShown: false }} />
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               </Stack>
