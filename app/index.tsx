@@ -82,23 +82,7 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-          {/* Somatic Practices */}
-          <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-              <IconSymbol 
-                ios_icon_name="wind"
-                android_material_icon_name="air"
-                size={28}
-                color="#FFFFFF"
-              />
-            </View>
-            <Text style={[styles.featureTitle, { color: textColor }]}>
-              Somatic Practices
-            </Text>
-            <Text style={[styles.featureDescription, { color: textSecondaryColor }]}>
-              From breath work to grounding exercises, come home to your body and trust its wisdom through guided practices, reflections, and achievement badges
-            </Text>
-          </View>
+
 
           {/* Liturgical Grounding */}
           <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
@@ -199,26 +183,7 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-          {/* Somatic Playground Card */}
-          <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-              <IconSymbol 
-                ios_icon_name="figure.walk"
-                android_material_icon_name="directions-walk"
-                size={28}
-                color="#FFFFFF"
-              />
-            </View>
-            <Text style={[styles.practiceTitle, { color: textColor }]}>
-              Somatic Playground
-            </Text>
-            <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
-              Explore embodied practices through guided exercises in breath work, grounding, progressive muscle relaxation, body scanning, and gentle movement. Track your practice with achievement badges and reflection prompts. Build a personal library of techniques that help you return to your body and trust its wisdom.
-            </Text>
-            <Text style={[styles.practiceNote, { color: textSecondaryColor }]}>
-              Earn badges for consistency, variety, and depth of practice as you develop your somatic awareness.
-            </Text>
-          </View>
+
         </View>
 
         {/* What Linen Is Not */}
