@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Linen",
-    "slug": "linen",
+    "slug": "Linen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -45,5 +45,5 @@
       "backendUrl": "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev"
     }
   },
-  "scheme": "linen"
+  "scheme": "Linen"
 }

@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { StreamdownRN } from 'streamdown-rn';
 
 interface Message {
   id: string;
@@ -13,43 +14,67 @@ interface Message {
   createdAt: Date;
 }
 
+interface Prayer {
+  id: string;
+  content: string;
+  createdAt: Date;
+  isSaid: boolean;
+  isShared: boolean;
+}
+
 export default function CheckInScreen() {
   console.log('User viewing Check-In screen');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const flatListRef = useRef<FlatList>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Peace to you. What\'s on your heart today?',
-      createdAt: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
+  const [showPrayerOptions, setShowPrayerOptions] = useState(false);
+  const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
+  const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
 
   useEffect(() => {
     const startConversation = async () => {
       try {
         const { authenticatedPost } = await import('@/utils/api');
-        const response = await authenticatedPost<{ conversationId: string; message: string }>('/api/check-in/start', {});
+        const response = await authenticatedPost<{ 
+          conversationId: string; 
+          messages: Array<{ role: string; content: string; createdAt: string }>;
+          isNewConversation: boolean;
+        }>('/api/check-in/start', {});
         console.log('Conversation started:', response);
         setConversationId(response.conversationId);
         
-        // Add the initial message from the backend
-        setMessages([{
-          id: '1',
-          role: 'assistant',
-          content: response.message,
-          createdAt: new Date(),
-        }]);
+        // Load existing messages or use initial message
+        const loadedMessages = response.messages.map((msg, index) => ({
+          id: `${index}`,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          createdAt: new Date(msg.createdAt),
+        }));
+        
+        setMessages(loadedMessages);
+        
+        if (response.isNewConversation) {
+          console.log('New 24-hour conversation thread started');
+        } else {
+          console.log('Continuing existing conversation thread');
+        }
       } catch (error) {
         console.error('Failed to start conversation:', error);
         // Use default message on error
         setConversationId('temp-conversation-id');
+        setMessages([{
+          id: '1',
+          role: 'assistant',
+          content: 'Peace to you. What\'s on your heart today?',
+          createdAt: new Date(),
+        }]);
       }
     };
 
@@ -63,6 +88,24 @@ export default function CheckInScreen() {
   const inputBg = isDark ? colors.cardDark : colors.card;
   const inputBorder = isDark ? colors.borderDark : colors.border;
 
+  const checkForCrisis = async (message: string): Promise<boolean> => {
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      const response = await authenticatedPost<{ isCrisis: boolean; keywords: string[] }>('/api/check-in/detect-crisis', {
+        message,
+      });
+      
+      if (response.isCrisis) {
+        console.log('Crisis keywords detected:', response.keywords);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to check for crisis:', error);
+      return false;
+    }
+  };
+
   const handleSend = async () => {
     const messageText = inputText.trim();
     if (!messageText || isLoading) {
@@ -70,6 +113,13 @@ export default function CheckInScreen() {
     }
 
     console.log('User sending message:', messageText);
+
+    // Check for crisis keywords
+    const isCrisis = await checkForCrisis(messageText);
+    if (isCrisis) {
+      setShowCrisisModal(true);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -115,6 +165,42 @@ export default function CheckInScreen() {
     }, 100);
   };
 
+  const handleGeneratePrayer = async () => {
+    console.log('User requested prayer generation');
+    setIsGeneratingPrayer(true);
+    setShowPrayerOptions(false);
+
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      const response = await authenticatedPost<{ prayer: string; prayerId: string }>('/api/check-in/generate-prayer', {
+        conversationId,
+      });
+      
+      console.log('Prayer generated:', response);
+      setGeneratedPrayer(response.prayer);
+      setShowPrayerModal(true);
+      setIsGeneratingPrayer(false);
+    } catch (error) {
+      console.error('Failed to generate prayer:', error);
+      setIsGeneratingPrayer(false);
+    }
+  };
+
+  const handleAcknowledgeCrisis = () => {
+    console.log('User acknowledged crisis resources');
+    setShowCrisisModal(false);
+  };
+
+  const handleCall988 = () => {
+    console.log('User tapping to call 988');
+    Linking.openURL('tel:988');
+  };
+
+  const handleTextCrisisLine = () => {
+    console.log('User tapping to text Crisis Line');
+    Linking.openURL('sms:741741&body=HOME');
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isUser = item.role === 'user';
     const messageContent = item.content;
@@ -125,12 +211,15 @@ export default function CheckInScreen() {
           styles.messageBubble,
           isUser ? styles.messageBubbleUser : [styles.messageBubbleAssistant, { backgroundColor: cardBg }]
         ]}>
-          <Text style={[
-            styles.messageText,
-            isUser ? styles.messageTextUser : { color: textColor }
-          ]}>
-            {messageContent}
-          </Text>
+          {isUser ? (
+            <Text style={[styles.messageText, styles.messageTextUser]}>
+              {messageContent}
+            </Text>
+          ) : (
+            <StreamdownRN theme={isDark ? 'dark' : 'light'}>
+              {messageContent}
+            </StreamdownRN>
+          )}
         </View>
       </View>
     );
@@ -147,6 +236,20 @@ export default function CheckInScreen() {
             backgroundColor: bgColor,
           },
           headerTintColor: colors.primary,
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={() => setShowPrayerOptions(true)}
+              style={styles.headerButton}
+              disabled={messages.length < 3 || isGeneratingPrayer}
+            >
+              <IconSymbol 
+                ios_icon_name="hands.sparkles"
+                android_material_icon_name="auto-awesome"
+                size={24}
+                color={messages.length < 3 ? textSecondaryColor : colors.primary}
+              />
+            </TouchableOpacity>
+          ),
         }}
       />
       
@@ -196,6 +299,158 @@ export default function CheckInScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Crisis Resources Modal */}
+      <Modal
+        visible={showCrisisModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                You&apos;re Not Alone
+              </Text>
+            </View>
+            
+            <Text style={[styles.modalText, { color: textColor }]}>
+              It sounds like you&apos;re going through something really difficult. Please know that support is available right now.
+            </Text>
+
+            <View style={styles.crisisButtons}>
+              <TouchableOpacity 
+                style={[styles.crisisButton, { backgroundColor: colors.primary }]}
+                onPress={handleCall988}
+              >
+                <IconSymbol 
+                  ios_icon_name="phone.fill"
+                  android_material_icon_name="phone"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.crisisButtonText}>
+                  Call 988 Lifeline
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.crisisButton, { backgroundColor: colors.accent }]}
+                onPress={handleTextCrisisLine}
+              >
+                <IconSymbol 
+                  ios_icon_name="message.fill"
+                  android_material_icon_name="message"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.crisisButtonText}>
+                  Text HOME to 741741
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.acknowledgeButton}
+              onPress={handleAcknowledgeCrisis}
+            >
+              <Text style={[styles.acknowledgeButtonText, { color: colors.primary }]}>
+                I understand
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Prayer Options Modal */}
+      <Modal
+        visible={showPrayerOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPrayerOptions(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPrayerOptions(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>
+              Generate Prayer
+            </Text>
+            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+              I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared.
+            </Text>
+            
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+              onPress={handleGeneratePrayer}
+            >
+              <Text style={styles.primaryButtonText}>
+                Create Prayer
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setShowPrayerOptions(false)}
+            >
+              <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Generated Prayer Modal */}
+      <Modal
+        visible={showPrayerModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPrayerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="hands.sparkles"
+                android_material_icon_name="auto-awesome"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Your Prayer
+              </Text>
+            </View>
+            
+            <ScrollView style={styles.prayerScroll}>
+              <Text style={[styles.prayerText, { color: textColor }]}>
+                {generatedPrayer}
+              </Text>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                console.log('User closed prayer modal');
+                setShowPrayerModal(false);
+              }}
+            >
+              <Text style={styles.primaryButtonText}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -269,5 +524,95 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  headerButton: {
+    marginRight: spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: typography.body,
+    lineHeight: 24,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  crisisButtons: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  crisisButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
+  },
+  crisisButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  acknowledgeButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  acknowledgeButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  primaryButton: {
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  cancelButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: typography.body,
+  },
+  prayerScroll: {
+    maxHeight: 300,
+    marginBottom: spacing.lg,
+  },
+  prayerText: {
+    fontSize: typography.body,
+    lineHeight: 26,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
