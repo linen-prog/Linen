@@ -200,8 +200,11 @@ export function registerCheckInRoutes(app: App) {
           .where(eq(schema.checkInMessages.conversationId, conversationId as any))
           .orderBy(schema.checkInMessages.createdAt);
 
-        // Convert to AI format (excluding the initial assistant greeting if present)
-        const aiMessages = messages
+        // Use last 30 messages for AI context
+        const contextMessages = messages.slice(-30);
+
+        // Convert to AI format (excluding the current user message for now)
+        const aiMessages = contextMessages
           .filter((m) => m.id !== userMsg.id) // Exclude current user message for now
           .map((m) => ({
             role: m.role as 'user' | 'assistant',
