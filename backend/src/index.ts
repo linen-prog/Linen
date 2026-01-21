@@ -5,6 +5,7 @@ import { registerCheckInRoutes } from './routes/check-in.js';
 import { registerDailyGiftRoutes } from './routes/daily-gift.js';
 import { registerCommunityRoutes } from './routes/community.js';
 import { registerStreaksRoutes } from './routes/streaks.js';
+import { registerSomaticRoutes } from './routes/somatic.js';
 
 const schema = { ...appSchema, ...authSchema };
 
@@ -22,6 +23,7 @@ registerCheckInRoutes(app);
 registerDailyGiftRoutes(app);
 registerCommunityRoutes(app);
 registerStreaksRoutes(app);
+registerSomaticRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
