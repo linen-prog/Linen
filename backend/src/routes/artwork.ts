@@ -174,37 +174,61 @@ export function registerArtworkRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      app.logger.info({ userId: session.user.id }, 'Uploading photo');
+      app.logger.info({ userId: session.user.id }, 'Uploading artwork photo');
 
       try {
-        // Get the file from multipart form data
-        const data = await request.file();
+        // Get the file from multipart form data with 10MB size limit
+        const data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
 
         if (!data) {
           app.logger.warn({ userId: session.user.id }, 'No file provided');
           return reply.status(400).send({ error: 'No file provided' });
         }
 
-        const buffer = await data.toBuffer();
-        const filename = `artwork-${session.user.id}-${Date.now()}-${data.filename}`;
+        // Validate file is an image
+        const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif'];
+        if (!validMimeTypes.includes(data.mimetype)) {
+          app.logger.warn(
+            { userId: session.user.id, mimetype: data.mimetype },
+            'Invalid file type'
+          );
+          return reply.status(400).send({
+            error: 'Invalid file type. Supported: JPG, PNG, HEIC',
+          });
+        }
 
-        // For now, return a placeholder URL structure
-        // In production, this would upload to S3 or similar storage
-        const url = `/uploads/${filename}`;
+        let buffer: Buffer;
+        try {
+          buffer = await data.toBuffer();
+        } catch (err) {
+          app.logger.warn({ userId: session.user.id }, 'File size limit exceeded');
+          return reply.status(413).send({ error: 'File too large (max 10MB)' });
+        }
+
+        // Generate storage key
+        const extension = data.filename.split('.').pop() || 'jpg';
+        const storageKey = `artwork/${session.user.id}/${Date.now()}-${data.filename}`;
+
+        // Upload to storage
+        const uploadedKey = await app.storage.upload(storageKey, buffer);
+
+        // Generate signed URL for access
+        const { url } = await app.storage.getSignedUrl(uploadedKey);
 
         app.logger.info(
-          { userId: session.user.id, filename },
-          'Photo uploaded successfully'
+          { userId: session.user.id, storageKey: uploadedKey, filesize: buffer.length },
+          'Artwork photo uploaded successfully'
         );
 
         return reply.send({
           url,
-          filename,
+          filename: data.filename,
+          key: uploadedKey,
         });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id },
-          'Failed to upload photo'
+          'Failed to upload artwork photo'
         );
         throw error;
       }
