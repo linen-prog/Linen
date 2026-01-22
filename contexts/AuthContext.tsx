@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
-import { authClient, storeWebBearerToken, getBearerToken, getUserData, clearAuthTokens } from "@/lib/auth";
+import { authClient, storeWebBearerToken, getBearerToken, getUserData, clearAuthTokens, storeUserData } from "@/lib/auth";
 
 interface User {
   id: string;
@@ -20,6 +20,7 @@ interface AuthContextType {
   signInWithGitHub: () => Promise<void>;
   signOut: () => Promise<void>;
   fetchUser: () => Promise<void>;
+  setUserDirectly: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,46 +93,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // We have a token, try to validate it by calling the backend
-      try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev'}/api/auth/me`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('[AuthContext] Token is valid, user authenticated:', userData.email);
-          setUser(userData);
-        } else if (response.status === 401) {
-          console.log('[AuthContext] Token is invalid or expired, clearing auth data');
-          // Token is invalid, clear it
-          await clearAuthTokens();
-          setUser(null);
-        } else {
-          console.log('[AuthContext] Unexpected response from auth check:', response.status);
-          // Try to restore from storage as fallback
-          const storedUser = await getUserData();
-          if (storedUser) {
-            console.log('[AuthContext] Restored user from storage:', storedUser.email);
-            setUser(storedUser);
-          } else {
-            setUser(null);
-          }
-        }
-      } catch (fetchError) {
-        console.error('[AuthContext] Failed to validate token:', fetchError);
-        // Network error or other issue - try to restore from storage
-        const storedUser = await getUserData();
-        if (storedUser) {
-          console.log('[AuthContext] Restored user from storage after error:', storedUser.email);
-          setUser(storedUser);
-        } else {
-          setUser(null);
-        }
+      // We have a token, try to restore user from storage
+      // (We don't validate with backend since the auth system is simplified)
+      const storedUser = await getUserData();
+      if (storedUser) {
+        console.log('[AuthContext] Restored user from storage:', storedUser.email);
+        setUser(storedUser);
+      } else {
+        console.log('[AuthContext] Token exists but no user data found');
+        // Token exists but no user data - clear the invalid state
+        await clearAuthTokens();
+        setUser(null);
       }
     } catch (error) {
       console.error("[AuthContext] Failed to fetch user:", error);
@@ -139,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const setUserDirectly = (userData: User) => {
+    console.log('[AuthContext] Setting user directly:', userData.email);
+    setUser(userData);
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -215,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithGitHub,
         signOut,
         fetchUser,
+        setUserDirectly,
       }}
     >
       {children}

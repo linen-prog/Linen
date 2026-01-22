@@ -7,12 +7,14 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { apiPost } from '@/utils/api';
 import { storeBearerToken, storeUserData } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthScreen() {
   console.log('User viewing Auth screen');
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { setUserDirectly } = useAuth();
 
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -68,6 +70,9 @@ export default function AuthScreen() {
         
         // Store user data for persistence across hot reloads
         await storeUserData(response.user);
+
+        // Update auth context directly
+        setUserDirectly(response.user);
 
         console.log('User authenticated successfully:', response.user);
         console.log('Token and user data stored securely');
