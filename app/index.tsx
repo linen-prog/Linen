@@ -261,6 +261,8 @@ export default function LandingScreen() {
         >
           <Text style={styles.beginButtonText}>{buttonText}</Text>
         </TouchableOpacity>
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -329,7 +331,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.h2,
+    fontSize: 18,
     fontWeight: typography.bold,
     color: colors.text,
   },
@@ -467,5 +469,8 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  bottomSpacer: {
+    height: spacing.xl,
   },
 });
