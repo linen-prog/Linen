@@ -8,6 +8,7 @@ import {
   uuid,
   uniqueIndex,
   jsonb,
+  index,
 } from 'drizzle-orm/pg-core';
 
 // Check-in conversations table
@@ -195,4 +196,63 @@ export const flaggedPosts = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('flagged_posts_user_post_unique').on(table.postId, table.userId)]
+);
+
+// Weekly recaps table
+export const weeklyRecaps = pgTable(
+  'weekly_recaps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    weekStartDate: date('week_start_date', { mode: 'string' }).notNull(),
+    weekEndDate: date('week_end_date', { mode: 'string' }).notNull(),
+    isPremium: boolean('is_premium').default(false).notNull(),
+    scriptureSection: jsonb('scripture_section').$type<{
+      reflections: string[];
+      sharedReflections: string[];
+    }>(),
+    bodySection: jsonb('body_section').$type<{
+      practices: string[];
+      notes: string[];
+    }>(),
+    communitySection: jsonb('community_section').$type<{
+      checkInSummary: string;
+      sharedPosts: string[];
+    }>(),
+    promptingSection: jsonb('prompting_section').$type<{
+      suggestions: string[];
+    }>(),
+    personalSynthesis: text('personal_synthesis'),
+    practiceVisualization: jsonb('practice_visualization').$type<{
+      weeklyData: Array<{ date: string; count: number }>;
+    }>(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  },
+  (table) => [
+    uniqueIndex('weekly_recaps_user_week_unique').on(table.userId, table.weekStartDate),
+    index('weekly_recaps_user_created').on(table.userId, table.createdAt),
+  ]
+);
+
+// Recap preferences table
+export const recapPreferences = pgTable(
+  'recap_preferences',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().unique().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    deliveryDay: text('delivery_day', {
+      enum: ['sunday', 'monday', 'disabled'],
+    })
+      .default('sunday')
+      .notNull(),
+    deliveryTime: text('delivery_time').default('18:00').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  },
+  (table) => [index('recap_preferences_delivery').on(table.deliveryDay, table.deliveryTime)]
 );

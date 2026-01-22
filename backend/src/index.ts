@@ -10,6 +10,7 @@ import { registerSomaticRoutes } from './routes/somatic.js';
 import { registerWeeklyThemeRoutes } from './routes/weekly-theme.js';
 import { registerArtworkRoutes } from './routes/artwork.js';
 import { registerWeeklyPracticeRoutes } from './routes/weekly-practice.js';
+import { registerWeeklyRecapRoutes } from './routes/weekly-recap.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -41,6 +42,7 @@ registerSomaticRoutes(app);
 registerWeeklyThemeRoutes(app);
 registerArtworkRoutes(app);
 registerWeeklyPracticeRoutes(app);
+registerWeeklyRecapRoutes(app);
 
 await app.run();
 app.logger.info('Application running');

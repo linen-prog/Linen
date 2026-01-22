@@ -220,6 +220,46 @@ export async function initializeDatabase(db: any) {
       )
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "weekly_recaps" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "week_start_date" date NOT NULL,
+        "week_end_date" date NOT NULL,
+        "is_premium" boolean NOT NULL DEFAULT false,
+        "scripture_section" jsonb,
+        "body_section" jsonb,
+        "community_section" jsonb,
+        "prompting_section" jsonb,
+        "personal_synthesis" text,
+        "practice_visualization" jsonb,
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "updated_at" timestamp NOT NULL DEFAULT now(),
+        UNIQUE("user_id", "week_start_date")
+      )
+    `);
+
+    // Create index for weekly_recaps queries
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "weekly_recaps_user_created" ON "weekly_recaps"("user_id", "created_at")
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "recap_preferences" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL UNIQUE REFERENCES "user"("id") ON DELETE CASCADE,
+        "delivery_day" text NOT NULL DEFAULT 'sunday',
+        "delivery_time" text NOT NULL DEFAULT '18:00',
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "updated_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    // Create index for recap_preferences delivery queries
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "recap_preferences_delivery" ON "recap_preferences"("delivery_day", "delivery_time")
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database tables:', error);
