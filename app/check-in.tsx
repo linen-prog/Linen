@@ -48,15 +48,20 @@ export default function CheckInScreen() {
         console.log('Conversation started:', response);
         setConversationId(response.conversationId);
         
-        // Load existing messages or use initial message
-        const loadedMessages = response.messages.map((msg, index) => ({
-          id: `${index}`,
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-          createdAt: new Date(msg.createdAt),
-        }));
+        // Load existing messages (but don't show initial AI greeting)
+        const loadedMessages = response.messages
+          .filter(msg => msg.role === 'user' || response.messages.length > 1) // Only show messages if there's actual conversation
+          .map((msg, index) => ({
+            id: `${index}`,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            createdAt: new Date(msg.createdAt),
+          }));
         
-        setMessages(loadedMessages);
+        // Only set messages if there's actual conversation history
+        if (loadedMessages.length > 1 || (loadedMessages.length === 1 && loadedMessages[0].role === 'user')) {
+          setMessages(loadedMessages);
+        }
         
         if (response.isNewConversation) {
           console.log('New 24-hour conversation thread started');
@@ -65,21 +70,13 @@ export default function CheckInScreen() {
         }
       } catch (error) {
         console.error('Failed to start conversation:', error);
-        // Use default message on error
         setConversationId('temp-conversation-id');
-        setMessages([{
-          id: '1',
-          role: 'assistant',
-          content: 'Peace to you. What\'s on your heart today?',
-          createdAt: new Date(),
-        }]);
       }
     };
 
     startConversation();
   }, []);
 
-  // Always use light theme colors
   const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
@@ -156,7 +153,6 @@ export default function CheckInScreen() {
     } catch (error) {
       console.error('Failed to send message:', error);
       setIsLoading(false);
-      // Optionally show an error message to the user
     }
 
     setTimeout(() => {
@@ -224,6 +220,37 @@ export default function CheckInScreen() {
     );
   };
 
+  const renderEmptyState = () => {
+    return (
+      <View style={styles.emptyStateContainer}>
+        <View style={styles.emptyStateContent}>
+          <View style={styles.iconContainer}>
+            <IconSymbol 
+              ios_icon_name="message.fill"
+              android_material_icon_name="chat"
+              size={64}
+              color={colors.primary}
+            />
+          </View>
+          
+          <Text style={[styles.emptyStateTitle, { color: textColor }]}>
+            Share what&apos;s on your heart
+          </Text>
+          
+          <Text style={[styles.emptyStateSubtitle, { color: textSecondaryColor }]}>
+            I&apos;m here to listen with compassion and gentle support
+          </Text>
+          
+          <View style={styles.disclaimerContainer}>
+            <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
+              This app is not a replacement for professional mental health care
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
@@ -257,15 +284,19 @@ export default function CheckInScreen() {
         style={styles.keyboardView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+        {messages.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+        )}
 
         <View style={[styles.inputContainer, { 
           backgroundColor: bgColor,
@@ -460,6 +491,40 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    maxWidth: 400,
+    width: '100%',
+  },
+  iconContainer: {
+    marginBottom: spacing.xl,
+  },
+  emptyStateTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyStateSubtitle: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.xl * 2,
+  },
+  disclaimerContainer: {
+    paddingHorizontal: spacing.lg,
+  },
+  disclaimerText: {
+    fontSize: typography.small,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   messagesList: {
     paddingHorizontal: spacing.md,
