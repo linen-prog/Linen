@@ -1,10 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, TextInput, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+
+type DrawingTool = 'write' | 'create';
+
+const TOOL_OPTIONS = [
+  { id: 'write' as DrawingTool, label: 'Write', icon: 'edit', materialIcon: 'edit' },
+  { id: 'create' as DrawingTool, label: 'Create', icon: 'paintbrush.fill', materialIcon: 'brush' },
+];
 
 export default function ArtworkCanvasScreen() {
   console.log('User viewing Artwork Canvas screen');
@@ -12,6 +19,7 @@ export default function ArtworkCanvasScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
 
+  const [selectedTool, setSelectedTool] = useState<DrawingTool>('write');
   const [artworkData, setArtworkData] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +48,7 @@ export default function ArtworkCanvasScreen() {
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
   const cardBg = isDark ? colors.cardDark : colors.card;
-  const inputBg = isDark ? colors.cardDark : colors.card;
+  const inputBg = isDark ? '#F5F5F0' : '#F5F5F0';
   const inputBorder = isDark ? colors.borderDark : colors.border;
 
   const handleSave = async () => {
@@ -72,52 +80,45 @@ export default function ArtworkCanvasScreen() {
   };
 
   const saveButtonText = isSaving ? 'Saving...' : 'Save Artwork';
+  const headerTitle = 'Your Reflection';
+  const writeLabel = 'Write';
+  const createLabel = 'Create';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
         options={{
-          headerShown: true,
-          title: 'Creative Expression',
-          headerBackTitle: 'Back',
-          headerStyle: {
-            backgroundColor: bgColor,
-          },
-          headerTintColor: colors.primary,
+          headerShown: false,
         }}
       />
       
       <View style={styles.content}>
         <View style={styles.header}>
-          <IconSymbol 
-            ios_icon_name="paintbrush.fill"
-            android_material_icon_name="brush"
-            size={48}
-            color={colors.accent}
-          />
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="chevron.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
           
-          <Text style={[styles.title, { color: textColor }]}>
-            Express Yourself
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            {headerTitle}
           </Text>
           
-          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-            Use words, descriptions, or notes to capture your creative expression of this week&apos;s theme
-          </Text>
+          <View style={styles.headerSpacer} />
         </View>
 
-        <View style={[styles.canvasCard, { backgroundColor: cardBg }]}>
-          <Text style={[styles.canvasLabel, { color: textColor }]}>
-            Your Creative Space
-          </Text>
-          
+        <View style={[styles.canvasContainer, { backgroundColor: inputBg }]}>
           <TextInput
-            style={[styles.canvasInput, { 
-              backgroundColor: inputBg,
-              borderColor: inputBorder,
-              color: textColor 
-            }]}
-            placeholder="Describe your artwork, write poetry, capture colors and feelings, or simply express what this week's theme means to you..."
-            placeholderTextColor={textSecondaryColor}
+            style={[styles.canvasInput, { color: '#2C3E2C' }]}
+            placeholder="Express yourself through words, poetry, or creative writing..."
+            placeholderTextColor="#8B9D8B"
             value={artworkData}
             onChangeText={setArtworkData}
             multiline
@@ -125,16 +126,54 @@ export default function ArtworkCanvasScreen() {
           />
         </View>
 
-        <View style={[styles.noteCard, { backgroundColor: cardBg }]}>
-          <IconSymbol 
-            ios_icon_name="lightbulb.fill"
-            android_material_icon_name="lightbulb"
-            size={24}
-            color={colors.primary}
-          />
-          <Text style={[styles.noteText, { color: textSecondaryColor }]}>
-            This is a space for creative expression. There are no rules. Let your heart guide you.
-          </Text>
+        <View style={[styles.toolBar, { backgroundColor: cardBg }]}>
+          <TouchableOpacity 
+            style={[
+              styles.toolButton,
+              selectedTool === 'write' && styles.toolButtonActive
+            ]}
+            onPress={() => setSelectedTool('write')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.toolButtonContent}>
+              <IconSymbol 
+                ios_icon_name="pencil"
+                android_material_icon_name="edit"
+                size={20}
+                color={selectedTool === 'write' ? '#FFFFFF' : textColor}
+              />
+              <Text style={[
+                styles.toolButtonText,
+                { color: selectedTool === 'write' ? '#FFFFFF' : textColor }
+              ]}>
+                {writeLabel}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[
+              styles.toolButton,
+              selectedTool === 'create' && styles.toolButtonActive
+            ]}
+            onPress={() => setSelectedTool('create')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.toolButtonContent}>
+              <IconSymbol 
+                ios_icon_name="paintbrush.fill"
+                android_material_icon_name="brush"
+                size={20}
+                color={selectedTool === 'create' ? '#FFFFFF' : textColor}
+              />
+              <Text style={[
+                styles.toolButtonText,
+                { color: selectedTool === 'create' ? '#FFFFFF' : textColor }
+              ]}>
+                {createLabel}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
@@ -158,69 +197,84 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    gap: spacing.lg,
+    paddingTop: spacing.md,
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  title: {
-    fontSize: typography.h2,
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: typography.h3,
     fontWeight: typography.semibold,
-    textAlign: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
   },
-  subtitle: {
-    fontSize: typography.body,
-    textAlign: 'center',
-    lineHeight: 24,
+  headerSpacer: {
+    width: 40,
   },
-  canvasCard: {
+  canvasContainer: {
     flex: 1,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
-  canvasLabel: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.md,
-  },
   canvasInput: {
     flex: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
     fontSize: typography.body,
     lineHeight: 24,
-    borderWidth: 1,
+    fontFamily: 'System',
   },
-  noteCard: {
+  toolBar: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.full,
+    padding: spacing.xs,
+    gap: spacing.xs,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  toolButton: {
+    flex: 1,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  toolButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  toolButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 1,
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
-  noteText: {
-    flex: 1,
+  toolButtonText: {
     fontSize: typography.bodySmall,
-    lineHeight: 20,
+    fontWeight: typography.semibold,
   },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
     paddingVertical: spacing.md + 4,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
     alignItems: 'center',
   },
   saveButtonDisabled: {

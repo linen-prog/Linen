@@ -8,18 +8,28 @@ import { IconSymbol } from '@/components/IconSymbol';
 
 interface WeeklyTheme {
   id: string;
-  weekStartDate: string;
   liturgicalSeason: string;
   themeTitle: string;
   themeDescription: string;
-  somaticExercise: {
-    id: string;
-    title: string;
-    description: string;
-    category: string;
-    duration: string;
-    instructions: string;
-  } | null;
+}
+
+interface DailyGift {
+  id: string;
+  date: string;
+  scriptureText: string;
+  scriptureReference: string;
+  reflectionPrompt: string;
+  hasReflected: boolean;
+  weeklyTheme: WeeklyTheme;
+}
+
+interface SomaticExercise {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  duration: string;
+  instructions: string;
 }
 
 interface Artwork {
@@ -36,45 +46,30 @@ export default function DailyGiftScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
 
-  const [scriptureText, setScriptureText] = useState('');
-  const [scriptureReference, setScriptureReference] = useState('');
-  const [reflectionPrompt, setReflectionPrompt] = useState('');
+  const [dailyGift, setDailyGift] = useState<DailyGift | null>(null);
   const [reflectionText, setReflectionText] = useState('');
   const [shareToComm, setShareToComm] = useState(false);
-  const [hasReflected, setHasReflected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [dailyGiftId, setDailyGiftId] = useState<string | null>(null);
+  const [isLoadingGift, setIsLoadingGift] = useState(true);
 
-  const [weeklyTheme, setWeeklyTheme] = useState<WeeklyTheme | null>(null);
+  const [somaticExercise, setSomaticExercise] = useState<SomaticExercise | null>(null);
+  const [isLoadingSomatic, setIsLoadingSomatic] = useState(true);
+
   const [artwork, setArtwork] = useState<Artwork | null>(null);
-  const [isLoadingTheme, setIsLoadingTheme] = useState(true);
   const [isLoadingArtwork, setIsLoadingArtwork] = useState(true);
 
   useEffect(() => {
     const loadDailyGift = async () => {
       try {
         const { authenticatedGet } = await import('@/utils/api');
-        const response = await authenticatedGet<{
-          id: string;
-          date: string;
-          scriptureText: string;
-          scriptureReference: string;
-          reflectionPrompt: string;
-          hasReflected: boolean;
-        }>('/api/daily-gift/today');
+        const response = await authenticatedGet<DailyGift>('/api/daily-gift/today');
         
         console.log('Daily gift loaded:', response);
-        setDailyGiftId(response.id);
-        setScriptureText(response.scriptureText);
-        setScriptureReference(response.scriptureReference);
-        setReflectionPrompt(response.reflectionPrompt);
-        setHasReflected(response.hasReflected);
+        setDailyGift(response);
+        setIsLoadingGift(false);
       } catch (error) {
         console.error('Failed to load daily gift:', error);
-        setScriptureText('Be still, and know that I am God.');
-        setScriptureReference('Psalm 46:10');
-        setReflectionPrompt('Where in your body do you feel stillness today? What does it feel like to simply be, without doing?');
-        setHasReflected(false);
+        setIsLoadingGift(false);
       }
     };
 
@@ -85,14 +80,21 @@ export default function DailyGiftScreen() {
     const loadWeeklyTheme = async () => {
       try {
         const { authenticatedGet } = await import('@/utils/api');
-        const response = await authenticatedGet<WeeklyTheme>('/api/weekly-theme/current');
+        const response = await authenticatedGet<{
+          id: string;
+          weekStartDate: string;
+          liturgicalSeason: string;
+          themeTitle: string;
+          themeDescription: string;
+          somaticExercise: SomaticExercise | null;
+        }>('/api/weekly-theme/current');
         
         console.log('Weekly theme loaded:', response);
-        setWeeklyTheme(response);
-        setIsLoadingTheme(false);
+        setSomaticExercise(response.somaticExercise);
+        setIsLoadingSomatic(false);
       } catch (error) {
         console.error('Failed to load weekly theme:', error);
-        setIsLoadingTheme(false);
+        setIsLoadingSomatic(false);
       }
     };
 
@@ -125,7 +127,7 @@ export default function DailyGiftScreen() {
   const inputBorder = isDark ? colors.borderDark : colors.border;
 
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim()) {
+    if (!reflectionText.trim() || !dailyGift) {
       return;
     }
 
@@ -135,14 +137,14 @@ export default function DailyGiftScreen() {
     try {
       const { authenticatedPost } = await import('@/utils/api');
       const response = await authenticatedPost<{ reflectionId: string }>('/api/daily-gift/reflect', {
-        dailyGiftId,
+        dailyGiftId: dailyGift.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
       });
       
       console.log('Reflection saved successfully:', response);
       setIsLoading(false);
-      setHasReflected(true);
+      setDailyGift({ ...dailyGift, hasReflected: true });
     } catch (error) {
       console.error('Failed to save reflection:', error);
       setIsLoading(false);
@@ -151,15 +153,15 @@ export default function DailyGiftScreen() {
 
   const handleBeginPractice = () => {
     console.log('User tapped Begin Practice for somatic exercise');
-    if (weeklyTheme?.somaticExercise) {
+    if (somaticExercise) {
       router.push({
         pathname: '/somatic-practice',
         params: {
-          exerciseId: weeklyTheme.somaticExercise.id,
-          title: weeklyTheme.somaticExercise.title,
-          description: weeklyTheme.somaticExercise.description,
-          duration: weeklyTheme.somaticExercise.duration,
-          instructions: weeklyTheme.somaticExercise.instructions,
+          exerciseId: somaticExercise.id,
+          title: somaticExercise.title,
+          description: somaticExercise.description,
+          duration: somaticExercise.duration,
+          instructions: somaticExercise.instructions,
         },
       });
     }
@@ -174,16 +176,73 @@ export default function DailyGiftScreen() {
     router.push('/artwork-canvas');
   };
 
-  const scriptureDisplay = scriptureText;
-  const referenceDisplay = scriptureReference;
-  const promptDisplay = reflectionPrompt;
+  if (isLoadingGift) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: true,
+            title: 'Today\'s Gift',
+            headerBackTitle: 'Home',
+            headerStyle: {
+              backgroundColor: bgColor,
+            },
+            headerTintColor: colors.primary,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
+            Loading today&apos;s gift...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!dailyGift) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: true,
+            title: 'Today\'s Gift',
+            headerBackTitle: 'Home',
+            headerStyle: {
+              backgroundColor: bgColor,
+            },
+            headerTintColor: colors.primary,
+          }}
+        />
+        <View style={styles.errorContainer}>
+          <IconSymbol 
+            ios_icon_name="exclamationmark.triangle"
+            android_material_icon_name="warning"
+            size={48}
+            color={colors.accent}
+          />
+          <Text style={[styles.errorText, { color: textColor }]}>
+            Unable to load today&apos;s gift
+          </Text>
+          <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
+            Please try again later
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const scriptureDisplay = dailyGift.scriptureText;
+  const referenceDisplay = dailyGift.scriptureReference;
+  const promptDisplay = dailyGift.reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
 
-  const seasonDisplay = weeklyTheme?.liturgicalSeason.toUpperCase() || '';
-  const themeTitleDisplay = weeklyTheme?.themeTitle || '';
-  const themeDescriptionDisplay = weeklyTheme?.themeDescription || '';
-  const exerciseTitleDisplay = weeklyTheme?.somaticExercise?.title || '';
-  const exerciseDescriptionDisplay = weeklyTheme?.somaticExercise?.description || '';
+  const seasonDisplay = dailyGift.weeklyTheme.liturgicalSeason.toUpperCase();
+  const themeTitleDisplay = dailyGift.weeklyTheme.themeTitle;
+  const themeDescriptionDisplay = dailyGift.weeklyTheme.themeDescription;
+  
+  const exerciseTitleDisplay = somaticExercise?.title || '';
+  const exerciseDescriptionDisplay = somaticExercise?.description || '';
   const invitationText = 'You are invited to practice with us this week';
 
   return (
@@ -204,39 +263,33 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {isLoadingTheme ? (
-          <View style={[styles.loadingCard, { backgroundColor: cardBg }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : weeklyTheme ? (
-          <View style={styles.themeSection}>
-            <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
-              {seasonDisplay}
+        <View style={styles.themeSection}>
+          <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
+            {seasonDisplay}
+          </Text>
+          
+          <View style={styles.themeTitleContainer}>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={24}
+              color={colors.accent}
+            />
+            <Text style={[styles.themeTitle, { color: textColor }]}>
+              {themeTitleDisplay}
             </Text>
-            
-            <View style={styles.themeTitleContainer}>
-              <IconSymbol 
-                ios_icon_name="sparkles"
-                android_material_icon_name="auto-awesome"
-                size={24}
-                color={colors.accent}
-              />
-              <Text style={[styles.themeTitle, { color: textColor }]}>
-                {themeTitleDisplay}
-              </Text>
-              <IconSymbol 
-                ios_icon_name="sparkles"
-                android_material_icon_name="auto-awesome"
-                size={24}
-                color={colors.accent}
-              />
-            </View>
-            
-            <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
-              {themeDescriptionDisplay}
-            </Text>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={24}
+              color={colors.accent}
+            />
           </View>
-        ) : null}
+          
+          <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
+            {themeDescriptionDisplay}
+          </Text>
+        </View>
 
         <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
           <View style={styles.giftIcon}>
@@ -257,7 +310,7 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {weeklyTheme?.somaticExercise && (
+        {!isLoadingSomatic && somaticExercise && (
           <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
@@ -364,7 +417,7 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {!hasReflected ? (
+        {!dailyGift.hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
             <Text style={[styles.reflectionTitle, { color: textColor }]}>
               Your Reflection
@@ -441,20 +494,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  loadingText: {
+    fontSize: typography.body,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  errorText: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: typography.body,
+    textAlign: 'center',
+  },
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.lg,
-  },
-  loadingCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
   },
   themeSection: {
     alignItems: 'center',
