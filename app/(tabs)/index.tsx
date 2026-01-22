@@ -19,9 +19,13 @@ export default function HomeScreen() {
       try {
         // Fetch user info
         const { authenticatedGet } = await import('@/utils/api');
-        const userResponse = await authenticatedGet<{ id: string; email: string; firstName?: string }>('/api/auth/me');
+        const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
         console.log('User data loaded:', userResponse);
-        setFirstName(userResponse.firstName || 'Friend');
+        
+        // Extract first name from the user's name field
+        const userName = userResponse.user?.name || '';
+        const extractedFirstName = userName.split(' ')[0] || 'Friend';
+        setFirstName(extractedFirstName);
 
         // Fetch streaks
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
@@ -66,7 +70,7 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
-  const greetingText = firstName ? `Peace to you, ${firstName}` : 'Peace to you';
+  const greetingText = `Peace to you, ${firstName}`;
   const checkInStreakText = `${checkInStreak}`;
   const reflectionStreakText = `${reflectionStreak}`;
 
