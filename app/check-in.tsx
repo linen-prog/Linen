@@ -48,9 +48,9 @@ export default function CheckInScreen() {
         console.log('Conversation started:', response);
         setConversationId(response.conversationId);
         
-        // Load existing messages (but don't show initial AI greeting)
+        // Load existing messages (but don't show initial AI greeting for new conversations)
         const loadedMessages = response.messages
-          .filter(msg => msg.role === 'user' || response.messages.length > 1) // Only show messages if there's actual conversation
+          .filter(msg => msg.role === 'user' || response.messages.length > 1)
           .map((msg, index) => ({
             id: `${index}`,
             role: msg.role as 'user' | 'assistant',
@@ -226,24 +226,42 @@ export default function CheckInScreen() {
         <View style={styles.emptyStateContent}>
           <View style={styles.iconContainer}>
             <IconSymbol 
-              ios_icon_name="message.fill"
-              android_material_icon_name="chat"
-              size={64}
+              ios_icon_name="heart.text.square.fill"
+              android_material_icon_name="favorite"
+              size={72}
               color={colors.primary}
             />
           </View>
           
           <Text style={[styles.emptyStateTitle, { color: textColor }]}>
-            Share what&apos;s on your heart
+            A gentle space for reflection
           </Text>
           
           <Text style={[styles.emptyStateSubtitle, { color: textSecondaryColor }]}>
-            I&apos;m here to listen with compassion and gentle support
+            I&apos;m here to listen with compassion and gentle presence. Share what&apos;s on your heart—your joys, struggles, questions, or simply what you&apos;re noticing in this moment.
           </Text>
+
+          <View style={styles.guidanceContainer}>
+            <Text style={[styles.guidanceTitle, { color: textColor }]}>
+              What to expect:
+            </Text>
+            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
+              • I&apos;ll help you notice what&apos;s happening in your body
+            </Text>
+            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
+              • We&apos;ll explore sensations, emotions, and patterns together
+            </Text>
+            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
+              • Scripture and prayer may weave naturally into our conversation
+            </Text>
+            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
+              • I&apos;m not here to fix or advise, but to witness and companion
+            </Text>
+          </View>
           
           <View style={styles.disclaimerContainer}>
             <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
-              This app is not a replacement for professional mental health care
+              This is not therapy or medical care. If you&apos;re in crisis, please reach out to 988 Lifeline or text HOME to 741741.
             </Text>
           </View>
         </View>
@@ -412,11 +430,20 @@ export default function CheckInScreen() {
           onPress={() => setShowPrayerOptions(false)}
         >
           <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <Text style={[styles.modalTitle, { color: textColor }]}>
-              Generate Prayer
-            </Text>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="hands.sparkles"
+                android_material_icon_name="auto-awesome"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Generate Prayer
+              </Text>
+            </View>
+            
             <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-              I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared.
+              I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared. It will be written in your own voice, naming what&apos;s real for you right now.
             </Text>
             
             <TouchableOpacity 
@@ -433,7 +460,7 @@ export default function CheckInScreen() {
               onPress={() => setShowPrayerOptions(false)}
             >
               <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                Cancel
+                Maybe later
               </Text>
             </TouchableOpacity>
           </View>
@@ -467,6 +494,10 @@ export default function CheckInScreen() {
               </Text>
             </ScrollView>
 
+            <Text style={[styles.prayerNote, { color: textSecondaryColor }]}>
+              You can pray this aloud, edit it, or simply let it rest with you.
+            </Text>
+
             <TouchableOpacity 
               style={[styles.primaryButton, { backgroundColor: colors.primary }]}
               onPress={() => {
@@ -475,7 +506,7 @@ export default function CheckInScreen() {
               }}
             >
               <Text style={styles.primaryButtonText}>
-                Close
+                Amen
               </Text>
             </TouchableOpacity>
           </View>
@@ -500,7 +531,7 @@ const styles = StyleSheet.create({
   },
   emptyStateContent: {
     alignItems: 'center',
-    maxWidth: 400,
+    maxWidth: 500,
     width: '100%',
   },
   iconContainer: {
@@ -515,11 +546,29 @@ const styles = StyleSheet.create({
   emptyStateSubtitle: {
     fontSize: typography.body,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.xl * 2,
+    lineHeight: 26,
+    marginBottom: spacing.xl,
+  },
+  guidanceContainer: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  guidanceTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  guidanceText: {
+    fontSize: typography.small,
+    lineHeight: 22,
+    marginBottom: spacing.xs,
   },
   disclaimerContainer: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   disclaimerText: {
     fontSize: typography.small,
@@ -671,12 +720,18 @@ const styles = StyleSheet.create({
   },
   prayerScroll: {
     maxHeight: 300,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   prayerText: {
     fontSize: typography.body,
-    lineHeight: 26,
+    lineHeight: 28,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  prayerNote: {
+    fontSize: typography.small,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 20,
   },
 });
