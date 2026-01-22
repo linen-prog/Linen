@@ -79,7 +79,7 @@ export function registerCheckInRoutes(app: App) {
           .where(
             and(
               eq(schema.checkInConversations.userId, session.user.id),
-              sql`${schema.checkInConversations.createdAt} > ${twentyFourHoursAgo}`
+              sql`${schema.checkInConversations.createdAt} > ${twentyFourHoursAgo.toISOString()}`
             )
           )
           .orderBy(desc(schema.checkInConversations.createdAt))
@@ -167,27 +167,88 @@ export function registerCheckInRoutes(app: App) {
       );
 
       try {
-        // Verify conversation belongs to user
-        const conversation = await app.db.query.checkInConversations.findFirst({
-          where: and(
-            eq(schema.checkInConversations.id, conversationId as any),
-            eq(schema.checkInConversations.userId, session.user.id)
-          ),
-        });
+        let conversation;
 
-        if (!conversation) {
+        // Validate conversationId format (should be a UUID)
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          conversationId
+        );
+
+        if (!isValidUUID || !conversationId) {
           app.logger.warn(
             { userId: session.user.id, conversationId },
-            'Conversation not found or unauthorized'
+            'Invalid conversation ID format, creating new conversation'
           );
-          return reply.status(404).send({ error: 'Conversation not found' });
+
+          // Create new conversation
+          const [newConversation] = await app.db
+            .insert(schema.checkInConversations)
+            .values({
+              userId: session.user.id,
+            })
+            .returning();
+
+          conversation = newConversation;
+
+          // Create initial assistant message
+          const initialMessage = "Peace to you. What's on your heart today?";
+          await app.db.insert(schema.checkInMessages).values({
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: initialMessage,
+          });
+
+          app.logger.info(
+            { conversationId: conversation.id, userId: session.user.id },
+            'New check-in conversation created due to invalid ID'
+          );
+        } else {
+          // Verify conversation belongs to user
+          const foundConversation = await app.db.query.checkInConversations.findFirst({
+            where: and(
+              eq(schema.checkInConversations.id, conversationId as any),
+              eq(schema.checkInConversations.userId, session.user.id)
+            ),
+          });
+
+          if (!foundConversation) {
+            app.logger.warn(
+              { userId: session.user.id, conversationId },
+              'Conversation not found or unauthorized, creating new conversation'
+            );
+
+            // Create new conversation instead of returning error
+            const [newConversation] = await app.db
+              .insert(schema.checkInConversations)
+              .values({
+                userId: session.user.id,
+              })
+              .returning();
+
+            conversation = newConversation;
+
+            // Create initial assistant message
+            const initialMessage = "Peace to you. What's on your heart today?";
+            await app.db.insert(schema.checkInMessages).values({
+              conversationId: conversation.id,
+              role: 'assistant',
+              content: initialMessage,
+            });
+
+            app.logger.info(
+              { conversationId: conversation.id, userId: session.user.id },
+              'New check-in conversation created due to not found'
+            );
+          } else {
+            conversation = foundConversation;
+          }
         }
 
         // Save user message
         const [userMsg] = await app.db
           .insert(schema.checkInMessages)
           .values({
-            conversationId: conversationId as any,
+            conversationId: conversation.id,
             role: 'user',
             content: message,
           })
@@ -197,7 +258,7 @@ export function registerCheckInRoutes(app: App) {
         const messages = await app.db
           .select()
           .from(schema.checkInMessages)
-          .where(eq(schema.checkInMessages.conversationId, conversationId as any))
+          .where(eq(schema.checkInMessages.conversationId, conversation.id))
           .orderBy(schema.checkInMessages.createdAt);
 
         // Use last 30 messages for AI context
@@ -223,7 +284,7 @@ export function registerCheckInRoutes(app: App) {
         const [assistantMsg] = await app.db
           .insert(schema.checkInMessages)
           .values({
-            conversationId: conversationId as any,
+            conversationId: conversation.id,
             role: 'assistant',
             content: responseText,
           })
@@ -232,7 +293,7 @@ export function registerCheckInRoutes(app: App) {
         app.logger.info(
           {
             userId: session.user.id,
-            conversationId,
+            conversationId: conversation.id,
             messageId: assistantMsg.id,
             responseLength: responseText.length,
           },
