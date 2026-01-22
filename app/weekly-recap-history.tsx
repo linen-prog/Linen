@@ -98,8 +98,7 @@ export default function WeeklyRecapHistoryScreen() {
     console.log('Loading recap history');
     try {
       setLoading(true);
-      const response = await authenticatedGet('/api/weekly-recap/history');
-      const data = await response.json();
+      const data = await authenticatedGet<{ recaps: WeeklyRecap[] }>('/api/weekly-recap/history');
       
       console.log('Recap history loaded:', data);
       setRecaps(data.recaps || []);

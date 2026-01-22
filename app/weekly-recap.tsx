@@ -221,8 +221,7 @@ export default function WeeklyRecapScreen() {
     console.log('Loading current weekly recap');
     try {
       setLoading(true);
-      const response = await authenticatedGet('/api/weekly-recap/current');
-      const data = await response.json();
+      const data = await authenticatedGet<{ recap: WeeklyRecap | null; weekStartDate: string; weekEndDate: string }>('/api/weekly-recap/current');
       
       console.log('Weekly recap loaded:', data);
       setRecap(data.recap);
@@ -240,10 +239,9 @@ export default function WeeklyRecapScreen() {
     console.log('Generating weekly recap');
     try {
       setGenerating(true);
-      const response = await authenticatedPost('/api/weekly-recap/generate', {
+      const data = await authenticatedPost<{ recap: WeeklyRecap }>('/api/weekly-recap/generate', {
         isPremium: false,
       });
-      const data = await response.json();
       
       console.log('Weekly recap generated:', data);
       setRecap(data.recap);

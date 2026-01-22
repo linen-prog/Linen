@@ -179,8 +179,7 @@ export default function WeeklyRecapDetailScreen() {
     console.log('Loading recap for week:', weekStartDate);
     try {
       setLoading(true);
-      const response = await authenticatedGet(`/api/weekly-recap/${weekStartDate}`);
-      const data = await response.json();
+      const data = await authenticatedGet<{ recap: WeeklyRecap }>(`/api/weekly-recap/${weekStartDate}`);
       
       console.log('Recap loaded:', data);
       setRecap(data.recap);

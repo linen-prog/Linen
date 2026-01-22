@@ -39,13 +39,14 @@ export default function CheckInScreen() {
   useEffect(() => {
     const startConversation = async () => {
       try {
+        console.log('Starting check-in conversation...');
         const { authenticatedPost } = await import('@/utils/api');
         const response = await authenticatedPost<{ 
           conversationId: string; 
           messages: Array<{ role: string; content: string; createdAt: string }>;
           isNewConversation: boolean;
         }>('/api/check-in/start', {});
-        console.log('Conversation started:', response);
+        console.log('Conversation started successfully:', response);
         setConversationId(response.conversationId);
         
         // Load existing messages (but don't show initial AI greeting for new conversations)
@@ -69,8 +70,9 @@ export default function CheckInScreen() {
           console.log('Continuing existing conversation thread');
         }
       } catch (error) {
-        console.error('Failed to start conversation:', error);
-        setConversationId('temp-conversation-id');
+        console.error('Failed to start conversation - will retry on first message:', error);
+        // Don't set a temp ID - let the backend create one when the first message is sent
+        setConversationId(null);
       }
     };
 
@@ -130,12 +132,23 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost<{ response: string; messageId: string }>('/api/check-in/message', {
-        conversationId,
+      console.log('Sending message to backend with conversationId:', conversationId);
+      const response = await authenticatedPost<{ 
+        response: string; 
+        messageId: string;
+        conversationId?: string;
+      }>('/api/check-in/message', {
+        conversationId: conversationId || undefined,
         message: messageText,
       });
       
       console.log('AI response received:', response);
+      
+      // Update conversationId if backend created a new one
+      if (response.conversationId && !conversationId) {
+        console.log('Backend created new conversation:', response.conversationId);
+        setConversationId(response.conversationId);
+      }
       
       const aiMessage: Message = {
         id: response.messageId,
@@ -153,6 +166,15 @@ export default function CheckInScreen() {
     } catch (error) {
       console.error('Failed to send message:', error);
       setIsLoading(false);
+      
+      // Show error message to user
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: 'I apologize, but I&apos;m having trouble responding right now. Please try again in a moment.',
+        createdAt: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
 
     setTimeout(() => {

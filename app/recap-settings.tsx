@@ -122,8 +122,7 @@ export default function RecapSettingsScreen() {
     console.log('Loading recap preferences');
     try {
       setLoading(true);
-      const response = await authenticatedGet('/api/weekly-recap/preferences');
-      const data = await response.json();
+      const data = await authenticatedGet<{ preferences: RecapPreferences }>('/api/weekly-recap/preferences');
       
       console.log('Preferences loaded:', data);
       setPreferences(data.preferences);
@@ -140,10 +139,9 @@ export default function RecapSettingsScreen() {
     console.log('Saving recap preferences:', selectedDay);
     try {
       setSaving(true);
-      const response = await authenticatedPost('/api/weekly-recap/preferences', {
+      const data = await authenticatedPost<{ preferences: RecapPreferences }>('/api/weekly-recap/preferences', {
         deliveryDay: selectedDay,
       });
-      const data = await response.json();
       
       console.log('Preferences saved:', data);
       setPreferences(data.preferences);
