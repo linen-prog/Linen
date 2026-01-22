@@ -1,31 +1,86 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+
+// Utility function to get current Sunday in Pacific Time
+function getCurrentSundayPacific(): string {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+
+  const day = pacificTime.getDay();
+  const date = new Date(pacificTime);
+  date.setDate(date.getDate() - day);
+  date.setHours(0, 0, 0, 0);
+
+  return date.toISOString().split('T')[0];
+}
+
+// Get today's date in Pacific Time
+function getTodayPacific(): string {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  return pacificTime.toISOString().split('T')[0];
+}
+
+// Get current day of week in Pacific Time (0 = Sunday)
+function getCurrentDayOfWeekPacific(): number {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  return pacificTime.getDay();
+}
 
 export function registerDailyGiftRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
-  // Get today's daily gift
+  // Get today's daily gift (from liturgical calendar via weekly themes)
   app.fastify.get('/api/daily-gift/today', async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    app.logger.info('Fetching today\'s daily gift');
+    app.logger.info('Fetching today\'s daily gift from weekly theme');
 
     try {
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayPacific();
+      const sundayDate = getCurrentSundayPacific();
+      const dayOfWeek = getCurrentDayOfWeekPacific();
 
-      const gift = await app.db
+      // Get the weekly theme for this week
+      const theme = await app.db
         .select()
-        .from(schema.dailyGifts)
-        .where(eq(schema.dailyGifts.date, today))
+        .from(schema.weeklyThemes)
+        .where(eq(schema.weeklyThemes.weekStartDate, sundayDate))
         .limit(1);
 
-      if (!gift.length) {
-        app.logger.info({ date: today }, 'No daily gift found for today');
-        return reply.status(404).send({ error: 'No gift available for today' });
+      if (!theme.length) {
+        app.logger.info({ date: sundayDate }, 'No weekly theme found, returning default scripture');
+        // Return default scripture if no theme exists
+        return reply.send({
+          id: null,
+          date: today,
+          scriptureText: 'Be still, and know that I am God.',
+          scriptureReference: 'Psalm 46:10',
+          reflectionPrompt: 'In stillness, what do you notice? What is God saying to you?',
+          hasReflected: false,
+          weeklyTheme: null,
+        });
       }
 
-      // Check if current user has reflected on this gift (if authenticated)
+      // Get daily content for today
+      const dailyContentRecord = await app.db
+        .select()
+        .from(schema.dailyContent)
+        .where(
+          and(
+            eq(schema.dailyContent.weeklyThemeId, theme[0].id),
+            eq(schema.dailyContent.dayOfWeek, dayOfWeek)
+          )
+        )
+        .limit(1);
+
+      if (!dailyContentRecord.length) {
+        app.logger.warn({ themeId: theme[0].id, dayOfWeek }, 'No daily content found for day');
+        return reply.status(404).send({ error: 'No content available for today' });
+      }
+
+      // Check if current user has reflected (if authenticated)
       let hasReflected = false;
       const authHeader = request.headers.authorization;
       if (authHeader) {
@@ -36,8 +91,10 @@ export function registerDailyGiftRoutes(app: App) {
               .select()
               .from(schema.userReflections)
               .where(
-                eq(schema.userReflections.userId, session.user.id) &&
-                eq(schema.userReflections.dailyGiftId, gift[0].id)
+                and(
+                  eq(schema.userReflections.userId, session.user.id),
+                  eq(schema.userReflections.dailyGiftId, dailyContentRecord[0].id)
+                )
               )
               .limit(1);
 
@@ -48,15 +105,24 @@ export function registerDailyGiftRoutes(app: App) {
         }
       }
 
-      app.logger.info({ giftId: gift[0].id, date: today }, 'Daily gift retrieved');
+      app.logger.info(
+        { contentId: dailyContentRecord[0].id, date: today, themeId: theme[0].id },
+        'Daily gift retrieved from weekly theme'
+      );
 
       return reply.send({
-        id: gift[0].id,
-        date: gift[0].date,
-        scriptureText: gift[0].scriptureText,
-        scriptureReference: gift[0].scriptureReference,
-        reflectionPrompt: gift[0].reflectionPrompt,
+        id: dailyContentRecord[0].id,
+        date: today,
+        scriptureText: dailyContentRecord[0].scriptureText,
+        scriptureReference: dailyContentRecord[0].scriptureReference,
+        reflectionPrompt: dailyContentRecord[0].reflectionPrompt,
         hasReflected,
+        weeklyTheme: {
+          id: theme[0].id,
+          liturgicalSeason: theme[0].liturgicalSeason,
+          themeTitle: theme[0].themeTitle,
+          themeDescription: theme[0].themeDescription,
+        },
       });
     } catch (error) {
       app.logger.error({ err: error }, 'Failed to fetch daily gift');
