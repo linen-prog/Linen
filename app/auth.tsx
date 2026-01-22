@@ -50,7 +50,8 @@ export default function AuthScreen() {
       const response = await apiPost<{ 
         success: boolean;
         user: { id: string; email: string; name?: string; createdAt?: string };
-        token: string;
+        session?: { token: string; expiresAt: string };
+        token?: string;
         isNewUser: boolean;
       }>(
         '/api/auth/register',
@@ -59,11 +60,14 @@ export default function AuthScreen() {
 
       console.log('Auth response received:', response);
 
-      if (response.success && response.user && response.token) {
+      // Extract token from either session.token or token field
+      const sessionToken = response.session?.token || response.token;
+
+      if (response.success && response.user && sessionToken) {
         console.log('[Auth] Storing bearer token from backend');
         
         // Store the session token from backend
-        await storeBearerToken(response.token);
+        await storeBearerToken(sessionToken);
         
         // Store user data for persistence across hot reloads
         await storeUserData(response.user);
