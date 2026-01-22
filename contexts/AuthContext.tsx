@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
-import { authClient, storeWebBearerToken, getBearerToken, getUserData } from "@/lib/auth";
+import { authClient, storeWebBearerToken, getBearerToken, getUserData, clearAuthTokens } from "@/lib/auth";
 
 interface User {
   id: string;
@@ -86,52 +86,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Bearer token exists:', !!token);
       
       if (!token) {
-        console.log('[AuthContext] No token found, checking for stored user data...');
-        
-        // Check if we have stored user data from previous session
-        const storedUser = await getUserData();
-        if (storedUser) {
-          console.log('[AuthContext] Restored user from storage:', storedUser.email);
-          setUser(storedUser);
-        } else {
-          console.log('[AuthContext] No stored user data, user not authenticated');
-          setUser(null);
-        }
-        
+        console.log('[AuthContext] No token found, user not authenticated');
+        setUser(null);
         setLoading(false);
         return;
       }
 
-      // We have a token, try to restore the user from storage first
-      const storedUser = await getUserData();
-      if (storedUser) {
-        console.log('[AuthContext] Restored user from storage:', storedUser.email);
-        setUser(storedUser);
-        setLoading(false);
-        return;
-      }
+      // We have a token, try to validate it by calling the backend
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev'}/api/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      // If no stored user, try to get session from Better Auth
-      try {
-        const session = await authClient.getSession();
-        console.log('[AuthContext] Session data:', session?.data);
-        
-        if (session?.data?.user) {
-          console.log('[AuthContext] User authenticated via Better Auth:', session.data.user.email);
-          setUser(session.data.user as User);
-        } else {
-          console.log('[AuthContext] No valid session found');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('[AuthContext] Token is valid, user authenticated:', userData.email);
+          setUser(userData);
+        } else if (response.status === 401) {
+          console.log('[AuthContext] Token is invalid or expired, clearing auth data');
+          // Token is invalid, clear it
+          await clearAuthTokens();
           setUser(null);
+        } else {
+          console.log('[AuthContext] Unexpected response from auth check:', response.status);
+          // Try to restore from storage as fallback
+          const storedUser = await getUserData();
+          if (storedUser) {
+            console.log('[AuthContext] Restored user from storage:', storedUser.email);
+            setUser(storedUser);
+          } else {
+            setUser(null);
+          }
         }
-      } catch (sessionError) {
-        console.log('[AuthContext] Better Auth session check failed, but token exists - user may still be authenticated');
-        // Don't clear the user if we have a token, the backend will validate it
-      }
-    } catch (error) {
-      console.error("[AuthContext] Failed to fetch user:", error);
-      
-      // Even if there's an error, try to restore from storage
-      try {
+      } catch (fetchError) {
+        console.error('[AuthContext] Failed to validate token:', fetchError);
+        // Network error or other issue - try to restore from storage
         const storedUser = await getUserData();
         if (storedUser) {
           console.log('[AuthContext] Restored user from storage after error:', storedUser.email);
@@ -139,10 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null);
         }
-      } catch (storageError) {
-        console.error("[AuthContext] Failed to restore from storage:", storageError);
-        setUser(null);
       }
+    } catch (error) {
+      console.error("[AuthContext] Failed to fetch user:", error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -202,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Signing out...');
       await authClient.signOut();
+      await clearAuthTokens();
       setUser(null);
     } catch (error) {
       console.error("[AuthContext] Sign out failed:", error);
