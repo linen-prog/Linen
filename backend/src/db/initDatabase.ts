@@ -163,6 +163,42 @@ export async function initializeDatabase(db: any) {
       )
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "weekly_themes" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "week_start_date" date NOT NULL UNIQUE,
+        "liturgical_season" text NOT NULL,
+        "theme_title" text NOT NULL,
+        "theme_description" text NOT NULL,
+        "somatic_exercise_id" uuid REFERENCES "somatic_exercises"("id") ON DELETE SET NULL,
+        "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "daily_content" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "day_of_week" integer NOT NULL,
+        "scripture_text" text NOT NULL,
+        "scripture_reference" text NOT NULL,
+        "reflection_prompt" text NOT NULL,
+        "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "user_artworks" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "artwork_data" text NOT NULL,
+        "photo_urls" text[],
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "updated_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database tables:', error);

@@ -130,3 +130,48 @@ export const somaticCompletions = pgTable('somatic_completions', {
     .references(() => somaticExercises.id, { onDelete: 'cascade' }),
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
+
+// Weekly themes table
+export const weeklyThemes = pgTable(
+  'weekly_themes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekStartDate: date('week_start_date', { mode: 'string' }).notNull(),
+    liturgicalSeason: text('liturgical_season').notNull(),
+    themeTitle: text('theme_title').notNull(),
+    themeDescription: text('theme_description').notNull(),
+    somaticExerciseId: uuid('somatic_exercise_id').references(() => somaticExercises.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('weekly_themes_date_unique').on(table.weekStartDate)]
+);
+
+// Daily content table
+export const dailyContent = pgTable('daily_content', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weeklyThemeId: uuid('weekly_theme_id')
+    .notNull()
+    .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
+  dayOfWeek: integer('day_of_week').notNull(),
+  scriptureText: text('scripture_text').notNull(),
+  scriptureReference: text('scripture_reference').notNull(),
+  reflectionPrompt: text('reflection_prompt').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// User artworks table
+export const userArtworks = pgTable('user_artworks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => {
+    return { id: true } as any;
+  }, { onDelete: 'cascade' }),
+  weeklyThemeId: uuid('weekly_theme_id')
+    .notNull()
+    .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
+  artworkData: text('artwork_data').notNull(),
+  photoUrls: text('photo_urls').array(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+});

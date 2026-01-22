@@ -7,6 +7,8 @@ import { registerDailyGiftRoutes } from './routes/daily-gift.js';
 import { registerCommunityRoutes } from './routes/community.js';
 import { registerStreaksRoutes } from './routes/streaks.js';
 import { registerSomaticRoutes } from './routes/somatic.js';
+import { registerWeeklyThemeRoutes } from './routes/weekly-theme.js';
+import { registerArtworkRoutes } from './routes/artwork.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -35,6 +37,8 @@ registerDailyGiftRoutes(app);
 registerCommunityRoutes(app);
 registerStreaksRoutes(app);
 registerSomaticRoutes(app);
+registerWeeklyThemeRoutes(app);
+registerArtworkRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
