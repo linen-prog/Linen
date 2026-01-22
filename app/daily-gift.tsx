@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -36,6 +36,15 @@ interface SomaticExercise {
   instructions: string;
 }
 
+interface WeeklyPracticeStatus {
+  hasCompleted: boolean;
+  exercise: SomaticExercise | null;
+  weeklyTheme?: {
+    id: string;
+    themeTitle: string;
+  };
+}
+
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
   const router = useRouter();
@@ -46,6 +55,11 @@ export default function DailyGiftScreen() {
   const [shareToComm, setShareToComm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
+
+  // Weekly practice invitation state
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
+  const [hasSeenInvitation, setHasSeenInvitation] = useState(false);
 
   // Response mode: 'text', 'art', or 'voice'
   const [responseMode, setResponseMode] = useState<'text' | 'art' | 'voice'>('text');
@@ -67,6 +81,11 @@ export default function DailyGiftScreen() {
         setDailyGift(response);
         setWeeklyTheme(response.weeklyTheme);
         setIsLoadingGift(false);
+
+        // Check weekly practice completion status
+        if (response.weeklyTheme?.somaticExercise) {
+          await checkWeeklyPracticeStatus();
+        }
       } catch (error) {
         console.error('[DailyGift] Failed to load daily gift:', error);
         setIsLoadingGift(false);
@@ -75,6 +94,24 @@ export default function DailyGiftScreen() {
 
     loadDailyGift();
   }, []);
+
+  const checkWeeklyPracticeStatus = async () => {
+    try {
+      console.log('[DailyGift] Checking weekly practice completion status...');
+      const response = await authenticatedGet<WeeklyPracticeStatus>('/api/weekly-practice/current');
+      
+      console.log('[DailyGift] Weekly practice status:', response);
+      setHasCompletedPractice(response.hasCompleted);
+
+      // Show invitation modal if not completed and not seen yet
+      if (!response.hasCompleted && !hasSeenInvitation && response.exercise) {
+        console.log('[DailyGift] Showing weekly practice invitation modal');
+        setShowInvitationModal(true);
+      }
+    } catch (error) {
+      console.error('[DailyGift] Failed to check weekly practice status:', error);
+    }
+  };
 
   const bgColor = colors.background;
   const textColor = colors.text;
@@ -121,6 +158,8 @@ export default function DailyGiftScreen() {
     console.log('[DailyGift] User tapped Begin Practice for somatic exercise');
     const somaticExercise = weeklyTheme?.somaticExercise;
     if (somaticExercise) {
+      setShowInvitationModal(false);
+      setHasSeenInvitation(true);
       router.push({
         pathname: '/somatic-practice',
         params: {
@@ -132,6 +171,12 @@ export default function DailyGiftScreen() {
         },
       });
     }
+  };
+
+  const handleMaybeLater = () => {
+    console.log('[DailyGift] User skipped weekly practice invitation');
+    setShowInvitationModal(false);
+    setHasSeenInvitation(true);
   };
 
   const handleCreateArtwork = () => {
@@ -230,6 +275,7 @@ export default function DailyGiftScreen() {
   const hasSomaticExercise = somaticExercise !== null && somaticExercise !== undefined;
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
+  const exerciseDurationDisplay = somaticExercise?.duration || '';
   const invitationText = 'You are invited to practice with us this week';
 
   const completedTitle = 'Reflection Saved';
@@ -258,6 +304,13 @@ export default function DailyGiftScreen() {
   const artModeActive = responseMode === 'art';
   const voiceModeActive = responseMode === 'voice';
 
+  // Invitation modal text
+  const modalTitle = 'This Week\'s Practice';
+  const modalInvitation = 'This week\'s theme invites you to try...';
+  const modalBeginButton = 'Begin Practice';
+  const modalLaterButton = 'Maybe Later';
+  const practiceCompletedBadge = 'Completed';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
@@ -271,6 +324,77 @@ export default function DailyGiftScreen() {
           headerTintColor: colors.primary,
         }}
       />
+
+      {/* Weekly Practice Invitation Modal */}
+      <Modal
+        visible={showInvitationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleMaybeLater}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="figure.mind.and.body"
+                android_material_icon_name="self-improvement"
+                size={48}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {modalTitle}
+              </Text>
+            </View>
+
+            <Text style={[styles.modalInvitation, { color: textSecondaryColor }]}>
+              {modalInvitation}
+            </Text>
+
+            <View style={styles.modalExerciseInfo}>
+              <Text style={[styles.modalExerciseTitle, { color: textColor }]}>
+                {exerciseTitleDisplay}
+              </Text>
+              <Text style={[styles.modalExerciseDescription, { color: textSecondaryColor }]}>
+                {exerciseDescriptionDisplay}
+              </Text>
+              
+              <View style={[styles.modalDurationBadge, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="clock.fill"
+                  android_material_icon_name="schedule"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text style={[styles.modalDurationText, { color: colors.primary }]}>
+                  {exerciseDurationDisplay}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalBeginButton}
+                onPress={handleBeginPractice}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalBeginButtonText}>
+                  {modalBeginButton}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.modalLaterButton}
+                onPress={handleMaybeLater}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modalLaterButtonText, { color: textSecondaryColor }]}>
+                  {modalLaterButton}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
@@ -325,6 +449,19 @@ export default function DailyGiftScreen() {
                   {invitationText}
                 </Text>
               </View>
+              {hasCompletedPractice && (
+                <View style={[styles.completedBadge, { backgroundColor: colors.success }]}>
+                  <IconSymbol 
+                    ios_icon_name="checkmark"
+                    android_material_icon_name="check"
+                    size={12}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.completedBadgeText}>
+                    {practiceCompletedBadge}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text style={[styles.exerciseTitle, { color: textColor }]}>
@@ -334,27 +471,19 @@ export default function DailyGiftScreen() {
               {exerciseDescriptionDisplay}
             </Text>
 
-            <View style={styles.somaticButtons}>
-              <TouchableOpacity 
-                style={styles.beginButton}
-                onPress={handleBeginPractice}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.beginButtonText}>
-                  {beginButtonText}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.skipButton}
-                onPress={() => console.log('[DailyGift] User skipped somatic practice')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.skipButtonText, { color: textSecondaryColor }]}>
-                  {skipButtonText}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {!hasCompletedPractice && (
+              <View style={styles.somaticButtons}>
+                <TouchableOpacity 
+                  style={styles.beginButton}
+                  onPress={handleBeginPractice}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.beginButtonText}>
+                    {beginButtonText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
@@ -723,6 +852,19 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
   },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.full,
+  },
+  completedBadgeText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
   exerciseTitle: {
     fontSize: typography.h3,
     fontWeight: typography.semibold,
@@ -954,5 +1096,89 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  modalContent: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    marginTop: spacing.md,
+    textAlign: 'center',
+  },
+  modalInvitation: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    fontStyle: 'italic',
+  },
+  modalExerciseInfo: {
+    marginBottom: spacing.xl,
+  },
+  modalExerciseTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  modalExerciseDescription: {
+    fontSize: typography.body,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  modalDurationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    alignSelf: 'center',
+  },
+  modalDurationText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+  },
+  modalButtons: {
+    gap: spacing.md,
+  },
+  modalBeginButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    alignItems: 'center',
+  },
+  modalBeginButtonText: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  modalLaterButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  modalLaterButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
   },
 });
