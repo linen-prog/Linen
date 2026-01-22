@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { apiPost } from '@/utils/api';
-import * as SecureStore from 'expo-secure-store';
+import { storeBearerToken, storeUserData } from '@/lib/auth';
 
 export default function AuthScreen() {
   console.log('User viewing Auth screen');
@@ -60,13 +60,14 @@ export default function AuthScreen() {
       if (response.success && response.user) {
         const authToken = response.token || response.user.id;
         
-        if (Platform.OS === 'web') {
-          localStorage.setItem('linen_bearer_token', authToken);
-        } else {
-          await SecureStore.setItemAsync('linen_bearer_token', authToken);
-        }
+        // Store token in secure storage
+        await storeBearerToken(authToken);
+        
+        // Store user data for persistence across hot reloads
+        await storeUserData(response.user);
 
         console.log('User authenticated successfully:', response.user);
+        console.log('Token and user data stored securely');
         console.log('Navigating to home screen...');
         
         router.replace('/(tabs)');

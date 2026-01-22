@@ -1,3 +1,4 @@
+
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
@@ -11,6 +12,7 @@ const API_URL = Constants.expoConfig?.extra?.backendUrl || "";
 console.log('[Auth] Backend URL configured:', API_URL);
 
 export const BEARER_TOKEN_KEY = "linen_bearer_token";
+export const USER_DATA_KEY = "linen_user_data";
 
 // Platform-specific storage: localStorage for web, SecureStore for native
 const storage = Platform.OS === "web"
@@ -41,15 +43,101 @@ export const authClient = createAuthClient({
   }),
 });
 
+/**
+ * Get bearer token from platform-specific storage
+ */
+export async function getBearerToken(): Promise<string | null> {
+  try {
+    if (Platform.OS === "web") {
+      return localStorage.getItem(BEARER_TOKEN_KEY);
+    } else {
+      return await SecureStore.getItemAsync(BEARER_TOKEN_KEY);
+    }
+  } catch (error) {
+    console.error("[Auth] Error retrieving bearer token:", error);
+    return null;
+  }
+}
+
+/**
+ * Store bearer token in platform-specific storage
+ */
+export async function storeBearerToken(token: string): Promise<void> {
+  try {
+    if (Platform.OS === "web") {
+      localStorage.setItem(BEARER_TOKEN_KEY, token);
+    } else {
+      await SecureStore.setItemAsync(BEARER_TOKEN_KEY, token);
+    }
+    console.log('[Auth] Bearer token stored successfully');
+  } catch (error) {
+    console.error("[Auth] Error storing bearer token:", error);
+  }
+}
+
+/**
+ * Store web bearer token (legacy function for compatibility)
+ */
 export function storeWebBearerToken(token: string) {
   if (Platform.OS === "web") {
     localStorage.setItem(BEARER_TOKEN_KEY, token);
   }
 }
 
-export function clearAuthTokens() {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(BEARER_TOKEN_KEY);
+/**
+ * Store user data in platform-specific storage for persistence across hot reloads
+ */
+export async function storeUserData(user: any): Promise<void> {
+  try {
+    const userData = JSON.stringify(user);
+    if (Platform.OS === "web") {
+      localStorage.setItem(USER_DATA_KEY, userData);
+    } else {
+      await SecureStore.setItemAsync(USER_DATA_KEY, userData);
+    }
+    console.log('[Auth] User data stored successfully');
+  } catch (error) {
+    console.error("[Auth] Error storing user data:", error);
+  }
+}
+
+/**
+ * Get user data from platform-specific storage
+ */
+export async function getUserData(): Promise<any | null> {
+  try {
+    let userData: string | null;
+    if (Platform.OS === "web") {
+      userData = localStorage.getItem(USER_DATA_KEY);
+    } else {
+      userData = await SecureStore.getItemAsync(USER_DATA_KEY);
+    }
+    
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  } catch (error) {
+    console.error("[Auth] Error retrieving user data:", error);
+    return null;
+  }
+}
+
+/**
+ * Clear all authentication tokens and user data
+ */
+export async function clearAuthTokens(): Promise<void> {
+  try {
+    if (Platform.OS === "web") {
+      localStorage.removeItem(BEARER_TOKEN_KEY);
+      localStorage.removeItem(USER_DATA_KEY);
+    } else {
+      await SecureStore.deleteItemAsync(BEARER_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(USER_DATA_KEY);
+    }
+    console.log('[Auth] Auth tokens cleared');
+  } catch (error) {
+    console.error("[Auth] Error clearing auth tokens:", error);
   }
 }
 
