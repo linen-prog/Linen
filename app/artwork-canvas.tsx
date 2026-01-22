@@ -1,16 +1,63 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, TextInput, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Slider, Modal, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import * as ImagePicker from 'expo-image-picker';
+import { authenticatedPost } from '@/utils/api';
 
-type DrawingTool = 'write' | 'create';
+type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
-const TOOL_OPTIONS = [
-  { id: 'write' as DrawingTool, label: 'Write', icon: 'edit', materialIcon: 'edit' },
-  { id: 'create' as DrawingTool, label: 'Create', icon: 'paintbrush.fill', materialIcon: 'brush' },
+interface BrushOption {
+  id: BrushType;
+  label: string;
+  icon: string;
+  materialIcon: string;
+  isPremium: boolean;
+}
+
+interface DrawingStroke {
+  points: { x: number; y: number }[];
+  color: string;
+  brushType: BrushType;
+  brushSize: number;
+}
+
+const BRUSH_OPTIONS: BrushOption[] = [
+  { id: 'pencil', label: 'Pencil', icon: 'pencil', materialIcon: 'edit', isPremium: false },
+  { id: 'marker', label: 'Marker', icon: 'highlighter', materialIcon: 'create', isPremium: false },
+  { id: 'pen', label: 'Pen', icon: 'pencil.tip', materialIcon: 'edit', isPremium: false },
+  { id: 'watercolor', label: 'Watercolor', icon: 'paintbrush', materialIcon: 'brush', isPremium: false },
+  { id: 'spray', label: 'Spray', icon: 'spray', materialIcon: 'brush', isPremium: false },
+  { id: 'chalk', label: 'Chalk', icon: 'pencil.circle', materialIcon: 'edit', isPremium: false },
+  { id: 'ink', label: 'Ink', icon: 'paintbrush.pointed', materialIcon: 'brush', isPremium: false },
+  { id: 'charcoal', label: 'Charcoal', icon: 'scribble', materialIcon: 'brush', isPremium: true },
+  { id: 'oil', label: 'Oil', icon: 'paintpalette', materialIcon: 'palette', isPremium: true },
+  { id: 'pastel', label: 'Pastel', icon: 'paintbrush.fill', materialIcon: 'brush', isPremium: true },
+  { id: 'crayon', label: 'Crayon', icon: 'pencil.and.outline', materialIcon: 'edit', isPremium: true },
+  { id: 'glitter', label: 'Glitter', icon: 'sparkles', materialIcon: 'auto-awesome', isPremium: true },
+];
+
+// Free tier colors (16 colors, 2 rows)
+const FREE_COLORS = [
+  // Row 1
+  '#000000', '#FFFFFF', '#808080', '#8B4513', '#FF0000', '#FF8C00', '#FFD700', '#008000',
+  // Row 2
+  '#0000FF', '#800080', '#FFC0CB', '#F5F5DC', '#006400', '#000080', '#800000', '#D2B48C',
+];
+
+// Premium tier colors (48 colors, 4 rows)
+const PREMIUM_COLORS = [
+  // Grayscale and neutrals
+  '#000000', '#1A1A1A', '#333333', '#4D4D4D', '#666666', '#808080', '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#F5F5F5', '#FFFFFF',
+  // Warm colors (reds, oranges, yellows, browns)
+  '#8B0000', '#DC143C', '#FF0000', '#FF4500', '#FF6347', '#FF8C00', '#FFA500', '#FFD700', '#FFFF00', '#F0E68C', '#8B4513', '#D2691E',
+  // Cool colors (greens, blues, purples)
+  '#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#000080', '#0000FF', '#4169E1', '#87CEEB', '#4B0082', '#800080', '#9370DB',
+  // Pastels and specialty shades
+  '#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFDAB9', '#F0E68C', '#E0FFFF', '#B0E0E6', '#DDA0DD', '#EE82EE', '#F5DEB3', '#D2B48C', '#BC8F8F',
 ];
 
 export default function ArtworkCanvasScreen() {
@@ -19,20 +66,31 @@ export default function ArtworkCanvasScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
 
-  const [selectedTool, setSelectedTool] = useState<DrawingTool>('write');
-  const [artworkData, setArtworkData] = useState('');
+  const [selectedBrush, setSelectedBrush] = useState<BrushType>('pencil');
+  const [brushSize, setBrushSize] = useState(5);
+  const [selectedColor, setSelectedColor] = useState('#000000');
+  const [strokes, setStrokes] = useState<DrawingStroke[]>([]);
+  const [undoneStrokes, setUndoneStrokes] = useState<DrawingStroke[]>([]);
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showBrushPicker, setShowBrushPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isPremium, setIsPremium] = useState(false); // TODO: Get from user subscription status
 
   useEffect(() => {
     const loadExistingArtwork = async () => {
       try {
         const { authenticatedGet } = await import('@/utils/api');
-        const response = await authenticatedGet<{ artworkData: string } | null>('/api/artwork/current');
+        const response = await authenticatedGet<{ artworkData: string; backgroundImage?: string } | null>('/api/artwork/current');
         
-        if (response && response.artworkData) {
+        if (response) {
           console.log('Existing artwork loaded');
-          setArtworkData(response.artworkData);
+          if (response.backgroundImage) {
+            setBackgroundImage(response.backgroundImage);
+          }
+          // TODO: Parse and restore strokes from artworkData
         }
         setIsLoading(false);
       } catch (error) {
@@ -48,23 +106,162 @@ export default function ArtworkCanvasScreen() {
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
   const cardBg = isDark ? colors.cardDark : colors.card;
-  const inputBg = isDark ? '#F5F5F0' : '#F5F5F0';
-  const inputBorder = isDark ? colors.borderDark : colors.border;
+
+  const handleUndo = () => {
+    if (strokes.length === 0) {
+      console.log('[Canvas] No strokes to undo');
+      return;
+    }
+    
+    console.log('[Canvas] User undoing stroke');
+    const lastStroke = strokes[strokes.length - 1];
+    setStrokes(strokes.slice(0, -1));
+    setUndoneStrokes([...undoneStrokes, lastStroke]);
+  };
+
+  const handleRedo = () => {
+    if (undoneStrokes.length === 0) {
+      console.log('[Canvas] No strokes to redo');
+      return;
+    }
+    
+    console.log('[Canvas] User redoing stroke');
+    const strokeToRedo = undoneStrokes[undoneStrokes.length - 1];
+    setStrokes([...strokes, strokeToRedo]);
+    setUndoneStrokes(undoneStrokes.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    console.log('[Canvas] User requesting to clear canvas');
+    Alert.alert(
+      'Clear Canvas',
+      'Are you sure you want to clear all your artwork? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            console.log('[Canvas] User confirmed clear canvas');
+            setStrokes([]);
+            setUndoneStrokes([]);
+            setBackgroundImage(null);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUploadPhoto = async () => {
+    console.log('[Canvas] User requesting to upload photo');
+    
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      console.log('[Canvas] User selected photo:', result.assets[0].uri);
+      setIsUploadingPhoto(true);
+
+      try {
+        // Upload photo to backend
+        const formData = new FormData();
+        
+        // Prepare file data for upload
+        const fileUri = result.assets[0].uri;
+        const fileName = result.assets[0].fileName || 'photo.jpg';
+        const fileType = result.assets[0].mimeType || 'image/jpeg';
+        
+        console.log('[Canvas] Preparing to upload photo:', { fileName, fileType, uri: fileUri });
+        
+        // For web, fetch the blob and append it
+        if (Platform.OS === 'web') {
+          const response = await fetch(fileUri);
+          const blob = await response.blob();
+          formData.append('image', blob, fileName);
+        } else {
+          // For native, use the file object format
+          formData.append('image', {
+            uri: fileUri,
+            type: fileType,
+            name: fileName,
+          } as any);
+        }
+
+        // Make authenticated request with multipart form data
+        const { BACKEND_URL } = await import('@/utils/api');
+        const { getBearerToken } = await import('@/lib/auth');
+        const token = await getBearerToken();
+        
+        if (!token) {
+          throw new Error('Authentication required to upload photos');
+        }
+
+        console.log('[Canvas] Uploading photo to backend...');
+        const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Don't set Content-Type for multipart/form-data - let the browser/fetch set it with boundary
+          },
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('[Canvas] Upload failed:', uploadResponse.status, errorText);
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
+
+        const uploadResult = await uploadResponse.json() as { url: string; filename: string };
+        console.log('[Canvas] Photo uploaded successfully:', uploadResult);
+        
+        // Use the full backend URL for the uploaded image
+        const imageUrl = uploadResult.url.startsWith('http') 
+          ? uploadResult.url 
+          : `${BACKEND_URL}${uploadResult.url}`;
+        
+        setBackgroundImage(imageUrl);
+        setIsUploadingPhoto(false);
+      } catch (error) {
+        console.error('[Canvas] Failed to upload photo:', error);
+        setIsUploadingPhoto(false);
+        Alert.alert('Upload Failed', 'Failed to upload photo. Please try again.');
+      }
+    }
+  };
 
   const handleSave = async () => {
-    if (!artworkData.trim()) {
+    if (strokes.length === 0 && !backgroundImage) {
       Alert.alert('Empty Canvas', 'Please add some content before saving.');
       return;
     }
 
-    console.log('User saving artwork', { dataLength: artworkData.length });
+    console.log('[Canvas] User saving artwork', { strokeCount: strokes.length, hasBackground: !!backgroundImage });
     setIsSaving(true);
 
     try {
-      const { authenticatedPost } = await import('@/utils/api');
+      // TODO: Convert canvas to base64 PNG
+      const artworkData = JSON.stringify({ 
+        strokes, 
+        backgroundImage,
+        brushType: selectedBrush,
+        brushSize,
+        color: selectedColor,
+      });
+      
       await authenticatedPost('/api/artwork/save', {
-        artworkData: artworkData.trim(),
-        photoUrls: [],
+        artworkData,
+        photoUrls: backgroundImage ? [backgroundImage] : [],
       });
       
       console.log('Artwork saved successfully');
@@ -79,10 +276,45 @@ export default function ArtworkCanvasScreen() {
     }
   };
 
+  const handleBrushSelect = (brushType: BrushType) => {
+    const brush = BRUSH_OPTIONS.find(b => b.id === brushType);
+    if (brush?.isPremium && !isPremium) {
+      console.log('[Canvas] User attempted to select premium brush without subscription');
+      Alert.alert('Premium Feature', 'This brush type is available with a premium subscription.');
+      return;
+    }
+    
+    console.log('[Canvas] User selected brush:', brushType);
+    setSelectedBrush(brushType);
+    setShowBrushPicker(false);
+  };
+
+  const handleColorSelect = (color: string) => {
+    console.log('[Canvas] User selected color:', color);
+    setSelectedColor(color);
+    setShowColorPicker(false);
+  };
+
+  const availableColors = isPremium ? PREMIUM_COLORS : FREE_COLORS;
+  const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
+  const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
+
   const saveButtonText = isSaving ? 'Saving...' : 'Save Artwork';
-  const headerTitle = 'Your Reflection';
-  const writeLabel = 'Write';
-  const createLabel = 'Create';
+  const headerTitle = 'Create Artwork';
+  const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
+  const brushSizeLabel = 'Brush Size';
+  const brushPickerTitle = 'Select Brush';
+  const colorPickerTitle = 'Select Color';
+  const freeBrushesLabel = 'Free Brushes';
+  const premiumBrushesLabel = 'Premium Brushes';
+  const premiumBadge = 'PREMIUM';
+  const uploadingText = 'Uploading photo...';
+
+  const canUndo = strokes.length > 0;
+  const canRedo = undoneStrokes.length > 0;
+  const canSave = strokes.length > 0 || backgroundImage !== null;
+
+  const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -93,6 +325,7 @@ export default function ArtworkCanvasScreen() {
       />
       
       <View style={styles.content}>
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity 
             onPress={() => router.back()}
@@ -114,72 +347,164 @@ export default function ArtworkCanvasScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={[styles.canvasContainer, { backgroundColor: inputBg }]}>
-          <TextInput
-            style={[styles.canvasInput, { color: '#2C3E2C' }]}
-            placeholder="Express yourself through words, poetry, or creative writing..."
-            placeholderTextColor="#8B9D8B"
-            value={artworkData}
-            onChangeText={setArtworkData}
-            multiline
-            textAlignVertical="top"
+        {/* Canvas Area */}
+        <View style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}>
+          {!backgroundImage && strokes.length === 0 && (
+            <View style={styles.canvasPlaceholder}>
+              <IconSymbol 
+                ios_icon_name="hand.draw"
+                android_material_icon_name="gesture"
+                size={48}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.canvasPlaceholderText, { color: textSecondaryColor }]}>
+                {canvasPlaceholderText}
+              </Text>
+            </View>
+          )}
+          
+          {isUploadingPhoto && (
+            <View style={styles.uploadingOverlay}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.uploadingText, { color: textColor }]}>
+                {uploadingText}
+              </Text>
+            </View>
+          )}
+          
+          {/* TODO: Implement actual drawing canvas with touch gestures */}
+          {/* This would require a library like react-native-canvas or react-native-svg */}
+        </View>
+
+        {/* Controls Bar */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.controlsBar}
+          contentContainerStyle={styles.controlsBarContent}
+        >
+          {/* Brush Selector */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }]}
+            onPress={() => {
+              console.log('[Canvas] User opening brush picker');
+              setShowBrushPicker(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="paintbrush"
+              android_material_icon_name="brush"
+              size={20}
+              color={textColor}
+            />
+            <Text style={[styles.controlButtonLabel, { color: textSecondaryColor }]}>
+              {selectedBrushLabel}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Color Selector */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: selectedColor }]}
+            onPress={() => {
+              console.log('[Canvas] User opening color picker');
+              setShowColorPicker(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.colorPreview} />
+          </TouchableOpacity>
+
+          {/* Undo */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }, !canUndo && styles.controlButtonDisabled]}
+            onPress={handleUndo}
+            disabled={!canUndo}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="arrow.uturn.backward"
+              android_material_icon_name="undo"
+              size={20}
+              color={canUndo ? textColor : textSecondaryColor}
+            />
+          </TouchableOpacity>
+
+          {/* Redo */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }, !canRedo && styles.controlButtonDisabled]}
+            onPress={handleRedo}
+            disabled={!canRedo}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="arrow.uturn.forward"
+              android_material_icon_name="redo"
+              size={20}
+              color={canRedo ? textColor : textSecondaryColor}
+            />
+          </TouchableOpacity>
+
+          {/* Upload Photo */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }]}
+            onPress={handleUploadPhoto}
+            disabled={isUploadingPhoto}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="photo"
+              android_material_icon_name="image"
+              size={20}
+              color={textColor}
+            />
+          </TouchableOpacity>
+
+          {/* Clear */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }]}
+            onPress={handleClear}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="trash"
+              android_material_icon_name="delete"
+              size={20}
+              color={colors.error}
+            />
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Brush Size Slider */}
+        <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
+          <View style={styles.sliderHeader}>
+            <Text style={[styles.sliderLabel, { color: textColor }]}>
+              {brushSizeLabel}
+            </Text>
+            <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
+              {brushSize}
+            </Text>
+          </View>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={50}
+            step={1}
+            value={brushSize}
+            onValueChange={(value) => {
+              setBrushSize(value);
+            }}
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
           />
         </View>
 
-        <View style={[styles.toolBar, { backgroundColor: cardBg }]}>
-          <TouchableOpacity 
-            style={[
-              styles.toolButton,
-              selectedTool === 'write' && styles.toolButtonActive
-            ]}
-            onPress={() => setSelectedTool('write')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.toolButtonContent}>
-              <IconSymbol 
-                ios_icon_name="pencil"
-                android_material_icon_name="edit"
-                size={20}
-                color={selectedTool === 'write' ? '#FFFFFF' : textColor}
-              />
-              <Text style={[
-                styles.toolButtonText,
-                { color: selectedTool === 'write' ? '#FFFFFF' : textColor }
-              ]}>
-                {writeLabel}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[
-              styles.toolButton,
-              selectedTool === 'create' && styles.toolButtonActive
-            ]}
-            onPress={() => setSelectedTool('create')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.toolButtonContent}>
-              <IconSymbol 
-                ios_icon_name="paintbrush.fill"
-                android_material_icon_name="brush"
-                size={20}
-                color={selectedTool === 'create' ? '#FFFFFF' : textColor}
-              />
-              <Text style={[
-                styles.toolButtonText,
-                { color: selectedTool === 'create' ? '#FFFFFF' : textColor }
-              ]}>
-                {createLabel}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
+        {/* Save Button */}
         <TouchableOpacity 
-          style={[styles.saveButton, (!artworkData.trim() || isSaving) && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={!artworkData.trim() || isSaving}
+          disabled={!canSave || isSaving}
           activeOpacity={0.8}
         >
           <Text style={styles.saveButtonText}>
@@ -187,6 +512,180 @@ export default function ArtworkCanvasScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Brush Picker Modal */}
+      <Modal
+        visible={showBrushPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBrushPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {brushPickerTitle}
+              </Text>
+              <TouchableOpacity onPress={() => setShowBrushPicker(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {/* Free Brushes */}
+              <Text style={[styles.brushSectionTitle, { color: textColor }]}>
+                {freeBrushesLabel}
+              </Text>
+              <View style={styles.brushGrid}>
+                {freeBrushes.map((brush) => {
+                  const isSelected = selectedBrush === brush.id;
+                  return (
+                    <TouchableOpacity
+                      key={brush.id}
+                      style={[
+                        styles.brushOption,
+                        { borderColor: colors.border },
+                        isSelected && styles.brushOptionSelected
+                      ]}
+                      onPress={() => handleBrushSelect(brush.id)}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol 
+                        ios_icon_name={brush.icon}
+                        android_material_icon_name={brush.materialIcon}
+                        size={24}
+                        color={isSelected ? colors.primary : textColor}
+                      />
+                      <Text style={[
+                        styles.brushOptionText,
+                        { color: isSelected ? colors.primary : textColor }
+                      ]}>
+                        {brush.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Premium Brushes */}
+              <View style={styles.premiumSection}>
+                <View style={styles.premiumHeader}>
+                  <Text style={[styles.brushSectionTitle, { color: textColor }]}>
+                    {premiumBrushesLabel}
+                  </Text>
+                  <View style={styles.premiumBadge}>
+                    <Text style={styles.premiumBadgeText}>
+                      {premiumBadge}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.brushGrid}>
+                  {premiumBrushes.map((brush) => {
+                    const isSelected = selectedBrush === brush.id;
+                    const isLocked = !isPremium;
+                    return (
+                      <TouchableOpacity
+                        key={brush.id}
+                        style={[
+                          styles.brushOption,
+                          { borderColor: colors.border },
+                          isSelected && styles.brushOptionSelected,
+                          isLocked && styles.brushOptionLocked
+                        ]}
+                        onPress={() => handleBrushSelect(brush.id)}
+                        activeOpacity={0.7}
+                      >
+                        {isLocked && (
+                          <View style={styles.lockIcon}>
+                            <IconSymbol 
+                              ios_icon_name="lock.fill"
+                              android_material_icon_name="lock"
+                              size={16}
+                              color={colors.textSecondary}
+                            />
+                          </View>
+                        )}
+                        <IconSymbol 
+                          ios_icon_name={brush.icon}
+                          android_material_icon_name={brush.materialIcon}
+                          size={24}
+                          color={isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor)}
+                        />
+                        <Text style={[
+                          styles.brushOptionText,
+                          { color: isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor) }
+                        ]}>
+                          {brush.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Color Picker Modal */}
+      <Modal
+        visible={showColorPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowColorPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {colorPickerTitle}
+              </Text>
+              <TouchableOpacity onPress={() => setShowColorPicker(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.colorGrid}>
+                {availableColors.map((color, index) => {
+                  const isSelected = selectedColor === color;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        isSelected && styles.colorOptionSelected
+                      ]}
+                      onPress={() => handleColorSelect(color)}
+                      activeOpacity={0.7}
+                    >
+                      {isSelected && (
+                        <IconSymbol 
+                          ios_icon_name="checkmark"
+                          android_material_icon_name="check"
+                          size={20}
+                          color={color === '#FFFFFF' ? '#000000' : '#FFFFFF'}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -224,50 +723,104 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
+    overflow: 'hidden',
   },
-  canvasInput: {
+  canvasPlaceholder: {
     flex: 1,
-    fontSize: typography.body,
-    lineHeight: 24,
-    fontFamily: 'System',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  toolBar: {
-    flexDirection: 'row',
+  canvasPlaceholderText: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    zIndex: 10,
+  },
+  uploadingText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  controlsBar: {
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    borderRadius: borderRadius.full,
-    padding: spacing.xs,
-    gap: spacing.xs,
+  },
+  controlsBarContent: {
+    gap: spacing.sm,
+    paddingRight: spacing.lg,
+  },
+  controlButton: {
+    minWidth: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs / 2,
+  },
+  controlButtonDisabled: {
+    opacity: 0.4,
+  },
+  controlButtonLabel: {
+    fontSize: typography.bodySmall - 2,
+    fontWeight: typography.medium,
+  },
+  colorPreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  sliderContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
-  toolButton: {
-    flex: 1,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  toolButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  toolButtonContent: {
+  sliderHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
+    marginBottom: spacing.xs,
   },
-  toolButtonText: {
+  sliderLabel: {
     fontSize: typography.bodySmall,
     fontWeight: typography.semibold,
+  },
+  sliderValue: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
   },
   saveButton: {
     backgroundColor: colors.primary,
@@ -284,5 +837,108 @@ const styles = StyleSheet.create({
     fontSize: typography.h4,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    maxHeight: '80%',
+    paddingBottom: spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+  },
+  modalScroll: {
+    padding: spacing.lg,
+  },
+  brushSectionTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
+  },
+  brushGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  brushOption: {
+    width: '30%',
+    aspectRatio: 1,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  brushOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  brushOptionLocked: {
+    opacity: 0.5,
+  },
+  brushOptionText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+    textAlign: 'center',
+  },
+  lockIcon: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+  },
+  premiumSection: {
+    marginTop: spacing.md,
+  },
+  premiumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  premiumBadge: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: borderRadius.sm,
+  },
+  premiumBadgeText: {
+    fontSize: typography.bodySmall - 2,
+    fontWeight: typography.bold,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  colorOption: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  colorOptionSelected: {
+    borderWidth: 3,
+    borderColor: colors.primary,
   },
 });
