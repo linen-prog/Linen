@@ -41,6 +41,16 @@ export default function LandingScreen() {
           <Text style={[styles.tagline, { color: textSecondaryColor }]}>
             A gentle space for reflection, prayer, and embodied awareness
           </Text>
+          
+          <TouchableOpacity 
+            style={styles.topContinueButton}
+            onPress={handleContinue}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.topContinueButtonText}>
+              Begin Your Journey
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.featuresGrid}>
@@ -244,6 +254,25 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 28,
     paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  topContinueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  topContinueButtonText: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
   featuresGrid: {
     gap: spacing.lg,

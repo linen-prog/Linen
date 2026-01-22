@@ -195,12 +195,6 @@ export default function AuthScreen() {
               )}
             </TouchableOpacity>
           </View>
-
-          <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: textSecondaryColor }]}>
-              No aggressive onboarding. No pressure. Just a gentle space for you to explore at your own pace.
-            </Text>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -294,15 +288,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  footer: {
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-  },
-  footerText: {
-    fontSize: typography.bodySmall,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontStyle: 'italic',
   },
 });
