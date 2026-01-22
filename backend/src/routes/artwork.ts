@@ -24,7 +24,10 @@ export function registerArtworkRoutes(app: App) {
     '/api/artwork/current',
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized access to artwork endpoint');
+        return;
+      }
 
       app.logger.info({ userId: session.user.id }, 'Fetching current artwork');
 
@@ -62,12 +65,12 @@ export function registerArtworkRoutes(app: App) {
 
         app.logger.info({ userId: session.user.id, artworkId: artwork[0].id }, 'Artwork retrieved');
 
+        // Return artwork with optional background image from photoUrls
         return reply.send({
-          id: artwork[0].id,
           artworkData: artwork[0].artworkData,
-          photoUrls: artwork[0].photoUrls || [],
-          createdAt: artwork[0].createdAt,
-          updatedAt: artwork[0].updatedAt,
+          backgroundImage: artwork[0].photoUrls && artwork[0].photoUrls.length > 0
+            ? artwork[0].photoUrls[0]
+            : undefined,
         });
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id }, 'Failed to fetch artwork');

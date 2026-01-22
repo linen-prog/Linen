@@ -326,6 +326,7 @@ export function registerCheckInRoutes(app: App) {
         return reply.send({
           response: responseText,
           messageId: assistantMsg.id,
+          conversationId: conversation.id,
         });
       } catch (error) {
         app.logger.error(
