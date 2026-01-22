@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -91,7 +92,7 @@ export default function RootLayout() {
         >
           <AuthProvider>
             <WidgetProvider>
-              <GestureHandlerRootView>
+              <GestureHandlerRootView style={{ flex: 1 }}>
               <Stack>
                 {/* Landing/Orientation screen */}
                 <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -101,6 +102,10 @@ export default function RootLayout() {
                 <Stack.Screen name="check-in" options={{ headerShown: false }} />
                 {/* Daily Gift screen */}
                 <Stack.Screen name="daily-gift" options={{ headerShown: false }} />
+                {/* Somatic Practice screen */}
+                <Stack.Screen name="somatic-practice" options={{ headerShown: false }} />
+                {/* Artwork Canvas screen */}
+                <Stack.Screen name="artwork-canvas" options={{ headerShown: false }} />
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               </Stack>
