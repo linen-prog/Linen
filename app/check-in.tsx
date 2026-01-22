@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
@@ -24,8 +24,6 @@ interface Prayer {
 
 export default function CheckInScreen() {
   console.log('User viewing Check-In screen');
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -81,12 +79,13 @@ export default function CheckInScreen() {
     startConversation();
   }, []);
 
-  const bgColor = isDark ? colors.backgroundDark : colors.background;
-  const textColor = isDark ? colors.textDark : colors.text;
-  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
-  const cardBg = isDark ? colors.cardDark : colors.card;
-  const inputBg = isDark ? colors.cardDark : colors.card;
-  const inputBorder = isDark ? colors.borderDark : colors.border;
+  // Always use light theme colors
+  const bgColor = colors.background;
+  const textColor = colors.text;
+  const textSecondaryColor = colors.textSecondary;
+  const cardBg = colors.card;
+  const inputBg = colors.card;
+  const inputBorder = colors.border;
 
   const checkForCrisis = async (message: string): Promise<boolean> => {
     try {
@@ -216,7 +215,7 @@ export default function CheckInScreen() {
               {messageContent}
             </Text>
           ) : (
-            <StreamdownRN theme={isDark ? 'dark' : 'light'}>
+            <StreamdownRN theme="light">
               {messageContent}
             </StreamdownRN>
           )}

@@ -6,10 +6,9 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
+import { Alert } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
-  DarkTheme,
   DefaultTheme,
   Theme,
   ThemeProvider,
@@ -29,7 +28,6 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -61,7 +59,8 @@ export default function RootLayout() {
     return null;
   }
 
-  const CustomDefaultTheme: Theme = {
+  // Always use light theme with cream colors
+  const CustomLightTheme: Theme = {
     ...DefaultTheme,
     dark: false,
     colors: {
@@ -74,23 +73,10 @@ export default function RootLayout() {
     },
   };
 
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: colors.primary,
-      background: colors.backgroundDark,
-      card: colors.cardDark,
-      text: colors.textDark,
-      border: colors.borderDark,
-      notification: colors.error,
-    },
-  };
   return (
     <>
-      <StatusBar style="auto" animated />
-        <ThemeProvider
-          value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-        >
+      <StatusBar style="dark" animated />
+        <ThemeProvider value={CustomLightTheme}>
           <AuthProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
@@ -110,7 +96,7 @@ export default function RootLayout() {
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               </Stack>
-              <SystemBars style={"auto"} />
+              <SystemBars style={"dark"} />
               </GestureHandlerRootView>
             </WidgetProvider>
           </AuthProvider>

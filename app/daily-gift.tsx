@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -46,8 +46,6 @@ interface Artwork {
 
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const router = useRouter();
 
   const [dailyGift, setDailyGift] = useState<DailyGift | null>(null);
@@ -115,12 +113,13 @@ export default function DailyGiftScreen() {
     loadArtwork();
   }, []);
 
-  const bgColor = isDark ? colors.backgroundDark : colors.background;
-  const textColor = isDark ? colors.textDark : colors.text;
-  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
-  const cardBg = isDark ? colors.cardDark : colors.card;
-  const inputBg = isDark ? colors.cardDark : colors.card;
-  const inputBorder = isDark ? colors.borderDark : colors.border;
+  // Always use light theme colors
+  const bgColor = colors.background;
+  const textColor = colors.text;
+  const textSecondaryColor = colors.textSecondary;
+  const cardBg = colors.card;
+  const inputBg = colors.card;
+  const inputBorder = colors.border;
 
   const handleSaveReflection = async () => {
     if (!reflectionText.trim() || !dailyGift || !dailyGift.id) {

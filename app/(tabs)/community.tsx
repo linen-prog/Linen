@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, useColorScheme, Platform, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -18,8 +18,6 @@ interface Post {
 
 export default function CommunityScreen() {
   console.log('User viewing Community screen');
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   const [selectedTab, setSelectedTab] = useState('feed');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -108,12 +106,13 @@ export default function CommunityScreen() {
     }
   };
 
-  const bgColor = isDark ? colors.backgroundDark : colors.background;
-  const textColor = isDark ? colors.textDark : colors.text;
-  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
-  const cardBg = isDark ? colors.cardDark : colors.card;
-  const inputBg = isDark ? colors.cardDark : colors.card;
-  const inputBorder = isDark ? colors.borderDark : colors.border;
+  // Always use light theme colors
+  const bgColor = colors.background;
+  const textColor = colors.text;
+  const textSecondaryColor = colors.textSecondary;
+  const cardBg = colors.card;
+  const inputBg = colors.card;
+  const inputBorder = colors.border;
 
   const tabs = [
     { id: 'feed', label: 'Feed', icon: 'home' as const },

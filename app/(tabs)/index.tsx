@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, useColorScheme, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -9,8 +9,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function HomeScreen() {
   console.log('User viewing Home screen');
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   const [checkInStreak, setCheckInStreak] = useState(0);
   const [reflectionStreak, setReflectionStreak] = useState(0);
@@ -42,10 +40,11 @@ export default function HomeScreen() {
     loadUserData();
   }, []);
 
-  const bgColor = isDark ? colors.backgroundDark : colors.background;
-  const textColor = isDark ? colors.textDark : colors.text;
-  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
-  const cardBg = isDark ? colors.cardDark : colors.card;
+  // Always use light theme colors
+  const bgColor = colors.background;
+  const textColor = colors.text;
+  const textSecondaryColor = colors.textSecondary;
+  const cardBg = colors.card;
 
   const handleCheckIn = () => {
     console.log('User tapped Check-In card');
