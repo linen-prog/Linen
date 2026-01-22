@@ -161,6 +161,12 @@ export function registerCheckInRoutes(app: App) {
 
       const { conversationId, message } = request.body;
 
+      // Validate input
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        app.logger.warn({ userId: session.user.id }, 'Empty message provided');
+        return reply.status(400).send({ error: 'Message cannot be empty' });
+      }
+
       app.logger.info(
         { userId: session.user.id, conversationId, messageLength: message.length },
         'Sending check-in message'
@@ -254,31 +260,48 @@ export function registerCheckInRoutes(app: App) {
           })
           .returning();
 
-        // Get conversation history for context
-        const messages = await app.db
+        // Get conversation history for context (excluding the user message we just added)
+        const allMessages = await app.db
           .select()
           .from(schema.checkInMessages)
           .where(eq(schema.checkInMessages.conversationId, conversation.id))
           .orderBy(schema.checkInMessages.createdAt);
 
-        // Use last 30 messages for AI context
-        const contextMessages = messages.slice(-30);
+        // Use last 30 messages for AI context, but convert to AI format
+        const contextMessages = allMessages
+          .filter((m) => m.id !== userMsg.id) // Exclude the current user message we just saved
+          .slice(-29); // Get last 29 messages (will add current user message, making 30 total)
 
-        // Convert to AI format (excluding the current user message for now)
+        // Convert to AI format and add current user message
         const aiMessages = contextMessages
-          .filter((m) => m.id !== userMsg.id) // Exclude current user message for now
           .map((m) => ({
             role: m.role as 'user' | 'assistant',
             content: m.content,
           }))
           .concat([{ role: 'user' as const, content: message }]);
 
-        // Generate response using GPT-5.2
+        // Generate response using GPT-5.2 via the gateway
+        app.logger.debug(
+          {
+            messageCount: aiMessages.length,
+            conversationId: conversation.id,
+          },
+          'Calling AI with conversation context'
+        );
+
         const { text: responseText } = await generateText({
-          model: gateway('openai/gpt-5.2'),
+          model: gateway('gpt-5.2-turbo'),
           system: LINEN_SYSTEM_PROMPT,
           messages: aiMessages,
         });
+
+        if (!responseText || responseText.trim().length === 0) {
+          app.logger.error(
+            { conversationId: conversation.id, userId: session.user.id },
+            'AI generated empty response'
+          );
+          return reply.status(500).send({ error: 'Failed to generate response from AI' });
+        }
 
         // Save assistant response
         const [assistantMsg] = await app.db
