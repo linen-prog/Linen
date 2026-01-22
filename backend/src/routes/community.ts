@@ -1,28 +1,40 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
 export function registerCommunityRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
-  // Get community posts by category
+  // Get community posts by category and optional contentType filter
   app.fastify.get(
     '/api/community/posts',
     async (
-      request: FastifyRequest<{ Querystring: { category?: string } }>,
+      request: FastifyRequest<{ Querystring: { category?: string; contentType?: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
-      const { category = 'feed' } = request.query;
+      const { category = 'feed', contentType } = request.query;
       const validCategory = (category as string) as 'feed' | 'wisdom' | 'care' | 'prayers';
+      const validContentType = contentType
+        ? (contentType as string) as 'companion' | 'daily-gift' | 'somatic' | 'manual'
+        : undefined;
 
-      app.logger.info({ category: validCategory }, 'Fetching community posts');
+      app.logger.info(
+        { category: validCategory, contentType: validContentType },
+        'Fetching community posts'
+      );
 
       try {
+        const whereConditions = [eq(schema.communityPosts.category, validCategory)];
+
+        if (validContentType) {
+          whereConditions.push(eq(schema.communityPosts.contentType, validContentType));
+        }
+
         let posts = await app.db
           .select()
           .from(schema.communityPosts)
-          .where(eq(schema.communityPosts.category, validCategory))
+          .where(and(...whereConditions))
           .orderBy(desc(schema.communityPosts.createdAt));
 
         // Get user ID if authenticated (without requiring auth)
@@ -40,6 +52,7 @@ export function registerCommunityRoutes(app: App) {
         const result = await Promise.all(
           posts.map(async (post) => {
             let userHasPrayed = false;
+            let userHasFlagged = false;
             if (userId) {
               const prayer = await app.db
                 .select()
@@ -53,6 +66,19 @@ export function registerCommunityRoutes(app: App) {
                 .limit(1);
 
               userHasPrayed = prayer.length > 0;
+
+              const flag = await app.db
+                .select()
+                .from(schema.flaggedPosts)
+                .where(
+                  and(
+                    eq(schema.flaggedPosts.postId, post.id),
+                    eq(schema.flaggedPosts.userId, userId)
+                  )
+                )
+                .limit(1);
+
+              userHasFlagged = flag.length > 0;
             }
 
             return {
@@ -61,21 +87,28 @@ export function registerCommunityRoutes(app: App) {
               isAnonymous: post.isAnonymous,
               category: post.category,
               content: post.content,
+              contentType: post.contentType,
+              scriptureReference: post.scriptureReference,
               prayerCount: post.prayerCount,
+              isFlagged: post.isFlagged,
               createdAt: post.createdAt,
               userHasPrayed,
+              userHasFlagged,
             };
           })
         );
 
         app.logger.info(
-          { category: validCategory, count: result.length },
+          { category: validCategory, contentType: validContentType, count: result.length },
           'Community posts retrieved'
         );
 
         return reply.send(result);
       } catch (error) {
-        app.logger.error({ err: error, category: validCategory }, 'Failed to fetch community posts');
+        app.logger.error(
+          { err: error, category: validCategory, contentType: validContentType },
+          'Failed to fetch community posts'
+        );
         throw error;
       }
     }
@@ -86,17 +119,24 @@ export function registerCommunityRoutes(app: App) {
     '/api/community/post',
     async (
       request: FastifyRequest<{
-        Body: { category: string; content: string; isAnonymous: boolean };
+        Body: {
+          category: string;
+          content: string;
+          isAnonymous: boolean;
+          contentType?: string;
+          scriptureReference?: string;
+        };
       }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { category, content, isAnonymous } = request.body;
+      const { category, content, isAnonymous, contentType = 'manual', scriptureReference } =
+        request.body;
 
       app.logger.info(
-        { userId: session.user.id, category, isAnonymous },
+        { userId: session.user.id, category, contentType, isAnonymous },
         'Creating community post'
       );
 
@@ -109,18 +149,20 @@ export function registerCommunityRoutes(app: App) {
             isAnonymous,
             category: category as any,
             content,
+            contentType: (contentType as any) || 'manual',
+            scriptureReference: scriptureReference || null,
           })
           .returning();
 
         app.logger.info(
-          { postId: post.id, userId: session.user.id },
+          { postId: post.id, userId: session.user.id, contentType },
           'Community post created'
         );
 
         return reply.send({ postId: post.id });
       } catch (error) {
         app.logger.error(
-          { err: error, userId: session.user.id, category },
+          { err: error, userId: session.user.id, category, contentType },
           'Failed to create community post'
         );
         throw error;
@@ -245,7 +287,10 @@ export function registerCommunityRoutes(app: App) {
             id: p.id,
             category: p.category,
             content: p.content,
+            contentType: p.contentType,
+            scriptureReference: p.scriptureReference,
             prayerCount: p.prayerCount,
+            isFlagged: p.isFlagged,
             createdAt: p.createdAt,
           }))
         );
@@ -253,6 +298,84 @@ export function registerCommunityRoutes(app: App) {
         app.logger.error(
           { err: error, userId: session.user.id },
           'Failed to fetch user posts'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Flag a post for moderation review
+  app.fastify.post(
+    '/api/community/flag/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { postId } = request.params;
+
+      app.logger.info(
+        { userId: session.user.id, postId },
+        'Flagging post for moderation'
+      );
+
+      try {
+        // Check if post exists
+        const post = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!post.length) {
+          app.logger.warn({ postId }, 'Post not found for flagging');
+          return reply.status(404).send({ error: 'Post not found' });
+        }
+
+        // Check if user has already flagged this post
+        const existingFlag = await app.db
+          .select()
+          .from(schema.flaggedPosts)
+          .where(
+            and(
+              eq(schema.flaggedPosts.postId, postId as any),
+              eq(schema.flaggedPosts.userId, session.user.id)
+            )
+          )
+          .limit(1);
+
+        if (existingFlag.length > 0) {
+          app.logger.warn(
+            { userId: session.user.id, postId },
+            'User has already flagged this post'
+          );
+          return reply.status(400).send({ error: 'You have already flagged this post' });
+        }
+
+        // Create flag record
+        await app.db.insert(schema.flaggedPosts).values({
+          postId: postId as any,
+          userId: session.user.id,
+        });
+
+        // Update post's isFlagged status (set to true if this is the first flag or if already flagged)
+        await app.db
+          .update(schema.communityPosts)
+          .set({ isFlagged: true })
+          .where(eq(schema.communityPosts.id, postId as any));
+
+        app.logger.info(
+          { userId: session.user.id, postId },
+          'Post flagged successfully'
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, postId },
+          'Failed to flag post'
         );
         throw error;
       }

@@ -85,6 +85,11 @@ export const communityPosts = pgTable('community_posts', {
   }).notNull(),
   content: text('content').notNull(),
   prayerCount: integer('prayer_count').default(0).notNull(),
+  contentType: text('content_type', {
+    enum: ['companion', 'daily-gift', 'somatic', 'manual'],
+  }).default('manual').notNull(),
+  scriptureReference: text('scripture_reference'),
+  isFlagged: boolean('is_flagged').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -175,3 +180,19 @@ export const userArtworks = pgTable('user_artworks', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
 });
+
+// Flagged posts table (tracks which users have flagged which posts)
+export const flaggedPosts = pgTable(
+  'flagged_posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('flagged_posts_user_post_unique').on(table.postId, table.userId)]
+);

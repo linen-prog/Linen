@@ -128,8 +128,19 @@ export async function initializeDatabase(db: any) {
         "category" text NOT NULL,
         "content" text NOT NULL,
         "prayer_count" integer NOT NULL DEFAULT 0,
+        "content_type" text NOT NULL DEFAULT 'manual',
+        "scripture_reference" text,
+        "is_flagged" boolean NOT NULL DEFAULT false,
         "created_at" timestamp NOT NULL DEFAULT now()
       )
+    `);
+
+    // Add columns to community_posts if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "community_posts"
+      ADD COLUMN IF NOT EXISTS "content_type" text DEFAULT 'manual',
+      ADD COLUMN IF NOT EXISTS "scripture_reference" text,
+      ADD COLUMN IF NOT EXISTS "is_flagged" boolean DEFAULT false
     `);
 
     await db.execute(sql`
@@ -196,6 +207,16 @@ export async function initializeDatabase(db: any) {
         "photo_urls" text[],
         "created_at" timestamp NOT NULL DEFAULT now(),
         "updated_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "flagged_posts" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "post_id" uuid NOT NULL REFERENCES "community_posts"("id") ON DELETE CASCADE,
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        UNIQUE("post_id", "user_id")
       )
     `);
 
