@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -33,11 +33,16 @@ export default function AuthScreen() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Register/login with backend - this creates the user if they don't exist
-      // The backend should return a token according to the API spec
+      console.log('Attempting to register/login user...');
       const response = await apiPost<{ 
         success: boolean;
         user: { id: string; email: string; name?: string };
@@ -48,11 +53,9 @@ export default function AuthScreen() {
         { email: email.trim(), firstName: firstName.trim() || undefined }
       );
 
-      console.log('Auth successful:', response);
+      console.log('Auth response received:', response);
 
       if (response.success && response.user) {
-        // Store the auth token
-        // If the backend returns a token, use it. Otherwise, use the user ID as a fallback
         const authToken = response.token || response.user.id;
         
         if (Platform.OS === 'web') {
@@ -62,9 +65,8 @@ export default function AuthScreen() {
         }
 
         console.log('User authenticated successfully:', response.user);
-        console.log('Auth token stored:', authToken ? 'Yes' : 'No');
+        console.log('Navigating to home screen...');
         
-        // Navigate to home
         router.replace('/(tabs)');
       } else {
         throw new Error('Invalid response from server');
@@ -73,9 +75,18 @@ export default function AuthScreen() {
       console.error('Auth failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error details:', errorMessage);
+      
+      let userMessage = 'We&apos;re having trouble connecting right now. Please try again in a moment.';
+      
+      if (errorMessage.includes('500')) {
+        userMessage = 'The server is being set up. Please wait a moment and try again.';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection.';
+      }
+      
       Alert.alert(
-        'Authentication Failed', 
-        'Unable to sign in. Please check your email and try again.'
+        'Connection Issue', 
+        userMessage
       );
       setIsLoading(false);
     }
@@ -121,6 +132,7 @@ export default function AuthScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -143,6 +155,7 @@ export default function AuthScreen() {
                 onChangeText={setFirstName}
                 autoCapitalize="words"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -152,9 +165,18 @@ export default function AuthScreen() {
               disabled={isLoading}
               activeOpacity={0.8}
             >
-              <Text style={styles.continueButtonText}>
-                {isLoading ? 'Please wait...' : 'Continue'}
-              </Text>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.continueButtonText}>
+                    Connecting...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.continueButtonText}>
+                  Continue
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -200,7 +222,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -236,6 +258,11 @@ const styles = StyleSheet.create({
     fontSize: typography.h4,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   footer: {
     marginTop: spacing.xl,

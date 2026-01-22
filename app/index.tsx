@@ -28,7 +28,6 @@ export default function LandingScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
         <View style={styles.heroSection}>
           <IconSymbol 
             ios_icon_name="heart.fill"
@@ -44,9 +43,7 @@ export default function LandingScreen() {
           </Text>
         </View>
 
-        {/* Feature Cards Grid */}
         <View style={styles.featuresGrid}>
-          {/* Scripture-Rooted Spiritual Companion */}
           <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -64,7 +61,6 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-          {/* Creative Expression */}
           <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -82,9 +78,6 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-
-
-          {/* Liturgical Grounding */}
           <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -102,7 +95,6 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-          {/* Compassionate Care Community */}
           <View style={[styles.featureCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -121,7 +113,6 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* Your Daily Practice Section */}
         <View style={styles.dailyPracticeSection}>
           <View style={styles.sectionHeader}>
             <IconSymbol 
@@ -141,7 +132,6 @@ export default function LandingScreen() {
             />
           </View>
 
-          {/* Check-In Card */}
           <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -162,7 +152,6 @@ export default function LandingScreen() {
             </Text>
           </View>
 
-          {/* Daily Gift Card */}
           <View style={[styles.practiceCard, { backgroundColor: cardBg }]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
               <IconSymbol 
@@ -182,11 +171,8 @@ export default function LandingScreen() {
               Ambient sounds (rain, ocean, forest, flowing stream, soft piano, wind chimes, Tibetan singing bowl) accompany your reflections.
             </Text>
           </View>
-
-
         </View>
 
-        {/* What Linen Is Not */}
         <View style={[styles.importantCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.importantTitle, { color: textColor }]}>
             What Linen Is Not
@@ -196,7 +182,6 @@ export default function LandingScreen() {
           </Text>
         </View>
 
-        {/* Care & Safety */}
         <View style={[styles.importantCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.importantTitle, { color: textColor }]}>
             Care & Safety
@@ -212,7 +197,6 @@ export default function LandingScreen() {
           </Text>
         </View>
 
-        {/* Continue Button */}
         <TouchableOpacity 
           style={styles.continueButton}
           onPress={handleContinue}
@@ -223,7 +207,6 @@ export default function LandingScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: textSecondaryColor }]}>
             By continuing, you acknowledge that Linen is a spiritual practice tool and not a substitute for professional medical or mental health care.
