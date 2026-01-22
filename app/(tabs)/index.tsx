@@ -61,6 +61,11 @@ export default function HomeScreen() {
     router.push('/community');
   };
 
+  const handleWeeklyRecap = () => {
+    console.log('User tapped Weekly Recap card');
+    router.push('/weekly-recap');
+  };
+
   const greetingText = firstName ? `Peace to you, ${firstName}` : 'Peace to you';
   const checkInStreakText = `${checkInStreak}`;
   const reflectionStreakText = `${reflectionStreak}`;
@@ -195,6 +200,35 @@ export default function HomeScreen() {
               </Text>
               <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
                 Share reflections and hold others in prayer in a gentle, safe space
+              </Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={24}
+              color={textSecondaryColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.mainCard, { backgroundColor: cardBg }]}
+            onPress={handleWeeklyRecap}
+            activeOpacity={0.7}
+          >
+            <View style={styles.mainCardIcon}>
+              <IconSymbol 
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar-today"
+                size={32}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.mainCardContent}>
+              <Text style={[styles.mainCardTitle, { color: textColor }]}>
+                Weekly Recap
+              </Text>
+              <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
+                Review your week&apos;s journey and prepare for the rhythm ahead
               </Text>
             </View>
             <IconSymbol 

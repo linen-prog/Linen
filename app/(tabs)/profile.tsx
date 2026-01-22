@@ -1,12 +1,14 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { GlassView } from "expo-glass-effect";
 import { useTheme } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -38,6 +40,32 @@ export default function ProfileScreen() {
             <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={20} color={theme.dark ? '#98989D' : '#666'} />
             <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
           </View>
+        </GlassView>
+
+        <GlassView style={[
+          styles.section,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => router.push('/recap-settings')}
+          >
+            <View style={styles.settingLeft}>
+              <IconSymbol ios_icon_name="calendar" android_material_icon_name="calendar-today" size={20} color={theme.dark ? '#98989D' : '#666'} />
+              <Text style={[styles.infoText, { color: theme.colors.text }]}>Weekly Recap Settings</Text>
+            </View>
+            <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={theme.dark ? '#98989D' : '#666'} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => router.push('/weekly-recap-history')}
+          >
+            <View style={styles.settingLeft}>
+              <IconSymbol ios_icon_name="clock" android_material_icon_name="history" size={20} color={theme.dark ? '#98989D' : '#666'} />
+              <Text style={[styles.infoText, { color: theme.colors.text }]}>Recap History</Text>
+            </View>
+            <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={theme.dark ? '#98989D' : '#666'} />
+          </TouchableOpacity>
         </GlassView>
       </ScrollView>
     </SafeAreaView>
@@ -87,5 +115,17 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 16,
     // color handled dynamically
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
 });
