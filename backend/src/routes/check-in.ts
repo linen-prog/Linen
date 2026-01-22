@@ -152,14 +152,14 @@ export function registerCheckInRoutes(app: App) {
     '/api/check-in/message',
     async (
       request: FastifyRequest<{
-        Body: { conversationId: string; message: string };
+        Body: { message: string; conversationId?: string };
       }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { conversationId, message } = request.body;
+      const { message, conversationId } = request.body;
 
       // Validate input
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
