@@ -47,7 +47,6 @@ export default function LandingScreen() {
   
   const dailyGiftTitle = 'Daily Gift';
   const dailyGiftText = 'Open scripture with contemplative reflection grounded in the liturgical calendar. Each week brings a new theme with seven curated scripture passages. Create art-based reflections using drawing tools, collage capabilities, or voice journaling. Tag your mood and body sensations to track patterns over time.';
-  const dailyGiftItalicText = 'Ambient sounds (rain, ocean, forest, flowing stream, soft piano, wind chimes, Tibetan singing bowl) accompany your reflections.';
   
   const whoLinenIsForTitle = 'Who Linen Is For';
   const whoLinenIsForBullet1 = 'Are ready to gently tend to old wounds and memories held in your body';
@@ -224,7 +223,6 @@ export default function LandingScreen() {
             <Text style={styles.practiceTitle}>{dailyGiftTitle}</Text>
           </View>
           <Text style={styles.practiceText}>{dailyGiftText}</Text>
-          <Text style={styles.practiceItalicText}>{dailyGiftItalicText}</Text>
         </View>
 
         <View style={styles.whoIsForSection}>
@@ -255,6 +253,14 @@ export default function LandingScreen() {
         <View style={styles.quoteSection}>
           <Text style={styles.quoteText}>{quoteText}</Text>
         </View>
+
+        <TouchableOpacity 
+          style={styles.beginButton}
+          onPress={handleContinue}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.beginButtonText}>{buttonText}</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -271,13 +277,13 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl + spacing.lg,
   },
   title: {
     fontSize: 48,
     fontWeight: typography.bold,
     color: colors.primary,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xl,
   },
   tagline: {
     fontSize: typography.h3,
