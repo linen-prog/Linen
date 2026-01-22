@@ -274,7 +274,7 @@ export default function DailyGiftScreen() {
               <IconSymbol 
                 ios_icon_name="sparkles"
                 android_material_icon_name="auto-awesome"
-                size={24}
+                size={20}
                 color={colors.accent}
               />
               <Text style={[styles.themeTitle, { color: textColor }]}>
@@ -283,7 +283,7 @@ export default function DailyGiftScreen() {
               <IconSymbol 
                 ios_icon_name="sparkles"
                 android_material_icon_name="auto-awesome"
-                size={24}
+                size={20}
                 color={colors.accent}
               />
             </View>
@@ -294,32 +294,13 @@ export default function DailyGiftScreen() {
           </View>
         )}
 
-        <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
-          <View style={styles.giftIcon}>
-            <IconSymbol 
-              ios_icon_name="gift.fill"
-              android_material_icon_name="card-giftcard"
-              size={48}
-              color={colors.accent}
-            />
-          </View>
-          
-          <Text style={[styles.scriptureText, { color: textColor }]}>
-            {scriptureDisplay}
-          </Text>
-          
-          <Text style={[styles.scriptureReference, { color: colors.primary }]}>
-            {referenceDisplay}
-          </Text>
-        </View>
-
         {!isLoadingSomatic && somaticExercise && (
           <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
                 ios_icon_name="figure.mind.and.body"
                 android_material_icon_name="self-improvement"
-                size={32}
+                size={28}
                 color={colors.primary}
               />
               <View style={styles.somaticHeaderText}>
@@ -363,52 +344,14 @@ export default function DailyGiftScreen() {
           </View>
         )}
 
-        <View style={[styles.artworkCard, { backgroundColor: cardBg }]}>
-          <View style={styles.artworkHeader}>
-            <IconSymbol 
-              ios_icon_name="paintbrush.fill"
-              android_material_icon_name="brush"
-              size={28}
-              color={colors.accent}
-            />
-            <Text style={[styles.artworkTitle, { color: textColor }]}>
-              CREATIVE EXPRESSION
-            </Text>
-          </View>
+        <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
+          <Text style={[styles.scriptureText, { color: textColor }]}>
+            {scriptureDisplay}
+          </Text>
           
-          {isLoadingArtwork ? (
-            <ActivityIndicator size="small" color={colors.primary} style={styles.artworkLoader} />
-          ) : artwork ? (
-            <View style={styles.artworkPreview}>
-              <Text style={[styles.artworkSavedText, { color: textSecondaryColor }]}>
-                You have created artwork for this week
-              </Text>
-              <TouchableOpacity 
-                style={styles.viewArtworkButton}
-                onPress={handleCreateArtwork}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.viewArtworkButtonText, { color: colors.primary }]}>
-                  View & Edit
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.artworkEmpty}>
-              <Text style={[styles.artworkEmptyText, { color: textSecondaryColor }]}>
-                Express this week&apos;s theme through art, color, or form
-              </Text>
-              <TouchableOpacity 
-                style={styles.createArtworkButton}
-                onPress={handleCreateArtwork}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.createArtworkButtonText}>
-                  Create Artwork
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <Text style={[styles.scriptureReference, { color: colors.primary }]}>
+            {referenceDisplay}
+          </Text>
         </View>
 
         <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
@@ -529,7 +472,7 @@ const styles = StyleSheet.create({
   },
   themeSection: {
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   seasonLabel: {
     fontSize: typography.bodySmall,
@@ -553,31 +496,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: spacing.md,
-  },
-  giftCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  giftIcon: {
-    marginBottom: spacing.lg,
-  },
-  scriptureText: {
-    fontSize: typography.h3,
-    fontWeight: typography.medium,
-    textAlign: 'center',
-    lineHeight: 32,
-    marginBottom: spacing.md,
-  },
-  scriptureReference: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    fontStyle: 'italic',
   },
   somaticCard: {
     borderRadius: borderRadius.lg,
@@ -644,64 +562,27 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.medium,
   },
-  artworkCard: {
+  giftCard: {
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.xl,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
   },
-  artworkHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  artworkTitle: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    letterSpacing: 1.2,
-  },
-  artworkLoader: {
-    marginVertical: spacing.md,
-  },
-  artworkPreview: {
-    alignItems: 'center',
-  },
-  artworkSavedText: {
-    fontSize: typography.body,
+  scriptureText: {
+    fontSize: typography.h3,
+    fontWeight: typography.medium,
     textAlign: 'center',
+    lineHeight: 32,
     marginBottom: spacing.md,
   },
-  viewArtworkButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  viewArtworkButtonText: {
+  scriptureReference: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
-  },
-  artworkEmpty: {
-    alignItems: 'center',
-  },
-  artworkEmptyText: {
-    fontSize: typography.body,
+    fontStyle: 'italic',
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 22,
-  },
-  createArtworkButton: {
-    backgroundColor: colors.accent,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  createArtworkButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
   },
   promptCard: {
     borderRadius: borderRadius.lg,
