@@ -356,9 +356,11 @@ export default function ArtworkCanvasScreen() {
     setShowColorPicker(false);
   };
 
-  // Convert stroke points to SVG path data
+  // Convert stroke points to SVG path data - FIXED: Added null check
   const strokeToPath = (stroke: DrawingStroke): string => {
-    if (stroke.points.length === 0) {
+    // Check if stroke or points is null/undefined
+    if (!stroke || !stroke.points || stroke.points.length === 0) {
+      console.log('[Canvas] Warning: Attempted to render stroke with no points');
       return '';
     }
     
@@ -460,18 +462,24 @@ export default function ArtworkCanvasScreen() {
                 )}
                 
                 {/* Render all strokes */}
-                {allStrokes.map((stroke, index) => (
-                  <Path
-                    key={index}
-                    d={strokeToPath(stroke)}
-                    stroke={stroke.color}
-                    strokeWidth={stroke.brushSize}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    opacity={stroke.isEraser ? 1 : 0.9}
-                  />
-                ))}
+                {allStrokes.map((stroke, index) => {
+                  const pathData = strokeToPath(stroke);
+                  if (!pathData) {
+                    return null;
+                  }
+                  return (
+                    <Path
+                      key={index}
+                      d={pathData}
+                      stroke={stroke.color}
+                      strokeWidth={stroke.brushSize}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      opacity={stroke.isEraser ? 1 : 0.9}
+                    />
+                  );
+                })}
               </Svg>
             )}
             
