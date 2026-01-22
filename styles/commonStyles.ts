@@ -8,12 +8,12 @@ export const colors = {
   primaryLight: '#2D7A68',
   primaryDark: '#0F3D32',
   
-  // Background - Warm off-white
-  background: '#FAF8F5',
+  // Background - Cream
+  background: '#FFF8E7',
   backgroundDark: '#1C1C1E',
   
   // Card - Soft white with warmth
-  card: '#FFFFFF',
+  card: '#FFFEF9',
   cardDark: '#2C2C2E',
   
   // Text
@@ -28,7 +28,7 @@ export const colors = {
   accentLight: '#E8C9A3',
   
   // Functional
-  border: '#E8E5E0',
+  border: '#F0E6D2',
   borderDark: '#3A3A3C',
   shadow: 'rgba(27, 94, 79, 0.08)',
   shadowDark: 'rgba(0, 0, 0, 0.3)',
