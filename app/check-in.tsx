@@ -381,7 +381,7 @@ export default function CheckInScreen() {
                 <IconSymbol 
                   ios_icon_name="phone.fill"
                   android_material_icon_name="phone"
-                  size={20}
+                  size={24}
                   color="#FFFFFF"
                 />
                 <Text style={styles.crisisButtonText}>
@@ -396,7 +396,7 @@ export default function CheckInScreen() {
                 <IconSymbol 
                   ios_icon_name="message.fill"
                   android_material_icon_name="message"
-                  size={20}
+                  size={24}
                   color="#FFFFFF"
                 />
                 <Text style={styles.crisisButtonText}>
@@ -676,20 +676,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   crisisButtons: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    gap: spacing.xl,
+    marginBottom: spacing.xl,
   },
   crisisButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.md,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.lg,
-    gap: spacing.sm,
+    gap: spacing.md,
+    minHeight: 60,
   },
   crisisButtonText: {
     color: '#FFFFFF',
-    fontSize: typography.body,
+    fontSize: typography.h4,
     fontWeight: typography.semibold,
   },
   acknowledgeButton: {
