@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, TextInput, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -14,23 +14,29 @@ interface Post {
   prayerCount: number;
   createdAt: Date;
   userHasPrayed: boolean;
+  contentType?: 'companion' | 'daily-gift' | 'somatic' | 'manual';
+  scriptureReference?: string;
+  isFlagged?: boolean;
 }
 
 export default function CommunityScreen() {
   console.log('User viewing Community screen');
 
   const [selectedTab, setSelectedTab] = useState('feed');
+  const [selectedContentFilter, setSelectedContentFilter] = useState<'all' | 'companion' | 'daily-gift' | 'somatic'>('all');
   const [posts, setPosts] = useState<Post[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostAnonymous, setNewPostAnonymous] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadPosts(selectedTab);
-  }, [selectedTab]);
+  }, [selectedTab, selectedContentFilter]);
 
   const loadPosts = async (category: string) => {
-    console.log('Loading posts for category:', category);
+    console.log('Loading posts for category:', category, 'with filter:', selectedContentFilter);
+    setIsLoading(true);
     
     try {
       const { authenticatedGet } = await import('@/utils/api');
@@ -40,6 +46,9 @@ export default function CommunityScreen() {
         endpoint = '/api/community/my-posts';
       } else {
         endpoint = `/api/community/posts?category=${category}`;
+        if (selectedContentFilter !== 'all') {
+          endpoint += `&contentType=${selectedContentFilter}`;
+        }
       }
       
       const response = await authenticatedGet<Post[]>(endpoint);
@@ -50,13 +59,14 @@ export default function CommunityScreen() {
       })));
     } catch (error) {
       console.error('Failed to load posts:', error);
-      // Use empty array on error
       setPosts([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePray = async (postId: string) => {
-    console.log('User toggling prayer for post:', postId);
+    console.log('User holding post in prayer:', postId);
     
     try {
       const { authenticatedPost } = await import('@/utils/api');
@@ -79,6 +89,33 @@ export default function CommunityScreen() {
     }
   };
 
+  const handleFlagPost = async (postId: string) => {
+    console.log('User flagging post:', postId);
+    
+    Alert.alert(
+      'Flag Content',
+      'This will report the content to moderators for review. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Flag',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { authenticatedPost } = await import('@/utils/api');
+              await authenticatedPost(`/api/community/flag/${postId}`, {});
+              Alert.alert('Thank you', 'This content has been flagged for review.');
+              loadPosts(selectedTab);
+            } catch (error) {
+              console.error('Failed to flag post:', error);
+              Alert.alert('Error', 'Failed to flag content. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleCreatePost = async () => {
     if (!newPostContent.trim()) {
       return;
@@ -89,9 +126,10 @@ export default function CommunityScreen() {
     try {
       const { authenticatedPost } = await import('@/utils/api');
       const response = await authenticatedPost<{ postId: string }>('/api/community/post', {
-        category: selectedTab,
+        category: selectedTab === 'feed' ? 'wisdom' : selectedTab,
         content: newPostContent.trim(),
         isAnonymous: newPostAnonymous,
+        contentType: 'manual',
       });
       
       console.log('Post created:', response);
@@ -102,11 +140,10 @@ export default function CommunityScreen() {
       loadPosts(selectedTab);
     } catch (error) {
       console.error('Failed to create post:', error);
-      // Optionally show an error message to the user
+      Alert.alert('Error', 'Failed to create post. Please try again.');
     }
   };
 
-  // Always use light theme colors
   const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
@@ -115,12 +152,45 @@ export default function CommunityScreen() {
   const inputBorder = colors.border;
 
   const tabs = [
-    { id: 'feed', label: 'Feed', icon: 'home' as const },
+    { id: 'feed', label: 'All Posts', icon: 'home' as const },
     { id: 'wisdom', label: 'Wisdom', icon: 'menu-book' as const },
     { id: 'care', label: 'Care', icon: 'favorite' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
     { id: 'my-shared', label: 'My Shared', icon: 'person' as const },
   ];
+
+  const contentFilters = [
+    { id: 'all' as const, label: 'All', icon: 'apps' as const },
+    { id: 'companion' as const, label: 'AI Companion', icon: 'chat' as const },
+    { id: 'daily-gift' as const, label: 'Daily Gift', icon: 'auto-stories' as const },
+    { id: 'somatic' as const, label: 'Experiences', icon: 'self-improvement' as const },
+  ];
+
+  const getContentTypeIcon = (contentType?: string) => {
+    switch (contentType) {
+      case 'companion':
+        return 'chat';
+      case 'daily-gift':
+        return 'auto-stories';
+      case 'somatic':
+        return 'self-improvement';
+      default:
+        return 'edit';
+    }
+  };
+
+  const getContentTypeLabel = (contentType?: string) => {
+    switch (contentType) {
+      case 'companion':
+        return 'AI Companion';
+      case 'daily-gift':
+        return 'Daily Gift';
+      case 'somatic':
+        return 'Somatic Practice';
+      default:
+        return 'Reflection';
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -139,6 +209,43 @@ export default function CommunityScreen() {
             color={colors.primary}
           />
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.filtersSection}>
+        <ScrollView 
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.contentFiltersContainer}
+        >
+          {contentFilters.map(filter => {
+            const isSelected = selectedContentFilter === filter.id;
+            const filterLabel = filter.label;
+            
+            return (
+              <TouchableOpacity
+                key={filter.id}
+                style={[
+                  styles.contentFilter,
+                  isSelected && [styles.contentFilterSelected, { backgroundColor: colors.primary }]
+                ]}
+                onPress={() => setSelectedContentFilter(filter.id)}
+              >
+                <IconSymbol 
+                  ios_icon_name={filter.icon}
+                  android_material_icon_name={filter.icon}
+                  size={18}
+                  color={isSelected ? '#FFFFFF' : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.contentFilterText,
+                  isSelected ? styles.contentFilterTextSelected : { color: textSecondaryColor }
+                ]}>
+                  {filterLabel}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView 
@@ -180,53 +287,110 @@ export default function CommunityScreen() {
         contentContainerStyle={styles.postsContainer}
         showsVerticalScrollIndicator={false}
       >
-        {posts.map(post => {
-          const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName;
-          const prayerCountText = `${post.prayerCount}`;
-          const prayerLabel = post.prayerCount === 1 ? 'prayer' : 'prayers';
-          
-          return (
-            <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
-              <View style={styles.postHeader}>
-                <View style={styles.postAuthor}>
-                  <IconSymbol 
-                    ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
-                    android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
-                    size={20}
-                    color={textSecondaryColor}
-                  />
-                  <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
-                    {authorDisplay}
+        {isLoading ? (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+              Loading...
+            </Text>
+          </View>
+        ) : posts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <IconSymbol 
+              ios_icon_name="hands.sparkles"
+              android_material_icon_name="favorite-border"
+              size={48}
+              color={textSecondaryColor}
+            />
+            <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+              No posts yet in this category
+            </Text>
+            <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
+              Be the first to share
+            </Text>
+          </View>
+        ) : (
+          posts.map(post => {
+            const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName;
+            const prayerCountText = `${post.prayerCount}`;
+            const contentTypeLabel = getContentTypeLabel(post.contentType);
+            const contentTypeIcon = getContentTypeIcon(post.contentType);
+            
+            return (
+              <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
+                <View style={styles.postHeader}>
+                  <View style={styles.postAuthor}>
+                    <IconSymbol 
+                      ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
+                      android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                    <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
+                      {authorDisplay}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.flagButton}
+                    onPress={() => handleFlagPost(post.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="flag"
+                      android_material_icon_name="flag"
+                      size={18}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {post.contentType && (
+                  <View style={styles.contentTypeBadge}>
+                    <IconSymbol 
+                      ios_icon_name={contentTypeIcon}
+                      android_material_icon_name={contentTypeIcon}
+                      size={14}
+                      color={colors.primary}
+                    />
+                    <Text style={[styles.contentTypeText, { color: colors.primary }]}>
+                      {contentTypeLabel}
+                    </Text>
+                  </View>
+                )}
+
+                {post.scriptureReference && (
+                  <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
+                    {post.scriptureReference}
                   </Text>
+                )}
+
+                <Text style={[styles.postContent, { color: textColor }]}>
+                  {post.content}
+                </Text>
+
+                <View style={styles.postFooter}>
+                  <TouchableOpacity 
+                    style={styles.prayButton}
+                    onPress={() => handlePray(post.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name={post.userHasPrayed ? 'hands.sparkles.fill' : 'hands.sparkles'}
+                      android_material_icon_name={post.userHasPrayed ? 'favorite' : 'favorite-border'}
+                      size={22}
+                      color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
+                    />
+                    <View style={styles.prayTextContainer}>
+                      <Text style={[styles.prayCount, { color: textColor }]}>
+                        {prayerCountText}
+                      </Text>
+                      <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
+                        Held in Prayer
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <Text style={[styles.postContent, { color: textColor }]}>
-                {post.content}
-              </Text>
-
-              <View style={styles.postFooter}>
-                <TouchableOpacity 
-                  style={styles.prayButton}
-                  onPress={() => handlePray(post.id)}
-                >
-                  <IconSymbol 
-                    ios_icon_name={post.userHasPrayed ? 'hands.sparkles.fill' : 'hands.sparkles'}
-                    android_material_icon_name={post.userHasPrayed ? 'favorite' : 'favorite-border'}
-                    size={20}
-                    color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
-                  />
-                  <Text style={[styles.prayCount, { color: textSecondaryColor }]}>
-                    {prayerCountText}
-                  </Text>
-                  <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
-                    {prayerLabel}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollView>
 
       <Modal
@@ -260,6 +424,24 @@ export default function CommunityScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent}>
+            <View style={[styles.guidelinesBox, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+              <Text style={[styles.guidelinesTitle, { color: textColor }]}>
+                Community Guidelines
+              </Text>
+              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
+                • Share vulnerably and authentically
+              </Text>
+              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
+                • No advice-giving or correction
+              </Text>
+              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
+                • Hold others in prayer and witness
+              </Text>
+              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
+                • Respect privacy and anonymity
+              </Text>
+            </View>
+
             <TextInput
               style={[styles.modalInput, { 
                 backgroundColor: inputBg,
@@ -288,6 +470,10 @@ export default function CommunityScreen() {
                 Post anonymously
               </Text>
             </TouchableOpacity>
+
+            <Text style={[styles.privacyNote, { color: textSecondaryColor }]}>
+              Your post will be visible to all community members. You can adjust your privacy settings in your profile.
+            </Text>
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -316,6 +502,35 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  filtersSection: {
+    marginBottom: spacing.sm,
+  },
+  contentFiltersContainer: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.xs,
+  },
+  contentFilter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: 4,
+  },
+  contentFilterSelected: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  contentFilterText: {
+    fontSize: typography.caption,
+    fontWeight: typography.medium,
+  },
+  contentFilterTextSelected: {
+    color: '#FFFFFF',
   },
   tabsContainer: {
     paddingHorizontal: spacing.lg,
@@ -347,7 +562,20 @@ const styles = StyleSheet.create({
   postsContainer: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
     gap: spacing.md,
+  },
+  emptyStateText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  emptyStateSubtext: {
+    fontSize: typography.bodySmall,
   },
   postCard: {
     borderRadius: borderRadius.lg,
@@ -359,6 +587,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.sm,
   },
   postAuthor: {
@@ -370,9 +601,29 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
     fontWeight: typography.medium,
   },
+  flagButton: {
+    padding: spacing.xs,
+  },
+  contentTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: spacing.xs,
+  },
+  contentTypeText: {
+    fontSize: typography.caption,
+    fontWeight: typography.medium,
+  },
+  scriptureReference: {
+    fontSize: typography.caption,
+    fontWeight: typography.medium,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   postContent: {
     fontSize: typography.body,
-    lineHeight: 24,
+    lineHeight: 26,
     marginBottom: spacing.md,
   },
   postFooter: {
@@ -382,14 +633,17 @@ const styles = StyleSheet.create({
   prayButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  prayTextContainer: {
+    flexDirection: 'column',
   },
   prayCount: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.body,
     fontWeight: typography.semibold,
   },
   prayLabel: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.caption,
   },
   modalContainer: {
     flex: 1,
@@ -420,11 +674,27 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: spacing.lg,
   },
+  guidelinesBox: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+  },
+  guidelinesTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.xs,
+  },
+  guidelinesText: {
+    fontSize: typography.caption,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
   modalInput: {
     borderRadius: borderRadius.md,
     padding: spacing.md,
     fontSize: typography.body,
-    lineHeight: 22,
+    lineHeight: 24,
     minHeight: 200,
     borderWidth: 1,
     textAlignVertical: 'top',
@@ -434,8 +704,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   anonymousLabel: {
     fontSize: typography.body,
+  },
+  privacyNote: {
+    fontSize: typography.caption,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 });

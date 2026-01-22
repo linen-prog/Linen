@@ -53,6 +53,7 @@ export default function DailyGiftScreen() {
   const [weeklyTheme, setWeeklyTheme] = useState<WeeklyTheme | null>(null);
   const [reflectionText, setReflectionText] = useState('');
   const [shareToComm, setShareToComm] = useState(false);
+  const [shareAnonymously, setShareAnonymously] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
 
@@ -128,7 +129,8 @@ export default function DailyGiftScreen() {
 
     console.log('[DailyGift] User saving reflection', { 
       reflectionText, 
-      shareToComm, 
+      shareToComm,
+      shareAnonymously,
       responseMode,
       selectedMoods,
       selectedSensations 
@@ -140,6 +142,7 @@ export default function DailyGiftScreen() {
         dailyGiftId: dailyGift.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
+        isAnonymous: shareAnonymously,
         responseMode,
         moods: selectedMoods,
         sensations: selectedSensations,
@@ -285,6 +288,7 @@ export default function DailyGiftScreen() {
   const reflectionPlaceholder = 'Write, draw with words, or simply notice what arises...';
   const shareToggleLabel = 'Share to Community';
   const shareToggleDescription = 'Others can hold your reflection in prayer';
+  const shareAnonymouslyLabel = 'Share anonymously';
   const reflectionPromptTitle = 'Reflection Question';
   const somaticPromptTitle = 'Somatic Prompt';
   const somaticTitle = 'WEEKLY SOMATIC INVITATION';
@@ -728,6 +732,28 @@ export default function DailyGiftScreen() {
               />
             </View>
 
+            {/* Share Anonymously Toggle (only shown if sharing) */}
+            {shareToComm && (
+              <TouchableOpacity 
+                style={styles.anonymousToggle}
+                onPress={() => {
+                  console.log('[DailyGift] User toggled share anonymously:', !shareAnonymously);
+                  setShareAnonymously(!shareAnonymously);
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name={shareAnonymously ? 'checkmark.square.fill' : 'square'}
+                  android_material_icon_name={shareAnonymously ? 'check-box' : 'check-box-outline-blank'}
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                  {shareAnonymouslyLabel}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Save Button */}
             <TouchableOpacity 
               style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
@@ -1061,6 +1087,15 @@ const styles = StyleSheet.create({
   shareToggleDescription: {
     fontSize: typography.bodySmall,
     lineHeight: 18,
+  },
+  anonymousToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  anonymousLabel: {
+    fontSize: typography.body,
   },
   saveButton: {
     backgroundColor: colors.primary,
