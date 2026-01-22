@@ -50,7 +50,7 @@ export default function AuthScreen() {
       const response = await apiPost<{ 
         success: boolean;
         user: { id: string; email: string; name?: string; createdAt?: string };
-        token?: string;
+        token: string;
         isNewUser: boolean;
       }>(
         '/api/auth/register',
@@ -59,14 +59,11 @@ export default function AuthScreen() {
 
       console.log('Auth response received:', response);
 
-      if (response.success && response.user) {
-        // Use user ID as the bearer token for this simple auth system
-        const authToken = response.user.id;
+      if (response.success && response.user && response.token) {
+        console.log('[Auth] Storing bearer token from backend');
         
-        console.log('[Auth] Storing bearer token:', authToken);
-        
-        // Store token in secure storage
-        await storeBearerToken(authToken);
+        // Store the session token from backend
+        await storeBearerToken(response.token);
         
         // Store user data for persistence across hot reloads
         await storeUserData(response.user);
@@ -83,7 +80,7 @@ export default function AuthScreen() {
         
         router.replace('/(tabs)');
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error('Invalid response from server - missing token');
       }
     } catch (error) {
       console.error('Auth failed:', error);
