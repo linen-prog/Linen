@@ -1,4 +1,4 @@
-import { createApplication } from "@specific-dev/framework";
+import { createApplication, runMigrations } from "@specific-dev/framework";
 import * as appSchema from './db/schema.js';
 import * as authSchema from './db/auth-schema.js';
 import { registerAuthRoutes } from './routes/auth.js';
@@ -9,6 +9,14 @@ import { registerStreaksRoutes } from './routes/streaks.js';
 import { registerSomaticRoutes } from './routes/somatic.js';
 
 const schema = { ...appSchema, ...authSchema };
+
+// Run migrations first to ensure all tables exist
+try {
+  await runMigrations();
+} catch (error) {
+  console.error('Failed to run migrations:', error);
+  process.exit(1);
+}
 
 // Create application with schema for full database type support
 export const app = await createApplication(schema);
