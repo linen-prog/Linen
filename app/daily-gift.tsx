@@ -36,14 +36,6 @@ interface SomaticExercise {
   instructions: string;
 }
 
-interface Artwork {
-  id: string;
-  artworkData: string;
-  photoUrls: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
   const router = useRouter();
@@ -54,10 +46,16 @@ export default function DailyGiftScreen() {
   const [shareToComm, setShareToComm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
-  const [isLoadingTheme, setIsLoadingTheme] = useState(true);
 
-  const [artwork, setArtwork] = useState<Artwork | null>(null);
-  const [isLoadingArtwork, setIsLoadingArtwork] = useState(true);
+  // Response mode: 'text', 'art', or 'voice'
+  const [responseMode, setResponseMode] = useState<'text' | 'art' | 'voice'>('text');
+
+  // Mood and body sensation tags
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
+
+  const moodOptions = ['Peaceful', 'Anxious', 'Grateful', 'Heavy', 'Hopeful', 'Uncertain', 'Joyful', 'Weary'];
+  const sensationOptions = ['Warmth', 'Tension', 'Lightness', 'Heaviness', 'Expansion', 'Constriction', 'Tingling', 'Numbness'];
 
   useEffect(() => {
     const loadDailyGift = async () => {
@@ -67,6 +65,7 @@ export default function DailyGiftScreen() {
         
         console.log('[DailyGift] Daily gift loaded:', response);
         setDailyGift(response);
+        setWeeklyTheme(response.weeklyTheme);
         setIsLoadingGift(false);
       } catch (error) {
         console.error('[DailyGift] Failed to load daily gift:', error);
@@ -77,43 +76,6 @@ export default function DailyGiftScreen() {
     loadDailyGift();
   }, []);
 
-  useEffect(() => {
-    const loadWeeklyTheme = async () => {
-      try {
-        console.log('[DailyGift] Loading weekly theme...');
-        const response = await authenticatedGet<WeeklyTheme>('/api/weekly-theme/current');
-        
-        console.log('[DailyGift] Weekly theme loaded:', response);
-        setWeeklyTheme(response);
-        setIsLoadingTheme(false);
-      } catch (error) {
-        console.error('[DailyGift] Failed to load weekly theme:', error);
-        setIsLoadingTheme(false);
-      }
-    };
-
-    loadWeeklyTheme();
-  }, []);
-
-  useEffect(() => {
-    const loadArtwork = async () => {
-      try {
-        console.log('[DailyGift] Loading artwork...');
-        const response = await authenticatedGet<Artwork | null>('/api/artwork/current');
-        
-        console.log('[DailyGift] Artwork loaded:', response);
-        setArtwork(response);
-        setIsLoadingArtwork(false);
-      } catch (error) {
-        console.error('[DailyGift] Failed to load artwork:', error);
-        setIsLoadingArtwork(false);
-      }
-    };
-
-    loadArtwork();
-  }, []);
-
-  // Always use light theme colors
   const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
@@ -127,7 +89,13 @@ export default function DailyGiftScreen() {
       return;
     }
 
-    console.log('[DailyGift] User saving reflection', { reflectionText, shareToComm });
+    console.log('[DailyGift] User saving reflection', { 
+      reflectionText, 
+      shareToComm, 
+      responseMode,
+      selectedMoods,
+      selectedSensations 
+    });
     setIsLoading(true);
 
     try {
@@ -135,6 +103,9 @@ export default function DailyGiftScreen() {
         dailyGiftId: dailyGift.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
+        responseMode,
+        moods: selectedMoods,
+        sensations: selectedSensations,
       });
       
       console.log('[DailyGift] Reflection saved successfully:', response);
@@ -163,13 +134,23 @@ export default function DailyGiftScreen() {
     }
   };
 
-  const handleSkipPractice = () => {
-    console.log('[DailyGift] User tapped Skip for somatic exercise');
-  };
-
   const handleCreateArtwork = () => {
     console.log('[DailyGift] User tapped Create Artwork');
     router.push('/artwork-canvas');
+  };
+
+  const toggleMood = (mood: string) => {
+    console.log('[DailyGift] User toggled mood:', mood);
+    setSelectedMoods(prev => 
+      prev.includes(mood) ? prev.filter(m => m !== mood) : [...prev, mood]
+    );
+  };
+
+  const toggleSensation = (sensation: string) => {
+    console.log('[DailyGift] User toggled sensation:', sensation);
+    setSelectedSensations(prev => 
+      prev.includes(sensation) ? prev.filter(s => s !== sensation) : [...prev, sensation]
+    );
   };
 
   if (isLoadingGift) {
@@ -233,9 +214,11 @@ export default function DailyGiftScreen() {
     );
   }
 
+  // Prepare display variables (ATOMIC JSX)
   const scriptureDisplay = dailyGift.scriptureText;
   const referenceDisplay = dailyGift.scriptureReference;
-  const promptDisplay = dailyGift.reflectionPrompt;
+  const reflectionPromptDisplay = dailyGift.reflectionPrompt;
+  const somaticPromptDisplay = dailyGift.somaticPrompt || 'Where in your body do you feel this scripture? What sensations arise?';
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
 
   const hasWeeklyTheme = weeklyTheme !== null;
@@ -251,15 +234,29 @@ export default function DailyGiftScreen() {
 
   const completedTitle = 'Reflection Saved';
   const completedText = 'Your reflection has been saved. Return tomorrow for a new gift.';
-  const reflectionTitle = 'Your Reflection';
+  const reflectionTitle = 'Your Response';
   const reflectionSubtitle = 'Take your time. There\'s no rush.';
   const reflectionPlaceholder = 'Write, draw with words, or simply notice what arises...';
   const shareToggleLabel = 'Share to Community';
   const shareToggleDescription = 'Others can hold your reflection in prayer';
-  const promptTitle = 'Reflection Prompt';
+  const reflectionPromptTitle = 'Reflection Question';
+  const somaticPromptTitle = 'Somatic Prompt';
   const somaticTitle = 'WEEKLY SOMATIC INVITATION';
   const beginButtonText = 'Begin Practice';
   const skipButtonText = 'Skip';
+  const responseModeTitle = 'How would you like to respond?';
+  const moodTagsTitle = 'How are you feeling?';
+  const sensationTagsTitle = 'What do you notice in your body?';
+  const moodTagsSubtitle = 'Select all that apply';
+  const sensationTagsSubtitle = 'Select all that apply';
+
+  const textModeLabel = 'Text';
+  const artModeLabel = 'Art';
+  const voiceModeLabel = 'Voice';
+
+  const textModeActive = responseMode === 'text';
+  const artModeActive = responseMode === 'art';
+  const voiceModeActive = responseMode === 'voice';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -279,6 +276,7 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Weekly Theme Section */}
         {hasWeeklyTheme && (
           <View style={styles.themeSection}>
             <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
@@ -309,7 +307,8 @@ export default function DailyGiftScreen() {
           </View>
         )}
 
-        {!isLoadingTheme && hasSomaticExercise && (
+        {/* Weekly Somatic Exercise (Optional) */}
+        {hasSomaticExercise && (
           <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
@@ -348,7 +347,7 @@ export default function DailyGiftScreen() {
               
               <TouchableOpacity 
                 style={styles.skipButton}
-                onPress={handleSkipPractice}
+                onPress={() => console.log('[DailyGift] User skipped somatic practice')}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.skipButtonText, { color: textSecondaryColor }]}>
@@ -359,6 +358,7 @@ export default function DailyGiftScreen() {
           </View>
         )}
 
+        {/* Scripture Card */}
         <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.scriptureText, { color: textColor }]}>
             {scriptureDisplay}
@@ -369,15 +369,27 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
+        {/* Reflection Prompt Card */}
         <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.promptTitle, { color: textColor }]}>
-            {promptTitle}
+            {reflectionPromptTitle}
           </Text>
           <Text style={[styles.promptText, { color: textSecondaryColor }]}>
-            {promptDisplay}
+            {reflectionPromptDisplay}
           </Text>
         </View>
 
+        {/* Somatic Prompt Card */}
+        <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
+          <Text style={[styles.promptTitle, { color: textColor }]}>
+            {somaticPromptTitle}
+          </Text>
+          <Text style={[styles.promptText, { color: textSecondaryColor }]}>
+            {somaticPromptDisplay}
+          </Text>
+        </View>
+
+        {/* Response Section (if not yet reflected) */}
         {!dailyGift.hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
             <Text style={[styles.reflectionTitle, { color: textColor }]}>
@@ -386,22 +398,187 @@ export default function DailyGiftScreen() {
             <Text style={[styles.reflectionSubtitle, { color: textSecondaryColor }]}>
               {reflectionSubtitle}
             </Text>
-            
-            <TextInput
-              style={[styles.reflectionInput, { 
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-                color: textColor 
-              }]}
-              placeholder={reflectionPlaceholder}
-              placeholderTextColor={textSecondaryColor}
-              value={reflectionText}
-              onChangeText={setReflectionText}
-              multiline
-              numberOfLines={8}
-              textAlignVertical="top"
-            />
 
+            {/* Response Mode Selector */}
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              {responseModeTitle}
+            </Text>
+            <View style={styles.responseModeButtons}>
+              <TouchableOpacity 
+                style={[
+                  styles.modeButton, 
+                  textModeActive && styles.modeButtonActive
+                ]}
+                onPress={() => {
+                  console.log('[DailyGift] User selected text response mode');
+                  setResponseMode('text');
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="text.alignleft"
+                  android_material_icon_name="text-fields"
+                  size={24}
+                  color={textModeActive ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.modeButtonText, 
+                  { color: textModeActive ? colors.primary : textSecondaryColor }
+                ]}>
+                  {textModeLabel}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[
+                  styles.modeButton, 
+                  artModeActive && styles.modeButtonActive
+                ]}
+                onPress={() => {
+                  console.log('[DailyGift] User selected art response mode');
+                  setResponseMode('art');
+                  handleCreateArtwork();
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="paintbrush"
+                  android_material_icon_name="brush"
+                  size={24}
+                  color={artModeActive ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.modeButtonText, 
+                  { color: artModeActive ? colors.primary : textSecondaryColor }
+                ]}>
+                  {artModeLabel}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[
+                  styles.modeButton, 
+                  voiceModeActive && styles.modeButtonActive
+                ]}
+                onPress={() => {
+                  console.log('[DailyGift] User selected voice response mode');
+                  setResponseMode('voice');
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="mic"
+                  android_material_icon_name="mic"
+                  size={24}
+                  color={voiceModeActive ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.modeButtonText, 
+                  { color: voiceModeActive ? colors.primary : textSecondaryColor }
+                ]}>
+                  {voiceModeLabel}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Text Input (if text mode) */}
+            {textModeActive && (
+              <TextInput
+                style={[styles.reflectionInput, { 
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                  color: textColor 
+                }]}
+                placeholder={reflectionPlaceholder}
+                placeholderTextColor={textSecondaryColor}
+                value={reflectionText}
+                onChangeText={setReflectionText}
+                multiline
+                numberOfLines={8}
+                textAlignVertical="top"
+              />
+            )}
+
+            {/* Voice Recording Placeholder (if voice mode) */}
+            {voiceModeActive && (
+              <View style={[styles.voicePlaceholder, { borderColor: inputBorder }]}>
+                <IconSymbol 
+                  ios_icon_name="mic.circle"
+                  android_material_icon_name="mic"
+                  size={48}
+                  color={colors.primary}
+                />
+                <Text style={[styles.voicePlaceholderText, { color: textSecondaryColor }]}>
+                  Voice recording coming soon
+                </Text>
+              </View>
+            )}
+
+            {/* Mood Tags */}
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              {moodTagsTitle}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+              {moodTagsSubtitle}
+            </Text>
+            <View style={styles.tagsContainer}>
+              {moodOptions.map((mood, index) => {
+                const isSelected = selectedMoods.includes(mood);
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.tag,
+                      { borderColor: inputBorder },
+                      isSelected && styles.tagSelected
+                    ]}
+                    onPress={() => toggleMood(mood)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.tagText,
+                      { color: isSelected ? colors.primary : textSecondaryColor }
+                    ]}>
+                      {mood}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Body Sensation Tags */}
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              {sensationTagsTitle}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+              {sensationTagsSubtitle}
+            </Text>
+            <View style={styles.tagsContainer}>
+              {sensationOptions.map((sensation, index) => {
+                const isSelected = selectedSensations.includes(sensation);
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.tag,
+                      { borderColor: inputBorder },
+                      isSelected && styles.tagSelected
+                    ]}
+                    onPress={() => toggleSensation(sensation)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.tagText,
+                      { color: isSelected ? colors.primary : textSecondaryColor }
+                    ]}>
+                      {sensation}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Share Toggle */}
             <View style={styles.shareToggle}>
               <View style={styles.shareToggleText}>
                 <Text style={[styles.shareToggleLabel, { color: textColor }]}>
@@ -413,12 +590,16 @@ export default function DailyGiftScreen() {
               </View>
               <Switch
                 value={shareToComm}
-                onValueChange={setShareToComm}
+                onValueChange={(value) => {
+                  console.log('[DailyGift] User toggled share to community:', value);
+                  setShareToComm(value);
+                }}
                 trackColor={{ false: colors.border, true: colors.primaryLight }}
                 thumbColor={shareToComm ? colors.primary : colors.card}
               />
             </View>
 
+            {/* Save Button */}
             <TouchableOpacity 
               style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
               onPress={handleSaveReflection}
@@ -484,6 +665,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   themeSection: {
     alignItems: 'center',
@@ -634,7 +816,42 @@ const styles = StyleSheet.create({
   reflectionSubtitle: {
     fontSize: typography.bodySmall,
     fontStyle: 'italic',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+  },
+  sectionSubtitle: {
+    fontSize: typography.bodySmall,
+    marginBottom: spacing.sm,
+  },
+  responseModeButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  modeButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '10',
+  },
+  modeButtonText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
   },
   reflectionInput: {
     borderRadius: borderRadius.md,
@@ -643,13 +860,52 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     minHeight: 150,
     borderWidth: 1,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  voicePlaceholder: {
+    borderRadius: borderRadius.md,
+    padding: spacing.xl,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 150,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  voicePlaceholderText: {
+    fontSize: typography.body,
+    textAlign: 'center',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  tag: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 1.5,
+  },
+  tagSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  tagText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
   },
   shareToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: spacing.lg,
     marginBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   shareToggleText: {
     flex: 1,
