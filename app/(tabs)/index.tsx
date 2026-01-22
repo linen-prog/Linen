@@ -84,41 +84,40 @@ export default function HomeScreen() {
           </Text>
         </View>
 
+        {/* Smaller, less prominent streak cards */}
         <View style={styles.streakContainer}>
           <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-            <IconSymbol 
-              ios_icon_name="message.fill"
-              android_material_icon_name="chat"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={[styles.streakNumber, { color: textColor }]}>
-              {checkInStreakText}
-            </Text>
-            <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-              Check-In Streak
-            </Text>
-            <Text style={[styles.streakDays, { color: textSecondaryColor }]}>
-              {checkInStreakLabel}
-            </Text>
+            <View style={styles.streakRow}>
+              <IconSymbol 
+                ios_icon_name="message.fill"
+                android_material_icon_name="chat"
+                size={16}
+                color={colors.primary}
+              />
+              <Text style={[styles.streakNumber, { color: textColor }]}>
+                {checkInStreakText}
+              </Text>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Check-In
+              </Text>
+            </View>
           </View>
 
           <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-            <IconSymbol 
-              ios_icon_name="gift.fill"
-              android_material_icon_name="card-giftcard"
-              size={24}
-              color={colors.accent}
-            />
-            <Text style={[styles.streakNumber, { color: textColor }]}>
-              {reflectionStreakText}
-            </Text>
-            <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-              Reflection Streak
-            </Text>
-            <Text style={[styles.streakDays, { color: textSecondaryColor }]}>
-              {reflectionStreakLabel}
-            </Text>
+            <View style={styles.streakRow}>
+              <IconSymbol 
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={16}
+                color={colors.accent}
+              />
+              <Text style={[styles.streakNumber, { color: textColor }]}>
+                {reflectionStreakText}
+              </Text>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Reflection
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -210,31 +209,25 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
 
+          {/* Smaller, more subtle Weekly Recap card */}
           <TouchableOpacity 
-            style={[styles.mainCard, { backgroundColor: cardBg }]}
+            style={[styles.weeklyRecapCard, { backgroundColor: cardBg }]}
             onPress={handleWeeklyRecap}
             activeOpacity={0.7}
           >
-            <View style={styles.mainCardIcon}>
-              <IconSymbol 
-                ios_icon_name="calendar"
-                android_material_icon_name="calendar-today"
-                size={32}
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.mainCardContent}>
-              <Text style={[styles.mainCardTitle, { color: textColor }]}>
-                Weekly Recap
-              </Text>
-              <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                Review your week&apos;s journey and prepare for the rhythm ahead
-              </Text>
-            </View>
+            <IconSymbol 
+              ios_icon_name="calendar"
+              android_material_icon_name="calendar-today"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={[styles.weeklyRecapText, { color: textColor }]}>
+              Weekly Recap
+            </Text>
             <IconSymbol 
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
-              size={24}
+              size={20}
               color={textSecondaryColor}
             />
           </TouchableOpacity>
@@ -262,37 +255,35 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
   streakCard: {
     flex: 1,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   streakNumber: {
-    fontSize: 32,
-    fontWeight: typography.bold,
-    marginTop: spacing.sm,
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
   },
   streakLabel: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  streakDays: {
     fontSize: typography.caption,
-    marginTop: 2,
+    fontWeight: typography.regular,
   },
   mainCards: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     gap: spacing.md,
   },
   mainCard: {
@@ -301,10 +292,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 1,
   },
   mainCardIcon: {
     marginRight: spacing.md,
@@ -320,5 +311,23 @@ const styles = StyleSheet.create({
   mainCardDescription: {
     fontSize: typography.bodySmall,
     lineHeight: 20,
+  },
+  weeklyRecapCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    elevation: 1,
+    marginTop: spacing.sm,
+  },
+  weeklyRecapText: {
+    flex: 1,
+    fontSize: typography.body,
+    fontWeight: typography.medium,
   },
 });
