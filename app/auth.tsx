@@ -47,7 +47,7 @@ export default function AuthScreen() {
       console.log('Attempting to register/login user...');
       const response = await apiPost<{ 
         success: boolean;
-        user: { id: string; email: string; name?: string };
+        user: { id: string; email: string; name?: string; createdAt?: string };
         token?: string;
         isNewUser: boolean;
       }>(
@@ -58,7 +58,10 @@ export default function AuthScreen() {
       console.log('Auth response received:', response);
 
       if (response.success && response.user) {
-        const authToken = response.token || response.user.id;
+        // Use user ID as the bearer token for this simple auth system
+        const authToken = response.user.id;
+        
+        console.log('[Auth] Storing bearer token:', authToken);
         
         // Store token in secure storage
         await storeBearerToken(authToken);
@@ -69,6 +72,9 @@ export default function AuthScreen() {
         console.log('User authenticated successfully:', response.user);
         console.log('Token and user data stored securely');
         console.log('Navigating to home screen...');
+        
+        // Small delay to ensure storage completes
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         router.replace('/(tabs)');
       } else {
@@ -94,6 +100,8 @@ export default function AuthScreen() {
       setIsLoading(false);
     }
   };
+
+  const continueButtonText = isLoading ? 'Connecting...' : 'Continue';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -186,12 +194,12 @@ export default function AuthScreen() {
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color="#FFFFFF" size="small" />
                   <Text style={styles.continueButtonText}>
-                    Connecting...
+                    {continueButtonText}
                   </Text>
                 </View>
               ) : (
                 <Text style={styles.continueButtonText}>
-                  Continue
+                  {continueButtonText}
                 </Text>
               )}
             </TouchableOpacity>
