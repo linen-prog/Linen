@@ -9,6 +9,7 @@ import { registerStreaksRoutes } from './routes/streaks.js';
 import { registerSomaticRoutes } from './routes/somatic.js';
 import { registerWeeklyThemeRoutes } from './routes/weekly-theme.js';
 import { registerArtworkRoutes } from './routes/artwork.js';
+import { registerWeeklyPracticeRoutes } from './routes/weekly-practice.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -39,6 +40,7 @@ registerStreaksRoutes(app);
 registerSomaticRoutes(app);
 registerWeeklyThemeRoutes(app);
 registerArtworkRoutes(app);
+registerWeeklyPracticeRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
