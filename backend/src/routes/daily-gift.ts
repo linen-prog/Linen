@@ -82,27 +82,25 @@ export function registerDailyGiftRoutes(app: App) {
 
       // Check if current user has reflected (if authenticated)
       let hasReflected = false;
-      const authHeader = request.headers.authorization;
-      if (authHeader) {
-        try {
-          const session = await requireAuth(request, reply);
-          if (session) {
-            const reflection = await app.db
-              .select()
-              .from(schema.userReflections)
-              .where(
-                and(
-                  eq(schema.userReflections.userId, session.user.id),
-                  eq(schema.userReflections.dailyGiftId, dailyContentRecord[0].id)
-                )
+      try {
+        // Try to get session without requiring auth (won't throw)
+        const session = (request as any).session;
+        if (session?.user?.id) {
+          const reflection = await app.db
+            .select()
+            .from(schema.userReflections)
+            .where(
+              and(
+                eq(schema.userReflections.userId, session.user.id),
+                eq(schema.userReflections.dailyGiftId, dailyContentRecord[0].id)
               )
-              .limit(1);
+            )
+            .limit(1);
 
-            hasReflected = reflection.length > 0;
-          }
-        } catch {
-          // User not authenticated, hasReflected remains false
+          hasReflected = reflection.length > 0;
         }
+      } catch {
+        // User not authenticated, hasReflected remains false
       }
 
       app.logger.info(

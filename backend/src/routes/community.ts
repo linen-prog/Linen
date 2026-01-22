@@ -25,18 +25,15 @@ export function registerCommunityRoutes(app: App) {
           .where(eq(schema.communityPosts.category, validCategory))
           .orderBy(desc(schema.communityPosts.createdAt));
 
-        // Get user ID if authenticated
+        // Get user ID if authenticated (without requiring auth)
         let userId: string | null = null;
-        const authHeader = request.headers.authorization;
-        if (authHeader) {
-          try {
-            const session = await requireAuth(request, reply);
-            if (session) {
-              userId = session.user.id;
-            }
-          } catch {
-            // User not authenticated
+        try {
+          const session = (request as any).session;
+          if (session?.user?.id) {
+            userId = session.user.id;
           }
+        } catch {
+          // User not authenticated
         }
 
         // For each post, check if current user has prayed
