@@ -14,13 +14,13 @@ interface WeeklyTheme {
 }
 
 interface DailyGift {
-  id: string;
+  id: string | null;
   date: string;
   scriptureText: string;
   scriptureReference: string;
   reflectionPrompt: string;
   hasReflected: boolean;
-  weeklyTheme: WeeklyTheme;
+  weeklyTheme: WeeklyTheme | null;
 }
 
 interface SomaticExercise {
@@ -127,7 +127,7 @@ export default function DailyGiftScreen() {
   const inputBorder = isDark ? colors.borderDark : colors.border;
 
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim() || !dailyGift) {
+    if (!reflectionText.trim() || !dailyGift || !dailyGift.id) {
       return;
     }
 
@@ -237,9 +237,10 @@ export default function DailyGiftScreen() {
   const promptDisplay = dailyGift.reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
 
-  const seasonDisplay = dailyGift.weeklyTheme.liturgicalSeason.toUpperCase();
-  const themeTitleDisplay = dailyGift.weeklyTheme.themeTitle;
-  const themeDescriptionDisplay = dailyGift.weeklyTheme.themeDescription;
+  const hasWeeklyTheme = dailyGift.weeklyTheme !== null;
+  const seasonDisplay = hasWeeklyTheme ? dailyGift.weeklyTheme.liturgicalSeason.toUpperCase() : '';
+  const themeTitleDisplay = hasWeeklyTheme ? dailyGift.weeklyTheme.themeTitle : '';
+  const themeDescriptionDisplay = hasWeeklyTheme ? dailyGift.weeklyTheme.themeDescription : '';
   
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
@@ -263,33 +264,35 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.themeSection}>
-          <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
-            {seasonDisplay}
-          </Text>
-          
-          <View style={styles.themeTitleContainer}>
-            <IconSymbol 
-              ios_icon_name="sparkles"
-              android_material_icon_name="auto-awesome"
-              size={24}
-              color={colors.accent}
-            />
-            <Text style={[styles.themeTitle, { color: textColor }]}>
-              {themeTitleDisplay}
+        {hasWeeklyTheme && (
+          <View style={styles.themeSection}>
+            <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
+              {seasonDisplay}
             </Text>
-            <IconSymbol 
-              ios_icon_name="sparkles"
-              android_material_icon_name="auto-awesome"
-              size={24}
-              color={colors.accent}
-            />
+            
+            <View style={styles.themeTitleContainer}>
+              <IconSymbol 
+                ios_icon_name="sparkles"
+                android_material_icon_name="auto-awesome"
+                size={24}
+                color={colors.accent}
+              />
+              <Text style={[styles.themeTitle, { color: textColor }]}>
+                {themeTitleDisplay}
+              </Text>
+              <IconSymbol 
+                ios_icon_name="sparkles"
+                android_material_icon_name="auto-awesome"
+                size={24}
+                color={colors.accent}
+              />
+            </View>
+            
+            <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
+              {themeDescriptionDisplay}
+            </Text>
           </View>
-          
-          <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
-            {themeDescriptionDisplay}
-          </Text>
-        </View>
+        )}
 
         <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
           <View style={styles.giftIcon}>
