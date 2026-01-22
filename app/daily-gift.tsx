@@ -1,15 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Switch } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+
+interface WeeklyTheme {
+  id: string;
+  weekStartDate: string;
+  liturgicalSeason: string;
+  themeTitle: string;
+  themeDescription: string;
+  somaticExercise: {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    duration: string;
+    instructions: string;
+  } | null;
+}
+
+interface Artwork {
+  id: string;
+  artworkData: string;
+  photoUrls: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const router = useRouter();
 
   const [scriptureText, setScriptureText] = useState('');
   const [scriptureReference, setScriptureReference] = useState('');
@@ -19,6 +44,11 @@ export default function DailyGiftScreen() {
   const [hasReflected, setHasReflected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [dailyGiftId, setDailyGiftId] = useState<string | null>(null);
+
+  const [weeklyTheme, setWeeklyTheme] = useState<WeeklyTheme | null>(null);
+  const [artwork, setArtwork] = useState<Artwork | null>(null);
+  const [isLoadingTheme, setIsLoadingTheme] = useState(true);
+  const [isLoadingArtwork, setIsLoadingArtwork] = useState(true);
 
   useEffect(() => {
     const loadDailyGift = async () => {
@@ -49,6 +79,42 @@ export default function DailyGiftScreen() {
     };
 
     loadDailyGift();
+  }, []);
+
+  useEffect(() => {
+    const loadWeeklyTheme = async () => {
+      try {
+        const { authenticatedGet } = await import('@/utils/api');
+        const response = await authenticatedGet<WeeklyTheme>('/api/weekly-theme/current');
+        
+        console.log('Weekly theme loaded:', response);
+        setWeeklyTheme(response);
+        setIsLoadingTheme(false);
+      } catch (error) {
+        console.error('Failed to load weekly theme:', error);
+        setIsLoadingTheme(false);
+      }
+    };
+
+    loadWeeklyTheme();
+  }, []);
+
+  useEffect(() => {
+    const loadArtwork = async () => {
+      try {
+        const { authenticatedGet } = await import('@/utils/api');
+        const response = await authenticatedGet<Artwork | null>('/api/artwork/current');
+        
+        console.log('Artwork loaded:', response);
+        setArtwork(response);
+        setIsLoadingArtwork(false);
+      } catch (error) {
+        console.error('Failed to load artwork:', error);
+        setIsLoadingArtwork(false);
+      }
+    };
+
+    loadArtwork();
   }, []);
 
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -83,10 +149,42 @@ export default function DailyGiftScreen() {
     }
   };
 
+  const handleBeginPractice = () => {
+    console.log('User tapped Begin Practice for somatic exercise');
+    if (weeklyTheme?.somaticExercise) {
+      router.push({
+        pathname: '/somatic-practice',
+        params: {
+          exerciseId: weeklyTheme.somaticExercise.id,
+          title: weeklyTheme.somaticExercise.title,
+          description: weeklyTheme.somaticExercise.description,
+          duration: weeklyTheme.somaticExercise.duration,
+          instructions: weeklyTheme.somaticExercise.instructions,
+        },
+      });
+    }
+  };
+
+  const handleSkipPractice = () => {
+    console.log('User tapped Skip for somatic exercise');
+  };
+
+  const handleCreateArtwork = () => {
+    console.log('User tapped Create Artwork');
+    router.push('/artwork-canvas');
+  };
+
   const scriptureDisplay = scriptureText;
   const referenceDisplay = scriptureReference;
   const promptDisplay = reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
+
+  const seasonDisplay = weeklyTheme?.liturgicalSeason.toUpperCase() || '';
+  const themeTitleDisplay = weeklyTheme?.themeTitle || '';
+  const themeDescriptionDisplay = weeklyTheme?.themeDescription || '';
+  const exerciseTitleDisplay = weeklyTheme?.somaticExercise?.title || '';
+  const exerciseDescriptionDisplay = weeklyTheme?.somaticExercise?.description || '';
+  const invitationText = 'You are invited to practice with us this week';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -106,6 +204,40 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {isLoadingTheme ? (
+          <View style={[styles.loadingCard, { backgroundColor: cardBg }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : weeklyTheme ? (
+          <View style={styles.themeSection}>
+            <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
+              {seasonDisplay}
+            </Text>
+            
+            <View style={styles.themeTitleContainer}>
+              <IconSymbol 
+                ios_icon_name="sparkles"
+                android_material_icon_name="auto-awesome"
+                size={24}
+                color={colors.accent}
+              />
+              <Text style={[styles.themeTitle, { color: textColor }]}>
+                {themeTitleDisplay}
+              </Text>
+              <IconSymbol 
+                ios_icon_name="sparkles"
+                android_material_icon_name="auto-awesome"
+                size={24}
+                color={colors.accent}
+              />
+            </View>
+            
+            <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
+              {themeDescriptionDisplay}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
           <View style={styles.giftIcon}>
             <IconSymbol 
@@ -123,6 +255,104 @@ export default function DailyGiftScreen() {
           <Text style={[styles.scriptureReference, { color: colors.primary }]}>
             {referenceDisplay}
           </Text>
+        </View>
+
+        {weeklyTheme?.somaticExercise && (
+          <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
+            <View style={styles.somaticHeader}>
+              <IconSymbol 
+                ios_icon_name="figure.mind.and.body"
+                android_material_icon_name="self-improvement"
+                size={32}
+                color={colors.primary}
+              />
+              <View style={styles.somaticHeaderText}>
+                <Text style={[styles.somaticTitle, { color: textColor }]}>
+                  WEEKLY SOMATIC INVITATION
+                </Text>
+                <Text style={[styles.somaticInvitation, { color: colors.primary }]}>
+                  {invitationText}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.exerciseTitle, { color: textColor }]}>
+              {exerciseTitleDisplay}
+            </Text>
+            <Text style={[styles.exerciseDescription, { color: textSecondaryColor }]}>
+              {exerciseDescriptionDisplay}
+            </Text>
+
+            <View style={styles.somaticButtons}>
+              <TouchableOpacity 
+                style={styles.beginButton}
+                onPress={handleBeginPractice}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.beginButtonText}>
+                  Begin Practice
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.skipButton}
+                onPress={handleSkipPractice}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.skipButtonText, { color: textSecondaryColor }]}>
+                  Skip
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        <View style={[styles.artworkCard, { backgroundColor: cardBg }]}>
+          <View style={styles.artworkHeader}>
+            <IconSymbol 
+              ios_icon_name="paintbrush.fill"
+              android_material_icon_name="brush"
+              size={28}
+              color={colors.accent}
+            />
+            <Text style={[styles.artworkTitle, { color: textColor }]}>
+              CREATIVE EXPRESSION
+            </Text>
+          </View>
+          
+          {isLoadingArtwork ? (
+            <ActivityIndicator size="small" color={colors.primary} style={styles.artworkLoader} />
+          ) : artwork ? (
+            <View style={styles.artworkPreview}>
+              <Text style={[styles.artworkSavedText, { color: textSecondaryColor }]}>
+                You have created artwork for this week
+              </Text>
+              <TouchableOpacity 
+                style={styles.viewArtworkButton}
+                onPress={handleCreateArtwork}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.viewArtworkButtonText, { color: colors.primary }]}>
+                  View & Edit
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.artworkEmpty}>
+              <Text style={[styles.artworkEmptyText, { color: textSecondaryColor }]}>
+                Express this week&apos;s theme through art, color, or form
+              </Text>
+              <TouchableOpacity 
+                style={styles.createArtworkButton}
+                onPress={handleCreateArtwork}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.createArtworkButtonText}>
+                  Create Artwork
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
@@ -216,6 +446,43 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.lg,
   },
+  loadingCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  themeSection: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  seasonLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    letterSpacing: 1.5,
+    marginBottom: spacing.sm,
+  },
+  themeTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  themeTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+  },
+  themeDescription: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: spacing.md,
+  },
   giftCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
@@ -240,6 +507,130 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.semibold,
     fontStyle: 'italic',
+  },
+  somaticCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  somaticHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  somaticHeaderText: {
+    flex: 1,
+  },
+  somaticTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+  },
+  somaticInvitation: {
+    fontSize: typography.bodySmall,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  exerciseTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.sm,
+  },
+  exerciseDescription: {
+    fontSize: typography.body,
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+  },
+  somaticButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  beginButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    flex: 1,
+  },
+  beginButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  skipButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  skipButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  artworkCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  artworkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  artworkTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    letterSpacing: 1.2,
+  },
+  artworkLoader: {
+    marginVertical: spacing.md,
+  },
+  artworkPreview: {
+    alignItems: 'center',
+  },
+  artworkSavedText: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  viewArtworkButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  viewArtworkButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  artworkEmpty: {
+    alignItems: 'center',
+  },
+  artworkEmptyText: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    lineHeight: 22,
+  },
+  createArtworkButton: {
+    backgroundColor: colors.accent,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  createArtworkButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
   promptCard: {
     borderRadius: borderRadius.lg,
