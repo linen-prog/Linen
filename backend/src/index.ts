@@ -1,4 +1,4 @@
-import { createApplication, runMigrations } from "@specific-dev/framework";
+import { createApplication } from "@specific-dev/framework";
 import * as appSchema from './db/schema.js';
 import * as authSchema from './db/auth-schema.js';
 import { registerAuthRoutes } from './routes/auth.js';
@@ -7,19 +7,20 @@ import { registerDailyGiftRoutes } from './routes/daily-gift.js';
 import { registerCommunityRoutes } from './routes/community.js';
 import { registerStreaksRoutes } from './routes/streaks.js';
 import { registerSomaticRoutes } from './routes/somatic.js';
+import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
 
-// Run migrations first to ensure all tables exist
-try {
-  await runMigrations();
-} catch (error) {
-  console.error('Failed to run migrations:', error);
-  process.exit(1);
-}
-
 // Create application with schema for full database type support
 export const app = await createApplication(schema);
+
+// Initialize database tables on startup
+try {
+  await initializeDatabase(app.db);
+} catch (error) {
+  app.logger.error({ err: error }, 'Failed to initialize database');
+  process.exit(1);
+}
 
 // Export App type for use in route files
 export type App = typeof app;
