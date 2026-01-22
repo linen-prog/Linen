@@ -122,11 +122,15 @@ export default function ArtworkCanvasScreen() {
   // Create PanResponder for touch drawing
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => {
+        console.log('[Canvas] onStartShouldSetPanResponder called');
+        return true;
+      },
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
-        console.log('[Canvas] Touch started at:', locationX, locationY);
+        console.log('[Canvas] Touch started at:', locationX, locationY, 'Canvas size:', canvasLayout.width, 'x', canvasLayout.height);
+        console.log('[Canvas] Current brush:', selectedBrush, 'Color:', selectedColor, 'Size:', brushSize);
         
         const isEraser = selectedBrush === 'eraser';
         const newStroke: DrawingStroke = {
@@ -139,6 +143,7 @@ export default function ArtworkCanvasScreen() {
         currentStrokeRef.current = newStroke;
         setCurrentStroke(newStroke);
         setUndoneStrokes([]);
+        console.log('[Canvas] New stroke created with', newStroke.points.length, 'points');
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
@@ -150,14 +155,27 @@ export default function ArtworkCanvasScreen() {
           };
           currentStrokeRef.current = updatedStroke;
           setCurrentStroke(updatedStroke);
+          
+          // Log every 10th point to avoid spam
+          if (updatedStroke.points.length % 10 === 0) {
+            console.log('[Canvas] Stroke now has', updatedStroke.points.length, 'points');
+          }
+        } else {
+          console.log('[Canvas] WARNING: onPanResponderMove called but no current stroke!');
         }
       },
       onPanResponderRelease: () => {
-        console.log('[Canvas] Touch ended');
+        console.log('[Canvas] Touch ended, current stroke has', currentStrokeRef.current?.points.length || 0, 'points');
         if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
-          setStrokes(prev => [...prev, currentStrokeRef.current!]);
+          setStrokes(prev => {
+            const newStrokes = [...prev, currentStrokeRef.current!];
+            console.log('[Canvas] Stroke saved! Total strokes:', newStrokes.length);
+            return newStrokes;
+          });
           currentStrokeRef.current = null;
           setCurrentStroke(null);
+        } else {
+          console.log('[Canvas] WARNING: Touch ended but no valid stroke to save');
         }
       },
     })
@@ -399,6 +417,11 @@ export default function ArtworkCanvasScreen() {
 
   // All strokes to render (completed + current)
   const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
+  
+  // Debug logging for rendering
+  useEffect(() => {
+    console.log('[Canvas] Rendering update - Total strokes:', strokes.length, 'Current stroke:', currentStroke ? 'yes' : 'no', 'All strokes to render:', allStrokes.length);
+  }, [strokes.length, currentStroke, allStrokes.length]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
