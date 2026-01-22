@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Slider, Modal, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as ImagePicker from 'expo-image-picker';
 import { authenticatedPost } from '@/utils/api';
+import Slider from '@react-native-community/slider';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
