@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -8,8 +8,9 @@ import { IconSymbol } from '@/components/IconSymbol';
 import * as ImagePicker from 'expo-image-picker';
 import { authenticatedPost } from '@/utils/api';
 import Slider from '@react-native-community/slider';
+import Svg, { Path, Image as SvgImage } from 'react-native-svg';
 
-type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
+type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter' | 'eraser';
 
 interface BrushOption {
   id: BrushType;
@@ -24,12 +25,14 @@ interface DrawingStroke {
   color: string;
   brushType: BrushType;
   brushSize: number;
+  isEraser?: boolean;
 }
 
 const BRUSH_OPTIONS: BrushOption[] = [
   { id: 'pencil', label: 'Pencil', icon: 'pencil', materialIcon: 'edit', isPremium: false },
   { id: 'marker', label: 'Marker', icon: 'highlighter', materialIcon: 'create', isPremium: false },
   { id: 'pen', label: 'Pen', icon: 'pencil.tip', materialIcon: 'edit', isPremium: false },
+  { id: 'eraser', label: 'Eraser', icon: 'eraser', materialIcon: 'auto-fix-off', isPremium: false },
   { id: 'watercolor', label: 'Watercolor', icon: 'paintbrush', materialIcon: 'brush', isPremium: false },
   { id: 'spray', label: 'Spray', icon: 'spray', materialIcon: 'brush', isPremium: false },
   { id: 'chalk', label: 'Chalk', icon: 'pencil.circle', materialIcon: 'edit', isPremium: false },
@@ -71,6 +74,7 @@ export default function ArtworkCanvasScreen() {
   const [brushSize, setBrushSize] = useState(5);
   const [selectedColor, setSelectedColor] = useState('#000000');
   const [strokes, setStrokes] = useState<DrawingStroke[]>([]);
+  const [currentStroke, setCurrentStroke] = useState<DrawingStroke | null>(null);
   const [undoneStrokes, setUndoneStrokes] = useState<DrawingStroke[]>([]);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -78,7 +82,10 @@ export default function ArtworkCanvasScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [isPremium, setIsPremium] = useState(false); // TODO: Get from user subscription status
+  const [isPremium, setIsPremium] = useState(false);
+  const [canvasLayout, setCanvasLayout] = useState({ width: 0, height: 0, x: 0, y: 0 });
+
+  const canvasRef = useRef<View>(null);
 
   useEffect(() => {
     const loadExistingArtwork = async () => {
@@ -91,7 +98,15 @@ export default function ArtworkCanvasScreen() {
           if (response.backgroundImage) {
             setBackgroundImage(response.backgroundImage);
           }
-          // TODO: Parse and restore strokes from artworkData
+          // Parse and restore strokes from artworkData
+          try {
+            const parsed = JSON.parse(response.artworkData);
+            if (parsed.strokes && Array.isArray(parsed.strokes)) {
+              setStrokes(parsed.strokes);
+            }
+          } catch (e) {
+            console.error('Failed to parse artwork data:', e);
+          }
         }
         setIsLoading(false);
       } catch (error) {
@@ -102,6 +117,47 @@ export default function ArtworkCanvasScreen() {
 
     loadExistingArtwork();
   }, []);
+
+  // Create PanResponder for touch drawing
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        console.log('[Canvas] Touch started at:', locationX, locationY);
+        
+        const isEraser = selectedBrush === 'eraser';
+        const newStroke: DrawingStroke = {
+          points: [{ x: locationX, y: locationY }],
+          color: isEraser ? '#FFFFFF' : selectedColor,
+          brushType: selectedBrush,
+          brushSize: isEraser ? brushSize * 2 : brushSize,
+          isEraser: isEraser,
+        };
+        setCurrentStroke(newStroke);
+        setUndoneStrokes([]);
+      },
+      onPanResponderMove: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        
+        if (currentStroke) {
+          const updatedStroke = {
+            ...currentStroke,
+            points: [...currentStroke.points, { x: locationX, y: locationY }],
+          };
+          setCurrentStroke(updatedStroke);
+        }
+      },
+      onPanResponderRelease: () => {
+        console.log('[Canvas] Touch ended');
+        if (currentStroke && currentStroke.points.length > 0) {
+          setStrokes([...strokes, currentStroke]);
+          setCurrentStroke(null);
+        }
+      },
+    })
+  ).current;
 
   const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
@@ -145,6 +201,7 @@ export default function ArtworkCanvasScreen() {
           onPress: () => {
             console.log('[Canvas] User confirmed clear canvas');
             setStrokes([]);
+            setCurrentStroke(null);
             setUndoneStrokes([]);
             setBackgroundImage(null);
           },
@@ -212,7 +269,6 @@ export default function ArtworkCanvasScreen() {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            // Don't set Content-Type for multipart/form-data - let the browser/fetch set it with boundary
           },
           body: formData,
         });
@@ -251,7 +307,6 @@ export default function ArtworkCanvasScreen() {
     setIsSaving(true);
 
     try {
-      // TODO: Convert canvas to base64 PNG
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
@@ -296,6 +351,23 @@ export default function ArtworkCanvasScreen() {
     setShowColorPicker(false);
   };
 
+  // Convert stroke points to SVG path data
+  const strokeToPath = (stroke: DrawingStroke): string => {
+    if (stroke.points.length === 0) {
+      return '';
+    }
+    
+    const firstPoint = stroke.points[0];
+    let pathData = `M ${firstPoint.x} ${firstPoint.y}`;
+    
+    for (let i = 1; i < stroke.points.length; i++) {
+      const point = stroke.points[i];
+      pathData += ` L ${point.x} ${point.y}`;
+    }
+    
+    return pathData;
+  };
+
   const availableColors = isPremium ? PREMIUM_COLORS : FREE_COLORS;
   const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
@@ -316,6 +388,10 @@ export default function ArtworkCanvasScreen() {
   const canSave = strokes.length > 0 || backgroundImage !== null;
 
   const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
+  const isEraserMode = selectedBrush === 'eraser';
+
+  // All strokes to render (completed + current)
+  const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -349,8 +425,48 @@ export default function ArtworkCanvasScreen() {
         </View>
 
         {/* Canvas Area */}
-        <View style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}>
-          {!backgroundImage && strokes.length === 0 && (
+        <View 
+          style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
+          ref={canvasRef}
+          onLayout={(event) => {
+            const { x, y, width, height } = event.nativeEvent.layout;
+            setCanvasLayout({ x, y, width, height });
+          }}
+          {...panResponder.panHandlers}
+        >
+          {canvasLayout.width > 0 && canvasLayout.height > 0 && (
+            <Svg 
+              width={canvasLayout.width} 
+              height={canvasLayout.height}
+              style={styles.svgCanvas}
+            >
+              {/* Background image if exists */}
+              {backgroundImage && (
+                <SvgImage
+                  href={backgroundImage}
+                  width={canvasLayout.width}
+                  height={canvasLayout.height}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              )}
+              
+              {/* Render all strokes */}
+              {allStrokes.map((stroke, index) => (
+                <Path
+                  key={index}
+                  d={strokeToPath(stroke)}
+                  stroke={stroke.color}
+                  strokeWidth={stroke.brushSize}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  opacity={stroke.isEraser ? 1 : 0.9}
+                />
+              ))}
+            </Svg>
+          )}
+          
+          {!backgroundImage && strokes.length === 0 && !currentStroke && (
             <View style={styles.canvasPlaceholder}>
               <IconSymbol 
                 ios_icon_name="hand.draw"
@@ -372,9 +488,6 @@ export default function ArtworkCanvasScreen() {
               </Text>
             </View>
           )}
-          
-          {/* TODO: Implement actual drawing canvas with touch gestures */}
-          {/* This would require a library like react-native-canvas or react-native-svg */}
         </View>
 
         {/* Controls Bar */}
@@ -386,7 +499,11 @@ export default function ArtworkCanvasScreen() {
         >
           {/* Brush Selector */}
           <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }]}
+            style={[
+              styles.controlButton, 
+              { backgroundColor: cardBg },
+              isEraserMode && styles.controlButtonActive
+            ]}
             onPress={() => {
               console.log('[Canvas] User opening brush picker');
               setShowBrushPicker(true);
@@ -394,27 +511,32 @@ export default function ArtworkCanvasScreen() {
             activeOpacity={0.7}
           >
             <IconSymbol 
-              ios_icon_name="paintbrush"
-              android_material_icon_name="brush"
+              ios_icon_name={isEraserMode ? "eraser" : "paintbrush"}
+              android_material_icon_name={isEraserMode ? "auto-fix-off" : "brush"}
               size={20}
-              color={textColor}
+              color={isEraserMode ? colors.error : textColor}
             />
-            <Text style={[styles.controlButtonLabel, { color: textSecondaryColor }]}>
+            <Text style={[
+              styles.controlButtonLabel, 
+              { color: isEraserMode ? colors.error : textSecondaryColor }
+            ]}>
               {selectedBrushLabel}
             </Text>
           </TouchableOpacity>
 
-          {/* Color Selector */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: selectedColor }]}
-            onPress={() => {
-              console.log('[Canvas] User opening color picker');
-              setShowColorPicker(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.colorPreview} />
-          </TouchableOpacity>
+          {/* Color Selector - Hidden in eraser mode */}
+          {!isEraserMode && (
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: selectedColor }]}
+              onPress={() => {
+                console.log('[Canvas] User opening color picker');
+                setShowColorPicker(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.colorPreview} />
+            </TouchableOpacity>
+          )}
 
           {/* Undo */}
           <TouchableOpacity 
@@ -545,6 +667,7 @@ export default function ArtworkCanvasScreen() {
               <View style={styles.brushGrid}>
                 {freeBrushes.map((brush) => {
                   const isSelected = selectedBrush === brush.id;
+                  const isEraserBrush = brush.id === 'eraser';
                   return (
                     <TouchableOpacity
                       key={brush.id}
@@ -560,11 +683,11 @@ export default function ArtworkCanvasScreen() {
                         ios_icon_name={brush.icon}
                         android_material_icon_name={brush.materialIcon}
                         size={24}
-                        color={isSelected ? colors.primary : textColor}
+                        color={isSelected ? colors.primary : (isEraserBrush ? colors.error : textColor)}
                       />
                       <Text style={[
                         styles.brushOptionText,
-                        { color: isSelected ? colors.primary : textColor }
+                        { color: isSelected ? colors.primary : (isEraserBrush ? colors.error : textColor) }
                       ]}>
                         {brush.label}
                       </Text>
@@ -730,12 +853,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  svgCanvas: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   canvasPlaceholder: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.md,
+    pointerEvents: 'none',
   },
   canvasPlaceholderText: {
     fontSize: typography.body,
@@ -779,6 +915,10 @@ const styles = StyleSheet.create({
     elevation: 2,
     paddingHorizontal: spacing.sm,
     gap: spacing.xs / 2,
+  },
+  controlButtonActive: {
+    borderWidth: 2,
+    borderColor: colors.error,
   },
   controlButtonDisabled: {
     opacity: 0.4,
