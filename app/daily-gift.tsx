@@ -66,9 +66,17 @@ export default function DailyGiftScreen() {
         const { authenticatedGet } = await import('@/utils/api');
         const exercises = await authenticatedGet<SomaticExercise[]>('/api/somatic/exercises');
         console.log('Somatic exercises loaded:', exercises);
-        setSomaticExercises(exercises);
+        
+        // Ensure exercises is an array
+        if (Array.isArray(exercises)) {
+          setSomaticExercises(exercises);
+        } else {
+          console.warn('Somatic exercises response is not an array:', exercises);
+          setSomaticExercises([]);
+        }
       } catch (error) {
         console.error('Failed to load somatic exercises:', error);
+        setSomaticExercises([]);
       }
     };
 
@@ -138,10 +146,12 @@ export default function DailyGiftScreen() {
   const promptDisplay = reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
 
-  const groundingExercises = somaticExercises.filter(e => e.category === 'Grounding');
-  const breathExercises = somaticExercises.filter(e => e.category === 'Breath');
-  const movementExercises = somaticExercises.filter(e => e.category === 'Movement');
-  const releaseExercises = somaticExercises.filter(e => e.category === 'Release');
+  // Safely filter exercises - ensure somaticExercises is always an array
+  const safeExercises = Array.isArray(somaticExercises) ? somaticExercises : [];
+  const groundingExercises = safeExercises.filter(e => e.category === 'Grounding');
+  const breathExercises = safeExercises.filter(e => e.category === 'Breath');
+  const movementExercises = safeExercises.filter(e => e.category === 'Movement');
+  const releaseExercises = safeExercises.filter(e => e.category === 'Release');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -189,7 +199,7 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {somaticExercises.length > 0 && (
+        {safeExercises.length > 0 && (
           <View style={[styles.somaticSection, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
@@ -211,9 +221,9 @@ export default function DailyGiftScreen() {
                 <Text style={[styles.categoryTitle, { color: textColor }]}>
                   Grounding
                 </Text>
-                {groundingExercises.map((exercise) => (
+                {groundingExercises.map((exercise, index) => (
                   <TouchableOpacity
-                    key={exercise.id}
+                    key={exercise.id || index}
                     style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
                     onPress={() => handleExercisePress(exercise)}
                     activeOpacity={0.7}
@@ -242,9 +252,9 @@ export default function DailyGiftScreen() {
                 <Text style={[styles.categoryTitle, { color: textColor }]}>
                   Breath
                 </Text>
-                {breathExercises.map((exercise) => (
+                {breathExercises.map((exercise, index) => (
                   <TouchableOpacity
-                    key={exercise.id}
+                    key={exercise.id || index}
                     style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
                     onPress={() => handleExercisePress(exercise)}
                     activeOpacity={0.7}
@@ -273,9 +283,9 @@ export default function DailyGiftScreen() {
                 <Text style={[styles.categoryTitle, { color: textColor }]}>
                   Movement
                 </Text>
-                {movementExercises.map((exercise) => (
+                {movementExercises.map((exercise, index) => (
                   <TouchableOpacity
-                    key={exercise.id}
+                    key={exercise.id || index}
                     style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
                     onPress={() => handleExercisePress(exercise)}
                     activeOpacity={0.7}
@@ -304,9 +314,9 @@ export default function DailyGiftScreen() {
                 <Text style={[styles.categoryTitle, { color: textColor }]}>
                   Release
                 </Text>
-                {releaseExercises.map((exercise) => (
+                {releaseExercises.map((exercise, index) => (
                   <TouchableOpacity
-                    key={exercise.id}
+                    key={exercise.id || index}
                     style={[styles.exerciseCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
                     onPress={() => handleExercisePress(exercise)}
                     activeOpacity={0.7}
