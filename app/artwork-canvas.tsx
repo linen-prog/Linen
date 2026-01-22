@@ -86,6 +86,7 @@ export default function ArtworkCanvasScreen() {
   const [canvasLayout, setCanvasLayout] = useState({ width: 0, height: 0, x: 0, y: 0 });
 
   const canvasRef = useRef<View>(null);
+  const currentStrokeRef = useRef<DrawingStroke | null>(null);
 
   useEffect(() => {
     const loadExistingArtwork = async () => {
@@ -135,24 +136,27 @@ export default function ArtworkCanvasScreen() {
           brushSize: isEraser ? brushSize * 2 : brushSize,
           isEraser: isEraser,
         };
+        currentStrokeRef.current = newStroke;
         setCurrentStroke(newStroke);
         setUndoneStrokes([]);
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
         
-        if (currentStroke) {
+        if (currentStrokeRef.current) {
           const updatedStroke = {
-            ...currentStroke,
-            points: [...currentStroke.points, { x: locationX, y: locationY }],
+            ...currentStrokeRef.current,
+            points: [...currentStrokeRef.current.points, { x: locationX, y: locationY }],
           };
+          currentStrokeRef.current = updatedStroke;
           setCurrentStroke(updatedStroke);
         }
       },
       onPanResponderRelease: () => {
         console.log('[Canvas] Touch ended');
-        if (currentStroke && currentStroke.points.length > 0) {
-          setStrokes([...strokes, currentStroke]);
+        if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
+          setStrokes(prev => [...prev, currentStrokeRef.current!]);
+          currentStrokeRef.current = null;
           setCurrentStroke(null);
         }
       },
@@ -202,6 +206,7 @@ export default function ArtworkCanvasScreen() {
             console.log('[Canvas] User confirmed clear canvas');
             setStrokes([]);
             setCurrentStroke(null);
+            currentStrokeRef.current = null;
             setUndoneStrokes([]);
             setBackgroundImage(null);
           },
@@ -430,64 +435,69 @@ export default function ArtworkCanvasScreen() {
           ref={canvasRef}
           onLayout={(event) => {
             const { x, y, width, height } = event.nativeEvent.layout;
+            console.log('[Canvas] Layout updated:', { x, y, width, height });
             setCanvasLayout({ x, y, width, height });
           }}
-          {...panResponder.panHandlers}
         >
-          {canvasLayout.width > 0 && canvasLayout.height > 0 && (
-            <Svg 
-              width={canvasLayout.width} 
-              height={canvasLayout.height}
-              style={styles.svgCanvas}
-            >
-              {/* Background image if exists */}
-              {backgroundImage && (
-                <SvgImage
-                  href={backgroundImage}
-                  width={canvasLayout.width}
-                  height={canvasLayout.height}
-                  preserveAspectRatio="xMidYMid slice"
+          <View 
+            style={styles.touchableCanvas}
+            {...panResponder.panHandlers}
+          >
+            {canvasLayout.width > 0 && canvasLayout.height > 0 && (
+              <Svg 
+                width={canvasLayout.width} 
+                height={canvasLayout.height}
+                style={styles.svgCanvas}
+              >
+                {/* Background image if exists */}
+                {backgroundImage && (
+                  <SvgImage
+                    href={backgroundImage}
+                    width={canvasLayout.width}
+                    height={canvasLayout.height}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                )}
+                
+                {/* Render all strokes */}
+                {allStrokes.map((stroke, index) => (
+                  <Path
+                    key={index}
+                    d={strokeToPath(stroke)}
+                    stroke={stroke.color}
+                    strokeWidth={stroke.brushSize}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    opacity={stroke.isEraser ? 1 : 0.9}
+                  />
+                ))}
+              </Svg>
+            )}
+            
+            {!backgroundImage && strokes.length === 0 && !currentStroke && (
+              <View style={styles.canvasPlaceholder}>
+                <IconSymbol 
+                  ios_icon_name="hand.draw"
+                  android_material_icon_name="gesture"
+                  size={48}
+                  color={colors.textSecondary}
                 />
-              )}
-              
-              {/* Render all strokes */}
-              {allStrokes.map((stroke, index) => (
-                <Path
-                  key={index}
-                  d={strokeToPath(stroke)}
-                  stroke={stroke.color}
-                  strokeWidth={stroke.brushSize}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  opacity={stroke.isEraser ? 1 : 0.9}
-                />
-              ))}
-            </Svg>
-          )}
-          
-          {!backgroundImage && strokes.length === 0 && !currentStroke && (
-            <View style={styles.canvasPlaceholder}>
-              <IconSymbol 
-                ios_icon_name="hand.draw"
-                android_material_icon_name="gesture"
-                size={48}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.canvasPlaceholderText, { color: textSecondaryColor }]}>
-                {canvasPlaceholderText}
-              </Text>
-            </View>
-          )}
-          
-          {isUploadingPhoto && (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.uploadingText, { color: textColor }]}>
-                {uploadingText}
-              </Text>
-            </View>
-          )}
+                <Text style={[styles.canvasPlaceholderText, { color: textSecondaryColor }]}>
+                  {canvasPlaceholderText}
+                </Text>
+              </View>
+            )}
+            
+            {isUploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.uploadingText, { color: textColor }]}>
+                  {uploadingText}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Controls Bar */}
@@ -854,6 +864,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     overflow: 'hidden',
     position: 'relative',
+  },
+  touchableCanvas: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   svgCanvas: {
     position: 'absolute',
