@@ -69,8 +69,6 @@ export default function HomeScreen() {
   const greetingText = firstName ? `Peace to you, ${firstName}` : 'Peace to you';
   const checkInStreakText = `${checkInStreak}`;
   const reflectionStreakText = `${reflectionStreak}`;
-  const checkInStreakLabel = checkInStreak === 1 ? 'day' : 'days';
-  const reflectionStreakLabel = reflectionStreak === 1 ? 'day' : 'days';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -84,14 +82,14 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Smaller, less prominent streak cards */}
+        {/* Much smaller, subtle streak cards */}
         <View style={styles.streakContainer}>
           <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
             <View style={styles.streakRow}>
               <IconSymbol 
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={16}
+                size={12}
                 color={colors.primary}
               />
               <Text style={[styles.streakNumber, { color: textColor }]}>
@@ -108,7 +106,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="gift.fill"
                 android_material_icon_name="card-giftcard"
-                size={16}
+                size={12}
                 color={colors.accent}
               />
               <Text style={[styles.streakNumber, { color: textColor }]}>
@@ -131,7 +129,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={32}
+                size={24}
                 color={colors.primary}
               />
             </View>
@@ -140,13 +138,13 @@ export default function HomeScreen() {
                 Check-In
               </Text>
               <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                Share what&apos;s on your heart with a gentle AI companion rooted in scripture
+                Share what&apos;s on your heart
               </Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
-              size={24}
+              size={20}
               color={textSecondaryColor}
             />
           </TouchableOpacity>
@@ -160,7 +158,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="gift.fill"
                 android_material_icon_name="card-giftcard"
-                size={32}
+                size={24}
                 color={colors.accent}
               />
             </View>
@@ -169,13 +167,13 @@ export default function HomeScreen() {
                 Open Your Daily Gift
               </Text>
               <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                One daily scripture-rooted reflection to contemplate and explore
+                One daily scripture reflection
               </Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
-              size={24}
+              size={20}
               color={textSecondaryColor}
             />
           </TouchableOpacity>
@@ -189,7 +187,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="person.3.fill"
                 android_material_icon_name="group"
-                size={32}
+                size={24}
                 color={colors.prayer}
               />
             </View>
@@ -198,13 +196,13 @@ export default function HomeScreen() {
                 Community
               </Text>
               <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                Share reflections and hold others in prayer in a gentle, safe space
+                Share and hold others in prayer
               </Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
-              size={24}
+              size={20}
               color={textSecondaryColor}
             />
           </TouchableOpacity>
@@ -218,7 +216,7 @@ export default function HomeScreen() {
             <IconSymbol 
               ios_icon_name="calendar"
               android_material_icon_name="calendar-today"
-              size={20}
+              size={16}
               color={colors.primary}
             />
             <Text style={[styles.weeklyRecapText, { color: textColor }]}>
@@ -227,7 +225,7 @@ export default function HomeScreen() {
             <IconSymbol 
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
-              size={20}
+              size={16}
               color={textSecondaryColor}
             />
           </TouchableOpacity>
@@ -255,79 +253,81 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   streakCard: {
     flex: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    padding: spacing.xs,
+    paddingHorizontal: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
     elevation: 1,
   },
   streakRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
   },
   streakNumber: {
-    fontSize: typography.body,
+    fontSize: 11,
     fontWeight: typography.semibold,
   },
   streakLabel: {
-    fontSize: typography.caption,
+    fontSize: 10,
     fontWeight: typography.regular,
   },
   mainCards: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     gap: spacing.md,
   },
   mainCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
     elevation: 1,
   },
   mainCardIcon: {
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
   mainCardContent: {
     flex: 1,
   },
   mainCardTitle: {
-    fontSize: typography.h4,
+    fontSize: typography.body,
     fontWeight: typography.semibold,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   mainCardDescription: {
-    fontSize: typography.bodySmall,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 16,
   },
   weeklyRecapCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.4,
-    shadowRadius: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
     elevation: 1,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   weeklyRecapText: {
     flex: 1,
-    fontSize: typography.body,
+    fontSize: 13,
     fontWeight: typography.medium,
   },
 });
