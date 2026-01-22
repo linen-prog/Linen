@@ -17,6 +17,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
@@ -27,15 +28,16 @@ export default function AuthScreen() {
 
   const handleContinue = async () => {
     console.log('User tapped Continue on auth screen', { email, firstName });
+    setErrorMessage('');
     
     if (!email.trim()) {
-      Alert.alert('Email Required', 'Please enter your email address.');
+      setErrorMessage('Please enter your email address');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      setErrorMessage('Please enter a valid email address');
       return;
     }
 
@@ -73,21 +75,21 @@ export default function AuthScreen() {
       }
     } catch (error) {
       console.error('Auth failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorObj = error as any;
+      const errorMessage = errorObj?.message || 'Unknown error';
       console.error('Error details:', errorMessage);
       
-      let userMessage = 'We&apos;re having trouble connecting right now. Please try again in a moment.';
+      let userMessage = 'We are having trouble connecting right now. Please try again in a moment.';
       
-      if (errorMessage.includes('500')) {
-        userMessage = 'The server is being set up. Please wait a moment and try again.';
+      if (errorMessage.includes('500') || errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
+        userMessage = 'The server is being set up. Please wait 30 seconds and try again.';
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
         userMessage = 'Unable to connect to the server. Please check your internet connection.';
+      } else if (errorMessage.includes('timeout')) {
+        userMessage = 'Connection timed out. Please try again.';
       }
       
-      Alert.alert(
-        'Connection Issue', 
-        userMessage
-      );
+      setErrorMessage(userMessage);
       setIsLoading(false);
     }
   };
@@ -115,6 +117,20 @@ export default function AuthScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: cardBg }]}>
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <IconSymbol 
+                  ios_icon_name="exclamationmark.triangle.fill"
+                  android_material_icon_name="warning"
+                  size={20}
+                  color="#E74C3C"
+                />
+                <Text style={styles.errorText}>
+                  {errorMessage}
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: textColor }]}>
                 Email
@@ -225,6 +241,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEBEE',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    color: '#C62828',
+    lineHeight: 18,
   },
   inputGroup: {
     marginBottom: spacing.lg,
