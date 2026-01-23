@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -25,9 +25,6 @@ export default function CommunityScreen() {
   const [selectedTab, setSelectedTab] = useState('feed');
   const [selectedContentFilter, setSelectedContentFilter] = useState<'all' | 'companion' | 'daily-gift' | 'somatic'>('all');
   const [posts, setPosts] = useState<Post[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newPostContent, setNewPostContent] = useState('');
-  const [newPostAnonymous, setNewPostAnonymous] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -116,40 +113,10 @@ export default function CommunityScreen() {
     );
   };
 
-  const handleCreatePost = async () => {
-    if (!newPostContent.trim()) {
-      return;
-    }
-
-    console.log('User creating post', { content: newPostContent, anonymous: newPostAnonymous, category: selectedTab });
-    
-    try {
-      const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost<{ postId: string }>('/api/community/post', {
-        category: selectedTab === 'feed' ? 'wisdom' : selectedTab,
-        content: newPostContent.trim(),
-        isAnonymous: newPostAnonymous,
-        contentType: 'manual',
-      });
-      
-      console.log('Post created:', response);
-      
-      setShowCreateModal(false);
-      setNewPostContent('');
-      setNewPostAnonymous(false);
-      loadPosts(selectedTab);
-    } catch (error) {
-      console.error('Failed to create post:', error);
-      Alert.alert('Error', 'Failed to create post. Please try again.');
-    }
-  };
-
   const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
   const cardBg = colors.card;
-  const inputBg = colors.card;
-  const inputBorder = colors.border;
 
   const tabs = [
     { id: 'feed', label: 'All Posts', icon: 'home' as const },
@@ -198,17 +165,6 @@ export default function CommunityScreen() {
         <Text style={[styles.headerTitle, { color: textColor }]}>
           Community
         </Text>
-        <TouchableOpacity 
-          style={styles.createButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <IconSymbol 
-            ios_icon_name="plus"
-            android_material_icon_name="add"
-            size={24}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.filtersSection}>
@@ -305,7 +261,7 @@ export default function CommunityScreen() {
               No posts yet in this category
             </Text>
             <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-              Be the first to share
+              Share from your check-ins, daily gifts, or practices
             </Text>
           </View>
         ) : (
@@ -392,91 +348,6 @@ export default function CommunityScreen() {
           })
         )}
       </ScrollView>
-
-      <Modal
-        visible={showCreateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: bgColor }]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-              <Text style={[styles.modalCancel, { color: colors.primary }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: textColor }]}>
-              Share with Community
-            </Text>
-            <TouchableOpacity 
-              onPress={handleCreatePost}
-              disabled={!newPostContent.trim()}
-            >
-              <Text style={[
-                styles.modalPost,
-                { color: colors.primary },
-                !newPostContent.trim() && styles.modalPostDisabled
-              ]}>
-                Post
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={[styles.guidelinesBox, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-              <Text style={[styles.guidelinesTitle, { color: textColor }]}>
-                Community Guidelines
-              </Text>
-              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
-                • Share vulnerably and authentically
-              </Text>
-              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
-                • No advice-giving or correction
-              </Text>
-              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
-                • Hold others in prayer and witness
-              </Text>
-              <Text style={[styles.guidelinesText, { color: textSecondaryColor }]}>
-                • Respect privacy and anonymity
-              </Text>
-            </View>
-
-            <TextInput
-              style={[styles.modalInput, { 
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-                color: textColor 
-              }]}
-              placeholder="Share your reflection, wisdom, or prayer request..."
-              placeholderTextColor={textSecondaryColor}
-              value={newPostContent}
-              onChangeText={setNewPostContent}
-              multiline
-              autoFocus
-            />
-
-            <TouchableOpacity 
-              style={styles.anonymousToggle}
-              onPress={() => setNewPostAnonymous(!newPostAnonymous)}
-            >
-              <IconSymbol 
-                ios_icon_name={newPostAnonymous ? 'checkmark.square.fill' : 'square'}
-                android_material_icon_name={newPostAnonymous ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                Post anonymously
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={[styles.privacyNote, { color: textSecondaryColor }]}>
-              Your post will be visible to all community members. You can adjust your privacy settings in your profile.
-            </Text>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -496,12 +367,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: typography.h2,
     fontWeight: typography.semibold,
-  },
-  createButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   filtersSection: {
     marginBottom: spacing.sm,
@@ -576,6 +441,8 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: {
     fontSize: typography.bodySmall,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   postCard: {
     borderRadius: borderRadius.lg,
@@ -644,74 +511,5 @@ const styles = StyleSheet.create({
   },
   prayLabel: {
     fontSize: typography.caption,
-  },
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalCancel: {
-    fontSize: typography.body,
-  },
-  modalTitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
-  },
-  modalPost: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-  modalPostDisabled: {
-    opacity: 0.4,
-  },
-  modalContent: {
-    padding: spacing.lg,
-  },
-  guidelinesBox: {
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-  },
-  guidelinesTitle: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.xs,
-  },
-  guidelinesText: {
-    fontSize: typography.caption,
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  modalInput: {
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.body,
-    lineHeight: 24,
-    minHeight: 200,
-    borderWidth: 1,
-    textAlignVertical: 'top',
-    marginBottom: spacing.lg,
-  },
-  anonymousToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  anonymousLabel: {
-    fontSize: typography.body,
-  },
-  privacyNote: {
-    fontSize: typography.caption,
-    lineHeight: 18,
-    fontStyle: 'italic',
   },
 });
