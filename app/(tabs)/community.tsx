@@ -119,18 +119,18 @@ export default function CommunityScreen() {
   const cardBg = colors.card;
 
   const tabs = [
-    { id: 'feed', label: 'All Posts', icon: 'home' as const },
+    { id: 'feed', label: 'All', icon: 'home' as const },
     { id: 'wisdom', label: 'Wisdom', icon: 'menu-book' as const },
     { id: 'care', label: 'Care', icon: 'favorite' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
-    { id: 'my-shared', label: 'My Shared', icon: 'person' as const },
+    { id: 'my-shared', label: 'Mine', icon: 'person' as const },
   ];
 
   const contentFilters = [
     { id: 'all' as const, label: 'All', icon: 'apps' as const },
-    { id: 'companion' as const, label: 'AI Companion', icon: 'chat' as const },
-    { id: 'daily-gift' as const, label: 'Daily Gift', icon: 'auto-stories' as const },
-    { id: 'somatic' as const, label: 'Experiences', icon: 'self-improvement' as const },
+    { id: 'companion' as const, label: 'AI', icon: 'chat' as const },
+    { id: 'daily-gift' as const, label: 'Gift', icon: 'auto-stories' as const },
+    { id: 'somatic' as const, label: 'Exp', icon: 'self-improvement' as const },
   ];
 
   const getContentTypeIcon = (contentType?: string) => {
@@ -189,7 +189,7 @@ export default function CommunityScreen() {
                 <IconSymbol 
                   ios_icon_name={filter.icon}
                   android_material_icon_name={filter.icon}
-                  size={18}
+                  size={16}
                   color={isSelected ? '#FFFFFF' : textSecondaryColor}
                 />
                 <Text style={[
@@ -204,40 +204,42 @@ export default function CommunityScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView 
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        {tabs.map(tab => {
-          const isSelected = selectedTab === tab.id;
-          const tabLabel = tab.label;
-          
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tab,
-                isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
-              ]}
-              onPress={() => setSelectedTab(tab.id)}
-            >
-              <IconSymbol 
-                ios_icon_name={tab.icon}
-                android_material_icon_name={tab.icon}
-                size={20}
-                color={isSelected ? '#FFFFFF' : textSecondaryColor}
-              />
-              <Text style={[
-                styles.tabText,
-                isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
-              ]}>
-                {tabLabel}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.tabsWrapper}>
+        <ScrollView 
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {tabs.map(tab => {
+            const isSelected = selectedTab === tab.id;
+            const tabLabel = tab.label;
+            
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tab,
+                  isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
+                ]}
+                onPress={() => setSelectedTab(tab.id)}
+              >
+                <IconSymbol 
+                  ios_icon_name={tab.icon}
+                  android_material_icon_name={tab.icon}
+                  size={18}
+                  color={isSelected ? '#FFFFFF' : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.tabText,
+                  isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
+                ]}>
+                  {tabLabel}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       <ScrollView 
         contentContainerStyle={styles.postsContainer}
@@ -369,17 +371,17 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
   },
   filtersSection: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   contentFiltersContainer: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
   contentFilter: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 6,
     borderRadius: borderRadius.full,
     gap: 4,
   },
@@ -391,24 +393,26 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   contentFilterText: {
-    fontSize: typography.caption,
+    fontSize: 11,
     fontWeight: typography.medium,
   },
   contentFilterTextSelected: {
     color: '#FFFFFF',
   },
-  tabsContainer: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
+  tabsWrapper: {
     marginBottom: spacing.md,
+  },
+  tabsContainer: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    gap: spacing.xs,
+    gap: 4,
   },
   tabSelected: {
     shadowColor: colors.shadow,
@@ -418,7 +422,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: typography.bodySmall,
+    fontSize: 12,
     fontWeight: typography.medium,
   },
   tabTextSelected: {

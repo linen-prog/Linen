@@ -70,6 +70,11 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
+  const handleMakePrayer = () => {
+    console.log('User tapped Make a Prayer for Me button');
+    router.push('/check-in');
+  };
+
   const greetingText = `Peace to you, ${firstName}`;
   const checkInStreakText = `${checkInStreak}`;
   const reflectionStreakText = `${reflectionStreak}`;
@@ -122,6 +127,23 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Make a Prayer for Me Button */}
+        <TouchableOpacity 
+          style={[styles.prayerButton, { backgroundColor: colors.primary }]}
+          onPress={handleMakePrayer}
+          activeOpacity={0.8}
+        >
+          <IconSymbol 
+            ios_icon_name="hands.sparkles"
+            android_material_icon_name="auto-awesome"
+            size={24}
+            color="#FFFFFF"
+          />
+          <Text style={styles.prayerButtonText}>
+            Make a Prayer for Me
+          </Text>
+        </TouchableOpacity>
 
         <View style={styles.mainCards}>
           <TouchableOpacity 
@@ -259,7 +281,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   streakCard: {
     flex: 1,
@@ -284,6 +306,26 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: 10,
     fontWeight: typography.regular,
+  },
+  prayerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: spacing.lg,
+  },
+  prayerButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
   },
   mainCards: {
     marginTop: spacing.sm,
