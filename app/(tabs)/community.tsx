@@ -19,20 +19,36 @@ interface Post {
   isFlagged?: boolean;
 }
 
+interface CommunityStats {
+  sharedToday: number;
+  liftedInPrayer: number;
+}
+
 export default function CommunityScreen() {
   console.log('User viewing Community screen');
 
   const [selectedTab, setSelectedTab] = useState('feed');
-  const [selectedContentFilter, setSelectedContentFilter] = useState<'all' | 'companion' | 'daily-gift' | 'somatic'>('all');
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
 
   useEffect(() => {
     loadPosts(selectedTab);
-  }, [selectedTab, selectedContentFilter]);
+    loadStats();
+  }, [selectedTab]);
+
+  const loadStats = async () => {
+    try {
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<CommunityStats>('/api/community/stats');
+      setStats(response);
+    } catch (error) {
+      console.error('Failed to load community stats:', error);
+    }
+  };
 
   const loadPosts = async (category: string) => {
-    console.log('Loading posts for category:', category, 'with filter:', selectedContentFilter);
+    console.log('Loading posts for category:', category);
     setIsLoading(true);
     
     try {
@@ -43,9 +59,6 @@ export default function CommunityScreen() {
         endpoint = '/api/community/my-posts';
       } else {
         endpoint = `/api/community/posts?category=${category}`;
-        if (selectedContentFilter !== 'all') {
-          endpoint += `&contentType=${selectedContentFilter}`;
-        }
       }
       
       const response = await authenticatedGet<Post[]>(endpoint);
@@ -81,6 +94,9 @@ export default function CommunityScreen() {
         }
         return post;
       }));
+      
+      // Reload stats after praying
+      loadStats();
     } catch (error) {
       console.error('Failed to toggle prayer:', error);
     }
@@ -119,236 +135,207 @@ export default function CommunityScreen() {
   const cardBg = colors.card;
 
   const tabs = [
-    { id: 'feed', label: 'All', icon: 'home' as const },
-    { id: 'wisdom', label: 'Wisdom', icon: 'menu-book' as const },
-    { id: 'care', label: 'Care', icon: 'favorite' as const },
+    { id: 'feed', label: 'Feed', icon: 'favorite' as const },
+    { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
+    { id: 'care', label: 'Care', icon: 'chat' as const },
+    { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
-    { id: 'my-shared', label: 'Mine', icon: 'person' as const },
   ];
 
-  const contentFilters = [
-    { id: 'all' as const, label: 'All', icon: 'apps' as const },
-    { id: 'companion' as const, label: 'AI', icon: 'chat' as const },
-    { id: 'daily-gift' as const, label: 'Gift', icon: 'auto-stories' as const },
-    { id: 'somatic' as const, label: 'Exp', icon: 'self-improvement' as const },
-  ];
-
-  const getContentTypeIcon = (contentType?: string) => {
-    switch (contentType) {
-      case 'companion':
-        return 'chat';
-      case 'daily-gift':
-        return 'auto-stories';
-      case 'somatic':
-        return 'self-improvement';
-      default:
-        return 'edit';
-    }
-  };
-
-  const getContentTypeLabel = (contentType?: string) => {
-    switch (contentType) {
-      case 'companion':
-        return 'AI Companion';
-      case 'daily-gift':
-        return 'Daily Gift';
-      case 'somatic':
-        return 'Somatic Practice';
-      default:
-        return 'Reflection';
-    }
-  };
+  const sharedTodayText = `${stats.sharedToday}`;
+  const liftedInPrayerText = `${stats.liftedInPrayer}`;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
-        <Text style={[styles.headerTitle, { color: textColor }]}>
-          Community
-        </Text>
-      </View>
-
-      <View style={styles.filtersSection}>
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.contentFiltersContainer}
-        >
-          {contentFilters.map(filter => {
-            const isSelected = selectedContentFilter === filter.id;
-            const filterLabel = filter.label;
-            
-            return (
-              <TouchableOpacity
-                key={filter.id}
-                style={[
-                  styles.contentFilter,
-                  isSelected && [styles.contentFilterSelected, { backgroundColor: colors.primary }]
-                ]}
-                onPress={() => setSelectedContentFilter(filter.id)}
-              >
-                <IconSymbol 
-                  ios_icon_name={filter.icon}
-                  android_material_icon_name={filter.icon}
-                  size={16}
-                  color={isSelected ? '#FFFFFF' : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.contentFilterText,
-                  isSelected ? styles.contentFilterTextSelected : { color: textSecondaryColor }
-                ]}>
-                  {filterLabel}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      <View style={styles.tabsWrapper}>
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContainer}
-        >
-          {tabs.map(tab => {
-            const isSelected = selectedTab === tab.id;
-            const tabLabel = tab.label;
-            
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                style={[
-                  styles.tab,
-                  isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
-                ]}
-                onPress={() => setSelectedTab(tab.id)}
-              >
-                <IconSymbol 
-                  ios_icon_name={tab.icon}
-                  android_material_icon_name={tab.icon}
-                  size={18}
-                  color={isSelected ? '#FFFFFF' : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.tabText,
-                  isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
-                ]}>
-                  {tabLabel}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       <ScrollView 
-        contentContainerStyle={styles.postsContainer}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {isLoading ? (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-              Loading...
+        {/* Header Message */}
+        <View style={styles.headerMessage}>
+          <Text style={styles.headerMessageText}>
+            ✨ You are not alone in this journey
+          </Text>
+        </View>
+
+        {/* Title Section */}
+        <View style={styles.titleSection}>
+          <Text style={[styles.title, { color: textColor }]}>
+            Community
+          </Text>
+          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
+            A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
+          </Text>
+        </View>
+
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          <View style={styles.statItem}>
+            <View style={styles.statDot} />
+            <Text style={[styles.statNumber, { color: textColor }]}>
+              {sharedTodayText}
+            </Text>
+            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
+              shared today
             </Text>
           </View>
-        ) : posts.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View style={styles.statItem}>
             <IconSymbol 
-              ios_icon_name="hands.sparkles"
-              android_material_icon_name="favorite-border"
-              size={48}
-              color={textSecondaryColor}
+              ios_icon_name="heart.fill"
+              android_material_icon_name="favorite"
+              size={16}
+              color={colors.prayer}
             />
-            <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-              No posts yet in this category
+            <Text style={[styles.statNumber, { color: textColor }]}>
+              {liftedInPrayerText}
             </Text>
-            <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-              Share from your check-ins, daily gifts, or practices
+            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
+              lifted in prayer
             </Text>
           </View>
-        ) : (
-          posts.map(post => {
-            const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName;
-            const prayerCountText = `${post.prayerCount}`;
-            const contentTypeLabel = getContentTypeLabel(post.contentType);
-            const contentTypeIcon = getContentTypeIcon(post.contentType);
-            
-            return (
-              <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
-                <View style={styles.postHeader}>
-                  <View style={styles.postAuthor}>
-                    <IconSymbol 
-                      ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
-                      android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
-                      size={20}
-                      color={textSecondaryColor}
-                    />
-                    <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
-                      {authorDisplay}
-                    </Text>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.flagButton}
-                    onPress={() => handleFlagPost(post.id)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name="flag"
-                      android_material_icon_name="flag"
-                      size={18}
-                      color={textSecondaryColor}
-                    />
-                  </TouchableOpacity>
-                </View>
+        </View>
 
-                {post.contentType && (
-                  <View style={styles.contentTypeBadge}>
-                    <IconSymbol 
-                      ios_icon_name={contentTypeIcon}
-                      android_material_icon_name={contentTypeIcon}
-                      size={14}
-                      color={colors.primary}
-                    />
-                    <Text style={[styles.contentTypeText, { color: colors.primary }]}>
-                      {contentTypeLabel}
-                    </Text>
-                  </View>
-                )}
-
-                {post.scriptureReference && (
-                  <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
-                    {post.scriptureReference}
+        {/* Tabs Section */}
+        <View style={styles.tabsSection}>
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsContainer}
+          >
+            {tabs.map(tab => {
+              const isSelected = selectedTab === tab.id;
+              const tabLabel = tab.label;
+              
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[
+                    styles.tab,
+                    isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
+                  ]}
+                  onPress={() => setSelectedTab(tab.id)}
+                >
+                  <IconSymbol 
+                    ios_icon_name={tab.icon}
+                    android_material_icon_name={tab.icon}
+                    size={16}
+                    color={isSelected ? '#FFFFFF' : textSecondaryColor}
+                  />
+                  <Text style={[
+                    styles.tabText,
+                    isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
+                  ]}>
+                    {tabLabel}
                   </Text>
-                )}
+                  {tab.id === 'prayers' && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>1</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-                <Text style={[styles.postContent, { color: textColor }]}>
-                  {post.content}
-                </Text>
+        {/* Care Message */}
+        <View style={styles.careMessage}>
+          <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
+            Each reflection below is held with care and prayer ✨
+          </Text>
+        </View>
 
-                <View style={styles.postFooter}>
-                  <TouchableOpacity 
-                    style={styles.prayButton}
-                    onPress={() => handlePray(post.id)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name={post.userHasPrayed ? 'hands.sparkles.fill' : 'hands.sparkles'}
-                      android_material_icon_name={post.userHasPrayed ? 'favorite' : 'favorite-border'}
-                      size={22}
-                      color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
-                    />
-                    <View style={styles.prayTextContainer}>
-                      <Text style={[styles.prayCount, { color: textColor }]}>
-                        {prayerCountText}
-                      </Text>
-                      <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
-                        Held in Prayer
+        {/* Posts Section */}
+        <View style={styles.postsSection}>
+          {isLoading ? (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+                Loading...
+              </Text>
+            </View>
+          ) : posts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <IconSymbol 
+                ios_icon_name="hands.sparkles"
+                android_material_icon_name="favorite-border"
+                size={48}
+                color={textSecondaryColor}
+              />
+              <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+                No posts yet in this category
+              </Text>
+              <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
+                Share from your check-ins, daily gifts, or practices
+              </Text>
+            </View>
+          ) : (
+            posts.map(post => {
+              const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName;
+              const prayerCountText = `${post.prayerCount}`;
+              
+              return (
+                <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
+                  <View style={styles.postHeader}>
+                    <View style={styles.postAuthor}>
+                      <IconSymbol 
+                        ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
+                        android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
+                        size={20}
+                        color={textSecondaryColor}
+                      />
+                      <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
+                        {authorDisplay}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.flagButton}
+                      onPress={() => handleFlagPost(post.id)}
+                    >
+                      <IconSymbol 
+                        ios_icon_name="flag"
+                        android_material_icon_name="flag"
+                        size={18}
+                        color={textSecondaryColor}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {post.scriptureReference && (
+                    <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
+                      {post.scriptureReference}
+                    </Text>
+                  )}
+
+                  <Text style={[styles.postContent, { color: textColor }]}>
+                    {post.content}
+                  </Text>
+
+                  <View style={styles.postFooter}>
+                    <TouchableOpacity 
+                      style={styles.prayButton}
+                      onPress={() => handlePray(post.id)}
+                    >
+                      <IconSymbol 
+                        ios_icon_name={post.userHasPrayed ? 'hands.sparkles.fill' : 'hands.sparkles'}
+                        android_material_icon_name={post.userHasPrayed ? 'favorite' : 'favorite-border'}
+                        size={22}
+                        color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
+                      />
+                      <View style={styles.prayTextContainer}>
+                        <Text style={[styles.prayCount, { color: textColor }]}>
+                          {prayerCountText}
+                        </Text>
+                        <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
+                          Held in Prayer
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -358,61 +345,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
+  scrollContent: {
+    paddingBottom: spacing.xxl,
+  },
+  headerMessage: {
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'android' ? 48 : spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
-  headerTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
+  headerMessageText: {
+    fontSize: typography.bodySmall,
+    color: colors.primary,
+    backgroundColor: colors.primaryLight || '#E8F5E9',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
   },
-  filtersSection: {
+  titleSection: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: typography.bold,
     marginBottom: spacing.xs,
   },
-  contentFiltersContainer: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
+  subtitle: {
+    fontSize: typography.bodySmall,
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  contentFilter: {
+  statsSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    gap: 4,
+    gap: spacing.xs,
   },
-  contentFilterSelected: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 1,
-    shadowRadius: 2,
-    elevation: 1,
+  statDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
-  contentFilterText: {
-    fontSize: 11,
-    fontWeight: typography.medium,
+  statNumber: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
   },
-  contentFilterTextSelected: {
-    color: '#FFFFFF',
+  statLabel: {
+    fontSize: typography.bodySmall,
   },
-  tabsWrapper: {
+  tabsSection: {
     marginBottom: spacing.md,
   },
   tabsContainer: {
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
+    alignItems: 'center',
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
-    gap: 4,
+    gap: 6,
   },
   tabSelected: {
     shadowColor: colors.shadow,
@@ -422,15 +428,38 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: typography.medium,
   },
   tabTextSelected: {
     color: '#FFFFFF',
   },
-  postsContainer: {
+  badge: {
+    backgroundColor: '#FF5252',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: typography.bold,
+  },
+  careMessage: {
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.lg,
+  },
+  careMessageText: {
+    fontSize: typography.bodySmall,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  postsSection: {
+    paddingHorizontal: spacing.lg,
     gap: spacing.lg,
   },
   emptyState: {
@@ -474,16 +503,6 @@ const styles = StyleSheet.create({
   },
   flagButton: {
     padding: spacing.xs,
-  },
-  contentTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: spacing.xs,
-  },
-  contentTypeText: {
-    fontSize: typography.caption,
-    fontWeight: typography.medium,
   },
   scriptureReference: {
     fontSize: typography.caption,
