@@ -215,16 +215,19 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
+      // Share prayer to community with selected category
+      // This will create a post with contentType: 'companion' in the selected category tab
+      // Feed = daily reflections, Wisdom = encouraging messages, Care = care requests, Prayers = prayers
       await authenticatedPost('/api/check-in/share-prayer', {
         prayerId: generatedPrayerId,
         category: shareCategory,
         isAnonymous: shareAnonymous,
       });
       
-      console.log('Prayer shared to community successfully');
+      console.log('Prayer shared to community successfully in category:', shareCategory);
       setShowShareModal(false);
       setShowPrayerModal(false);
-      Alert.alert('Shared', 'Your prayer has been shared with the community.');
+      Alert.alert('Shared', `Your prayer has been shared with the community in ${shareCategory}.`);
     } catch (error) {
       console.error('Failed to share prayer:', error);
       Alert.alert('Error', 'Failed to share prayer. Please try again.');

@@ -1,4 +1,35 @@
 
+/**
+ * Community Screen - Tab-based content sharing
+ * 
+ * DATA FLOW DOCUMENTATION:
+ * 
+ * Feed Tab:
+ * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'feed' is selected
+ * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'feed' is selected
+ * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'feed'
+ * 
+ * Wisdom Tab:
+ * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'wisdom' is selected
+ * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'wisdom' is selected
+ * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'wisdom'
+ * 
+ * Care Tab:
+ * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'care' is selected
+ * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'care' is selected
+ * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'care'
+ * 
+ * Prayers Tab:
+ * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'prayers' is selected
+ * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'prayers' is selected
+ * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'prayers'
+ * 
+ * My Shared Tab:
+ * - Shows all posts created by the current user
+ * - Includes both Daily Gift reflections and Check-In prayers from all categories
+ * - Fetched from /api/community/my-posts endpoint
+ */
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,11 +89,14 @@ export default function CommunityScreen() {
       if (category === 'my-shared') {
         endpoint = '/api/community/my-posts';
       } else {
+        // Map frontend tab names to backend categories
+        // Feed shows daily-gift reflections
+        // Wisdom, Care, Prayers show companion content filtered by category
         endpoint = `/api/community/posts?category=${category}`;
       }
       
       const response = await authenticatedGet<Post[]>(endpoint);
-      console.log('Posts loaded:', response);
+      console.log('Posts loaded for', category, ':', response.length, 'posts');
       setPosts(response.map(post => ({
         ...post,
         createdAt: new Date(post.createdAt),

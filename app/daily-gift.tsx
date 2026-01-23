@@ -65,6 +65,9 @@ export default function DailyGiftScreen() {
   // Response mode: 'text', 'art', or 'voice'
   const [responseMode, setResponseMode] = useState<'text' | 'art' | 'voice'>('text');
 
+  // Category for sharing to community
+  const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
+
   // Mood and body sensation tags
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
@@ -138,10 +141,14 @@ export default function DailyGiftScreen() {
     setIsLoading(true);
 
     try {
+      // Daily Gift reflections can be shared to any community tab
+      // This creates a post with contentType: 'daily-gift' and the selected category
+      // Feed = daily reflections, Wisdom = encouraging messages, Care = care requests, Prayers = prayers
       const response = await authenticatedPost<{ reflectionId: string }>('/api/daily-gift/reflect', {
         dailyGiftId: dailyGift.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
+        category: shareCategory, // Use the selected category from the UI
         isAnonymous: shareAnonymously,
         responseMode,
         moods: selectedMoods,
@@ -732,6 +739,52 @@ export default function DailyGiftScreen() {
               />
             </View>
 
+            {/* Category Selector (only shown if sharing) */}
+            {shareToComm && (
+              <>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>
+                  Where would you like to share?
+                </Text>
+                <View style={styles.categoryGrid}>
+                  {[
+                    { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
+                    { id: 'wisdom' as const, label: 'Wisdom', icon: 'menu-book' as const },
+                    { id: 'care' as const, label: 'Care', icon: 'favorite' as const },
+                    { id: 'prayers' as const, label: 'Prayers', icon: 'church' as const },
+                  ].map(category => {
+                    const isSelected = shareCategory === category.id;
+                    return (
+                      <TouchableOpacity
+                        key={category.id}
+                        style={[
+                          styles.categoryCard,
+                          { backgroundColor: inputBg, borderColor: inputBorder },
+                          isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                        ]}
+                        onPress={() => {
+                          console.log('[DailyGift] User selected category:', category.id);
+                          setShareCategory(category.id);
+                        }}
+                      >
+                        <IconSymbol 
+                          ios_icon_name={category.icon}
+                          android_material_icon_name={category.icon}
+                          size={28}
+                          color={isSelected ? '#FFFFFF' : colors.primary}
+                        />
+                        <Text style={[
+                          styles.categoryLabel,
+                          { color: isSelected ? '#FFFFFF' : textColor }
+                        ]}>
+                          {category.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
             {/* Share Anonymously Toggle (only shown if sharing) */}
             {shareToComm && (
               <TouchableOpacity 
@@ -1087,6 +1140,32 @@ const styles = StyleSheet.create({
   shareToggleDescription: {
     fontSize: typography.bodySmall,
     lineHeight: 18,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  categoryCard: {
+    flex: 1,
+    minWidth: '45%',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+  },
+  categoryCardSelected: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    marginTop: spacing.xs,
   },
   anonymousToggle: {
     flexDirection: 'row',
