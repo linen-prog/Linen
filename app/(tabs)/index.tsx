@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   console.log('User viewing Home screen');
@@ -70,11 +70,6 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
-  const handleMakePrayer = () => {
-    console.log('User tapped Make a Prayer for Me button');
-    router.push('/check-in');
-  };
-
   const greetingText = `Peace to you, ${firstName}`;
   const checkInStreakText = `${checkInStreak}`;
   const reflectionStreakText = `${reflectionStreak}`;
@@ -85,13 +80,13 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
+        <View style={styles.header}>
           <Text style={[styles.greeting, { color: textColor }]}>
             {greetingText}
           </Text>
         </View>
 
-        {/* Much smaller, subtle streak cards */}
+        {/* Streak cards */}
         <View style={styles.streakContainer}>
           <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
             <View style={styles.streakRow}>
@@ -127,23 +122,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-
-        {/* Make a Prayer for Me Button */}
-        <TouchableOpacity 
-          style={[styles.prayerButton, { backgroundColor: colors.primary }]}
-          onPress={handleMakePrayer}
-          activeOpacity={0.8}
-        >
-          <IconSymbol 
-            ios_icon_name="hands.sparkles"
-            android_material_icon_name="auto-awesome"
-            size={24}
-            color="#FFFFFF"
-          />
-          <Text style={styles.prayerButtonText}>
-            Make a Prayer for Me
-          </Text>
-        </TouchableOpacity>
 
         <View style={styles.mainCards}>
           <TouchableOpacity 
@@ -233,7 +211,7 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
 
-          {/* Smaller, more subtle Weekly Recap card */}
+          {/* Weekly Recap card */}
           <TouchableOpacity 
             style={[styles.weeklyRecapCard, { backgroundColor: cardBg }]}
             onPress={handleWeeklyRecap}
@@ -306,26 +284,6 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: 10,
     fontWeight: typography.regular,
-  },
-  prayerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: spacing.lg,
-  },
-  prayerButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
   },
   mainCards: {
     marginTop: spacing.sm,
