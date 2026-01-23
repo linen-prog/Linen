@@ -381,4 +381,75 @@ export function registerCommunityRoutes(app: App) {
       }
     }
   );
+
+  // Delete a community post (only manual posts or user's own posts)
+  app.fastify.delete(
+    '/api/community/post/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { postId } = request.params;
+
+      app.logger.info(
+        { userId: session.user.id, postId },
+        'Deleting community post'
+      );
+
+      try {
+        // Check if post exists
+        const post = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!post.length) {
+          app.logger.warn({ postId }, 'Post not found');
+          return reply.status(404).send({ error: 'Post not found' });
+        }
+
+        // Only allow deletion of manual posts created by the user
+        if (post[0].contentType !== 'manual' || post[0].userId !== session.user.id) {
+          app.logger.warn(
+            { userId: session.user.id, postId, contentType: post[0].contentType, authorId: post[0].userId },
+            'Unauthorized post deletion attempt'
+          );
+          return reply.status(403).send({
+            error: 'You can only delete your own manual posts',
+          });
+        }
+
+        // Delete all associated data (prayers, flags)
+        await app.db
+          .delete(schema.communityPrayers)
+          .where(eq(schema.communityPrayers.postId, postId as any));
+
+        await app.db
+          .delete(schema.flaggedPosts)
+          .where(eq(schema.flaggedPosts.postId, postId as any));
+
+        // Delete the post
+        await app.db
+          .delete(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any));
+
+        app.logger.info(
+          { userId: session.user.id, postId },
+          'Community post deleted'
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, postId },
+          'Failed to delete post'
+        );
+        throw error;
+      }
+    }
+  );
 }

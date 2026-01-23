@@ -93,8 +93,17 @@ export async function initializeDatabase(db: any) {
         "content" text NOT NULL,
         "is_said" boolean NOT NULL DEFAULT false,
         "is_shared" boolean NOT NULL DEFAULT false,
+        "category" text,
+        "shared_to_community" boolean NOT NULL DEFAULT false,
         "created_at" timestamp NOT NULL DEFAULT now()
       )
+    `);
+
+    // Add new columns to conversation_prayers if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "conversation_prayers"
+      ADD COLUMN IF NOT EXISTS "category" text,
+      ADD COLUMN IF NOT EXISTS "shared_to_community" boolean DEFAULT false
     `);
 
     await db.execute(sql`
@@ -115,8 +124,17 @@ export async function initializeDatabase(db: any) {
         "daily_gift_id" uuid NOT NULL REFERENCES "daily_gifts"("id") ON DELETE CASCADE,
         "reflection_text" text NOT NULL,
         "share_to_comm" boolean NOT NULL DEFAULT false,
+        "category" text,
+        "is_anonymous" boolean NOT NULL DEFAULT false,
         "created_at" timestamp NOT NULL DEFAULT now()
       )
+    `);
+
+    // Add new columns to user_reflections if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_reflections"
+      ADD COLUMN IF NOT EXISTS "category" text,
+      ADD COLUMN IF NOT EXISTS "is_anonymous" boolean DEFAULT false
     `);
 
     await db.execute(sql`

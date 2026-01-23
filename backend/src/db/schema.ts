@@ -42,6 +42,10 @@ export const conversationPrayers = pgTable('conversation_prayers', {
   content: text('content').notNull(),
   isSaid: boolean('is_said').default(false).notNull(),
   isShared: boolean('is_shared').default(false).notNull(),
+  category: text('category', {
+    enum: ['feed', 'wisdom', 'care', 'prayers'],
+  }),
+  sharedToCommunity: boolean('shared_to_community').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -70,6 +74,10 @@ export const userReflections = pgTable('user_reflections', {
     .references(() => dailyGifts.id, { onDelete: 'cascade' }),
   reflectionText: text('reflection_text').notNull(),
   shareToComm: boolean('share_to_comm').default(false).notNull(),
+  category: text('category', {
+    enum: ['feed', 'wisdom', 'care', 'prayers'],
+  }),
+  isAnonymous: boolean('is_anonymous').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

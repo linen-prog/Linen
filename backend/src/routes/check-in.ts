@@ -647,4 +647,110 @@ Write only the prayer, nothing else.`;
       }
     }
   );
+
+  // Share a prayer to the community
+  app.fastify.post(
+    '/api/check-in/share-prayer',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          prayerId: string;
+          category: 'feed' | 'wisdom' | 'care' | 'prayers';
+          isAnonymous: boolean;
+        };
+      }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { prayerId, category, isAnonymous } = request.body;
+
+      // Validate input
+      if (!prayerId || typeof prayerId !== 'string') {
+        app.logger.warn({ userId: session.user.id }, 'Invalid prayer ID');
+        return reply.status(400).send({ error: 'Prayer ID is required' });
+      }
+
+      if (!category || !['feed', 'wisdom', 'care', 'prayers'].includes(category)) {
+        app.logger.warn({ userId: session.user.id, category }, 'Invalid category');
+        return reply.status(400).send({ error: 'Valid category is required' });
+      }
+
+      app.logger.info(
+        { userId: session.user.id, prayerId, category, isAnonymous },
+        'Sharing prayer to community'
+      );
+
+      try {
+        // Get the prayer and verify it belongs to user's conversation
+        const prayer = await app.db.query.conversationPrayers.findFirst({
+          where: eq(schema.conversationPrayers.id, prayerId as any),
+        });
+
+        if (!prayer) {
+          app.logger.warn({ userId: session.user.id, prayerId }, 'Prayer not found');
+          return reply.status(404).send({ error: 'Prayer not found' });
+        }
+
+        // Verify conversation belongs to user
+        const conversation = await app.db.query.checkInConversations.findFirst({
+          where: and(
+            eq(schema.checkInConversations.id, prayer.conversationId),
+            eq(schema.checkInConversations.userId, session.user.id)
+          ),
+        });
+
+        if (!conversation) {
+          app.logger.warn(
+            { userId: session.user.id, conversationId: prayer.conversationId },
+            'Conversation not found or unauthorized'
+          );
+          return reply.status(403).send({ error: 'Unauthorized' });
+        }
+
+        // Get user name from session (user info is already available)
+        const userName = session.user.name || null;
+
+        // Create community post
+        const [post] = await app.db
+          .insert(schema.communityPosts)
+          .values({
+            userId: session.user.id,
+            authorName: isAnonymous ? null : userName,
+            isAnonymous,
+            category: 'feed', // Always use feed for community posts (category in contentType)
+            content: prayer.content,
+            contentType: 'companion',
+            scriptureReference: null,
+          })
+          .returning();
+
+        // Update prayer to mark as shared to community
+        await app.db
+          .update(schema.conversationPrayers)
+          .set({
+            sharedToCommunity: true,
+            category: category as any,
+          })
+          .where(eq(schema.conversationPrayers.id, prayerId as any));
+
+        app.logger.info(
+          { userId: session.user.id, prayerId, postId: post.id, category },
+          'Prayer shared to community'
+        );
+
+        return reply.send({
+          success: true,
+          postId: post.id,
+        });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, prayerId },
+          'Failed to share prayer to community'
+        );
+        throw error;
+      }
+    }
+  );
 }

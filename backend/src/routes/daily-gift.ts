@@ -133,17 +133,23 @@ export function registerDailyGiftRoutes(app: App) {
     '/api/daily-gift/reflect',
     async (
       request: FastifyRequest<{
-        Body: { dailyGiftId: string; reflectionText: string; shareToComm: boolean };
+        Body: {
+          dailyGiftId: string;
+          reflectionText: string;
+          shareToComm?: boolean;
+          category?: 'feed' | 'wisdom' | 'care' | 'prayers';
+          isAnonymous?: boolean;
+        };
       }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { dailyGiftId, reflectionText, shareToComm } = request.body;
+      const { dailyGiftId, reflectionText, shareToComm, category, isAnonymous } = request.body;
 
       app.logger.info(
-        { userId: session.user.id, dailyGiftId, shareToComm },
+        { userId: session.user.id, dailyGiftId, shareToComm, category },
         'Creating reflection'
       );
 
@@ -171,13 +177,17 @@ export function registerDailyGiftRoutes(app: App) {
           .limit(1);
 
         let reflection;
+        let postId: string | undefined;
+
         if (existingReflection.length > 0) {
           // Update existing reflection
           [reflection] = await app.db
             .update(schema.userReflections)
             .set({
               reflectionText,
-              shareToComm,
+              shareToComm: shareToComm || false,
+              category: category || null,
+              isAnonymous: isAnonymous || false,
             })
             .where(eq(schema.userReflections.id, existingReflection[0].id))
             .returning();
@@ -189,9 +199,38 @@ export function registerDailyGiftRoutes(app: App) {
               userId: session.user.id,
               dailyGiftId: dailyGiftId as any,
               reflectionText,
-              shareToComm,
+              shareToComm: shareToComm || false,
+              category: category || null,
+              isAnonymous: isAnonymous || false,
             })
             .returning();
+        }
+
+        // If sharing to community and category is provided, create community post
+        if (shareToComm && category) {
+          // Get user name from session (user info is already available)
+          const userName = session.user.name || null;
+
+          // Create community post
+          const [post] = await app.db
+            .insert(schema.communityPosts)
+            .values({
+              userId: session.user.id,
+              authorName: isAnonymous ? null : userName,
+              isAnonymous: isAnonymous || false,
+              category: 'feed', // Always use feed for community posts (actual category stored in reflection)
+              content: reflectionText,
+              contentType: 'daily-gift',
+              scriptureReference: gift[0].scriptureReference,
+            })
+            .returning();
+
+          postId = post.id;
+
+          app.logger.info(
+            { reflectionId: reflection.id, postId: post.id, userId: session.user.id, category },
+            'Reflection shared to community'
+          );
         }
 
         app.logger.info(
@@ -199,7 +238,10 @@ export function registerDailyGiftRoutes(app: App) {
           'Reflection created/updated'
         );
 
-        return reply.send({ reflectionId: reflection.id });
+        return reply.send({
+          reflectionId: reflection.id,
+          postId,
+        });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id, dailyGiftId },
