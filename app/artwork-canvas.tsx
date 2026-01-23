@@ -87,10 +87,15 @@ export default function ArtworkCanvasScreen() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [canvasLayout, setCanvasLayout] = useState({ width: 0, height: 0, x: 0, y: 0 });
+  const [photoPosition, setPhotoPosition] = useState({ x: 0, y: 0 });
+  const [photoScale, setPhotoScale] = useState(1);
+  const [isEditingPhoto, setIsEditingPhoto] = useState(false);
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
   const hasLoadedRef = useRef(false);
+  const photoPositionRef = useRef({ x: 0, y: 0 });
+  const initialPhotoTouchRef = useRef({ x: 0, y: 0 });
   
   // Use refs to always have the latest values during drawing
   const selectedColorRef = useRef(selectedColor);
@@ -148,6 +153,16 @@ export default function ArtworkCanvasScreen() {
             if (parsed.color) {
               setSelectedColor(parsed.color);
             }
+            // Restore photo position and scale if available
+            if (parsed.photoPosition) {
+              console.log('[Canvas] Restoring photo position:', parsed.photoPosition);
+              setPhotoPosition(parsed.photoPosition);
+              photoPositionRef.current = parsed.photoPosition;
+            }
+            if (parsed.photoScale) {
+              console.log('[Canvas] Restoring photo scale:', parsed.photoScale);
+              setPhotoScale(parsed.photoScale);
+            }
           } catch (e) {
             console.error('[Canvas] Failed to parse artwork data:', e);
           }
@@ -171,9 +186,9 @@ export default function ArtworkCanvasScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
         console.log('[Canvas] onStartShouldSetPanResponder called');
-        return true;
+        return !isEditingPhoto;
       },
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => !isEditingPhoto,
       onPanResponderGrant: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
         console.log('[Canvas] Touch started at:', locationX, locationY);
@@ -230,6 +245,33 @@ export default function ArtworkCanvasScreen() {
     })
   ).current;
 
+  // Create PanResponder for photo manipulation
+  const photoPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => isEditingPhoto,
+      onMoveShouldSetPanResponder: () => isEditingPhoto,
+      onPanResponderGrant: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        console.log('[Canvas] Photo edit touch started at:', locationX, locationY);
+        initialPhotoTouchRef.current = { x: locationX, y: locationY };
+        photoPositionRef.current = photoPosition;
+      },
+      onPanResponderMove: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        const deltaX = locationX - initialPhotoTouchRef.current.x;
+        const deltaY = locationY - initialPhotoTouchRef.current.y;
+        
+        setPhotoPosition({
+          x: photoPositionRef.current.x + deltaX,
+          y: photoPositionRef.current.y + deltaY,
+        });
+      },
+      onPanResponderRelease: () => {
+        console.log('[Canvas] Photo edit touch ended at position:', photoPosition);
+      },
+    })
+  ).current;
+
   const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
@@ -276,6 +318,10 @@ export default function ArtworkCanvasScreen() {
             currentStrokeRef.current = null;
             setUndoneStrokes([]);
             setBackgroundImage(null);
+            setPhotoPosition({ x: 0, y: 0 });
+            setPhotoScale(1);
+            setIsEditingPhoto(false);
+            photoPositionRef.current = { x: 0, y: 0 };
           },
         },
       ]
@@ -365,10 +411,13 @@ export default function ArtworkCanvasScreen() {
         const imageUrl = uploadResult.url;
         
         setBackgroundImage(imageUrl);
+        setPhotoPosition({ x: 0, y: 0 });
+        setPhotoScale(1);
+        photoPositionRef.current = { x: 0, y: 0 };
         setIsUploadingPhoto(false);
         
         console.log('[Canvas] Background image set to:', imageUrl);
-        Alert.alert('Photo Added', 'Your photo has been added to the canvas. You can now draw on top of it!');
+        Alert.alert('Photo Added', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
       } catch (error) {
         console.error('[Canvas] Failed to upload photo:', error);
         setIsUploadingPhoto(false);
@@ -391,6 +440,8 @@ export default function ArtworkCanvasScreen() {
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
+        photoPosition,
+        photoScale,
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
@@ -431,6 +482,8 @@ export default function ArtworkCanvasScreen() {
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
+        photoPosition,
+        photoScale,
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
@@ -449,7 +502,7 @@ export default function ArtworkCanvasScreen() {
         ? 'Shared my artwork with a photo background from this week\'s reflection'
         : 'Shared my artwork from this week\'s reflection';
 
-      await authenticatedPost('/api/community/posts', {
+      await authenticatedPost('/api/community/post', {
         content: shareContent,
         category: shareCategory,
         isAnonymous: shareAnonymous,
@@ -500,7 +553,7 @@ export default function ArtworkCanvasScreen() {
     setShowColorPicker(false);
   };
 
-  // Convert stroke points to SVG path data
+  // Convert stroke points to SVG path data with brush-specific styling
   const strokeToPath = (stroke: DrawingStroke): string => {
     if (!stroke || !stroke.points || stroke.points.length === 0) {
       return '';
@@ -515,6 +568,106 @@ export default function ArtworkCanvasScreen() {
     }
     
     return pathData;
+  };
+
+  // Get brush-specific stroke properties
+  const getBrushProps = (stroke: DrawingStroke) => {
+    const baseProps = {
+      stroke: stroke.color,
+      strokeWidth: stroke.brushSize,
+      strokeLinecap: 'round' as const,
+      strokeLinejoin: 'round' as const,
+      fill: 'none' as const,
+    };
+
+    switch (stroke.brushType) {
+      case 'watercolor':
+        return {
+          ...baseProps,
+          opacity: 0.4,
+          strokeWidth: stroke.brushSize * 1.5,
+          strokeLinecap: 'round' as const,
+        };
+      case 'marker':
+        return {
+          ...baseProps,
+          opacity: 0.7,
+          strokeWidth: stroke.brushSize * 1.2,
+          strokeLinecap: 'square' as const,
+        };
+      case 'pen':
+        return {
+          ...baseProps,
+          opacity: 1,
+          strokeWidth: stroke.brushSize * 0.8,
+          strokeLinecap: 'round' as const,
+        };
+      case 'pencil':
+        return {
+          ...baseProps,
+          opacity: 0.8,
+          strokeWidth: stroke.brushSize * 0.7,
+          strokeLinecap: 'round' as const,
+        };
+      case 'spray':
+        return {
+          ...baseProps,
+          opacity: 0.3,
+          strokeWidth: stroke.brushSize * 2,
+          strokeLinecap: 'round' as const,
+        };
+      case 'chalk':
+        return {
+          ...baseProps,
+          opacity: 0.6,
+          strokeWidth: stroke.brushSize * 1.3,
+          strokeLinecap: 'round' as const,
+        };
+      case 'ink':
+        return {
+          ...baseProps,
+          opacity: 0.9,
+          strokeWidth: stroke.brushSize * 0.6,
+          strokeLinecap: 'round' as const,
+        };
+      case 'charcoal':
+        return {
+          ...baseProps,
+          opacity: 0.7,
+          strokeWidth: stroke.brushSize * 1.4,
+          strokeLinecap: 'round' as const,
+        };
+      case 'oil':
+        return {
+          ...baseProps,
+          opacity: 0.85,
+          strokeWidth: stroke.brushSize * 1.3,
+          strokeLinecap: 'round' as const,
+        };
+      case 'pastel':
+        return {
+          ...baseProps,
+          opacity: 0.65,
+          strokeWidth: stroke.brushSize * 1.2,
+          strokeLinecap: 'round' as const,
+        };
+      case 'crayon':
+        return {
+          ...baseProps,
+          opacity: 0.75,
+          strokeWidth: stroke.brushSize * 1.1,
+          strokeLinecap: 'round' as const,
+        };
+      case 'glitter':
+        return {
+          ...baseProps,
+          opacity: 0.8,
+          strokeWidth: stroke.brushSize * 0.9,
+          strokeLinecap: 'round' as const,
+        };
+      default:
+        return baseProps;
+    }
   };
 
   const availableColors = isPremium ? PREMIUM_COLORS : FREE_COLORS;
@@ -608,7 +761,7 @@ export default function ArtworkCanvasScreen() {
         >
           <View 
             style={styles.touchableCanvas}
-            {...panResponder.panHandlers}
+            {...(isEditingPhoto ? photoPanResponder.panHandlers : panResponder.panHandlers)}
           >
             {canvasLayout.width > 0 && canvasLayout.height > 0 && (
               <Svg 
@@ -620,8 +773,10 @@ export default function ArtworkCanvasScreen() {
                 {backgroundImage && (
                   <SvgImage
                     href={backgroundImage}
-                    width={canvasLayout.width}
-                    height={canvasLayout.height}
+                    x={photoPosition.x}
+                    y={photoPosition.y}
+                    width={canvasLayout.width * photoScale}
+                    height={canvasLayout.height * photoScale}
                     preserveAspectRatio="xMidYMid slice"
                   />
                 )}
@@ -632,16 +787,12 @@ export default function ArtworkCanvasScreen() {
                   if (!pathData) {
                     return null;
                   }
+                  const brushProps = getBrushProps(stroke);
                   return (
                     <Path
                       key={`stroke-${index}`}
                       d={pathData}
-                      stroke={stroke.color}
-                      strokeWidth={stroke.brushSize}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fill="none"
-                      opacity={stroke.isEraser ? 1 : 0.9}
+                      {...brushProps}
                     />
                   );
                 })}
@@ -787,6 +938,35 @@ export default function ArtworkCanvasScreen() {
             />
           </TouchableOpacity>
 
+          {/* Edit Photo (only show if photo exists) */}
+          {backgroundImage && (
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: cardBg },
+                isEditingPhoto && styles.controlButtonActive
+              ]}
+              onPress={() => {
+                console.log('[Canvas] User toggling photo edit mode');
+                setIsEditingPhoto(!isEditingPhoto);
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="crop"
+                android_material_icon_name="crop"
+                size={20}
+                color={isEditingPhoto ? colors.primary : textColor}
+              />
+              <Text style={[
+                styles.controlButtonLabel, 
+                { color: isEditingPhoto ? colors.primary : textSecondaryColor }
+              ]}>
+                {isEditingPhoto ? 'Done' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Clear */}
           <TouchableOpacity 
             style={[styles.controlButton, { backgroundColor: cardBg }]}
@@ -802,31 +982,69 @@ export default function ArtworkCanvasScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Brush Size Slider */}
-        <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
-          <View style={styles.sliderHeader}>
-            <Text style={[styles.sliderLabel, { color: textColor }]}>
-              {brushSizeLabel}
-            </Text>
-            <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
-              {brushSize}
-            </Text>
+        {/* Brush Size Slider or Photo Scale Slider */}
+        {isEditingPhoto && backgroundImage ? (
+          <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
+            <View style={styles.sliderHeader}>
+              <Text style={[styles.sliderLabel, { color: textColor }]}>
+                Photo Scale
+              </Text>
+              <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
+                {Math.round(photoScale * 100)}%
+              </Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={0.5}
+              maximumValue={3}
+              step={0.1}
+              value={photoScale}
+              onValueChange={(value) => {
+                console.log('[Canvas] Photo scale changed to:', value);
+                setPhotoScale(value);
+              }}
+              minimumTrackTintColor={colors.primary}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={colors.primary}
+            />
+            <View style={styles.photoEditHint}>
+              <IconSymbol 
+                ios_icon_name="hand.draw"
+                android_material_icon_name="pan-tool"
+                size={16}
+                color={textSecondaryColor}
+              />
+              <Text style={[styles.photoEditHintText, { color: textSecondaryColor }]}>
+                Drag to move photo, use slider to zoom
+              </Text>
+            </View>
           </View>
-          <Slider
-            style={styles.slider}
-            minimumValue={1}
-            maximumValue={50}
-            step={1}
-            value={brushSize}
-            onValueChange={(value) => {
-              console.log('[Canvas] Brush size changed to:', value);
-              setBrushSize(value);
-            }}
-            minimumTrackTintColor={colors.primary}
-            maximumTrackTintColor={colors.border}
-            thumbTintColor={colors.primary}
-          />
-        </View>
+        ) : (
+          <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
+            <View style={styles.sliderHeader}>
+              <Text style={[styles.sliderLabel, { color: textColor }]}>
+                {brushSizeLabel}
+              </Text>
+              <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
+                {brushSize}
+              </Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={50}
+              step={1}
+              value={brushSize}
+              onValueChange={(value) => {
+                console.log('[Canvas] Brush size changed to:', value);
+                setBrushSize(value);
+              }}
+              minimumTrackTintColor={colors.primary}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={colors.primary}
+            />
+          </View>
+        )}
 
         {/* Save Button */}
         <TouchableOpacity 
@@ -1266,6 +1484,16 @@ const styles = StyleSheet.create({
   slider: {
     width: '100%',
     height: 40,
+  },
+  photoEditHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  photoEditHintText: {
+    fontSize: typography.bodySmall - 2,
+    fontStyle: 'italic',
   },
   saveButton: {
     backgroundColor: colors.primary,
