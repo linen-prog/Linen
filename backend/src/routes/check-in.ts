@@ -719,7 +719,7 @@ Write only the prayer, nothing else.`;
             userId: session.user.id,
             authorName: isAnonymous ? null : userName,
             isAnonymous,
-            category: 'feed', // Always use feed for community posts (category in contentType)
+            category: category as any, // Use the category from request
             content: prayer.content,
             contentType: 'companion',
             scriptureReference: null,

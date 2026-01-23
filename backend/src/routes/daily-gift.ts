@@ -218,7 +218,7 @@ export function registerDailyGiftRoutes(app: App) {
               userId: session.user.id,
               authorName: isAnonymous ? null : userName,
               isAnonymous: isAnonymous || false,
-              category: 'feed', // Always use feed for community posts (actual category stored in reflection)
+              category: category as any, // Use the category from request
               content: reflectionText,
               contentType: 'daily-gift',
               scriptureReference: gift[0].scriptureReference,
