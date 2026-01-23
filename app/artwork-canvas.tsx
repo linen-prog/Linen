@@ -90,6 +90,9 @@ export default function ArtworkCanvasScreen() {
   const [photoPosition, setPhotoPosition] = useState({ x: 0, y: 0 });
   const [photoScale, setPhotoScale] = useState(1);
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
+  const [showPostSaveModal, setShowPostSaveModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
@@ -193,6 +196,11 @@ export default function ArtworkCanvasScreen() {
         const { locationX, locationY } = evt.nativeEvent;
         console.log('[Canvas] Touch started at:', locationX, locationY);
         console.log('[Canvas] Using color:', selectedColorRef.current, 'size:', brushSizeRef.current, 'brush:', selectedBrushRef.current);
+        
+        // Reset saved state when user starts drawing again
+        if (hasSaved) {
+          setHasSaved(false);
+        }
         
         const isEraser = selectedBrushRef.current === 'pencil' && selectedColorRef.current === '#FFFFFF';
         const newStroke: DrawingStroke = {
@@ -455,16 +463,8 @@ export default function ArtworkCanvasScreen() {
       
       console.log('Artwork saved successfully:', result);
       setIsSaving(false);
-      Alert.alert('Saved', 'Your artwork has been saved successfully!', [
-        {
-          text: 'Share to Community',
-          onPress: () => setShowShareModal(true),
-        },
-        {
-          text: 'Done',
-          style: 'cancel',
-        },
-      ]);
+      setHasSaved(true);
+      setShowPostSaveModal(true);
     } catch (error) {
       console.error('Failed to save artwork:', error);
       setIsSaving(false);
@@ -512,6 +512,7 @@ export default function ArtworkCanvasScreen() {
       console.log('Artwork shared to community successfully');
       setIsSharing(false);
       setShowShareModal(false);
+      setShowPostSaveModal(false);
       Alert.alert('Shared!', 'Your artwork has been shared with the community.', [
         { 
           text: 'View Community', 
@@ -531,6 +532,27 @@ export default function ArtworkCanvasScreen() {
       setIsSharing(false);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       Alert.alert('Share Failed', `Could not share your artwork: ${errorMessage}. Please try again.`);
+    }
+  };
+
+  const handleDownload = async () => {
+    console.log('[Canvas] User requesting to download artwork');
+    setIsDownloading(true);
+
+    try {
+      // For web, we can use canvas to download
+      // For native, we'll show a message that download is not yet supported
+      if (Platform.OS === 'web') {
+        Alert.alert('Download', 'Web download functionality coming soon. For now, you can take a screenshot of your artwork.');
+        setIsDownloading(false);
+      } else {
+        Alert.alert('Download', 'To save your artwork to your device, please take a screenshot. Download functionality coming soon!');
+        setIsDownloading(false);
+      }
+    } catch (error) {
+      console.error('Failed to download artwork:', error);
+      setIsDownloading(false);
+      Alert.alert('Download Failed', 'Could not download your artwork. Please try again.');
     }
   };
 
@@ -674,7 +696,7 @@ export default function ArtworkCanvasScreen() {
   const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
 
-  const saveButtonText = isSaving ? 'Saving...' : 'Save Artwork';
+  const saveButtonText = isSaving ? 'Saving...' : (hasSaved ? 'Saved' : 'Save Artwork');
   const headerTitle = 'Create Artwork';
   const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
   const brushSizeLabel = 'Brush Size';
@@ -1048,11 +1070,19 @@ export default function ArtworkCanvasScreen() {
 
         {/* Save Button */}
         <TouchableOpacity 
-          style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (!canSave || isSaving || hasSaved) && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={!canSave || isSaving}
+          disabled={!canSave || isSaving || hasSaved}
           activeOpacity={0.8}
         >
+          {hasSaved && (
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={20}
+              color="#FFFFFF"
+            />
+          )}
           <Text style={styles.saveButtonText}>
             {saveButtonText}
           </Text>
@@ -1229,6 +1259,96 @@ export default function ArtworkCanvasScreen() {
                 })}
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Post-Save Options Modal */}
+      <Modal
+        visible={showPostSaveModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPostSaveModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Artwork Saved!
+              </Text>
+              <TouchableOpacity onPress={() => setShowPostSaveModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.shareContent}>
+              <View style={styles.successIcon}>
+                <IconSymbol 
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={64}
+                  color={colors.primary}
+                />
+              </View>
+
+              <Text style={[styles.successMessage, { color: textColor }]}>
+                Your artwork has been saved successfully!
+              </Text>
+
+              {/* Share to Community Button */}
+              <TouchableOpacity
+                style={styles.postSaveButton}
+                onPress={() => {
+                  setShowPostSaveModal(false);
+                  setShowShareModal(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <IconSymbol 
+                  ios_icon_name="person.2"
+                  android_material_icon_name="group"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.postSaveButtonText}>
+                  Share with Community
+                </Text>
+              </TouchableOpacity>
+
+              {/* Download Button */}
+              <TouchableOpacity
+                style={[styles.postSaveButton, styles.postSaveButtonSecondary]}
+                onPress={handleDownload}
+                disabled={isDownloading}
+                activeOpacity={0.8}
+              >
+                <IconSymbol 
+                  ios_icon_name="arrow.down.circle"
+                  android_material_icon_name="download"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text style={[styles.postSaveButtonText, { color: colors.primary }]}>
+                  {isDownloading ? 'Downloading...' : 'Download'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Done Button */}
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowPostSaveModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.cancelButtonText, { color: textColor }]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1502,6 +1622,9 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   saveButtonDisabled: {
     opacity: 0.4,
@@ -1690,5 +1813,35 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: typography.body,
     fontWeight: typography.medium,
+  },
+  successIcon: {
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  successMessage: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  postSaveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  postSaveButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  postSaveButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
 });
