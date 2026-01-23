@@ -120,28 +120,44 @@ export default function ArtworkCanvasScreen() {
     
     const loadExistingArtwork = async () => {
       try {
+        console.log('[Canvas] Loading existing artwork...');
         const { authenticatedGet } = await import('@/utils/api');
         const response = await authenticatedGet<{ artworkData: string; backgroundImage?: string } | null>('/api/artwork/current');
         
         if (response) {
-          console.log('Existing artwork loaded');
+          console.log('[Canvas] Existing artwork loaded:', response);
           if (response.backgroundImage) {
+            console.log('[Canvas] Setting background image:', response.backgroundImage);
             setBackgroundImage(response.backgroundImage);
           }
           // Parse and restore strokes from artworkData
           try {
             const parsed = JSON.parse(response.artworkData);
+            console.log('[Canvas] Parsed artwork data:', parsed);
             if (parsed.strokes && Array.isArray(parsed.strokes)) {
+              console.log('[Canvas] Restoring', parsed.strokes.length, 'strokes');
               setStrokes(parsed.strokes);
             }
+            // Restore brush settings if available
+            if (parsed.brushType) {
+              setSelectedBrush(parsed.brushType);
+            }
+            if (parsed.brushSize) {
+              setBrushSize(parsed.brushSize);
+            }
+            if (parsed.color) {
+              setSelectedColor(parsed.color);
+            }
           } catch (e) {
-            console.error('Failed to parse artwork data:', e);
+            console.error('[Canvas] Failed to parse artwork data:', e);
           }
+        } else {
+          console.log('[Canvas] No existing artwork found, starting fresh');
         }
         setIsLoading(false);
         hasLoadedRef.current = true;
       } catch (error) {
-        console.error('Failed to load existing artwork:', error);
+        console.error('[Canvas] Failed to load existing artwork:', error);
         setIsLoading(false);
         hasLoadedRef.current = true;
       }
@@ -286,6 +302,7 @@ export default function ArtworkCanvasScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
+      allowsMultipleSelection: false,
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -298,7 +315,7 @@ export default function ArtworkCanvasScreen() {
         
         // Prepare file data for upload
         const fileUri = result.assets[0].uri;
-        const fileName = result.assets[0].fileName || 'photo.jpg';
+        const fileName = result.assets[0].fileName || `photo-${Date.now()}.jpg`;
         const fileType = result.assets[0].mimeType || 'image/jpeg';
         
         console.log('[Canvas] Preparing to upload photo:', { fileName, fileType, uri: fileUri });
@@ -338,23 +355,25 @@ export default function ArtworkCanvasScreen() {
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
           console.error('[Canvas] Upload failed:', uploadResponse.status, errorText);
-          throw new Error(`Upload failed: ${uploadResponse.status}`);
+          throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
         }
 
-        const uploadResult = await uploadResponse.json() as { url: string; filename: string };
+        const uploadResult = await uploadResponse.json() as { url: string; filename: string; key?: string };
         console.log('[Canvas] Photo uploaded successfully:', uploadResult);
         
-        // Use the full backend URL for the uploaded image
-        const imageUrl = uploadResult.url.startsWith('http') 
-          ? uploadResult.url 
-          : `${BACKEND_URL}${uploadResult.url}`;
+        // Use the uploaded URL directly (backend returns signed URL)
+        const imageUrl = uploadResult.url;
         
         setBackgroundImage(imageUrl);
         setIsUploadingPhoto(false);
+        
+        console.log('[Canvas] Background image set to:', imageUrl);
+        Alert.alert('Photo Added', 'Your photo has been added to the canvas. You can now draw on top of it!');
       } catch (error) {
         console.error('[Canvas] Failed to upload photo:', error);
         setIsUploadingPhoto(false);
-        Alert.alert('Upload Failed', 'Failed to upload photo. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        Alert.alert('Upload Failed', `Could not upload photo: ${errorMessage}. Please try again.`);
       }
     }
   };
@@ -375,29 +394,31 @@ export default function ArtworkCanvasScreen() {
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
+        savedAt: new Date().toISOString(),
       });
       
-      await authenticatedPost('/api/artwork/save', {
+      const result = await authenticatedPost('/api/artwork/save', {
         artworkData,
         photoUrls: backgroundImage ? [backgroundImage] : [],
       });
       
-      console.log('Artwork saved successfully');
+      console.log('Artwork saved successfully:', result);
       setIsSaving(false);
-      Alert.alert('Saved', 'Your artwork has been saved.', [
+      Alert.alert('Saved', 'Your artwork has been saved successfully!', [
         {
           text: 'Share to Community',
           onPress: () => setShowShareModal(true),
         },
         {
           text: 'Done',
-          onPress: () => router.back(),
+          style: 'cancel',
         },
       ]);
     } catch (error) {
       console.error('Failed to save artwork:', error);
       setIsSaving(false);
-      Alert.alert('Error', 'Failed to save artwork. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Save Failed', `Could not save your artwork: ${errorMessage}. Please try again.`);
     }
   };
 
@@ -413,16 +434,23 @@ export default function ArtworkCanvasScreen() {
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
+        savedAt: new Date().toISOString(),
       });
       
-      await authenticatedPost('/api/artwork/save', {
+      const savedArtwork = await authenticatedPost('/api/artwork/save', {
         artworkData,
         photoUrls: backgroundImage ? [backgroundImage] : [],
       });
 
-      // Then share to community
+      console.log('Artwork saved before sharing:', savedArtwork);
+
+      // Then share to community with artwork reference
+      const shareContent = backgroundImage 
+        ? 'Shared my artwork with a photo background from this week\'s reflection'
+        : 'Shared my artwork from this week\'s reflection';
+
       await authenticatedPost('/api/community/posts', {
-        content: 'Shared my artwork from this week\'s reflection',
+        content: shareContent,
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
@@ -431,13 +459,25 @@ export default function ArtworkCanvasScreen() {
       console.log('Artwork shared to community successfully');
       setIsSharing(false);
       setShowShareModal(false);
-      Alert.alert('Shared', 'Your artwork has been shared with the community.', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert('Shared!', 'Your artwork has been shared with the community.', [
+        { 
+          text: 'View Community', 
+          onPress: () => {
+            router.back();
+            router.push('/(tabs)/community');
+          }
+        },
+        { 
+          text: 'Done', 
+          style: 'cancel',
+          onPress: () => router.back()
+        },
       ]);
     } catch (error) {
       console.error('Failed to share artwork:', error);
       setIsSharing(false);
-      Alert.alert('Error', 'Failed to share artwork. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Share Failed', `Could not share your artwork: ${errorMessage}. Please try again.`);
     }
   };
 
@@ -506,6 +546,24 @@ export default function ArtworkCanvasScreen() {
 
   // All strokes to render (completed + current)
   const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.uploadingText, { color: textColor, marginTop: spacing.md }]}>
+            Loading artwork...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
