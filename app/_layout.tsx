@@ -83,7 +83,7 @@ export default function RootLayout() {
               <Stack>
                 {/* Landing/Orientation screen */}
                 <Stack.Screen name="index" options={{ headerShown: false }} />
-                {/* Auth screen */}
+                {/* Auth screen (kept for future use but not required) */}
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
                 {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
                 <Stack.Screen name="check-in" options={{ headerShown: false }} />
@@ -93,6 +93,11 @@ export default function RootLayout() {
                 <Stack.Screen name="somatic-practice" options={{ headerShown: false }} />
                 {/* Artwork Canvas screen */}
                 <Stack.Screen name="artwork-canvas" options={{ headerShown: false }} />
+                {/* Weekly Recap screens */}
+                <Stack.Screen name="weekly-recap" options={{ headerShown: false }} />
+                <Stack.Screen name="weekly-recap-detail" options={{ headerShown: false }} />
+                <Stack.Screen name="weekly-recap-history" options={{ headerShown: false }} />
+                <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               </Stack>

@@ -119,11 +119,12 @@ export const apiDelete = async <T = any>(endpoint: string, data: any = {}): Prom
 /**
  * Authenticated API call helper
  * Automatically retrieves bearer token from storage and adds to Authorization header
+ * In guest mode, still includes the guest token for tracking purposes
  *
  * @param endpoint - API endpoint path
  * @param options - Fetch options (method, headers, body, etc.)
  * @returns Parsed JSON response
- * @throws Error if token not found or request fails
+ * @throws Error if request fails (but not if token is missing in guest mode)
  */
 export const authenticatedApiCall = async <T = any>(
   endpoint: string,
@@ -132,17 +133,25 @@ export const authenticatedApiCall = async <T = any>(
   const token = await getBearerToken();
 
   if (!token) {
-    console.warn("[API] No authentication token found");
-    throw new Error("Authentication token not found. Please sign in.");
+    console.warn("[API] No authentication token found (guest mode)");
+    // In guest mode, we still make the request but without auth header
+    // The backend should handle guest requests appropriately
   }
 
-  console.log("[API] Making authenticated request with token");
+  const headers: Record<string, string> = {
+    ...options?.headers as Record<string, string>,
+  };
+
+  if (token) {
+    console.log("[API] Making authenticated request with token");
+    headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.log("[API] Making request in guest mode (no auth token)");
+  }
+
   return apiCall<T>(endpoint, {
     ...options,
-    headers: {
-      ...options?.headers,
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 };
 
