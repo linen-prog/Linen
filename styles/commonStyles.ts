@@ -5,7 +5,7 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 export const colors = {
   // Primary - Deep green (spiritual, grounded)
   primary: '#1B5E4F',
-  primaryLight: '#2D7A68',
+  primaryLight: '#D4EDD4',
   primaryDark: '#0F3D32',
   
   // Background - Warm off-white (reverted from cream)
