@@ -198,17 +198,40 @@ export async function initializeDatabase(db: any) {
       )
     `);
 
+    // Alter user_artworks table to ensure weekly_theme_id is nullable
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "user_artworks" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
-        "weekly_theme_id" uuid REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "weekly_theme_id" uuid REFERENCES "weekly_themes"("id") ON DELETE SET NULL,
         "artwork_data" text NOT NULL,
         "photo_urls" text[],
         "created_at" timestamp NOT NULL DEFAULT now(),
         "updated_at" timestamp NOT NULL DEFAULT now()
       )
     `);
+
+    // Ensure weekly_theme_id column is nullable (fix for existing tables)
+    try {
+      await db.execute(sql`
+        ALTER TABLE "user_artworks"
+        ALTER COLUMN "weekly_theme_id" DROP NOT NULL
+      `);
+    } catch (error) {
+      // Column might already be nullable, this is safe to ignore
+    }
+
+    // Update foreign key constraint to use SET NULL instead of CASCADE
+    try {
+      await db.execute(sql`
+        ALTER TABLE "user_artworks"
+        DROP CONSTRAINT IF EXISTS "user_artworks_weekly_theme_id_weekly_themes_id_fk",
+        ADD CONSTRAINT "user_artworks_weekly_theme_id_weekly_themes_id_fk"
+        FOREIGN KEY ("weekly_theme_id") REFERENCES "weekly_themes"("id") ON DELETE SET NULL
+      `);
+    } catch (error) {
+      // Constraint might not exist or already be correct, this is safe to ignore
+    }
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "flagged_posts" (
