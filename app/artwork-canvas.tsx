@@ -90,8 +90,34 @@ export default function ArtworkCanvasScreen() {
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
+  const hasLoadedRef = useRef(false);
+  
+  // Use refs to always have the latest values during drawing
+  const selectedColorRef = useRef(selectedColor);
+  const brushSizeRef = useRef(brushSize);
+  const selectedBrushRef = useRef(selectedBrush);
+
+  // Update refs when state changes
+  useEffect(() => {
+    selectedColorRef.current = selectedColor;
+    console.log('[Canvas] Color updated to:', selectedColor);
+  }, [selectedColor]);
 
   useEffect(() => {
+    brushSizeRef.current = brushSize;
+    console.log('[Canvas] Brush size updated to:', brushSize);
+  }, [brushSize]);
+
+  useEffect(() => {
+    selectedBrushRef.current = selectedBrush;
+    console.log('[Canvas] Brush type updated to:', selectedBrush);
+  }, [selectedBrush]);
+
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      return;
+    }
+    
     const loadExistingArtwork = async () => {
       try {
         const { authenticatedGet } = await import('@/utils/api');
@@ -113,9 +139,11 @@ export default function ArtworkCanvasScreen() {
           }
         }
         setIsLoading(false);
+        hasLoadedRef.current = true;
       } catch (error) {
         console.error('Failed to load existing artwork:', error);
         setIsLoading(false);
+        hasLoadedRef.current = true;
       }
     };
 
@@ -132,21 +160,21 @@ export default function ArtworkCanvasScreen() {
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
-        console.log('[Canvas] Touch started at:', locationX, locationY, 'Canvas size:', canvasLayout.width, 'x', canvasLayout.height);
-        console.log('[Canvas] Current brush:', selectedBrush, 'Color:', selectedColor, 'Size:', brushSize);
+        console.log('[Canvas] Touch started at:', locationX, locationY);
+        console.log('[Canvas] Using color:', selectedColorRef.current, 'size:', brushSizeRef.current, 'brush:', selectedBrushRef.current);
         
-        const isEraser = selectedBrush === 'pencil' && selectedColor === '#FFFFFF';
+        const isEraser = selectedBrushRef.current === 'pencil' && selectedColorRef.current === '#FFFFFF';
         const newStroke: DrawingStroke = {
           points: [{ x: locationX, y: locationY }],
-          color: selectedColor,
-          brushType: selectedBrush,
-          brushSize: brushSize,
+          color: selectedColorRef.current,
+          brushType: selectedBrushRef.current,
+          brushSize: brushSizeRef.current,
           isEraser: isEraser,
         };
         currentStrokeRef.current = newStroke;
         setCurrentStroke(newStroke);
         setUndoneStrokes([]);
-        console.log('[Canvas] New stroke created with', newStroke.points.length, 'points');
+        console.log('[Canvas] New stroke created:', { color: newStroke.color, size: newStroke.brushSize, type: newStroke.brushType });
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
@@ -170,8 +198,10 @@ export default function ArtworkCanvasScreen() {
       onPanResponderRelease: () => {
         console.log('[Canvas] Touch ended, current stroke has', currentStrokeRef.current?.points.length || 0, 'points');
         if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
+          const strokeToSave = currentStrokeRef.current;
+          console.log('[Canvas] Saving stroke with color:', strokeToSave.color, 'size:', strokeToSave.brushSize);
           setStrokes(prev => {
-            const newStrokes = [...prev, currentStrokeRef.current!];
+            const newStrokes = [...prev, strokeToSave];
             console.log('[Canvas] Stroke saved! Total strokes:', newStrokes.length);
             return newStrokes;
           });
@@ -433,7 +463,6 @@ export default function ArtworkCanvasScreen() {
   // Convert stroke points to SVG path data
   const strokeToPath = (stroke: DrawingStroke): string => {
     if (!stroke || !stroke.points || stroke.points.length === 0) {
-      console.log('[Canvas] Warning: Attempted to render stroke with no points');
       return '';
     }
     
@@ -477,11 +506,6 @@ export default function ArtworkCanvasScreen() {
 
   // All strokes to render (completed + current)
   const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
-  
-  // Debug logging for rendering
-  useEffect(() => {
-    console.log('[Canvas] Rendering update - Total strokes:', strokes.length, 'Current stroke:', currentStroke ? 'yes' : 'no', 'All strokes to render:', allStrokes.length);
-  }, [strokes.length, currentStroke, allStrokes.length]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -552,7 +576,7 @@ export default function ArtworkCanvasScreen() {
                   }
                   return (
                     <Path
-                      key={index}
+                      key={`stroke-${index}`}
                       d={pathData}
                       stroke={stroke.color}
                       strokeWidth={stroke.brushSize}
@@ -737,6 +761,7 @@ export default function ArtworkCanvasScreen() {
             step={1}
             value={brushSize}
             onValueChange={(value) => {
+              console.log('[Canvas] Brush size changed to:', value);
               setBrushSize(value);
             }}
             minimumTrackTintColor={colors.primary}
