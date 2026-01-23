@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -33,8 +33,13 @@ export default function CheckInScreen() {
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showPrayerOptions, setShowPrayerOptions] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
+  const [generatedPrayerId, setGeneratedPrayerId] = useState<string>('');
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
+  const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('prayers');
+  const [shareAnonymous, setShareAnonymous] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     const startConversation = async () => {
@@ -195,11 +200,36 @@ export default function CheckInScreen() {
       
       console.log('Prayer generated:', response);
       setGeneratedPrayer(response.prayer);
+      setGeneratedPrayerId(response.prayerId);
       setShowPrayerModal(true);
       setIsGeneratingPrayer(false);
     } catch (error) {
       console.error('Failed to generate prayer:', error);
       setIsGeneratingPrayer(false);
+    }
+  };
+
+  const handleShareToCommunity = async () => {
+    console.log('User sharing prayer to community', { category: shareCategory, anonymous: shareAnonymous });
+    setIsSharing(true);
+
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/check-in/share-prayer', {
+        prayerId: generatedPrayerId,
+        category: shareCategory,
+        isAnonymous: shareAnonymous,
+      });
+      
+      console.log('Prayer shared to community successfully');
+      setShowShareModal(false);
+      setShowPrayerModal(false);
+      Alert.alert('Shared', 'Your prayer has been shared with the community.');
+    } catch (error) {
+      console.error('Failed to share prayer:', error);
+      Alert.alert('Error', 'Failed to share prayer. Please try again.');
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -290,6 +320,13 @@ export default function CheckInScreen() {
       </View>
     );
   };
+
+  const categories = [
+    { id: 'prayers' as const, label: 'Prayers', icon: 'church' as const },
+    { id: 'wisdom' as const, label: 'Wisdom', icon: 'menu-book' as const },
+    { id: 'care' as const, label: 'Care', icon: 'favorite' as const },
+    { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -520,17 +557,140 @@ export default function CheckInScreen() {
               You can pray this aloud, edit it, or simply let it rest with you.
             </Text>
 
+            <View style={styles.prayerActions}>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  console.log('User opening share modal');
+                  setShowShareModal(true);
+                }}
+              >
+                <IconSymbol 
+                  ios_icon_name="square.and.arrow.up"
+                  android_material_icon_name="share"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.primaryButtonText}>
+                  Share with Community
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  console.log('User keeping prayer private');
+                  setShowPrayerModal(false);
+                }}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Keep Private
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Share to Community Modal */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="square.and.arrow.up"
+                android_material_icon_name="share"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Share with Community
+              </Text>
+            </View>
+
+            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+              Choose where to share your prayer:
+            </Text>
+
+            <View style={styles.categoryGrid}>
+              {categories.map(category => {
+                const isSelected = shareCategory === category.id;
+                const categoryLabel = category.label;
+                
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryCard,
+                      { backgroundColor: inputBg, borderColor: inputBorder },
+                      isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                    ]}
+                    onPress={() => setShareCategory(category.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name={category.icon}
+                      android_material_icon_name={category.icon}
+                      size={32}
+                      color={isSelected ? '#FFFFFF' : colors.primary}
+                    />
+                    <Text style={[
+                      styles.categoryLabel,
+                      { color: isSelected ? '#FFFFFF' : textColor }
+                    ]}>
+                      {categoryLabel}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <TouchableOpacity 
-              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                console.log('User closed prayer modal');
-                setShowPrayerModal(false);
-              }}
+              style={styles.anonymousToggle}
+              onPress={() => setShareAnonymous(!shareAnonymous)}
             >
-              <Text style={styles.primaryButtonText}>
-                Amen
+              <IconSymbol 
+                ios_icon_name={shareAnonymous ? 'checkmark.square.fill' : 'square'}
+                android_material_icon_name={shareAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={colors.primary}
+              />
+              <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                Share anonymously
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.shareActions}>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={handleShareToCommunity}
+                disabled={isSharing}
+              >
+                {isSharing ? (
+                  <Text style={styles.primaryButtonText}>
+                    Sharing...
+                  </Text>
+                ) : (
+                  <Text style={styles.primaryButtonText}>
+                    Share
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowShareModal(false)}
+                disabled={isSharing}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -681,6 +841,18 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  shareModalContent: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   modalHeader: {
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -725,9 +897,12 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
   },
   primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: spacing.md,
     borderRadius: borderRadius.lg,
-    alignItems: 'center',
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   primaryButtonText: {
@@ -757,5 +932,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
     lineHeight: 20,
+  },
+  prayerActions: {
+    gap: spacing.xs,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  categoryCard: {
+    flex: 1,
+    minWidth: '45%',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+  },
+  categoryCardSelected: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryLabel: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginTop: spacing.sm,
+  },
+  anonymousToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  anonymousLabel: {
+    fontSize: typography.body,
+  },
+  shareActions: {
+    gap: spacing.xs,
   },
 });
