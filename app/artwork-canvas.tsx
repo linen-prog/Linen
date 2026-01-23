@@ -10,7 +10,7 @@ import { authenticatedPost } from '@/utils/api';
 import Slider from '@react-native-community/slider';
 import Svg, { Path, Image as SvgImage } from 'react-native-svg';
 
-type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter' | 'eraser';
+type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
 interface BrushOption {
   id: BrushType;
@@ -32,7 +32,6 @@ const BRUSH_OPTIONS: BrushOption[] = [
   { id: 'pencil', label: 'Pencil', icon: 'pencil', materialIcon: 'edit', isPremium: false },
   { id: 'marker', label: 'Marker', icon: 'highlighter', materialIcon: 'create', isPremium: false },
   { id: 'pen', label: 'Pen', icon: 'pencil.tip', materialIcon: 'edit', isPremium: false },
-  { id: 'eraser', label: 'Eraser', icon: 'eraser', materialIcon: 'auto-fix-off', isPremium: false },
   { id: 'watercolor', label: 'Watercolor', icon: 'paintbrush', materialIcon: 'brush', isPremium: false },
   { id: 'spray', label: 'Spray', icon: 'spray', materialIcon: 'brush', isPremium: false },
   { id: 'chalk', label: 'Chalk', icon: 'pencil.circle', materialIcon: 'edit', isPremium: false },
@@ -79,7 +78,11 @@ export default function ArtworkCanvasScreen() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBrushPicker, setShowBrushPicker] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareAnonymous, setShareAnonymous] = useState(false);
+  const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
@@ -132,12 +135,12 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] Touch started at:', locationX, locationY, 'Canvas size:', canvasLayout.width, 'x', canvasLayout.height);
         console.log('[Canvas] Current brush:', selectedBrush, 'Color:', selectedColor, 'Size:', brushSize);
         
-        const isEraser = selectedBrush === 'eraser';
+        const isEraser = selectedBrush === 'pencil' && selectedColor === '#FFFFFF';
         const newStroke: DrawingStroke = {
           points: [{ x: locationX, y: locationY }],
-          color: isEraser ? '#FFFFFF' : selectedColor,
+          color: selectedColor,
           brushType: selectedBrush,
-          brushSize: isEraser ? brushSize * 2 : brushSize,
+          brushSize: brushSize,
           isEraser: isEraser,
         };
         currentStrokeRef.current = newStroke;
@@ -231,6 +234,12 @@ export default function ArtworkCanvasScreen() {
         },
       ]
     );
+  };
+
+  const handleEraser = () => {
+    console.log('[Canvas] User activating eraser');
+    setSelectedBrush('pencil');
+    setSelectedColor('#FFFFFF');
   };
 
   const handleUploadPhoto = async () => {
@@ -346,12 +355,59 @@ export default function ArtworkCanvasScreen() {
       console.log('Artwork saved successfully');
       setIsSaving(false);
       Alert.alert('Saved', 'Your artwork has been saved.', [
-        { text: 'OK', onPress: () => router.back() },
+        {
+          text: 'Share to Community',
+          onPress: () => setShowShareModal(true),
+        },
+        {
+          text: 'Done',
+          onPress: () => router.back(),
+        },
       ]);
     } catch (error) {
       console.error('Failed to save artwork:', error);
       setIsSaving(false);
       Alert.alert('Error', 'Failed to save artwork. Please try again.');
+    }
+  };
+
+  const handleShareToCommunity = async () => {
+    console.log('[Canvas] User sharing artwork to community', { category: shareCategory, anonymous: shareAnonymous });
+    setIsSharing(true);
+
+    try {
+      // First, ensure artwork is saved
+      const artworkData = JSON.stringify({ 
+        strokes, 
+        backgroundImage,
+        brushType: selectedBrush,
+        brushSize,
+        color: selectedColor,
+      });
+      
+      await authenticatedPost('/api/artwork/save', {
+        artworkData,
+        photoUrls: backgroundImage ? [backgroundImage] : [],
+      });
+
+      // Then share to community
+      await authenticatedPost('/api/community/posts', {
+        content: 'Shared my artwork from this week\'s reflection',
+        category: shareCategory,
+        isAnonymous: shareAnonymous,
+        contentType: 'somatic',
+      });
+
+      console.log('Artwork shared to community successfully');
+      setIsSharing(false);
+      setShowShareModal(false);
+      Alert.alert('Shared', 'Your artwork has been shared with the community.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error('Failed to share artwork:', error);
+      setIsSharing(false);
+      Alert.alert('Error', 'Failed to share artwork. Please try again.');
     }
   };
 
@@ -374,9 +430,8 @@ export default function ArtworkCanvasScreen() {
     setShowColorPicker(false);
   };
 
-  // Convert stroke points to SVG path data - FIXED: Added null check
+  // Convert stroke points to SVG path data
   const strokeToPath = (stroke: DrawingStroke): string => {
-    // Check if stroke or points is null/undefined
     if (!stroke || !stroke.points || stroke.points.length === 0) {
       console.log('[Canvas] Warning: Attempted to render stroke with no points');
       return '';
@@ -407,13 +462,18 @@ export default function ArtworkCanvasScreen() {
   const premiumBrushesLabel = 'Premium Brushes';
   const premiumBadge = 'PREMIUM';
   const uploadingText = 'Uploading photo...';
+  const shareModalTitle = 'Share to Community';
+  const shareAnonymousLabel = 'Share Anonymously';
+  const shareCategoryLabel = 'Category';
+  const shareButtonText = isSharing ? 'Sharing...' : 'Share';
+  const cancelButtonText = 'Cancel';
 
   const canUndo = strokes.length > 0;
   const canRedo = undoneStrokes.length > 0;
   const canSave = strokes.length > 0 || backgroundImage !== null;
 
   const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
-  const isEraserMode = selectedBrush === 'eraser';
+  const isEraserMode = selectedColor === '#FFFFFF';
 
   // All strokes to render (completed + current)
   const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
@@ -543,7 +603,6 @@ export default function ArtworkCanvasScreen() {
             style={[
               styles.controlButton, 
               { backgroundColor: cardBg },
-              isEraserMode && styles.controlButtonActive
             ]}
             onPress={() => {
               console.log('[Canvas] User opening brush picker');
@@ -552,8 +611,44 @@ export default function ArtworkCanvasScreen() {
             activeOpacity={0.7}
           >
             <IconSymbol 
-              ios_icon_name={isEraserMode ? "eraser" : "paintbrush"}
-              android_material_icon_name={isEraserMode ? "auto-fix-off" : "brush"}
+              ios_icon_name="paintbrush"
+              android_material_icon_name="brush"
+              size={20}
+              color={textColor}
+            />
+            <Text style={[
+              styles.controlButtonLabel, 
+              { color: textSecondaryColor }
+            ]}>
+              {selectedBrushLabel}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Color Selector */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: selectedColor, borderWidth: 2, borderColor: cardBg }]}
+            onPress={() => {
+              console.log('[Canvas] User opening color picker');
+              setShowColorPicker(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.colorPreview} />
+          </TouchableOpacity>
+
+          {/* Eraser Button */}
+          <TouchableOpacity 
+            style={[
+              styles.controlButton, 
+              { backgroundColor: cardBg },
+              isEraserMode && styles.controlButtonActive
+            ]}
+            onPress={handleEraser}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="eraser"
+              android_material_icon_name="auto-fix-off"
               size={20}
               color={isEraserMode ? colors.error : textColor}
             />
@@ -561,23 +656,9 @@ export default function ArtworkCanvasScreen() {
               styles.controlButtonLabel, 
               { color: isEraserMode ? colors.error : textSecondaryColor }
             ]}>
-              {selectedBrushLabel}
+              Eraser
             </Text>
           </TouchableOpacity>
-
-          {/* Color Selector - Hidden in eraser mode */}
-          {!isEraserMode && (
-            <TouchableOpacity 
-              style={[styles.controlButton, { backgroundColor: selectedColor }]}
-              onPress={() => {
-                console.log('[Canvas] User opening color picker');
-                setShowColorPicker(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.colorPreview} />
-            </TouchableOpacity>
-          )}
 
           {/* Undo */}
           <TouchableOpacity 
@@ -708,7 +789,6 @@ export default function ArtworkCanvasScreen() {
               <View style={styles.brushGrid}>
                 {freeBrushes.map((brush) => {
                   const isSelected = selectedBrush === brush.id;
-                  const isEraserBrush = brush.id === 'eraser';
                   return (
                     <TouchableOpacity
                       key={brush.id}
@@ -724,11 +804,11 @@ export default function ArtworkCanvasScreen() {
                         ios_icon_name={brush.icon}
                         android_material_icon_name={brush.materialIcon}
                         size={24}
-                        color={isSelected ? colors.primary : (isEraserBrush ? colors.error : textColor)}
+                        color={isSelected ? colors.primary : textColor}
                       />
                       <Text style={[
                         styles.brushOptionText,
-                        { color: isSelected ? colors.primary : (isEraserBrush ? colors.error : textColor) }
+                        { color: isSelected ? colors.primary : textColor }
                       ]}>
                         {brush.label}
                       </Text>
@@ -848,6 +928,101 @@ export default function ArtworkCanvasScreen() {
                 })}
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Share to Community Modal */}
+      <Modal
+        visible={showShareModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {shareModalTitle}
+              </Text>
+              <TouchableOpacity onPress={() => setShowShareModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.shareContent}>
+              {/* Anonymous Toggle */}
+              <View style={styles.shareOption}>
+                <Text style={[styles.shareOptionLabel, { color: textColor }]}>
+                  {shareAnonymousLabel}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.shareToggle, shareAnonymous && styles.shareToggleActive]}
+                  onPress={() => setShareAnonymous(!shareAnonymous)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.shareToggleThumb, shareAnonymous && styles.shareToggleThumbActive]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Category Selection */}
+              <Text style={[styles.shareOptionLabel, { color: textColor, marginTop: spacing.lg }]}>
+                {shareCategoryLabel}
+              </Text>
+              <View style={styles.categoryGrid}>
+                {(['feed', 'wisdom', 'care', 'prayers'] as const).map((category) => {
+                  const isSelected = shareCategory === category;
+                  const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+                  return (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.categoryOption,
+                        { borderColor: colors.border },
+                        isSelected && styles.categoryOptionSelected
+                      ]}
+                      onPress={() => setShareCategory(category)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.categoryOptionText,
+                        { color: isSelected ? colors.primary : textColor }
+                      ]}>
+                        {categoryLabel}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Share Button */}
+              <TouchableOpacity
+                style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
+                onPress={handleShareToCommunity}
+                disabled={isSharing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.shareButtonText}>
+                  {shareButtonText}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Cancel Button */}
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowShareModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.cancelButtonText, { color: textColor }]}>
+                  {cancelButtonText}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1127,5 +1302,82 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderWidth: 3,
     borderColor: colors.primary,
+  },
+  shareContent: {
+    padding: spacing.lg,
+  },
+  shareOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  shareOptionLabel: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  shareToggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.border,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  shareToggleActive: {
+    backgroundColor: colors.primary,
+  },
+  shareToggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  shareToggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  categoryOption: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+  },
+  categoryOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  categoryOptionText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  shareButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  shareButtonDisabled: {
+    opacity: 0.4,
+  },
+  shareButtonText: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  cancelButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
   },
 });
