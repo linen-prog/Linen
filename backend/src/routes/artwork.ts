@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
 // Utility function to get current Sunday in Pacific Time
@@ -101,29 +101,46 @@ export function registerArtworkRoutes(app: App) {
       try {
         const sundayDate = getCurrentSundayPacific();
 
-        // Get current weekly theme
+        // Get current weekly theme (optional - artwork can be saved without a theme)
+        let themeId: string | null = null;
         const theme = await app.db
           .select()
           .from(schema.weeklyThemes)
           .where(eq(schema.weeklyThemes.weekStartDate, sundayDate))
           .limit(1);
 
-        if (!theme.length) {
-          app.logger.warn({ userId: session.user.id }, 'No theme for current week');
-          return reply.status(404).send({ error: 'No theme available for this week' });
+        if (theme.length > 0) {
+          themeId = theme[0].id;
+          app.logger.info(
+            { userId: session.user.id, themeId },
+            'Found weekly theme for artwork'
+          );
+        } else {
+          app.logger.warn({ userId: session.user.id }, 'No theme for current week, saving artwork without theme');
         }
 
-        // Check if artwork already exists
-        const existingArtwork = await app.db
-          .select()
-          .from(schema.userArtworks)
-          .where(
-            and(
-              eq(schema.userArtworks.userId, session.user.id),
-              eq(schema.userArtworks.weeklyThemeId, theme[0].id)
+        // Check if artwork already exists for this user (most recent, or with this theme if available)
+        let existingArtwork: any[] = [];
+        if (themeId) {
+          existingArtwork = await app.db
+            .select()
+            .from(schema.userArtworks)
+            .where(
+              and(
+                eq(schema.userArtworks.userId, session.user.id),
+                eq(schema.userArtworks.weeklyThemeId, themeId)
+              )
             )
-          )
-          .limit(1);
+            .limit(1);
+        } else {
+          // If no theme, get most recent artwork without a theme
+          existingArtwork = await app.db
+            .select()
+            .from(schema.userArtworks)
+            .where(eq(schema.userArtworks.userId, session.user.id))
+            .orderBy(desc(schema.userArtworks.updatedAt))
+            .limit(1);
+        }
 
         let result;
         if (existingArtwork.length > 0) {
@@ -136,17 +153,25 @@ export function registerArtworkRoutes(app: App) {
             })
             .where(eq(schema.userArtworks.id, existingArtwork[0].id))
             .returning();
+          app.logger.info(
+            { userId: session.user.id, artworkId: result.id },
+            'Artwork updated successfully'
+          );
         } else {
           // Create new artwork
           [result] = await app.db
             .insert(schema.userArtworks)
             .values({
               userId: session.user.id,
-              weeklyThemeId: theme[0].id,
+              weeklyThemeId: themeId,
               artworkData,
               photoUrls,
             })
             .returning();
+          app.logger.info(
+            { userId: session.user.id, artworkId: result.id, themeId },
+            'Artwork created successfully'
+          );
         }
 
         app.logger.info(

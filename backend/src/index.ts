@@ -32,6 +32,9 @@ export type App = typeof app;
 // Enable authentication
 app.withAuth();
 
+// Enable storage for file uploads
+app.withStorage();
+
 // Register routes - IMPORTANT: Always use registration functions to avoid circular dependency issues
 registerAuthRoutes(app);
 registerCheckInRoutes(app);

@@ -202,7 +202,7 @@ export async function initializeDatabase(db: any) {
       CREATE TABLE IF NOT EXISTS "user_artworks" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
-        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "weekly_theme_id" uuid REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
         "artwork_data" text NOT NULL,
         "photo_urls" text[],
         "created_at" timestamp NOT NULL DEFAULT now(),

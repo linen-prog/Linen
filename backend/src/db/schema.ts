@@ -173,9 +173,7 @@ export const userArtworks = pgTable('user_artworks', {
   userId: text('user_id').notNull().references(() => {
     return { id: true } as any;
   }, { onDelete: 'cascade' }),
-  weeklyThemeId: uuid('weekly_theme_id')
-    .notNull()
-    .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
+  weeklyThemeId: uuid('weekly_theme_id').references(() => weeklyThemes.id, { onDelete: 'cascade' }),
   artworkData: text('artwork_data').notNull(),
   photoUrls: text('photo_urls').array(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
