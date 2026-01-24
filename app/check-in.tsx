@@ -31,15 +31,20 @@ export default function CheckInScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
-  const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showPrayerOptions, setShowPrayerOptions] = useState(false);
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showCareModal, setShowCareModal] = useState(false);
+  const [showCareShareModal, setShowCareShareModal] = useState(false);
   const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
   const [generatedPrayerId, setGeneratedPrayerId] = useState<string>('');
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('prayers');
   const [shareAnonymous, setShareAnonymous] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [careRequestText, setCareRequestText] = useState('');
+  const [careAnonymous, setCareAnonymous] = useState(false);
+  const [isSubmittingCare, setIsSubmittingCare] = useState(false);
 
   useEffect(() => {
     const startConversation = async () => {
@@ -215,9 +220,6 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      // Share prayer to community with selected category
-      // This will create a post with contentType: 'companion' in the selected category tab
-      // Feed = daily reflections, Wisdom = encouraging messages, Care = care requests, Prayers = prayers
       await authenticatedPost('/api/check-in/share-prayer', {
         prayerId: generatedPrayerId,
         category: shareCategory,
@@ -227,12 +229,47 @@ export default function CheckInScreen() {
       console.log('Prayer shared to community successfully in category:', shareCategory);
       setShowShareModal(false);
       setShowPrayerModal(false);
-      Alert.alert('Shared', `Your prayer has been shared with the community in ${shareCategory}.`);
+      Alert.alert('Shared', `Your prayer has been shared with the community.`);
     } catch (error) {
       console.error('Failed to share prayer:', error);
       Alert.alert('Error', 'Failed to share prayer. Please try again.');
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleRequestCare = () => {
+    console.log('User opening care request modal');
+    setShowCareModal(true);
+  };
+
+  const handleSubmitCareRequest = async () => {
+    const requestText = careRequestText.trim();
+    if (!requestText) {
+      Alert.alert('Required', 'Please share what you need care for.');
+      return;
+    }
+
+    console.log('User submitting care request', { anonymous: careAnonymous });
+    setIsSubmittingCare(true);
+
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/check-in/request-care', {
+        content: requestText,
+        isAnonymous: careAnonymous,
+      });
+      
+      console.log('Care request submitted successfully');
+      setShowCareModal(false);
+      setCareRequestText('');
+      setCareAnonymous(false);
+      Alert.alert('Shared', 'Your care request has been shared with the community. Others can now send you encouragement.');
+    } catch (error) {
+      console.error('Failed to submit care request:', error);
+      Alert.alert('Error', 'Failed to share care request. Please try again.');
+    } finally {
+      setIsSubmittingCare(false);
     }
   };
 
@@ -331,30 +368,46 @@ export default function CheckInScreen() {
     { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
   ];
 
+  const prayerIconColor = colors.primary;
+  const careIconColor = colors.primary;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
         options={{
           headerShown: true,
-          title: 'Check-In',
+          title: 'Heart Conversation',
           headerBackTitle: 'Home',
           headerStyle: {
             backgroundColor: bgColor,
           },
           headerTintColor: colors.primary,
           headerRight: () => (
-            <TouchableOpacity 
-              onPress={() => setShowPrayerOptions(true)}
-              style={styles.headerButton}
-              disabled={messages.length < 3 || isGeneratingPrayer}
-            >
-              <IconSymbol 
-                ios_icon_name="hands.sparkles"
-                android_material_icon_name="auto-awesome"
-                size={24}
-                color={messages.length < 3 ? textSecondaryColor : colors.primary}
-              />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity 
+                onPress={handleGeneratePrayer}
+                style={styles.headerButton}
+                disabled={isGeneratingPrayer}
+              >
+                <IconSymbol 
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={24}
+                  color={prayerIconColor}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleRequestCare}
+                style={styles.headerButton}
+              >
+                <IconSymbol 
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={24}
+                  color={careIconColor}
+                />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
@@ -697,6 +750,97 @@ export default function CheckInScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Care Request Modal */}
+      <Modal
+        visible={showCareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Request Care
+              </Text>
+            </View>
+
+            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+              Share what you need care for. The community can send you encouragement and prayers.
+            </Text>
+
+            <TextInput
+              style={[styles.careInput, { 
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                color: textColor 
+              }]}
+              placeholder="What do you need care for?"
+              placeholderTextColor={textSecondaryColor}
+              value={careRequestText}
+              onChangeText={setCareRequestText}
+              multiline
+              maxLength={500}
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity 
+              style={styles.anonymousToggle}
+              onPress={() => setCareAnonymous(!careAnonymous)}
+            >
+              <IconSymbol 
+                ios_icon_name={careAnonymous ? 'checkmark.square.fill' : 'square'}
+                android_material_icon_name={careAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={colors.primary}
+              />
+              <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                Share anonymously
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.shareActions}>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={handleSubmitCareRequest}
+                disabled={isSubmittingCare}
+              >
+                {isSubmittingCare ? (
+                  <Text style={styles.primaryButtonText}>
+                    Sharing...
+                  </Text>
+                ) : (
+                  <Text style={styles.primaryButtonText}>
+                    Share Care Request
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowCareModal(false);
+                  setCareRequestText('');
+                  setCareAnonymous(false);
+                }}
+                disabled={isSubmittingCare}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -823,8 +967,14 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.4,
   },
-  headerButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     marginRight: spacing.md,
+  },
+  headerButton: {
+    padding: spacing.xs,
   },
   modalOverlay: {
     flex: 1,
@@ -976,5 +1126,14 @@ const styles = StyleSheet.create({
   },
   shareActions: {
     gap: spacing.xs,
+  },
+  careInput: {
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: typography.body,
+    minHeight: 120,
+    borderWidth: 1,
+    marginBottom: spacing.lg,
   },
 });
