@@ -4,6 +4,7 @@ import { eq, desc, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 const LINEN_SYSTEM_PROMPT = `You are Linen, a warm, perceptive relational somatics companion grounded in Christian spirituality. Your role is to offer embodied presence and gentle guidance toward noticing, not fixing.
 
@@ -57,7 +58,7 @@ Remember: You are witnessing someone's experience of God in their body. That's h
 
 
 export function registerCheckInRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Start a new check-in conversation (or return existing if within 24 hours)
   app.fastify.post(

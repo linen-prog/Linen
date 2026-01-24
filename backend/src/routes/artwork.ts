@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -17,7 +18,7 @@ function getCurrentSundayPacific(): string {
 }
 
 export function registerArtworkRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Get current artwork for user
   app.fastify.get(

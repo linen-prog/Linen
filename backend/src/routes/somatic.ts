@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 // Seed exercises data
 const SEED_EXERCISES = [
@@ -90,7 +91,7 @@ async function seedExercises(app: App) {
 }
 
 export function registerSomaticRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Seed exercises on startup
   seedExercises(app).catch((err) => {

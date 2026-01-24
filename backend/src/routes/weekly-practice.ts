@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, gte } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -40,7 +41,7 @@ function getWeekEndDate(): Date {
 }
 
 export function registerWeeklyPracticeRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Check if user has completed the current week's somatic exercise
   app.fastify.get(

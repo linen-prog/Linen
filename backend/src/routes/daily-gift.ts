@@ -2,6 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -31,7 +32,7 @@ function getCurrentDayOfWeekPacific(): number {
 }
 
 export function registerDailyGiftRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Get today's daily gift (from liturgical calendar via weekly themes)
   app.fastify.get('/api/daily-gift/today', async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {

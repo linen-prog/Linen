@@ -2,9 +2,10 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc, or } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 export function registerCommunityRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Get community posts by category and optional contentType filter
   app.fastify.get(

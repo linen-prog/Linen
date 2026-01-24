@@ -4,6 +4,7 @@ import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
+import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -229,7 +230,7 @@ Respond with a JSON object with these exact keys:
 }
 
 export function registerWeeklyRecapRoutes(app: App) {
-  const requireAuth = app.requireAuth();
+  const requireAuth = createGuestAwareAuth(app);
 
   // Get current/most recent recap
   app.fastify.get(
