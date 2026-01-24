@@ -1,8 +1,18 @@
 import { createApplication } from "@specific-dev/framework";
-import * as schema from './db/schema.js';
+import * as appSchema from './db/schema.js';
+import * as authSchema from './db/auth-schema.js';
+import { registerDailyGiftRoutes } from './routes/daily-gift.js';
+import { registerCheckInRoutes } from './routes/check-in.js';
+import { registerCommunityRoutes } from './routes/community.js';
+import { registerStreaksRoutes } from './routes/streaks.js';
+import { registerSomaticRoutes } from './routes/somatic.js';
+import { registerWeeklyThemeRoutes } from './routes/weekly-theme.js';
+import { registerArtworkRoutes } from './routes/artwork.js';
+import { registerWeeklyPracticeRoutes } from './routes/weekly-practice.js';
+import { registerWeeklyRecapRoutes } from './routes/weekly-recap.js';
+import { initializeDatabase } from './db/initDatabase.js';
 
-// Import route registration functions
-// import { registerUserRoutes } from './routes/users.js';
+const schema = { ...appSchema, ...authSchema };
 
 // Create application with schema for full database type support
 export const app = await createApplication(schema);
@@ -10,9 +20,30 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Register routes - add your route modules here
-// IMPORTANT: Always use registration functions to avoid circular dependency issues
-// registerUserRoutes(app);
+// Initialize database tables on startup
+try {
+  await initializeDatabase(app.db);
+} catch (error) {
+  app.logger.error({ err: error }, 'Failed to initialize database');
+  process.exit(1);
+}
+
+// Enable authentication
+app.withAuth();
+
+// Enable storage for file uploads
+app.withStorage();
+
+// Register routes - IMPORTANT: Always use registration functions to avoid circular dependency issues
+registerDailyGiftRoutes(app);
+registerCheckInRoutes(app);
+registerCommunityRoutes(app);
+registerStreaksRoutes(app);
+registerSomaticRoutes(app);
+registerWeeklyThemeRoutes(app);
+registerArtworkRoutes(app);
+registerWeeklyPracticeRoutes(app);
+registerWeeklyRecapRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
