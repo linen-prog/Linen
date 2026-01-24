@@ -1,10 +1,12 @@
 import { sql } from 'drizzle-orm';
+import { autoSeedThemesIfEmpty } from '../utils/seed-themes.js';
+import type { App } from '../index.js';
 
 /**
  * Initialize database tables by running raw SQL
  * This ensures all required tables exist before the application starts
  */
-export async function initializeDatabase(db: any) {
+export async function initializeDatabase(db: any, app?: App) {
   try {
     console.log('Initializing database tables...');
 
@@ -320,6 +322,11 @@ export async function initializeDatabase(db: any) {
     `);
 
     console.log('Database tables initialized successfully');
+
+    // Auto-seed weekly themes if database is empty
+    if (app) {
+      await autoSeedThemesIfEmpty(app);
+    }
   } catch (error) {
     console.error('Failed to initialize database tables:', error);
     throw error;

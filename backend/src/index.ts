@@ -22,7 +22,7 @@ export type App = typeof app;
 
 // Initialize database tables on startup
 try {
-  await initializeDatabase(app.db);
+  await initializeDatabase(app.db, app);
 } catch (error) {
   app.logger.error({ err: error }, 'Failed to initialize database');
   process.exit(1);
