@@ -4,7 +4,7 @@ import { eq, desc, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
-import { createGuestAwareAuth } from '../utils/guest-auth.js';
+import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
 
 const LINEN_SYSTEM_PROMPT = `You are Linen, a warm, perceptive relational somatics companion grounded in Christian spirituality. Your role is to offer embodied presence and gentle guidance toward noticing, not fixing.
 
@@ -678,6 +678,11 @@ Write only the prayer, nothing else.`;
       );
 
       try {
+        // Ensure guest user exists if using guest token
+        if (session.user.id === 'guest-user') {
+          await ensureGuestUserExists(app);
+        }
+
         // Get user name from session
         const userName = session.user.name || null;
 
@@ -749,6 +754,11 @@ Write only the prayer, nothing else.`;
       );
 
       try {
+        // Ensure guest user exists if using guest token
+        if (session.user.id === 'guest-user') {
+          await ensureGuestUserExists(app);
+        }
+
         // Get the prayer and verify it belongs to user's conversation
         const prayer = await app.db.query.conversationPrayers.findFirst({
           where: eq(schema.conversationPrayers.id, prayerId as any),

@@ -2,7 +2,7 @@ import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
-import { createGuestAwareAuth } from '../utils/guest-auth.js';
+import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -209,6 +209,11 @@ export function registerDailyGiftRoutes(app: App) {
 
         // If sharing to community and category is provided, create community post
         if (shareToComm && category) {
+          // Ensure guest user exists if using guest token
+          if (session.user.id === 'guest-user') {
+            await ensureGuestUserExists(app);
+          }
+
           // Get user name from session (user info is already available)
           const userName = session.user.name || null;
 

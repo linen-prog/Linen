@@ -1,5 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { App } from '../index.js';
+import { eq } from 'drizzle-orm';
+import * as authSchema from '../db/auth-schema.js';
 
 /**
  * Wrapper around requireAuth that accepts guest tokens for testing
@@ -13,6 +15,9 @@ export function createGuestAwareAuth(app: App) {
     const authHeader = request.headers.authorization;
     if (authHeader?.startsWith('Bearer guest-token-')) {
       app.logger.debug({ token: authHeader.substring(0, 30) }, 'Guest token detected');
+
+      // Ensure guest user exists in database
+      await ensureGuestUserExists(app);
 
       // Return mock guest session
       return {
@@ -41,4 +46,49 @@ export function createGuestAwareAuth(app: App) {
     // Otherwise use standard authentication
     return requireAuth(request, reply);
   };
+}
+
+/**
+ * Ensure the guest user exists in the database
+ * This is idempotent - it checks first, then creates if needed
+ */
+export async function ensureGuestUserExists(app: App) {
+  try {
+    // Check if guest user already exists
+    const existingUser = await app.db
+      .select()
+      .from(authSchema.user)
+      .where(eq(authSchema.user.id, 'guest-user'))
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      app.logger.debug('Guest user already exists');
+      return;
+    }
+
+    // Create guest user if it doesn't exist
+    await app.db
+      .insert(authSchema.user)
+      .values({
+        id: 'guest-user',
+        name: 'Guest User',
+        email: 'guest@linen.app',
+        emailVerified: false,
+        image: null,
+      })
+      .catch((error: any) => {
+        // Handle race condition where another request created the user
+        if (error.code === '23505') {
+          // Unique constraint violation - user was just created
+          app.logger.debug('Guest user was created by another request');
+          return;
+        }
+        throw error;
+      });
+
+    app.logger.info('Guest user created');
+  } catch (error) {
+    app.logger.error({ err: error }, 'Failed to ensure guest user exists');
+    throw error;
+  }
 }
