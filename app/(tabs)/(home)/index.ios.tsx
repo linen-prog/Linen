@@ -55,8 +55,8 @@ export default function HomeScreen() {
   };
 
   const handleDailyGift = () => {
-    console.log('User tapped Daily Gift card');
-    router.push('/daily-gift');
+    console.log('User tapped Daily Gift card - navigating to open-gift screen');
+    router.push('/open-gift');
   };
 
   const handleCommunity = () => {
