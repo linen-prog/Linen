@@ -6,7 +6,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
-  console.log('User viewing Home screen');
+  console.log('User viewing Home screen (iOS)');
   const router = useRouter();
 
   const [checkInStreak, setCheckInStreak] = useState(0);
@@ -50,22 +50,22 @@ export default function HomeScreen() {
   const cardBg = colors.card;
 
   const handleCheckIn = () => {
-    console.log('User tapped Check-In card');
+    console.log('User tapped Check-In card - navigating to /check-in');
     router.push('/check-in');
   };
 
   const handleDailyGift = () => {
-    console.log('User tapped Daily Gift card - navigating to open-gift screen');
+    console.log('User tapped Daily Gift card - navigating to /open-gift');
     router.push('/open-gift');
   };
 
   const handleCommunity = () => {
-    console.log('User tapped Community card');
+    console.log('User tapped Community card - navigating to /community');
     router.push('/community');
   };
 
   const handleWeeklyRecap = () => {
-    console.log('User tapped Weekly Recap card');
+    console.log('User tapped Weekly Recap card - navigating to /weekly-recap');
     router.push('/weekly-recap');
   };
 
@@ -139,7 +139,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="message.fill"
                   android_material_icon_name="chat"
-                  size={28}
+                  size={32}
                   color={colors.primary}
                 />
               </View>
@@ -154,7 +154,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="chevron.right"
                 android_material_icon_name="chevron-right"
-                size={20}
+                size={24}
                 color={textSecondaryColor}
               />
             </TouchableOpacity>
@@ -168,7 +168,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="gift.fill"
                   android_material_icon_name="card-giftcard"
-                  size={28}
+                  size={32}
                   color={colors.accent}
                 />
               </View>
@@ -183,7 +183,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="chevron.right"
                 android_material_icon_name="chevron-right"
-                size={20}
+                size={24}
                 color={textSecondaryColor}
               />
             </TouchableOpacity>
@@ -197,7 +197,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="person.3.fill"
                   android_material_icon_name="group"
-                  size={28}
+                  size={32}
                   color={colors.prayer}
                 />
               </View>
@@ -212,7 +212,7 @@ export default function HomeScreen() {
               <IconSymbol 
                 ios_icon_name="chevron.right"
                 android_material_icon_name="chevron-right"
-                size={20}
+                size={24}
                 color={textSecondaryColor}
               />
             </TouchableOpacity>
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl * 2,
   },
   header: {
     paddingTop: spacing.lg,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   streakCard: {
     flex: 1,
@@ -294,33 +294,34 @@ const styles = StyleSheet.create({
   },
   mainCards: {
     marginTop: spacing.sm,
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   mainCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    minHeight: 90,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   mainCardIcon: {
-    marginRight: spacing.md,
+    marginRight: spacing.lg,
   },
   mainCardContent: {
     flex: 1,
   },
   mainCardTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: typography.semibold,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   mainCardDescription: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
   },
   weeklyRecapCard: {
     flexDirection: 'row',
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 1,
     elevation: 1,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   weeklyRecapText: {
     flex: 1,
