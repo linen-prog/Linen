@@ -157,6 +157,10 @@ export const weeklyThemes = pgTable(
     somaticExerciseId: uuid('somatic_exercise_id').references(() => somaticExercises.id, {
       onDelete: 'set null',
     }),
+    featuredExerciseId: uuid('featured_exercise_id').references(() => somaticExercises.id, {
+      onDelete: 'set null',
+    }),
+    reflectionPrompt: text('reflection_prompt'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('weekly_themes_date_unique').on(table.weekStartDate)]
@@ -169,9 +173,11 @@ export const dailyContent = pgTable('daily_content', {
     .notNull()
     .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
   dayOfWeek: integer('day_of_week').notNull(),
+  dayTitle: text('day_title').notNull(),
   scriptureText: text('scripture_text').notNull(),
   scriptureReference: text('scripture_reference').notNull(),
   reflectionPrompt: text('reflection_prompt').notNull(),
+  somaticPrompt: text('somatic_prompt'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

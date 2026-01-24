@@ -3,14 +3,18 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
-// Utility function to get current Sunday in Pacific Time
-function getCurrentSundayPacific(): string {
+// Utility function to get current Monday (week start) in Pacific Time
+function getCurrentMondayPacific(): string {
   const now = new Date();
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
 
   const day = pacificTime.getDay();
   const date = new Date(pacificTime);
-  date.setDate(date.getDate() - day); // Set to Sunday
+
+  // Calculate days to go back to Monday
+  // If Sunday (0), go back 6 days. If Monday (1), no change. If Tuesday (2), go back 1 day, etc.
+  const daysBack = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - daysBack);
   date.setHours(0, 0, 0, 0);
 
   return date.toISOString().split('T')[0];
@@ -362,33 +366,47 @@ function getDailyContent(seasonWeek: string, dayOfWeek: number) {
 export function registerWeeklyThemeRoutes(app: App) {
   const requireAuth = app.requireAuth();
 
-  // Get current weekly theme
+  // Get current weekly theme with daily scripture
   app.fastify.get(
     '/api/weekly-theme/current',
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       app.logger.info('Fetching current weekly theme');
 
       try {
-        const sundayDate = getCurrentSundayPacific();
+        // Get current Monday (week start) in Pacific Time
+        const mondayDate = getCurrentMondayPacific();
 
-        const theme = await app.db
+        // Try to find theme for the current week
+        let theme = await app.db
           .select()
           .from(schema.weeklyThemes)
-          .where(eq(schema.weeklyThemes.weekStartDate, sundayDate))
+          .where(eq(schema.weeklyThemes.weekStartDate, mondayDate))
           .limit(1);
 
+        // If no theme exists, get the most recent one
         if (!theme.length) {
-          app.logger.warn({ date: sundayDate }, 'No theme found for current week');
-          return reply.status(404).send({ error: 'No theme available for this week' });
+          app.logger.warn({ date: mondayDate }, 'No theme found for current week, fetching most recent');
+          const recentThemes = await app.db
+            .select()
+            .from(schema.weeklyThemes)
+            .orderBy(schema.weeklyThemes.weekStartDate)
+            .limit(1);
+
+          if (!recentThemes.length) {
+            app.logger.error({}, 'No themes exist in database');
+            return reply.status(404).send({ error: 'No theme available' });
+          }
+
+          theme = recentThemes;
         }
 
-        // Get current day of week
+        // Get current day of week in Pacific Time (0=Sunday, 1=Monday, ..., 6=Saturday)
         const now = new Date();
         const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
         const currentDayOfWeek = pacificTime.getDay();
 
         // Get daily content for today
-        const dailyContentRecord = await app.db
+        let dailyContentRecord = await app.db
           .select()
           .from(schema.dailyContent)
           .where(
@@ -399,29 +417,57 @@ export function registerWeeklyThemeRoutes(app: App) {
           )
           .limit(1);
 
-        // Get somatic exercise if exists
-        let exercise = null;
-        if (theme[0].somaticExerciseId) {
+        // Fallback to default content if not found
+        let dailyContent = dailyContentRecord[0] || null;
+
+        // Get featured somatic exercise if exists
+        let featuredExercise = null;
+        if (theme[0].featuredExerciseId) {
           const exerciseData = await app.db
             .select()
             .from(schema.somaticExercises)
-            .where(eq(schema.somaticExercises.id, theme[0].somaticExerciseId))
+            .where(eq(schema.somaticExercises.id, theme[0].featuredExerciseId))
             .limit(1);
           if (exerciseData.length) {
-            exercise = exerciseData[0];
+            featuredExercise = exerciseData[0];
           }
         }
 
-        app.logger.info({ themeId: theme[0].id }, 'Current weekly theme retrieved');
+        app.logger.info(
+          { themeId: theme[0].id, dayOfWeek: currentDayOfWeek, weekStartDate: mondayDate },
+          'Current weekly theme retrieved'
+        );
 
         return reply.send({
-          id: theme[0].id,
-          weekStartDate: theme[0].weekStartDate,
-          liturgicalSeason: theme[0].liturgicalSeason,
-          themeTitle: theme[0].themeTitle,
-          themeDescription: theme[0].themeDescription,
-          somaticExercise: exercise,
-          currentDayContent: dailyContentRecord[0] || null,
+          weeklyTheme: {
+            id: theme[0].id,
+            weekStartDate: theme[0].weekStartDate,
+            liturgicalSeason: theme[0].liturgicalSeason,
+            themeTitle: theme[0].themeTitle,
+            themeDescription: theme[0].themeDescription,
+            featuredExerciseId: theme[0].featuredExerciseId || null,
+            reflectionPrompt: theme[0].reflectionPrompt || null,
+            somaticExercise: featuredExercise,
+          },
+          dailyContent: dailyContent
+            ? {
+                id: dailyContent.id,
+                dayOfWeek: dailyContent.dayOfWeek,
+                dayTitle: dailyContent.dayTitle,
+                scriptureReference: dailyContent.scriptureReference,
+                scriptureText: dailyContent.scriptureText,
+                reflectionQuestion: dailyContent.reflectionPrompt,
+                somaticPrompt: dailyContent.somaticPrompt || null,
+              }
+            : {
+                id: null,
+                dayOfWeek: currentDayOfWeek,
+                dayTitle: 'Daily Reflection',
+                scriptureReference: 'Psalm 46:10',
+                scriptureText: 'Be still, and know that I am God.',
+                reflectionQuestion: 'In stillness, what do you notice? What is God saying to you?',
+                somaticPrompt: null,
+              },
         });
       } catch (error) {
         app.logger.error({ err: error }, 'Failed to fetch current weekly theme');

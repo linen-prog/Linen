@@ -200,8 +200,17 @@ export async function initializeDatabase(db: any) {
         "theme_title" text NOT NULL,
         "theme_description" text NOT NULL,
         "somatic_exercise_id" uuid REFERENCES "somatic_exercises"("id") ON DELETE SET NULL,
+        "featured_exercise_id" uuid REFERENCES "somatic_exercises"("id") ON DELETE SET NULL,
+        "reflection_prompt" text,
         "created_at" timestamp NOT NULL DEFAULT now()
       )
+    `);
+
+    // Add new columns to weekly_themes if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "weekly_themes"
+      ADD COLUMN IF NOT EXISTS "featured_exercise_id" uuid REFERENCES "somatic_exercises"("id") ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS "reflection_prompt" text
     `);
 
     await db.execute(sql`
@@ -209,11 +218,20 @@ export async function initializeDatabase(db: any) {
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
         "day_of_week" integer NOT NULL,
+        "day_title" text NOT NULL,
         "scripture_text" text NOT NULL,
         "scripture_reference" text NOT NULL,
         "reflection_prompt" text NOT NULL,
+        "somatic_prompt" text,
         "created_at" timestamp NOT NULL DEFAULT now()
       )
+    `);
+
+    // Add new columns to daily_content if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "daily_content"
+      ADD COLUMN IF NOT EXISTS "day_title" text,
+      ADD COLUMN IF NOT EXISTS "somatic_prompt" text
     `);
 
     // Alter user_artworks table to ensure weekly_theme_id is nullable
