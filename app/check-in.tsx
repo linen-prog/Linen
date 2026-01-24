@@ -256,10 +256,11 @@ export default function CheckInScreen() {
           }
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to share prayer:', error);
       setIsSharing(false);
-      Alert.alert('Error', 'Failed to share prayer. Please try again.');
+      const errorMessage = error?.message || 'Failed to share prayer. Please try again.';
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -309,10 +310,11 @@ export default function CheckInScreen() {
           }
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to submit care request:', error);
       setIsSubmittingCare(false);
-      Alert.alert('Error', 'Failed to share care request. Please try again.');
+      const errorMessage = error?.message || 'Failed to share care request. Please try again.';
+      Alert.alert('Error', errorMessage);
     }
   };
 
