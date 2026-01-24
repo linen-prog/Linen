@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
     marginVertical: spacing.xs,
   },
   diamond: {
-    fontSize: 12,
+    fontSize: 16,
   },
   themeTitle: {
     fontSize: 22,
