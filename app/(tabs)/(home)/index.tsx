@@ -6,7 +6,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
-  console.log('User viewing Home screen');
+  console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
 
   const [checkInStreak, setCheckInStreak] = useState(0);
@@ -19,7 +19,7 @@ export default function HomeScreen() {
         // Fetch user info
         const { authenticatedGet } = await import('@/utils/api');
         const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
-        console.log('User data loaded:', userResponse);
+        console.log('🏠 [Home] User data loaded:', userResponse);
         
         // Extract first name from the user's name field
         const userName = userResponse.user?.name || '';
@@ -28,11 +28,11 @@ export default function HomeScreen() {
 
         // Fetch streaks
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
-        console.log('Streaks loaded:', streaksResponse);
+        console.log('🏠 [Home] Streaks loaded:', streaksResponse);
         setCheckInStreak(streaksResponse.checkInStreak);
         setReflectionStreak(streaksResponse.reflectionStreak);
       } catch (error) {
-        console.error('Failed to load user data:', error);
+        console.error('🏠 [Home] Failed to load user data:', error);
         // Use defaults on error
         setFirstName('Friend');
         setCheckInStreak(0);
@@ -50,22 +50,27 @@ export default function HomeScreen() {
   const cardBg = colors.card;
 
   const handleCheckIn = () => {
-    console.log('User tapped Check-In card - navigating to /check-in');
+    console.log('🏠 [Home] User tapped Check-In card');
+    console.log('🏠 [Home] Navigating to: /check-in');
     router.push('/check-in');
   };
 
   const handleDailyGift = () => {
-    console.log('User tapped Daily Gift card - navigating to /open-gift');
+    console.log('🏠 [Home] User tapped Daily Gift card');
+    console.log('🏠 [Home] Navigating to: /open-gift');
     router.push('/open-gift');
+    console.log('🏠 [Home] router.push() called for /open-gift');
   };
 
   const handleCommunity = () => {
-    console.log('User tapped Community card - navigating to /community');
+    console.log('🏠 [Home] User tapped Community card');
+    console.log('🏠 [Home] Navigating to: /community');
     router.push('/community');
   };
 
   const handleWeeklyRecap = () => {
-    console.log('User tapped Weekly Recap card - navigating to /weekly-recap');
+    console.log('🏠 [Home] User tapped Weekly Recap card');
+    console.log('🏠 [Home] Navigating to: /weekly-recap');
     router.push('/weekly-recap');
   };
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -22,9 +22,13 @@ interface GlitterParticle {
 }
 
 export default function OpenGiftScreen() {
-  console.log('User viewing Open Gift screen');
+  console.log('🎁 [OpenGift] Screen mounted and rendering');
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
+  
+  useEffect(() => {
+    console.log('🎁 [OpenGift] useEffect - Screen is now visible to user');
+  }, []);
   
   // Create glitter particles
   const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
@@ -41,15 +45,16 @@ export default function OpenGiftScreen() {
 
   const handleOpenGift = () => {
     if (isOpening) {
+      console.log('🎁 [OpenGift] Already opening, ignoring tap');
       return;
     }
 
-    console.log('User tapped to open gift - starting glitter animation');
+    console.log('🎁 [OpenGift] User tapped gift box - starting glitter animation');
     setIsOpening(true);
 
     // Navigate after animation completes
     setTimeout(() => {
-      console.log('Gift opening animation complete - navigating to daily gift');
+      console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
       router.replace('/daily-gift');
     }, 1200);
   };
@@ -57,6 +62,8 @@ export default function OpenGiftScreen() {
   const titleText = 'Your Daily Gift';
   const subtitleText = 'A word for your heart today';
   const tapText = 'Tap to open';
+
+  console.log('🎁 [OpenGift] Rendering screen content');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
