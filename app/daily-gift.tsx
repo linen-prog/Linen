@@ -347,7 +347,8 @@ export default function DailyGiftScreen() {
 
   if (!dailyGiftResponse || !dailyGiftResponse.currentDayContent) {
     const errorTitle = 'Unable to load today\'s gift';
-    const errorSubtext = 'Please try again later';
+    const errorSubtext = 'The daily gift is being prepared. Please try again in a moment.';
+    const retryButtonText = 'Try Again';
     
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -356,6 +357,24 @@ export default function DailyGiftScreen() {
             headerShown: false,
           }}
         />
+        
+        {/* Custom Header */}
+        <View style={[styles.header, { backgroundColor: bgColor }]}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="arrow.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
+          <View style={styles.headerRight} />
+        </View>
+        
         <View style={styles.errorContainer}>
           <IconSymbol 
             ios_icon_name="exclamationmark.triangle"
@@ -369,6 +388,24 @@ export default function DailyGiftScreen() {
           <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
             {errorSubtext}
           </Text>
+          
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              console.log('[DailyGift] User tapped retry button');
+              setIsLoadingGift(true);
+              // Reload the component by navigating back and forth
+              router.back();
+              setTimeout(() => {
+                router.push('/daily-gift');
+              }, 100);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.retryButtonText}>
+              {retryButtonText}
+            </Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -993,6 +1030,19 @@ const styles = StyleSheet.create({
   errorSubtext: {
     fontSize: typography.body,
     textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.md,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 
   // Unopened State
