@@ -139,7 +139,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="message.fill"
                   android_material_icon_name="chat"
-                  size={24}
+                  size={28}
                   color={colors.primary}
                 />
               </View>
@@ -168,7 +168,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="gift.fill"
                   android_material_icon_name="card-giftcard"
-                  size={24}
+                  size={28}
                   color={colors.accent}
                 />
               </View>
@@ -197,7 +197,7 @@ export default function HomeScreen() {
                 <IconSymbol 
                   ios_icon_name="person.3.fill"
                   android_material_icon_name="group"
-                  size={24}
+                  size={28}
                   color={colors.prayer}
                 />
               </View>
@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
   },
   mainCards: {
     marginTop: spacing.sm,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   mainCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -308,19 +308,19 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   mainCardIcon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   mainCardContent: {
     flex: 1,
   },
   mainCardTitle: {
-    fontSize: typography.body,
+    fontSize: 17,
     fontWeight: typography.semibold,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   mainCardDescription: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
   },
   weeklyRecapCard: {
     flexDirection: 'row',
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 1,
     elevation: 1,
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
   },
   weeklyRecapText: {
     flex: 1,
