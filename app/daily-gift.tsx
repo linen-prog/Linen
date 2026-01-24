@@ -98,6 +98,9 @@ export default function DailyGiftScreen() {
   const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
   const [hasSkippedPractice, setHasSkippedPractice] = useState(false);
 
+  // Somatic prompt state (for daily somatic invitation)
+  const [hasSkippedSomaticPrompt, setHasSkippedSomaticPrompt] = useState(false);
+
   // Category for sharing to community
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
@@ -287,6 +290,17 @@ export default function DailyGiftScreen() {
     setHasSkippedPractice(true);
   };
 
+  const handleTrySomaticPrompt = () => {
+    console.log('[DailyGift] User tapped Try for somatic prompt');
+    setHasSkippedSomaticPrompt(true);
+    // TODO: Could navigate to a somatic practice screen or show instructions
+  };
+
+  const handleSkipSomaticPrompt = () => {
+    console.log('[DailyGift] User skipped somatic prompt');
+    setHasSkippedSomaticPrompt(true);
+  };
+
   const toggleMood = (mood: string) => {
     console.log('[DailyGift] User toggled mood:', mood);
     setSelectedMoods(prev => 
@@ -454,6 +468,11 @@ export default function DailyGiftScreen() {
 
   const invitationLabel = 'WEEKLY SOMATIC INVITATION';
   const invitationText = 'You are invited to practice with us this week';
+
+  // Somatic prompt card text
+  const somaticPromptDisplay = dailyContent.somaticPrompt || '';
+  const hasSomaticPrompt = !!dailyContent.somaticPrompt;
+  const tryButtonText = 'Try';
 
   // Get current date for display
   const currentDate = new Date();
@@ -623,15 +642,45 @@ export default function DailyGiftScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Weekly Theme Section */}
+          {/* Weekly Theme Section with Icons */}
           <View style={styles.themeSection}>
             <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
               {liturgicalSeasonDisplay}
             </Text>
             
-            <Text style={[styles.themeTitle, { color: textColor }]}>
-              {themeTitleDisplay}
-            </Text>
+            <View style={styles.themeTitleRow}>
+              <Text style={[styles.themeTitle, { color: textColor }]}>
+                {themeTitleDisplay}
+              </Text>
+              
+              <View style={styles.themeIcons}>
+                <TouchableOpacity 
+                  onPress={handleAmbientSoundPress}
+                  style={styles.themeIconButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol 
+                    ios_icon_name="speaker.wave.2"
+                    android_material_icon_name="volume-up"
+                    size={20}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={handleCommunityPress}
+                  style={styles.themeIconButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol 
+                    ios_icon_name="person.2"
+                    android_material_icon_name="group"
+                    size={20}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
             
             <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
               {themeDescriptionDisplay}
@@ -684,12 +733,38 @@ export default function DailyGiftScreen() {
             </View>
           )}
 
+          {/* Somatic Invitation Card (Simple Prompt) */}
+          {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
+            <View style={[styles.somaticPromptCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.somaticPromptText, { color: textColor }]}>
+                {somaticPromptDisplay}
+              </Text>
+
+              <View style={styles.somaticPromptActions}>
+                <TouchableOpacity 
+                  style={styles.tryButton}
+                  onPress={handleTrySomaticPrompt}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.tryButtonText}>
+                    {tryButtonText}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={handleSkipSomaticPrompt}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.skipPracticeText, { color: textSecondaryColor }]}>
+                    {skipButtonText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* Daily Scripture Section */}
           <View style={styles.dailyScriptureSection}>
-            <Text style={[styles.dayOfWeek, { color: textSecondaryColor }]}>
-              {dayOfWeekDisplay}
-            </Text>
-            
             <View style={styles.dailyThemeTitleRow}>
               <Text style={[styles.diamond, { color: colors.primary }]}>
                 ◆
@@ -1114,7 +1189,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl * 2,
   },
 
-  // Weekly Theme Section
+  // Weekly Theme Section with Icons
   themeSection: {
     alignItems: 'center',
     gap: spacing.xs,
@@ -1126,13 +1201,27 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
+  themeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    gap: spacing.sm,
+  },
   themeTitle: {
     fontSize: 22,
     fontFamily: 'serif',
     fontWeight: '400',
     textAlign: 'center',
     letterSpacing: 0.3,
-    marginVertical: spacing.xs,
+    flex: 1,
+  },
+  themeIcons: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  themeIconButton: {
+    padding: spacing.xs,
   },
   themeDescription: {
     fontSize: 14,
@@ -1204,16 +1293,46 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
+  // Somatic Prompt Card (Simple)
+  somaticPromptCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 1,
+    alignItems: 'center',
+  },
+  somaticPromptText: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontStyle: 'italic',
+    fontWeight: '400',
+  },
+  somaticPromptActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  tryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+  },
+  tryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
   // Daily Scripture Section
   dailyScriptureSection: {
     gap: spacing.sm,
-  },
-  dayOfWeek: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    textAlign: 'center',
   },
   dailyThemeTitleRow: {
     flexDirection: 'row',
