@@ -1,23 +1,39 @@
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withSequence,
+  Easing 
+} from 'react-native-reanimated';
+
+interface GlitterParticle {
+  id: number;
+  angle: number;
+  distance: number;
+  delay: number;
+  color: string;
+}
 
 export default function OpenGiftScreen() {
   console.log('User viewing Open Gift screen');
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
-  const [glitterParticles] = useState(() => 
-    Array.from({ length: 30 }, () => ({
-      x: new Animated.Value(0),
-      y: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0),
-    }))
-  );
+  
+  // Create glitter particles
+  const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
+    id: index,
+    angle: (index / 30) * Math.PI * 2,
+    distance: 80 + Math.random() * 60,
+    delay: Math.random() * 100,
+    color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
+  }));
 
   const bgColor = colors.background;
   const textColor = colors.text;
@@ -28,60 +44,14 @@ export default function OpenGiftScreen() {
       return;
     }
 
-    console.log('User tapped to open gift - starting animation');
+    console.log('User tapped to open gift - starting glitter animation');
     setIsOpening(true);
 
-    // Animate glitter particles
-    const animations = glitterParticles.map((particle, index) => {
-      const angle = (index / glitterParticles.length) * Math.PI * 2;
-      const distance = 100 + Math.random() * 100;
-      const targetX = Math.cos(angle) * distance;
-      const targetY = Math.sin(angle) * distance;
-
-      return Animated.parallel([
-        Animated.timing(particle.x, {
-          toValue: targetX,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(particle.y, {
-          toValue: targetY,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(particle.opacity, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.opacity, {
-            toValue: 0,
-            duration: 600,
-            delay: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(particle.scale, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.scale, {
-            toValue: 0,
-            duration: 600,
-            delay: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]);
-    });
-
-    Animated.parallel(animations).start(() => {
+    // Navigate after animation completes
+    setTimeout(() => {
       console.log('Gift opening animation complete - navigating to daily gift');
       router.replace('/daily-gift');
-    });
+    }, 1200);
   };
 
   const titleText = 'Your Daily Gift';
@@ -127,27 +97,15 @@ export default function OpenGiftScreen() {
           </TouchableOpacity>
 
           {/* Glitter particles */}
-          {glitterParticles.map((particle, index) => {
-            const glitterColor = index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer;
-            
-            return (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.glitterParticle,
-                  {
-                    backgroundColor: glitterColor,
-                    transform: [
-                      { translateX: particle.x },
-                      { translateY: particle.y },
-                      { scale: particle.scale },
-                    ],
-                    opacity: particle.opacity,
-                  },
-                ]}
-              />
-            );
-          })}
+          {isOpening && glitterParticles.map((particle) => (
+            <GlitterParticle
+              key={particle.id}
+              angle={particle.angle}
+              distance={particle.distance}
+              delay={particle.delay}
+              color={particle.color}
+            />
+          ))}
         </View>
 
         <Text style={[styles.tapText, { color: textSecondaryColor }]}>
@@ -155,6 +113,66 @@ export default function OpenGiftScreen() {
         </Text>
       </View>
     </SafeAreaView>
+  );
+}
+
+function GlitterParticle({ 
+  angle, 
+  distance, 
+  delay, 
+  color 
+}: { 
+  angle: number; 
+  distance: number; 
+  delay: number; 
+  color: string;
+}) {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0);
+
+  React.useEffect(() => {
+    const targetX = Math.cos(angle) * distance;
+    const targetY = Math.sin(angle) * distance;
+
+    setTimeout(() => {
+      translateX.value = withTiming(targetX, { 
+        duration: 800, 
+        easing: Easing.out(Easing.cubic) 
+      });
+      translateY.value = withTiming(targetY, { 
+        duration: 800, 
+        easing: Easing.out(Easing.cubic) 
+      });
+      opacity.value = withSequence(
+        withTiming(1, { duration: 200 }),
+        withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) })
+      );
+      scale.value = withSequence(
+        withTiming(1, { duration: 200 }),
+        withTiming(0.5, { duration: 600 })
+      );
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.glitterParticle,
+        { backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
   );
 }
 
@@ -169,32 +187,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   title: {
-    fontSize: typography.h1,
-    fontWeight: typography.semibold,
+    fontSize: 32,
+    fontWeight: '400',
     marginBottom: spacing.sm,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: typography.body,
+    fontSize: 16,
     fontStyle: 'italic',
     marginBottom: spacing.xxl * 2,
     textAlign: 'center',
+    fontWeight: '300',
   },
   giftContainer: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xxl,
+    width: 200,
+    height: 200,
   },
   giftBox: {
     width: 140,
     height: 140,
-    borderRadius: borderRadius.xl,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -205,7 +227,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tapText: {
-    fontSize: typography.body,
+    fontSize: 16,
     textAlign: 'center',
+    fontWeight: '300',
   },
 });
