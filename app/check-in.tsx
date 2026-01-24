@@ -370,6 +370,7 @@ export default function CheckInScreen() {
 
   const prayerIconColor = colors.primary;
   const careIconColor = colors.primary;
+  const labelColor = colors.textSecondary;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -386,7 +387,7 @@ export default function CheckInScreen() {
             <View style={styles.headerButtons}>
               <TouchableOpacity 
                 onPress={handleGeneratePrayer}
-                style={styles.headerButton}
+                style={styles.headerButtonContainer}
                 disabled={isGeneratingPrayer}
               >
                 <IconSymbol 
@@ -395,10 +396,13 @@ export default function CheckInScreen() {
                   size={24}
                   color={prayerIconColor}
                 />
+                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                  Prayer
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleRequestCare}
-                style={styles.headerButton}
+                style={styles.headerButtonContainer}
               >
                 <IconSymbol 
                   ios_icon_name="heart.fill"
@@ -406,6 +410,9 @@ export default function CheckInScreen() {
                   size={24}
                   color={careIconColor}
                 />
+                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                  Care
+                </Text>
               </TouchableOpacity>
             </View>
           ),
@@ -971,10 +978,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
-  headerButton: {
-    padding: spacing.xs,
+  headerButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  headerButtonLabel: {
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: typography.medium,
   },
   modalOverlay: {
     flex: 1,
