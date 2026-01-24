@@ -64,6 +64,7 @@ export default function CommunityScreen() {
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
 
   useEffect(() => {
+    console.log('[Community] Tab changed to:', selectedTab);
     loadPosts(selectedTab);
     loadStats();
   }, [selectedTab]);
@@ -72,14 +73,15 @@ export default function CommunityScreen() {
     try {
       const { authenticatedGet } = await import('@/utils/api');
       const response = await authenticatedGet<CommunityStats>('/api/community/stats');
+      console.log('[Community] Stats loaded:', response);
       setStats(response);
     } catch (error) {
-      console.error('Failed to load community stats:', error);
+      console.error('[Community] Failed to load community stats:', error);
     }
   };
 
   const loadPosts = async (category: string) => {
-    console.log('Loading posts for category:', category);
+    console.log('[Community] Loading posts for category:', category);
     setIsLoading(true);
     
     try {
@@ -88,21 +90,35 @@ export default function CommunityScreen() {
       let endpoint = '';
       if (category === 'my-shared') {
         endpoint = '/api/community/my-posts';
+        console.log('[Community] Fetching user\'s shared posts from:', endpoint);
       } else {
         // Map frontend tab names to backend categories
         // Feed shows daily-gift reflections
         // Wisdom, Care, Prayers show companion content filtered by category
         endpoint = `/api/community/posts?category=${category}`;
+        console.log('[Community] Fetching posts from:', endpoint);
       }
       
       const response = await authenticatedGet<Post[]>(endpoint);
-      console.log('Posts loaded for', category, ':', response.length, 'posts');
+      console.log('[Community] Posts loaded for', category, ':', response.length, 'posts');
+      
+      // Log details of posts for debugging
+      if (category === 'my-shared') {
+        console.log('[Community] My Shared posts details:', response.map(p => ({
+          id: p.id,
+          category: p.category,
+          contentType: p.contentType,
+          prayerCount: p.prayerCount,
+          createdAt: p.createdAt
+        })));
+      }
+      
       setPosts(response.map(post => ({
         ...post,
         createdAt: new Date(post.createdAt),
       })));
     } catch (error) {
-      console.error('Failed to load posts:', error);
+      console.error('[Community] Failed to load posts:', error);
       setPosts([]);
     } finally {
       setIsLoading(false);
@@ -110,13 +126,13 @@ export default function CommunityScreen() {
   };
 
   const handlePray = async (postId: string) => {
-    console.log('User holding post in prayer:', postId);
+    console.log('[Community] User holding post in prayer:', postId);
     
     try {
       const { authenticatedPost } = await import('@/utils/api');
       const response = await authenticatedPost<{ prayerCount: number; userHasPrayed: boolean }>(`/api/community/pray/${postId}`, {});
       
-      console.log('Prayer toggled:', response);
+      console.log('[Community] Prayer toggled:', response);
       
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
@@ -132,12 +148,12 @@ export default function CommunityScreen() {
       // Reload stats after praying
       loadStats();
     } catch (error) {
-      console.error('Failed to toggle prayer:', error);
+      console.error('[Community] Failed to toggle prayer:', error);
     }
   };
 
   const handleFlagPost = async (postId: string) => {
-    console.log('User flagging post:', postId);
+    console.log('[Community] User flagging post:', postId);
     
     Alert.alert(
       'Flag Content',
@@ -154,7 +170,7 @@ export default function CommunityScreen() {
               Alert.alert('Thank you', 'This content has been flagged for review.');
               loadPosts(selectedTab);
             } catch (error) {
-              console.error('Failed to flag post:', error);
+              console.error('[Community] Failed to flag post:', error);
               Alert.alert('Error', 'Failed to flag content. Please try again.');
             }
           },
@@ -178,6 +194,38 @@ export default function CommunityScreen() {
 
   const sharedTodayText = `${stats.sharedToday}`;
   const liftedInPrayerText = `${stats.liftedInPrayer}`;
+
+  // Helper function to get category badge color
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'feed':
+        return colors.primary;
+      case 'wisdom':
+        return '#9C27B0';
+      case 'care':
+        return '#FF5722';
+      case 'prayers':
+        return '#2196F3';
+      default:
+        return colors.primary;
+    }
+  };
+
+  // Helper function to get category label
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'feed':
+        return 'Feed';
+      case 'wisdom':
+        return 'Wisdom';
+      case 'care':
+        return 'Care';
+      case 'prayers':
+        return 'Prayers';
+      default:
+        return category;
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -247,7 +295,10 @@ export default function CommunityScreen() {
                     styles.tab,
                     isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
                   ]}
-                  onPress={() => setSelectedTab(tab.id)}
+                  onPress={() => {
+                    console.log('[Community] User selected tab:', tab.id);
+                    setSelectedTab(tab.id);
+                  }}
                 >
                   <IconSymbol 
                     ios_icon_name={tab.icon}
@@ -261,11 +312,6 @@ export default function CommunityScreen() {
                   ]}>
                     {tabLabel}
                   </Text>
-                  {tab.id === 'prayers' && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>1</Text>
-                    </View>
-                  )}
                 </TouchableOpacity>
               );
             })}
@@ -275,7 +321,10 @@ export default function CommunityScreen() {
         {/* Care Message */}
         <View style={styles.careMessage}>
           <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
-            Each reflection below is held with care and prayer ✨
+            {selectedTab === 'my-shared' 
+              ? 'Your shared reflections and prayers ✨'
+              : 'Each reflection below is held with care and prayer ✨'
+            }
           </Text>
         </View>
 
@@ -296,16 +345,24 @@ export default function CommunityScreen() {
                 color={textSecondaryColor}
               />
               <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                No posts yet in this category
+                {selectedTab === 'my-shared' 
+                  ? 'You haven\'t shared anything yet'
+                  : 'No posts yet in this category'
+                }
               </Text>
               <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-                Share from your check-ins, daily gifts, or practices
+                {selectedTab === 'my-shared'
+                  ? 'Share from your check-ins, daily gifts, or practices'
+                  : 'Share from your check-ins, daily gifts, or practices'
+                }
               </Text>
             </View>
           ) : (
             posts.map(post => {
-              const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName;
+              const authorDisplay = post.isAnonymous ? 'Anonymous' : (post.authorName || 'You');
               const prayerCountText = `${post.prayerCount}`;
+              const categoryColor = getCategoryColor(post.category);
+              const categoryLabel = getCategoryLabel(post.category);
               
               return (
                 <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
@@ -320,6 +377,13 @@ export default function CommunityScreen() {
                       <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
                         {authorDisplay}
                       </Text>
+                      {selectedTab === 'my-shared' && (
+                        <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '20' }]}>
+                          <Text style={[styles.categoryBadgeText, { color: categoryColor }]}>
+                            {categoryLabel}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                     <TouchableOpacity 
                       style={styles.flagButton}
@@ -468,20 +532,6 @@ const styles = StyleSheet.create({
   tabTextSelected: {
     color: '#FFFFFF',
   },
-  badge: {
-    backgroundColor: '#FF5252',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 2,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: typography.bold,
-  },
   careMessage: {
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
@@ -530,10 +580,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    flex: 1,
   },
   postAuthorName: {
     fontSize: typography.bodySmall,
     fontWeight: typography.medium,
+  },
+  categoryBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+    marginLeft: spacing.xs,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: typography.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   flagButton: {
     padding: spacing.xs,
