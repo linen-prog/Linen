@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
@@ -24,6 +24,7 @@ interface Prayer {
 
 export default function CheckInScreen() {
   console.log('User viewing Check-In screen');
+  const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -49,14 +50,14 @@ export default function CheckInScreen() {
   useEffect(() => {
     const startConversation = async () => {
       try {
-        console.log('Starting check-in conversation...');
+        console.log('[CheckIn] Starting check-in conversation...');
         const { authenticatedPost } = await import('@/utils/api');
         const response = await authenticatedPost<{ 
           conversationId: string; 
           messages: Array<{ role: string; content: string; createdAt: string }>;
           isNewConversation: boolean;
         }>('/api/check-in/start', {});
-        console.log('Conversation started successfully:', response);
+        console.log('[CheckIn] Conversation started successfully:', response);
         setConversationId(response.conversationId);
         
         // Load existing messages (but don't show initial AI greeting for new conversations)
@@ -75,12 +76,12 @@ export default function CheckInScreen() {
         }
         
         if (response.isNewConversation) {
-          console.log('New 24-hour conversation thread started');
+          console.log('[CheckIn] New 24-hour conversation thread started');
         } else {
-          console.log('Continuing existing conversation thread');
+          console.log('[CheckIn] Continuing existing conversation thread');
         }
       } catch (error) {
-        console.error('Failed to start conversation - will retry on first message:', error);
+        console.error('[CheckIn] Failed to start conversation - will retry on first message:', error);
         // Don't set a temp ID - let the backend create one when the first message is sent
         setConversationId(null);
       }
@@ -104,12 +105,12 @@ export default function CheckInScreen() {
       });
       
       if (response.isCrisis) {
-        console.log('Crisis keywords detected:', response.keywords);
+        console.log('[CheckIn] Crisis keywords detected:', response.keywords);
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Failed to check for crisis:', error);
+      console.error('[CheckIn] Failed to check for crisis:', error);
       return false;
     }
   };
@@ -120,7 +121,7 @@ export default function CheckInScreen() {
       return;
     }
 
-    console.log('User sending message:', messageText);
+    console.log('[CheckIn] User sending message:', messageText);
 
     // Check for crisis keywords
     const isCrisis = await checkForCrisis(messageText);
@@ -142,7 +143,7 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      console.log('Sending message to backend with conversationId:', conversationId);
+      console.log('[CheckIn] Sending message to backend with conversationId:', conversationId);
       const response = await authenticatedPost<{ 
         response: string; 
         messageId: string;
@@ -152,11 +153,11 @@ export default function CheckInScreen() {
         message: messageText,
       });
       
-      console.log('AI response received:', response);
+      console.log('[CheckIn] AI response received:', response);
       
       // Update conversationId if backend created a new one
       if (response.conversationId && !conversationId) {
-        console.log('Backend created new conversation:', response.conversationId);
+        console.log('[CheckIn] Backend created new conversation:', response.conversationId);
         setConversationId(response.conversationId);
       }
       
@@ -174,7 +175,7 @@ export default function CheckInScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('[CheckIn] Failed to send message:', error);
       setIsLoading(false);
       
       // Show error message to user
@@ -193,12 +194,12 @@ export default function CheckInScreen() {
   };
 
   const handlePrayerIconPress = () => {
-    console.log('User tapped prayer icon');
+    console.log('[CheckIn] User tapped prayer icon');
     setShowPrayerOptions(true);
   };
 
   const handleGeneratePrayer = async () => {
-    console.log('User requested prayer generation');
+    console.log('[CheckIn] User requested prayer generation');
     setIsGeneratingPrayer(true);
     setShowPrayerOptions(false);
 
@@ -208,19 +209,20 @@ export default function CheckInScreen() {
         conversationId,
       });
       
-      console.log('Prayer generated:', response);
+      console.log('[CheckIn] Prayer generated:', response);
       setGeneratedPrayer(response.prayer);
       setGeneratedPrayerId(response.prayerId);
       setShowPrayerModal(true);
       setIsGeneratingPrayer(false);
     } catch (error) {
-      console.error('Failed to generate prayer:', error);
+      console.error('[CheckIn] Failed to generate prayer:', error);
       setIsGeneratingPrayer(false);
+      Alert.alert('Error', 'Failed to generate prayer. Please try again.');
     }
   };
 
   const handleShareToCommunity = async () => {
-    console.log('User sharing prayer to community', { category: shareCategory, anonymous: shareAnonymous });
+    console.log('[CheckIn] User sharing prayer to community', { category: shareCategory, anonymous: shareAnonymous });
     setIsSharing(true);
 
     try {
@@ -231,20 +233,38 @@ export default function CheckInScreen() {
         isAnonymous: shareAnonymous,
       });
       
-      console.log('Prayer shared to community successfully in category:', shareCategory);
+      console.log('[CheckIn] ✅ Prayer shared to community successfully in category:', shareCategory);
       setShowShareModal(false);
       setShowPrayerModal(false);
-      Alert.alert('Shared', `Your prayer has been shared with the community.`);
-    } catch (error) {
-      console.error('Failed to share prayer:', error);
-      Alert.alert('Error', 'Failed to share prayer. Please try again.');
-    } finally {
       setIsSharing(false);
+      
+      // Show success message with option to view community
+      Alert.alert(
+        'Shared!',
+        `Your prayer has been shared with the community in the ${shareCategory.charAt(0).toUpperCase() + shareCategory.slice(1)} tab.`,
+        [
+          {
+            text: 'View Community',
+            onPress: () => {
+              console.log('[CheckIn] User navigating to community page');
+              router.push('/(tabs)/community');
+            }
+          },
+          {
+            text: 'OK',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('[CheckIn] ❌ Failed to share prayer:', error);
+      setIsSharing(false);
+      Alert.alert('Error', 'Failed to share prayer. Please try again.');
     }
   };
 
   const handleRequestCare = () => {
-    console.log('User opening care request modal');
+    console.log('[CheckIn] User opening care request modal');
     setShowCareModal(true);
   };
 
@@ -255,7 +275,7 @@ export default function CheckInScreen() {
       return;
     }
 
-    console.log('User submitting care request', { anonymous: careAnonymous });
+    console.log('[CheckIn] User submitting care request', { anonymous: careAnonymous });
     setIsSubmittingCare(true);
 
     try {
@@ -265,31 +285,49 @@ export default function CheckInScreen() {
         isAnonymous: careAnonymous,
       });
       
-      console.log('Care request submitted successfully');
+      console.log('[CheckIn] ✅ Care request submitted successfully');
       setShowCareModal(false);
       setCareRequestText('');
       setCareAnonymous(false);
-      Alert.alert('Shared', 'Your care request has been shared with the community. Others can now send you encouragement.');
-    } catch (error) {
-      console.error('Failed to submit care request:', error);
-      Alert.alert('Error', 'Failed to share care request. Please try again.');
-    } finally {
       setIsSubmittingCare(false);
+      
+      // Show success message with option to view community
+      Alert.alert(
+        'Shared!',
+        'Your care request has been shared with the community in the Care tab.',
+        [
+          {
+            text: 'View Community',
+            onPress: () => {
+              console.log('[CheckIn] User navigating to community page');
+              router.push('/(tabs)/community');
+            }
+          },
+          {
+            text: 'OK',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('[CheckIn] ❌ Failed to submit care request:', error);
+      setIsSubmittingCare(false);
+      Alert.alert('Error', 'Failed to share care request. Please try again.');
     }
   };
 
   const handleAcknowledgeCrisis = () => {
-    console.log('User acknowledged crisis resources');
+    console.log('[CheckIn] User acknowledged crisis resources');
     setShowCrisisModal(false);
   };
 
   const handleCall988 = () => {
-    console.log('User tapping to call 988');
+    console.log('[CheckIn] User tapping to call 988');
     Linking.openURL('tel:988');
   };
 
   const handleTextCrisisLine = () => {
-    console.log('User tapping to text Crisis Line');
+    console.log('[CheckIn] User tapping to text Crisis Line');
     Linking.openURL('sms:741741&body=HOME');
   };
 
@@ -629,7 +667,7 @@ export default function CheckInScreen() {
               <TouchableOpacity 
                 style={[styles.primaryButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
-                  console.log('User opening share modal');
+                  console.log('[CheckIn] User opening share modal');
                   setShowShareModal(true);
                 }}
               >
@@ -647,7 +685,7 @@ export default function CheckInScreen() {
               <TouchableOpacity 
                 style={styles.cancelButton}
                 onPress={() => {
-                  console.log('User keeping prayer private');
+                  console.log('[CheckIn] User keeping prayer private');
                   setShowPrayerModal(false);
                 }}
               >
