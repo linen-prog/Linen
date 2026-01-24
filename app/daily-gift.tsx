@@ -62,9 +62,6 @@ export default function DailyGiftScreen() {
   const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
   const [hasSeenInvitation, setHasSeenInvitation] = useState(false);
 
-  // Response mode: 'text', 'art', or 'voice'
-  const [responseMode, setResponseMode] = useState<'text' | 'art' | 'voice'>('text');
-
   // Category for sharing to community
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
@@ -72,8 +69,8 @@ export default function DailyGiftScreen() {
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
 
-  const moodOptions = ['Peaceful', 'Anxious', 'Grateful', 'Heavy', 'Hopeful', 'Uncertain', 'Joyful', 'Weary'];
-  const sensationOptions = ['Warmth', 'Tension', 'Lightness', 'Heaviness', 'Expansion', 'Constriction', 'Tingling', 'Numbness'];
+  const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
+  const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
 
   useEffect(() => {
     const loadDailyGift = async () => {
@@ -134,23 +131,19 @@ export default function DailyGiftScreen() {
       reflectionText, 
       shareToComm,
       shareAnonymously,
-      responseMode,
       selectedMoods,
       selectedSensations 
     });
     setIsLoading(true);
 
     try {
-      // Daily Gift reflections can be shared to any community tab
-      // This creates a post with contentType: 'daily-gift' and the selected category
-      // Feed = daily reflections, Wisdom = encouraging messages, Care = care requests, Prayers = prayers
       const response = await authenticatedPost<{ reflectionId: string }>('/api/daily-gift/reflect', {
         dailyGiftId: dailyGift.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
-        category: shareCategory, // Use the selected category from the UI
+        category: shareCategory,
         isAnonymous: shareAnonymously,
-        responseMode,
+        responseMode: 'text',
         moods: selectedMoods,
         sensations: selectedSensations,
       });
@@ -189,11 +182,6 @@ export default function DailyGiftScreen() {
     setHasSeenInvitation(true);
   };
 
-  const handleCreateArtwork = () => {
-    console.log('[DailyGift] User tapped Create Artwork');
-    router.push('/artwork-canvas');
-  };
-
   const toggleMood = (mood: string) => {
     console.log('[DailyGift] User toggled mood:', mood);
     setSelectedMoods(prev => 
@@ -216,7 +204,7 @@ export default function DailyGiftScreen() {
         <Stack.Screen 
           options={{
             headerShown: true,
-            title: 'Today\'s Gift',
+            title: '',
             headerBackTitle: 'Home',
             headerStyle: {
               backgroundColor: bgColor,
@@ -243,7 +231,7 @@ export default function DailyGiftScreen() {
         <Stack.Screen 
           options={{
             headerShown: true,
-            title: 'Today\'s Gift',
+            title: '',
             headerBackTitle: 'Home',
             headerStyle: {
               backgroundColor: bgColor,
@@ -273,11 +261,9 @@ export default function DailyGiftScreen() {
   const scriptureDisplay = dailyGift.scriptureText;
   const referenceDisplay = dailyGift.scriptureReference;
   const reflectionPromptDisplay = dailyGift.reflectionPrompt;
-  const somaticPromptDisplay = dailyGift.somaticPrompt || 'Where in your body do you feel this scripture? What sensations arise?';
-  const saveButtonText = isLoading ? 'Saving...' : 'Save Reflection';
+  const saveButtonText = isLoading ? 'Saving...' : 'Save';
 
   const hasWeeklyTheme = weeklyTheme !== null;
-  const seasonDisplay = hasWeeklyTheme ? weeklyTheme.liturgicalSeason.toUpperCase() : '';
   const themeTitleDisplay = hasWeeklyTheme ? weeklyTheme.themeTitle : '';
   const themeDescriptionDisplay = hasWeeklyTheme ? weeklyTheme.themeDescription : '';
   
@@ -285,49 +271,32 @@ export default function DailyGiftScreen() {
   const hasSomaticExercise = somaticExercise !== null && somaticExercise !== undefined;
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
-  const exerciseDurationDisplay = somaticExercise?.duration || '';
-  const invitationText = 'You are invited to practice with us this week';
 
   const completedTitle = 'Reflection Saved';
   const completedText = 'Your reflection has been saved. Return tomorrow for a new gift.';
-  const reflectionTitle = 'Your Response';
-  const reflectionSubtitle = 'Take your time. There\'s no rush.';
-  const reflectionPlaceholder = 'Write, draw with words, or simply notice what arises...';
-  const shareToggleLabel = 'Share to Community';
-  const shareToggleDescription = 'Others can hold your reflection in prayer';
-  const shareAnonymouslyLabel = 'Share anonymously';
-  const reflectionPromptTitle = 'Reflection Question';
-  const somaticPromptTitle = 'Somatic Prompt';
-  const somaticTitle = 'WEEKLY SOMATIC INVITATION';
+  const reflectionTitle = 'Your Reflection';
+  const reflectionPlaceholder = 'Write openly in your own words today...';
+  const shareToggleLabel = 'Share with community';
+  const moodTagsTitle = 'How are you feeling?';
+  const sensationTagsTitle = 'How is your body?';
+  const moodTagsSubtitle = 'Optional';
+  const sensationTagsSubtitle = 'Optional';
+
   const beginButtonText = 'Begin Practice';
   const skipButtonText = 'Skip';
-  const responseModeTitle = 'How would you like to respond?';
-  const moodTagsTitle = 'How are you feeling?';
-  const sensationTagsTitle = 'What do you notice in your body?';
-  const moodTagsSubtitle = 'Select all that apply';
-  const sensationTagsSubtitle = 'Select all that apply';
-
-  const textModeLabel = 'Text';
-  const artModeLabel = 'Art';
-  const voiceModeLabel = 'Voice';
-
-  const textModeActive = responseMode === 'text';
-  const artModeActive = responseMode === 'art';
-  const voiceModeActive = responseMode === 'voice';
 
   // Invitation modal text
   const modalTitle = 'This Week\'s Practice';
   const modalInvitation = 'This week\'s theme invites you to try...';
   const modalBeginButton = 'Begin Practice';
   const modalLaterButton = 'Maybe Later';
-  const practiceCompletedBadge = 'Completed';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
         options={{
           headerShown: true,
-          title: 'Today\'s Gift',
+          title: '',
           headerBackTitle: 'Home',
           headerStyle: {
             backgroundColor: bgColor,
@@ -368,18 +337,6 @@ export default function DailyGiftScreen() {
               <Text style={[styles.modalExerciseDescription, { color: textSecondaryColor }]}>
                 {exerciseDescriptionDisplay}
               </Text>
-              
-              <View style={[styles.modalDurationBadge, { backgroundColor: colors.primaryLight }]}>
-                <IconSymbol 
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="schedule"
-                  size={16}
-                  color={colors.primary}
-                />
-                <Text style={[styles.modalDurationText, { color: colors.primary }]}>
-                  {exerciseDurationDisplay}
-                </Text>
-              </View>
             </View>
 
             <View style={styles.modalButtons}>
@@ -411,248 +368,89 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Weekly Theme Section */}
-        {hasWeeklyTheme && (
-          <View style={styles.themeSection}>
-            <Text style={[styles.seasonLabel, { color: textSecondaryColor }]}>
-              {seasonDisplay}
+        {/* Simple Title Section */}
+        <View style={styles.titleSection}>
+          <View style={styles.titleIconRow}>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={[styles.pageTitle, { color: textColor }]}>
+              {themeTitleDisplay}
             </Text>
-            
-            <View style={styles.themeTitleContainer}>
-              <IconSymbol 
-                ios_icon_name="sparkles"
-                android_material_icon_name="auto-awesome"
-                size={20}
-                color={colors.accent}
-              />
-              <Text style={[styles.themeTitle, { color: textColor }]}>
-                {themeTitleDisplay}
-              </Text>
-              <IconSymbol 
-                ios_icon_name="sparkles"
-                android_material_icon_name="auto-awesome"
-                size={20}
-                color={colors.accent}
-              />
-            </View>
-            
-            <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
-              {themeDescriptionDisplay}
-            </Text>
+            <IconSymbol 
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={16}
+              color={colors.primary}
+            />
           </View>
-        )}
+          
+          <Text style={[styles.pageSubtitle, { color: textSecondaryColor }]}>
+            {themeDescriptionDisplay}
+          </Text>
+        </View>
 
-        {/* Weekly Somatic Exercise (Optional) */}
+        {/* Weekly Somatic Invitation Card (Simple) */}
         {hasSomaticExercise && (
           <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
                 ios_icon_name="figure.mind.and.body"
                 android_material_icon_name="self-improvement"
-                size={28}
+                size={24}
                 color={colors.primary}
               />
-              <View style={styles.somaticHeaderText}>
-                <Text style={[styles.somaticTitle, { color: textColor }]}>
-                  {somaticTitle}
-                </Text>
-                <Text style={[styles.somaticInvitation, { color: colors.primary }]}>
-                  {invitationText}
-                </Text>
-              </View>
-              {hasCompletedPractice && (
-                <View style={[styles.completedBadge, { backgroundColor: colors.success }]}>
-                  <IconSymbol 
-                    ios_icon_name="checkmark"
-                    android_material_icon_name="check"
-                    size={12}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.completedBadgeText}>
-                    {practiceCompletedBadge}
-                  </Text>
-                </View>
-              )}
+              <Text style={[styles.somaticLabel, { color: textColor }]}>
+                WEEKLY SOMATIC INVITATION
+              </Text>
             </View>
 
-            <Text style={[styles.exerciseTitle, { color: textColor }]}>
+            <Text style={[styles.somaticTitle, { color: textColor }]}>
               {exerciseTitleDisplay}
             </Text>
-            <Text style={[styles.exerciseDescription, { color: textSecondaryColor }]}>
+            
+            <Text style={[styles.somaticDescription, { color: textSecondaryColor }]}>
               {exerciseDescriptionDisplay}
             </Text>
 
             {!hasCompletedPractice && (
-              <View style={styles.somaticButtons}>
-                <TouchableOpacity 
-                  style={styles.beginButton}
-                  onPress={handleBeginPractice}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.beginButtonText}>
-                    {beginButtonText}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={styles.beginButton}
+                onPress={handleBeginPractice}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.beginButtonText}>
+                  {beginButtonText}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
 
-        {/* Scripture Card */}
-        <View style={[styles.giftCard, { backgroundColor: cardBg }]}>
+        {/* Scripture Section (Simple) */}
+        <View style={styles.scriptureSection}>
+          <Text style={[styles.scriptureReference, { color: colors.primary }]}>
+            {referenceDisplay}
+          </Text>
+          
           <Text style={[styles.scriptureText, { color: textColor }]}>
             {scriptureDisplay}
           </Text>
           
-          <Text style={[styles.scriptureReference, { color: colors.primary }]}>
-            {referenceDisplay}
-          </Text>
-        </View>
-
-        {/* Reflection Prompt Card */}
-        <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
-          <Text style={[styles.promptTitle, { color: textColor }]}>
-            {reflectionPromptTitle}
-          </Text>
-          <Text style={[styles.promptText, { color: textSecondaryColor }]}>
+          <Text style={[styles.reflectionPrompt, { color: textSecondaryColor }]}>
             {reflectionPromptDisplay}
           </Text>
         </View>
 
-        {/* Somatic Prompt Card */}
-        <View style={[styles.promptCard, { backgroundColor: cardBg }]}>
-          <Text style={[styles.promptTitle, { color: textColor }]}>
-            {somaticPromptTitle}
-          </Text>
-          <Text style={[styles.promptText, { color: textSecondaryColor }]}>
-            {somaticPromptDisplay}
-          </Text>
-        </View>
-
-        {/* Response Section (if not yet reflected) */}
+        {/* Response Section (Keep existing formatting) */}
         {!dailyGift.hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
             <Text style={[styles.reflectionTitle, { color: textColor }]}>
               {reflectionTitle}
             </Text>
-            <Text style={[styles.reflectionSubtitle, { color: textSecondaryColor }]}>
-              {reflectionSubtitle}
-            </Text>
-
-            {/* Response Mode Selector */}
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              {responseModeTitle}
-            </Text>
-            <View style={styles.responseModeButtons}>
-              <TouchableOpacity 
-                style={[
-                  styles.modeButton, 
-                  textModeActive && styles.modeButtonActive
-                ]}
-                onPress={() => {
-                  console.log('[DailyGift] User selected text response mode');
-                  setResponseMode('text');
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="text.alignleft"
-                  android_material_icon_name="text-fields"
-                  size={24}
-                  color={textModeActive ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.modeButtonText, 
-                  { color: textModeActive ? colors.primary : textSecondaryColor }
-                ]}>
-                  {textModeLabel}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[
-                  styles.modeButton, 
-                  artModeActive && styles.modeButtonActive
-                ]}
-                onPress={() => {
-                  console.log('[DailyGift] User selected art response mode');
-                  setResponseMode('art');
-                  handleCreateArtwork();
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="paintbrush"
-                  android_material_icon_name="brush"
-                  size={24}
-                  color={artModeActive ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.modeButtonText, 
-                  { color: artModeActive ? colors.primary : textSecondaryColor }
-                ]}>
-                  {artModeLabel}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[
-                  styles.modeButton, 
-                  voiceModeActive && styles.modeButtonActive
-                ]}
-                onPress={() => {
-                  console.log('[DailyGift] User selected voice response mode');
-                  setResponseMode('voice');
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="mic"
-                  android_material_icon_name="mic"
-                  size={24}
-                  color={voiceModeActive ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.modeButtonText, 
-                  { color: voiceModeActive ? colors.primary : textSecondaryColor }
-                ]}>
-                  {voiceModeLabel}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Text Input (if text mode) */}
-            {textModeActive && (
-              <TextInput
-                style={[styles.reflectionInput, { 
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                  color: textColor 
-                }]}
-                placeholder={reflectionPlaceholder}
-                placeholderTextColor={textSecondaryColor}
-                value={reflectionText}
-                onChangeText={setReflectionText}
-                multiline
-                numberOfLines={8}
-                textAlignVertical="top"
-              />
-            )}
-
-            {/* Voice Recording Placeholder (if voice mode) */}
-            {voiceModeActive && (
-              <View style={[styles.voicePlaceholder, { borderColor: inputBorder }]}>
-                <IconSymbol 
-                  ios_icon_name="mic.circle"
-                  android_material_icon_name="mic"
-                  size={48}
-                  color={colors.primary}
-                />
-                <Text style={[styles.voicePlaceholderText, { color: textSecondaryColor }]}>
-                  Voice recording coming soon
-                </Text>
-              </View>
-            )}
 
             {/* Mood Tags */}
             <Text style={[styles.sectionTitle, { color: textColor }]}>
@@ -718,94 +516,41 @@ export default function DailyGiftScreen() {
               })}
             </View>
 
+            {/* Text Input */}
+            <TextInput
+              style={[styles.reflectionInput, { 
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                color: textColor 
+              }]}
+              placeholder={reflectionPlaceholder}
+              placeholderTextColor={textSecondaryColor}
+              value={reflectionText}
+              onChangeText={setReflectionText}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
             {/* Share Toggle */}
-            <View style={styles.shareToggle}>
-              <View style={styles.shareToggleText}>
-                <Text style={[styles.shareToggleLabel, { color: textColor }]}>
-                  {shareToggleLabel}
-                </Text>
-                <Text style={[styles.shareToggleDescription, { color: textSecondaryColor }]}>
-                  {shareToggleDescription}
-                </Text>
-              </View>
-              <Switch
-                value={shareToComm}
-                onValueChange={(value) => {
-                  console.log('[DailyGift] User toggled share to community:', value);
-                  setShareToComm(value);
-                }}
-                trackColor={{ false: colors.border, true: colors.primaryLight }}
-                thumbColor={shareToComm ? colors.primary : colors.card}
+            <TouchableOpacity 
+              style={styles.shareToggle}
+              onPress={() => {
+                console.log('[DailyGift] User toggled share to community:', !shareToComm);
+                setShareToComm(!shareToComm);
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name={shareToComm ? 'checkmark.square.fill' : 'square'}
+                android_material_icon_name={shareToComm ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={colors.primary}
               />
-            </View>
-
-            {/* Category Selector (only shown if sharing) */}
-            {shareToComm && (
-              <>
-                <Text style={[styles.sectionTitle, { color: textColor }]}>
-                  Where would you like to share?
-                </Text>
-                <View style={styles.categoryGrid}>
-                  {[
-                    { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
-                    { id: 'wisdom' as const, label: 'Wisdom', icon: 'menu-book' as const },
-                    { id: 'care' as const, label: 'Care', icon: 'favorite' as const },
-                    { id: 'prayers' as const, label: 'Prayers', icon: 'church' as const },
-                  ].map(category => {
-                    const isSelected = shareCategory === category.id;
-                    return (
-                      <TouchableOpacity
-                        key={category.id}
-                        style={[
-                          styles.categoryCard,
-                          { backgroundColor: inputBg, borderColor: inputBorder },
-                          isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
-                        ]}
-                        onPress={() => {
-                          console.log('[DailyGift] User selected category:', category.id);
-                          setShareCategory(category.id);
-                        }}
-                      >
-                        <IconSymbol 
-                          ios_icon_name={category.icon}
-                          android_material_icon_name={category.icon}
-                          size={28}
-                          color={isSelected ? '#FFFFFF' : colors.primary}
-                        />
-                        <Text style={[
-                          styles.categoryLabel,
-                          { color: isSelected ? '#FFFFFF' : textColor }
-                        ]}>
-                          {category.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-
-            {/* Share Anonymously Toggle (only shown if sharing) */}
-            {shareToComm && (
-              <TouchableOpacity 
-                style={styles.anonymousToggle}
-                onPress={() => {
-                  console.log('[DailyGift] User toggled share anonymously:', !shareAnonymously);
-                  setShareAnonymously(!shareAnonymously);
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name={shareAnonymously ? 'checkmark.square.fill' : 'square'}
-                  android_material_icon_name={shareAnonymously ? 'check-box' : 'check-box-outline-blank'}
-                  size={24}
-                  color={colors.primary}
-                />
-                <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                  {shareAnonymouslyLabel}
-                </Text>
-              </TouchableOpacity>
-            )}
+              <Text style={[styles.shareToggleLabel, { color: textColor }]}>
+                {shareToggleLabel}
+              </Text>
+            </TouchableOpacity>
 
             {/* Save Button */}
             <TouchableOpacity 
@@ -871,346 +616,210 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingVertical: spacing.xl,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
   },
-  themeSection: {
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  seasonLabel: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    letterSpacing: 1.5,
-    marginBottom: spacing.sm,
-  },
-  themeTitleContainer: {
-    flexDirection: 'row',
+  
+  // Simple Title Section
+  titleSection: {
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  themeTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    textAlign: 'center',
+  titleIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  themeDescription: {
-    fontSize: typography.body,
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: spacing.md,
+    letterSpacing: 0.3,
   },
+  pageSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontWeight: '300',
+    lineHeight: 20,
+  },
+
+  // Simple Somatic Card
   somaticCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    gap: spacing.md,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 1,
   },
   somaticHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  somaticHeaderText: {
-    flex: 1,
+  somaticLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   somaticTitle: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
-  },
-  somaticInvitation: {
-    fontSize: typography.bodySmall,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  completedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: borderRadius.full,
-  },
-  completedBadgeText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-  exerciseTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.sm,
-  },
-  exerciseDescription: {
-    fontSize: typography.body,
+    fontSize: 16,
+    fontWeight: '500',
     lineHeight: 22,
-    marginBottom: spacing.lg,
   },
-  somaticButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
+  somaticDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '300',
   },
   beginButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    flex: 1,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.sm,
   },
   beginButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#FFFFFF',
-    textAlign: 'center',
   },
-  skipButton: {
+
+  // Simple Scripture Section
+  scriptureSection: {
+    gap: spacing.md,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  skipButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
-  },
-  giftCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  scriptureText: {
-    fontSize: typography.h3,
-    fontWeight: typography.medium,
-    textAlign: 'center',
-    lineHeight: 32,
-    marginBottom: spacing.md,
   },
   scriptureReference: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    fontStyle: 'italic',
+    fontSize: 13,
+    fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
-  promptCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+  scriptureText: {
+    fontSize: 18,
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 28,
+    letterSpacing: 0.2,
   },
-  promptTitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.sm,
+  reflectionPrompt: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 20,
+    fontWeight: '300',
   },
-  promptText: {
-    fontSize: typography.body,
-    lineHeight: 24,
-  },
+
+  // Reflection Card (Keep existing formatting)
   reflectionCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    gap: spacing.md,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 1,
   },
   reflectionTitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: spacing.xs,
   },
-  reflectionSubtitle: {
-    fontSize: typography.bodySmall,
-    fontStyle: 'italic',
-    marginBottom: spacing.lg,
-  },
   sectionTitle: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: spacing.sm,
   },
   sectionSubtitle: {
-    fontSize: typography.bodySmall,
-    marginBottom: spacing.sm,
-  },
-  responseModeButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  modeButton: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  modeButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '10',
-  },
-  modeButtonText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
-  },
-  reflectionInput: {
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.body,
-    lineHeight: 22,
-    minHeight: 150,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-  voicePlaceholder: {
-    borderRadius: borderRadius.md,
-    padding: spacing.xl,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 150,
-    marginBottom: spacing.md,
-    gap: spacing.md,
-  },
-  voicePlaceholderText: {
-    fontSize: typography.body,
-    textAlign: 'center',
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: spacing.xs,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   tag: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   tagSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryLight + '15',
   },
   tagText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  reflectionInput: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: 14,
+    lineHeight: 20,
+    minHeight: 120,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
   shareToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  shareToggleText: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  shareToggleLabel: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
-    marginBottom: spacing.xs,
-  },
-  shareToggleDescription: {
-    fontSize: typography.bodySmall,
-    lineHeight: 18,
-  },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  categoryCard: {
-    flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
-  },
-  categoryCardSelected: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryLabel: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
-    marginTop: spacing.xs,
-  },
-  anonymousToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  anonymousLabel: {
-    fontSize: typography.body,
+  shareToggleLabel: {
+    fontSize: 14,
+    fontWeight: '400',
   },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
-    paddingVertical: spacing.md + 4,
+    paddingVertical: spacing.sm + 4,
     alignItems: 'center',
   },
   saveButtonDisabled: {
     opacity: 0.4,
   },
   saveButtonText: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   completedCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
     alignItems: 'center',
+    gap: spacing.md,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 1,
   },
   completedTitle: {
     fontSize: typography.h3,
     fontWeight: typography.semibold,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
   },
   completedText: {
     fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 24,
   },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -1258,20 +867,6 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: 24,
     textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  modalDurationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    alignSelf: 'center',
-  },
-  modalDurationText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
   },
   modalButtons: {
     gap: spacing.md,
