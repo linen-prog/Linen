@@ -192,6 +192,11 @@ export default function CheckInScreen() {
     }, 100);
   };
 
+  const handlePrayerIconPress = () => {
+    console.log('User tapped prayer icon');
+    setShowPrayerOptions(true);
+  };
+
   const handleGeneratePrayer = async () => {
     console.log('User requested prayer generation');
     setIsGeneratingPrayer(true);
@@ -386,7 +391,7 @@ export default function CheckInScreen() {
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity 
-                onPress={handleGeneratePrayer}
+                onPress={handlePrayerIconPress}
                 style={styles.headerButtonContainer}
                 disabled={isGeneratingPrayer}
               >
