@@ -536,17 +536,9 @@ export default function DailyGiftScreen() {
               {liturgicalSeasonDisplay}
             </Text>
             
-            <View style={styles.themeTitleRow}>
-              <Text style={[styles.diamond, { color: colors.primary }]}>
-                ◆
-              </Text>
-              <Text style={[styles.themeTitle, { color: textColor }]}>
-                {themeTitleDisplay}
-              </Text>
-              <Text style={[styles.diamond, { color: colors.primary }]}>
-                ◆
-              </Text>
-            </View>
+            <Text style={[styles.themeTitle, { color: textColor }]}>
+              {themeTitleDisplay}
+            </Text>
             
             <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
               {themeDescriptionDisplay}
@@ -605,9 +597,17 @@ export default function DailyGiftScreen() {
               {dayOfWeekDisplay}
             </Text>
             
-            <Text style={[styles.dailyThemeTitle, { color: textColor }]}>
-              Helper and Shield
-            </Text>
+            <View style={styles.dailyThemeTitleRow}>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
+              </Text>
+              <Text style={[styles.dailyThemeTitle, { color: textColor }]}>
+                Helper and Shield
+              </Text>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
+              </Text>
+            </View>
             
             <View style={[styles.scriptureCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.scriptureReference, { color: colors.primary }]}>
@@ -1020,21 +1020,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
-  themeTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginVertical: spacing.xs,
-  },
-  diamond: {
-    fontSize: 16,
-  },
   themeTitle: {
     fontSize: 22,
     fontFamily: 'serif',
     fontWeight: '400',
     textAlign: 'center',
     letterSpacing: 0.3,
+    marginVertical: spacing.xs,
   },
   themeDescription: {
     fontSize: 14,
@@ -1117,13 +1109,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
   },
+  dailyThemeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  diamond: {
+    fontSize: 16,
+  },
   dailyThemeTitle: {
     fontSize: 20,
     fontFamily: 'serif',
     fontWeight: '400',
     textAlign: 'center',
     letterSpacing: 0.3,
-    marginBottom: spacing.xs,
   },
   scriptureCard: {
     borderRadius: borderRadius.lg,
