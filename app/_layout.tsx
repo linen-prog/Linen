@@ -87,6 +87,8 @@ export default function RootLayout() {
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
                 {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
                 <Stack.Screen name="check-in" options={{ headerShown: false }} />
+                {/* Open Gift screen (intermediate animation screen) */}
+                <Stack.Screen name="open-gift" options={{ headerShown: false }} />
                 {/* Daily Gift screen */}
                 <Stack.Screen name="daily-gift" options={{ headerShown: false }} />
                 {/* Somatic Practice screen */}
