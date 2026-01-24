@@ -23,15 +23,22 @@ interface WeeklyTheme {
   somaticExercise: SomaticExercise | null;
 }
 
-interface DailyGift {
-  id: string | null;
-  date: string;
-  scriptureText: string;
+interface DailyContent {
+  id: string;
+  dayOfWeek: number;
   scriptureReference: string;
+  scriptureText: string;
   reflectionPrompt: string;
-  somaticPrompt?: string;
-  hasReflected: boolean;
-  weeklyTheme: WeeklyTheme | null;
+}
+
+interface DailyGiftResponse {
+  id: string;
+  weekStartDate: string;
+  liturgicalSeason: string;
+  themeTitle: string;
+  themeDescription: string;
+  somaticExercise: SomaticExercise | null;
+  currentDayContent: DailyContent | null;
 }
 
 interface SomaticExercise {
@@ -64,8 +71,8 @@ export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
   const router = useRouter();
 
-  const [dailyGift, setDailyGift] = useState<DailyGift | null>(null);
-  const [weeklyTheme, setWeeklyTheme] = useState<WeeklyTheme | null>(null);
+  const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
+  const [hasReflected, setHasReflected] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
   const [shareToComm, setShareToComm] = useState(false);
   const [shareAnonymously, setShareAnonymously] = useState(false);
@@ -117,20 +124,32 @@ export default function DailyGiftScreen() {
   useEffect(() => {
     const loadDailyGift = async () => {
       try {
-        console.log('[DailyGift] Loading daily gift...');
-        const response = await authenticatedGet<DailyGift>('/api/daily-gift/today');
+        console.log('[DailyGift] Loading daily gift from /api/weekly-theme/current...');
+        const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
         
-        console.log('[DailyGift] Daily gift loaded:', response);
-        setDailyGift(response);
-        setWeeklyTheme(response.weeklyTheme);
+        console.log('[DailyGift] Daily gift loaded successfully:', {
+          themeTitle: response.themeTitle,
+          liturgicalSeason: response.liturgicalSeason,
+          hasSomaticExercise: !!response.somaticExercise,
+          hasDailyContent: !!response.currentDayContent,
+          dayOfWeek: response.currentDayContent?.dayOfWeek,
+        });
+        
+        setDailyGiftResponse(response);
         setIsLoadingGift(false);
 
+        // Check if user has already reflected today
+        if (response.currentDayContent) {
+          await checkReflectionStatus(response.currentDayContent.id);
+        }
+
         // Check weekly practice completion status
-        if (response.weeklyTheme?.somaticExercise) {
+        if (response.somaticExercise) {
           await checkWeeklyPracticeStatus();
         }
       } catch (error) {
         console.error('[DailyGift] Failed to load daily gift:', error);
+        console.error('[DailyGift] Error details:', error);
         setIsLoadingGift(false);
       }
     };
@@ -138,10 +157,35 @@ export default function DailyGiftScreen() {
     loadDailyGift();
   }, []);
 
+  const checkReflectionStatus = async (dailyContentId: string) => {
+    try {
+      console.log('[DailyGift] Checking if user has reflected today for dailyContentId:', dailyContentId);
+      const response = await authenticatedGet<any[]>('/api/daily-gift/my-reflections');
+      
+      // Check if there's a reflection for today's daily content
+      // The API returns an array of reflections with dailyGiftId field
+      // Since we're using the new dailyContent system, we check if dailyGiftId matches our dailyContentId
+      const todayReflection = response.find(
+        (r: any) => r.dailyGiftId === dailyContentId
+      );
+      
+      console.log('[DailyGift] Reflection status:', { 
+        hasReflected: !!todayReflection, 
+        totalReflections: response.length,
+        lookingFor: dailyContentId 
+      });
+      setHasReflected(!!todayReflection);
+    } catch (error) {
+      console.error('[DailyGift] Failed to check reflection status:', error);
+      // If the API fails, assume not reflected to allow user to try
+      setHasReflected(false);
+    }
+  };
+
   const checkWeeklyPracticeStatus = async () => {
     try {
       console.log('[DailyGift] Checking weekly practice completion status...');
-      const response = await authenticatedGet<WeeklyPracticeStatus>('/api/weekly-practice/current');
+      const response = await authenticatedGet<WeeklyPracticeStatus>('/api/weekly-practice/check-completion');
       
       console.log('[DailyGift] Weekly practice status:', response);
       setHasCompletedPractice(response.hasCompleted);
@@ -175,7 +219,7 @@ export default function DailyGiftScreen() {
   };
 
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim() || !dailyGift || !dailyGift.id) {
+    if (!reflectionText.trim() || !dailyGiftResponse || !dailyGiftResponse.currentDayContent) {
       console.log('[DailyGift] Cannot save reflection - missing data');
       return;
     }
@@ -191,29 +235,32 @@ export default function DailyGiftScreen() {
     setIsLoading(true);
 
     try {
-      const response = await authenticatedPost<{ reflectionId: string }>('/api/daily-gift/reflect', {
-        dailyGiftId: dailyGift.id,
+      // Note: Backend expects 'dailyGiftId' but we're using the new dailyContent system
+      // The backend should be updated to accept 'dailyContentId' instead
+      const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', {
+        dailyGiftId: dailyGiftResponse.currentDayContent.id, // Using dailyContent.id as dailyGiftId for now
         reflectionText: reflectionText.trim(),
         shareToComm,
         category: shareCategory,
         isAnonymous: shareAnonymously,
-        responseMode: responseMode,
-        moods: selectedMoods,
-        sensations: selectedSensations,
+        // Note: responseMode, moods, and sensations are not yet supported by backend
+        // These will be ignored until backend is updated
       });
       
       console.log('[DailyGift] Reflection saved successfully:', response);
       setIsLoading(false);
-      setDailyGift({ ...dailyGift, hasReflected: true });
+      setHasReflected(true);
     } catch (error) {
       console.error('[DailyGift] Failed to save reflection:', error);
       setIsLoading(false);
+      // Show error to user
+      alert('Failed to save reflection. Please try again.');
     }
   };
 
   const handleBeginPractice = () => {
     console.log('[DailyGift] User tapped Begin Practice for somatic exercise');
-    const somaticExercise = weeklyTheme?.somaticExercise;
+    const somaticExercise = dailyGiftResponse?.somaticExercise;
     if (somaticExercise) {
       router.push({
         pathname: '/somatic-practice',
@@ -298,7 +345,7 @@ export default function DailyGiftScreen() {
     );
   }
 
-  if (!dailyGift) {
+  if (!dailyGiftResponse || !dailyGiftResponse.currentDayContent) {
     const errorTitle = 'Unable to load today\'s gift';
     const errorSubtext = 'Please try again later';
     
@@ -328,17 +375,17 @@ export default function DailyGiftScreen() {
   }
 
   // Prepare display variables (ATOMIC JSX)
-  const scriptureDisplay = dailyGift.scriptureText;
-  const referenceDisplay = dailyGift.scriptureReference;
-  const reflectionPromptDisplay = dailyGift.reflectionPrompt;
+  const dailyContent = dailyGiftResponse.currentDayContent;
+  const scriptureDisplay = dailyContent.scriptureText;
+  const referenceDisplay = dailyContent.scriptureReference;
+  const reflectionPromptDisplay = dailyContent.reflectionPrompt;
   const saveButtonText = isLoading ? 'Saving...' : 'Save';
 
-  const hasWeeklyTheme = weeklyTheme !== null;
-  const liturgicalSeasonDisplay = hasWeeklyTheme ? weeklyTheme.liturgicalSeason.toUpperCase() : '';
-  const themeTitleDisplay = hasWeeklyTheme ? weeklyTheme.themeTitle : '';
-  const themeDescriptionDisplay = hasWeeklyTheme ? weeklyTheme.themeDescription : '';
+  const liturgicalSeasonDisplay = dailyGiftResponse.liturgicalSeason.toUpperCase();
+  const themeTitleDisplay = dailyGiftResponse.themeTitle;
+  const themeDescriptionDisplay = dailyGiftResponse.themeDescription;
   
-  const somaticExercise = weeklyTheme?.somaticExercise;
+  const somaticExercise = dailyGiftResponse.somaticExercise;
   const hasSomaticExercise = somaticExercise !== null && somaticExercise !== undefined;
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
@@ -364,11 +411,13 @@ export default function DailyGiftScreen() {
   const invitationLabel = 'WEEKLY SOMATIC INVITATION';
   const invitationText = 'You are invited to practice with us this week';
 
-  const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-
   // Get current date for display
   const currentDate = new Date();
   const dayOfWeekDisplay = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+  
+  // Use a simple day title based on day of week (since backend doesn't provide it yet)
+  const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
+  const dayTitleDisplay = dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
@@ -602,7 +651,7 @@ export default function DailyGiftScreen() {
                 ◆
               </Text>
               <Text style={[styles.dailyThemeTitle, { color: textColor }]}>
-                Helper and Shield
+                {dayTitleDisplay}
               </Text>
               <Text style={[styles.diamond, { color: colors.primary }]}>
                 ◆
@@ -625,7 +674,7 @@ export default function DailyGiftScreen() {
           </View>
 
           {/* ========== YOUR REFLECTION SECTION - DO NOT CHANGE BELOW THIS LINE ========== */}
-          {!dailyGift.hasReflected ? (
+          {!hasReflected ? (
             <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.reflectionTitle, { color: textColor }]}>
                 {reflectionTitle}
