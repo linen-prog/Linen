@@ -648,6 +648,71 @@ Write only the prayer, nothing else.`;
     }
   );
 
+  // Request care from the community
+  app.fastify.post(
+    '/api/check-in/request-care',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          content: string;
+          isAnonymous: boolean;
+        };
+      }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { content, isAnonymous } = request.body;
+
+      // Validate input
+      if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        app.logger.warn({ userId: session.user.id }, 'Empty care request content');
+        return reply.status(400).send({ error: 'Content cannot be empty' });
+      }
+
+      app.logger.info(
+        { userId: session.user.id, isAnonymous },
+        'Creating care request'
+      );
+
+      try {
+        // Get user name from session
+        const userName = session.user.name || null;
+
+        // Create community post for care request
+        const [post] = await app.db
+          .insert(schema.communityPosts)
+          .values({
+            userId: session.user.id,
+            authorName: isAnonymous ? null : userName,
+            isAnonymous,
+            category: 'care',
+            content: content.trim(),
+            contentType: 'companion',
+            scriptureReference: null,
+          })
+          .returning();
+
+        app.logger.info(
+          { userId: session.user.id, postId: post.id, isAnonymous },
+          'Care request created'
+        );
+
+        return reply.send({
+          success: true,
+          postId: post.id,
+        });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id },
+          'Failed to create care request'
+        );
+        throw error;
+      }
+    }
+  );
+
   // Share a prayer to the community
   app.fastify.post(
     '/api/check-in/share-prayer',
