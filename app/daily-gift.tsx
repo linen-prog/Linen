@@ -6,6 +6,13 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withSequence,
+  Easing 
+} from 'react-native-reanimated';
 
 interface WeeklyTheme {
   id: string;
@@ -45,6 +52,14 @@ interface WeeklyPracticeStatus {
   };
 }
 
+interface GlitterParticle {
+  id: number;
+  angle: number;
+  distance: number;
+  delay: number;
+  color: string;
+}
+
 export default function DailyGiftScreen() {
   console.log('User viewing Daily Gift screen');
   const router = useRouter();
@@ -57,10 +72,17 @@ export default function DailyGiftScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
 
+  // Gift opening state
+  const [isGiftOpened, setIsGiftOpened] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
+
+  // Ambient sound modal
+  const [showAmbientSounds, setShowAmbientSounds] = useState(false);
+  const [selectedSound, setSelectedSound] = useState<string | null>(null);
+
   // Weekly practice invitation state
-  const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
-  const [hasSeenInvitation, setHasSeenInvitation] = useState(false);
+  const [hasSkippedPractice, setHasSkippedPractice] = useState(false);
 
   // Category for sharing to community
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
@@ -74,6 +96,23 @@ export default function DailyGiftScreen() {
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
+
+  // Ambient sound options
+  const ambientSounds = [
+    { id: 'rain', label: 'Gentle Rain', icon: '🌧️' },
+    { id: 'ocean', label: 'Ocean Waves', icon: '🌊' },
+    { id: 'forest', label: 'Forest Birds', icon: '🌲' },
+    { id: 'silence', label: 'Silence', icon: '🤫' },
+  ];
+
+  // Create glitter particles
+  const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
+    id: index,
+    angle: (index / 30) * Math.PI * 2,
+    distance: 80 + Math.random() * 60,
+    delay: Math.random() * 100,
+    color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
+  }));
 
   useEffect(() => {
     const loadDailyGift = async () => {
@@ -106,12 +145,6 @@ export default function DailyGiftScreen() {
       
       console.log('[DailyGift] Weekly practice status:', response);
       setHasCompletedPractice(response.hasCompleted);
-
-      // Show invitation modal if not completed and not seen yet
-      if (!response.hasCompleted && !hasSeenInvitation && response.exercise) {
-        console.log('[DailyGift] Showing weekly practice invitation modal');
-        setShowInvitationModal(true);
-      }
     } catch (error) {
       console.error('[DailyGift] Failed to check weekly practice status:', error);
     }
@@ -123,6 +156,23 @@ export default function DailyGiftScreen() {
   const cardBg = colors.card;
   const inputBg = colors.card;
   const inputBorder = colors.border;
+
+  const handleOpenGift = () => {
+    if (isOpening) {
+      console.log('[DailyGift] Already opening, ignoring tap');
+      return;
+    }
+
+    console.log('[DailyGift] User tapped gift box - starting glitter animation');
+    setIsOpening(true);
+
+    // Open gift after animation completes
+    setTimeout(() => {
+      console.log('[DailyGift] Animation complete - revealing content');
+      setIsGiftOpened(true);
+      setIsOpening(false);
+    }, 1200);
+  };
 
   const handleSaveReflection = async () => {
     if (!reflectionText.trim() || !dailyGift || !dailyGift.id) {
@@ -165,8 +215,6 @@ export default function DailyGiftScreen() {
     console.log('[DailyGift] User tapped Begin Practice for somatic exercise');
     const somaticExercise = weeklyTheme?.somaticExercise;
     if (somaticExercise) {
-      setShowInvitationModal(false);
-      setHasSeenInvitation(true);
       router.push({
         pathname: '/somatic-practice',
         params: {
@@ -180,10 +228,9 @@ export default function DailyGiftScreen() {
     }
   };
 
-  const handleMaybeLater = () => {
+  const handleSkipPractice = () => {
     console.log('[DailyGift] User skipped weekly practice invitation');
-    setShowInvitationModal(false);
-    setHasSeenInvitation(true);
+    setHasSkippedPractice(true);
   };
 
   const toggleMood = (mood: string) => {
@@ -215,6 +262,22 @@ export default function DailyGiftScreen() {
     }
   };
 
+  const handleCommunityPress = () => {
+    console.log('[DailyGift] User tapped Community icon');
+    router.push('/(tabs)/community');
+  };
+
+  const handleAmbientSoundPress = () => {
+    console.log('[DailyGift] User tapped Ambient Sound icon');
+    setShowAmbientSounds(true);
+  };
+
+  const handleSelectSound = (soundId: string) => {
+    console.log('[DailyGift] User selected ambient sound:', soundId);
+    setSelectedSound(soundId);
+    setShowAmbientSounds(false);
+  };
+
   if (isLoadingGift) {
     const loadingMessage = 'Loading today\'s gift...';
     
@@ -222,13 +285,7 @@ export default function DailyGiftScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
         <Stack.Screen 
           options={{
-            headerShown: true,
-            title: '',
-            headerBackTitle: 'Home',
-            headerStyle: {
-              backgroundColor: bgColor,
-            },
-            headerTintColor: colors.primary,
+            headerShown: false,
           }}
         />
         <View style={styles.loadingContainer}>
@@ -249,13 +306,7 @@ export default function DailyGiftScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
         <Stack.Screen 
           options={{
-            headerShown: true,
-            title: '',
-            headerBackTitle: 'Home',
-            headerStyle: {
-              backgroundColor: bgColor,
-            },
-            headerTintColor: colors.primary,
+            headerShown: false,
           }}
         />
         <View style={styles.errorContainer}>
@@ -283,6 +334,7 @@ export default function DailyGiftScreen() {
   const saveButtonText = isLoading ? 'Saving...' : 'Save';
 
   const hasWeeklyTheme = weeklyTheme !== null;
+  const liturgicalSeasonDisplay = hasWeeklyTheme ? weeklyTheme.liturgicalSeason.toUpperCase() : '';
   const themeTitleDisplay = hasWeeklyTheme ? weeklyTheme.themeTitle : '';
   const themeDescriptionDisplay = hasWeeklyTheme ? weeklyTheme.themeDescription : '';
   
@@ -305,410 +357,568 @@ export default function DailyGiftScreen() {
   const beginButtonText = 'Begin Practice';
   const skipButtonText = 'Skip';
 
-  // Invitation modal text
-  const modalTitle = 'This Week\'s Practice';
-  const modalInvitation = 'This week\'s theme invites you to try...';
-  const modalBeginButton = 'Begin Practice';
-  const modalLaterButton = 'Maybe Later';
+  const giftTitleText = 'Your Daily Gift';
+  const giftSubtitleText = 'A word for your heart today';
+  const tapText = 'Tap to open';
 
-  const scriptureLabel = 'SCRIPTURE';
-  const scriptureTitleDisplay = 'Helper and Shield';
+  const invitationLabel = 'WEEKLY SOMATIC INVITATION';
+  const invitationText = 'You are invited to practice with us this week';
+
+  const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+
+  // Get current date for display
+  const currentDate = new Date();
+  const dayOfWeekDisplay = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
         options={{
-          headerShown: true,
-          title: '',
-          headerBackTitle: 'Home',
-          headerStyle: {
-            backgroundColor: bgColor,
-          },
-          headerTintColor: colors.primary,
+          headerShown: false,
         }}
       />
 
-      {/* Weekly Practice Invitation Modal */}
+      {/* Custom Header */}
+      <View style={[styles.header, { backgroundColor: bgColor }]}>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          style={styles.headerButton}
+          activeOpacity={0.7}
+        >
+          <IconSymbol 
+            ios_icon_name="arrow.left"
+            android_material_icon_name="arrow-back"
+            size={24}
+            color={textColor}
+          />
+        </TouchableOpacity>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={handleAmbientSoundPress}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="speaker.wave.2"
+              android_material_icon_name="volume-up"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={handleCommunityPress}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="person.2"
+              android_material_icon_name="group"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Ambient Sound Modal */}
       <Modal
-        visible={showInvitationModal}
+        visible={showAmbientSounds}
         transparent={true}
         animationType="fade"
-        onRequestClose={handleMaybeLater}
+        onRequestClose={() => setShowAmbientSounds(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="figure.mind.and.body"
-                android_material_icon_name="self-improvement"
-                size={48}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {modalTitle}
-              </Text>
-            </View>
-
-            <Text style={[styles.modalInvitation, { color: textSecondaryColor }]}>
-              {modalInvitation}
+          <View style={[styles.soundModalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.soundModalTitle, { color: textColor }]}>
+              Ambient Sounds
             </Text>
+            
+            {ambientSounds.map((sound) => {
+              const isSelected = selectedSound === sound.id;
+              return (
+                <TouchableOpacity
+                  key={sound.id}
+                  style={[
+                    styles.soundOption,
+                    { borderColor: inputBorder },
+                    isSelected && styles.soundOptionSelected
+                  ]}
+                  onPress={() => handleSelectSound(sound.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.soundEmoji}>
+                    {sound.icon}
+                  </Text>
+                  <Text style={[
+                    styles.soundLabel,
+                    { color: isSelected ? colors.primary : textColor }
+                  ]}>
+                    {sound.label}
+                  </Text>
+                  {isSelected && (
+                    <IconSymbol 
+                      ios_icon_name="checkmark"
+                      android_material_icon_name="check"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
 
-            <View style={styles.modalExerciseInfo}>
-              <Text style={[styles.modalExerciseTitle, { color: textColor }]}>
-                {exerciseTitleDisplay}
+            <TouchableOpacity
+              style={styles.soundCloseButton}
+              onPress={() => setShowAmbientSounds(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.soundCloseText, { color: textSecondaryColor }]}>
+                Close
               </Text>
-              <Text style={[styles.modalExerciseDescription, { color: textSecondaryColor }]}>
-                {exerciseDescriptionDisplay}
-              </Text>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.modalBeginButton}
-                onPress={handleBeginPractice}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalBeginButtonText}>
-                  {modalBeginButton}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.modalLaterButton}
-                onPress={handleMaybeLater}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.modalLaterButtonText, { color: textSecondaryColor }]}>
-                  {modalLaterButton}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Title Section with Sparkles */}
-        <View style={styles.titleSection}>
-          <View style={styles.titleIconRow}>
-            <IconSymbol 
-              ios_icon_name="sparkles"
-              android_material_icon_name="auto-awesome"
-              size={14}
-              color={colors.primary}
-            />
-            <Text style={[styles.pageTitle, { color: textColor }]}>
-              {themeTitleDisplay}
-            </Text>
-            <IconSymbol 
-              ios_icon_name="sparkles"
-              android_material_icon_name="auto-awesome"
-              size={14}
-              color={colors.primary}
-            />
-          </View>
+
+      {!isGiftOpened ? (
+        // UNOPENED STATE
+        <View style={styles.unopenedContainer}>
+          <Text style={[styles.giftTitle, { color: textColor }]}>
+            {giftTitleText}
+          </Text>
           
-          <Text style={[styles.pageSubtitle, { color: textSecondaryColor }]}>
-            {themeDescriptionDisplay}
+          <Text style={[styles.giftSubtitle, { color: textSecondaryColor }]}>
+            {giftSubtitleText}
+          </Text>
+
+          <View style={styles.giftBoxContainer}>
+            <TouchableOpacity 
+              style={[styles.giftBox, { backgroundColor: colors.primary }]}
+              onPress={handleOpenGift}
+              activeOpacity={0.8}
+              disabled={isOpening}
+            >
+              <IconSymbol 
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={80}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            {/* Glitter particles */}
+            {isOpening && glitterParticles.map((particle) => (
+              <GlitterParticle
+                key={particle.id}
+                angle={particle.angle}
+                distance={particle.distance}
+                delay={particle.delay}
+                color={particle.color}
+              />
+            ))}
+          </View>
+
+          <Text style={[styles.tapText, { color: textSecondaryColor }]}>
+            {tapText}
           </Text>
         </View>
-
-        {/* Weekly Somatic Invitation Card */}
-        {hasSomaticExercise && (
-          <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
-            <View style={styles.somaticHeader}>
-              <IconSymbol 
-                ios_icon_name="figure.mind.and.body"
-                android_material_icon_name="self-improvement"
-                size={20}
-                color={colors.primary}
-              />
-              <Text style={[styles.somaticLabel, { color: colors.primary }]}>
-                WEEKLY SOMATIC INVITATION
-              </Text>
-            </View>
-
-            <Text style={[styles.somaticTitle, { color: textColor }]}>
-              {exerciseTitleDisplay}
+      ) : (
+        // OPENED STATE
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Weekly Theme Section */}
+          <View style={styles.themeSection}>
+            <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
+              {liturgicalSeasonDisplay}
             </Text>
             
-            <Text style={[styles.somaticDescription, { color: textSecondaryColor }]}>
-              {exerciseDescriptionDisplay}
+            <View style={styles.themeTitleRow}>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
+              </Text>
+              <Text style={[styles.themeTitle, { color: textColor }]}>
+                {themeTitleDisplay}
+              </Text>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
+              </Text>
+            </View>
+            
+            <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
+              {themeDescriptionDisplay}
             </Text>
+          </View>
 
-            <View style={styles.somaticActions}>
-              {!hasCompletedPractice && (
-                <>
-                  <TouchableOpacity 
-                    style={styles.beginButton}
-                    onPress={handleBeginPractice}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.beginButtonText}>
-                      {beginButtonText}
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    onPress={handleMaybeLater}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.skipText, { color: textSecondaryColor }]}>
-                      {skipButtonText}
-                    </Text>
-                  </TouchableOpacity>
-                </>
+          {/* Weekly Practice Invitation Card */}
+          {hasSomaticExercise && !hasCompletedPractice && !hasSkippedPractice && (
+            <View style={[styles.invitationCard, { backgroundColor: cardBg }]}>
+              <Text style={styles.plantEmoji}>
+                🌱
+              </Text>
+              
+              <Text style={[styles.invitationLabel, { color: colors.primary }]}>
+                {invitationLabel}
+              </Text>
+              
+              <Text style={[styles.invitationText, { color: textSecondaryColor }]}>
+                {invitationText}
+              </Text>
+
+              <Text style={[styles.practiceTitle, { color: textColor }]}>
+                {exerciseTitleDisplay}
+              </Text>
+              
+              <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
+                {exerciseDescriptionDisplay}
+              </Text>
+
+              <View style={styles.invitationActions}>
+                <TouchableOpacity 
+                  style={styles.beginPracticeButton}
+                  onPress={handleBeginPractice}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.beginPracticeText}>
+                    {beginButtonText}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={handleSkipPractice}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.skipPracticeText, { color: textSecondaryColor }]}>
+                    {skipButtonText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Daily Scripture Section */}
+          <View style={styles.dailyScriptureSection}>
+            <Text style={[styles.dayOfWeek, { color: textSecondaryColor }]}>
+              {dayOfWeekDisplay}
+            </Text>
+            
+            <Text style={[styles.dailyThemeTitle, { color: textColor }]}>
+              Helper and Shield
+            </Text>
+            
+            <View style={[styles.scriptureCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.scriptureReference, { color: colors.primary }]}>
+                {referenceDisplay}
+              </Text>
+              
+              <Text style={[styles.scriptureQuote, { color: textColor }]}>
+                &ldquo;{scriptureDisplay}&rdquo;
+              </Text>
+              
+              <Text style={[styles.scripturePrompt, { color: textSecondaryColor }]}>
+                {reflectionPromptDisplay}
+              </Text>
+            </View>
+          </View>
+
+          {/* ========== YOUR REFLECTION SECTION - DO NOT CHANGE BELOW THIS LINE ========== */}
+          {!dailyGift.hasReflected ? (
+            <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.reflectionTitle, { color: textColor }]}>
+                {reflectionTitle}
+              </Text>
+
+              {/* Response Mode Buttons */}
+              <Text style={[styles.sectionTitle, { color: textColor }]}>
+                {responseModeTitle}
+              </Text>
+              <View style={styles.responseModeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.responseModeButton,
+                    { borderColor: inputBorder },
+                    responseMode === 'text' && styles.responseModeButtonSelected
+                  ]}
+                  onPress={() => handleResponseModeSelect('text')}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol 
+                    ios_icon_name="text.alignleft"
+                    android_material_icon_name="text-fields"
+                    size={24}
+                    color={responseMode === 'text' ? colors.primary : textSecondaryColor}
+                  />
+                  <Text style={[
+                    styles.responseModeText,
+                    { color: responseMode === 'text' ? colors.primary : textSecondaryColor }
+                  ]}>
+                    Text
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.responseModeButton,
+                    { borderColor: inputBorder },
+                    responseMode === 'create' && styles.responseModeButtonSelected
+                  ]}
+                  onPress={() => handleResponseModeSelect('create')}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol 
+                    ios_icon_name="paintbrush.fill"
+                    android_material_icon_name="brush"
+                    size={24}
+                    color={responseMode === 'create' ? colors.primary : textSecondaryColor}
+                  />
+                  <Text style={[
+                    styles.responseModeText,
+                    { color: responseMode === 'create' ? colors.primary : textSecondaryColor }
+                  ]}>
+                    Create
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.responseModeButton,
+                    { borderColor: inputBorder },
+                    responseMode === 'voice' && styles.responseModeButtonSelected
+                  ]}
+                  onPress={() => handleResponseModeSelect('voice')}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol 
+                    ios_icon_name="mic.fill"
+                    android_material_icon_name="mic"
+                    size={24}
+                    color={responseMode === 'voice' ? colors.primary : textSecondaryColor}
+                  />
+                  <Text style={[
+                    styles.responseModeText,
+                    { color: responseMode === 'voice' ? colors.primary : textSecondaryColor }
+                  ]}>
+                    Voice
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Text Input (only show for text mode) */}
+              {responseMode === 'text' && (
+                <TextInput
+                  style={[styles.reflectionInput, { 
+                    backgroundColor: inputBg,
+                    borderColor: inputBorder,
+                    color: textColor 
+                  }]}
+                  placeholder={reflectionPlaceholder}
+                  placeholderTextColor={textSecondaryColor}
+                  value={reflectionText}
+                  onChangeText={setReflectionText}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
               )}
+
+              {/* Share Toggle */}
+              <TouchableOpacity 
+                style={styles.shareToggle}
+                onPress={() => {
+                  console.log('[DailyGift] User toggled share to community:', !shareToComm);
+                  setShareToComm(!shareToComm);
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name={shareToComm ? 'checkmark.square.fill' : 'square'}
+                  android_material_icon_name={shareToComm ? 'check-box' : 'check-box-outline-blank'}
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={[styles.shareToggleLabel, { color: textColor }]}>
+                  {shareToggleLabel}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Save Button */}
+              <TouchableOpacity 
+                style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
+                onPress={handleSaveReflection}
+                disabled={!reflectionText.trim() || isLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saveButtonText}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Mood Tags - Moved to Bottom */}
+              <Text style={[styles.sectionTitle, { color: textColor, marginTop: spacing.lg }]}>
+                {moodTagsTitle}
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+                {moodTagsSubtitle}
+              </Text>
+              <View style={styles.tagsContainer}>
+                {moodOptions.map((mood, index) => {
+                  const isSelected = selectedMoods.includes(mood);
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.tag,
+                        { borderColor: inputBorder },
+                        isSelected && styles.tagSelected
+                      ]}
+                      onPress={() => toggleMood(mood)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.tagText,
+                        { color: isSelected ? colors.primary : textSecondaryColor }
+                      ]}>
+                        {mood}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Body Sensation Tags - Moved to Bottom */}
+              <Text style={[styles.sectionTitle, { color: textColor }]}>
+                {sensationTagsTitle}
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+                {sensationTagsSubtitle}
+              </Text>
+              <View style={styles.tagsContainer}>
+                {sensationOptions.map((sensation, index) => {
+                  const isSelected = selectedSensations.includes(sensation);
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.tag,
+                        { borderColor: inputBorder },
+                        isSelected && styles.tagSelected
+                      ]}
+                      onPress={() => toggleSensation(sensation)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.tagText,
+                        { color: isSelected ? colors.primary : textSecondaryColor }
+                      ]}>
+                        {sensation}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        )}
-
-        {/* Scripture Section */}
-        <View style={styles.scriptureSection}>
-          <Text style={[styles.scriptureLabel, { color: colors.primary }]}>
-            {scriptureLabel}
-          </Text>
-          
-          <Text style={[styles.scriptureTitle, { color: textColor }]}>
-            {scriptureTitleDisplay}
-          </Text>
-          
-          <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
-            {referenceDisplay}
-          </Text>
-          
-          <Text style={[styles.scriptureText, { color: textColor }]}>
-            {scriptureDisplay}
-          </Text>
-          
-          <Text style={[styles.reflectionPrompt, { color: textSecondaryColor }]}>
-            {reflectionPromptDisplay}
-          </Text>
-        </View>
-
-        {/* Response Section - KEEP EXACTLY THE SAME */}
-        {!dailyGift.hasReflected ? (
-          <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
-            <Text style={[styles.reflectionTitle, { color: textColor }]}>
-              {reflectionTitle}
-            </Text>
-
-            {/* Response Mode Buttons */}
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              {responseModeTitle}
-            </Text>
-            <View style={styles.responseModeContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.responseModeButton,
-                  { borderColor: inputBorder },
-                  responseMode === 'text' && styles.responseModeButtonSelected
-                ]}
-                onPress={() => handleResponseModeSelect('text')}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="text.alignleft"
-                  android_material_icon_name="text-fields"
-                  size={24}
-                  color={responseMode === 'text' ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.responseModeText,
-                  { color: responseMode === 'text' ? colors.primary : textSecondaryColor }
-                ]}>
-                  Text
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.responseModeButton,
-                  { borderColor: inputBorder },
-                  responseMode === 'create' && styles.responseModeButtonSelected
-                ]}
-                onPress={() => handleResponseModeSelect('create')}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="paintbrush.fill"
-                  android_material_icon_name="brush"
-                  size={24}
-                  color={responseMode === 'create' ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.responseModeText,
-                  { color: responseMode === 'create' ? colors.primary : textSecondaryColor }
-                ]}>
-                  Create
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.responseModeButton,
-                  { borderColor: inputBorder },
-                  responseMode === 'voice' && styles.responseModeButtonSelected
-                ]}
-                onPress={() => handleResponseModeSelect('voice')}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name="mic.fill"
-                  android_material_icon_name="mic"
-                  size={24}
-                  color={responseMode === 'voice' ? colors.primary : textSecondaryColor}
-                />
-                <Text style={[
-                  styles.responseModeText,
-                  { color: responseMode === 'voice' ? colors.primary : textSecondaryColor }
-                ]}>
-                  Voice
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Text Input (only show for text mode) */}
-            {responseMode === 'text' && (
-              <TextInput
-                style={[styles.reflectionInput, { 
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                  color: textColor 
-                }]}
-                placeholder={reflectionPlaceholder}
-                placeholderTextColor={textSecondaryColor}
-                value={reflectionText}
-                onChangeText={setReflectionText}
-                multiline
-                numberOfLines={6}
-                textAlignVertical="top"
-              />
-            )}
-
-            {/* Share Toggle */}
-            <TouchableOpacity 
-              style={styles.shareToggle}
-              onPress={() => {
-                console.log('[DailyGift] User toggled share to community:', !shareToComm);
-                setShareToComm(!shareToComm);
-              }}
-              activeOpacity={0.7}
-            >
+          ) : (
+            <View style={[styles.completedCard, { backgroundColor: cardBg }]}>
               <IconSymbol 
-                ios_icon_name={shareToComm ? 'checkmark.square.fill' : 'square'}
-                android_material_icon_name={shareToComm ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
-                color={colors.primary}
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={48}
+                color={colors.success}
               />
-              <Text style={[styles.shareToggleLabel, { color: textColor }]}>
-                {shareToggleLabel}
+              <Text style={[styles.completedTitle, { color: textColor }]}>
+                {completedTitle}
               </Text>
-            </TouchableOpacity>
-
-            {/* Save Button */}
-            <TouchableOpacity 
-              style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
-              onPress={handleSaveReflection}
-              disabled={!reflectionText.trim() || isLoading}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.saveButtonText}>
-                {saveButtonText}
+              <Text style={[styles.completedText, { color: textSecondaryColor }]}>
+                {completedText}
               </Text>
-            </TouchableOpacity>
-
-            {/* Mood Tags - Moved to Bottom */}
-            <Text style={[styles.sectionTitle, { color: textColor, marginTop: spacing.lg }]}>
-              {moodTagsTitle}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
-              {moodTagsSubtitle}
-            </Text>
-            <View style={styles.tagsContainer}>
-              {moodOptions.map((mood, index) => {
-                const isSelected = selectedMoods.includes(mood);
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.tag,
-                      { borderColor: inputBorder },
-                      isSelected && styles.tagSelected
-                    ]}
-                    onPress={() => toggleMood(mood)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.tagText,
-                      { color: isSelected ? colors.primary : textSecondaryColor }
-                    ]}>
-                      {mood}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
             </View>
-
-            {/* Body Sensation Tags - Moved to Bottom */}
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              {sensationTagsTitle}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
-              {sensationTagsSubtitle}
-            </Text>
-            <View style={styles.tagsContainer}>
-              {sensationOptions.map((sensation, index) => {
-                const isSelected = selectedSensations.includes(sensation);
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.tag,
-                      { borderColor: inputBorder },
-                      isSelected && styles.tagSelected
-                    ]}
-                    onPress={() => toggleSensation(sensation)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.tagText,
-                      { color: isSelected ? colors.primary : textSecondaryColor }
-                    ]}>
-                      {sensation}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.completedCard, { backgroundColor: cardBg }]}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill"
-              android_material_icon_name="check-circle"
-              size={48}
-              color={colors.success}
-            />
-            <Text style={[styles.completedTitle, { color: textColor }]}>
-              {completedTitle}
-            </Text>
-            <Text style={[styles.completedText, { color: textSecondaryColor }]}>
-              {completedText}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
+  );
+}
+
+function GlitterParticle({ 
+  angle, 
+  distance, 
+  delay, 
+  color 
+}: { 
+  angle: number; 
+  distance: number; 
+  delay: number; 
+  color: string;
+}) {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0);
+
+  React.useEffect(() => {
+    const targetX = Math.cos(angle) * distance;
+    const targetY = Math.sin(angle) * distance;
+
+    setTimeout(() => {
+      translateX.value = withTiming(targetX, { 
+        duration: 800, 
+        easing: Easing.out(Easing.cubic) 
+      });
+      translateY.value = withTiming(targetY, { 
+        duration: 800, 
+        easing: Easing.out(Easing.cubic) 
+      });
+      opacity.value = withSequence(
+        withTiming(1, { duration: 200 }),
+        withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) })
+      );
+      scale.value = withSequence(
+        withTiming(1, { duration: 200 }),
+        withTiming(0.5, { duration: 600 })
+      );
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.glitterParticle,
+        { backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  headerButton: {
+    padding: spacing.xs,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -735,39 +945,107 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     textAlign: 'center',
   },
+
+  // Unopened State
+  unopenedContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  giftTitle: {
+    fontSize: 36,
+    fontFamily: 'serif',
+    fontWeight: '400',
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  giftSubtitle: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    marginBottom: spacing.xxl * 2,
+    textAlign: 'center',
+    fontWeight: '300',
+  },
+  giftBoxContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xxl,
+    width: 200,
+    height: 200,
+  },
+  giftBox: {
+    width: 140,
+    height: 140,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  glitterParticle: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  tapText: {
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '300',
+  },
+
+  // Opened State
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
     gap: spacing.xl,
     paddingBottom: spacing.xxl * 2,
   },
-  
-  // Title Section with Sparkles
-  titleSection: {
+
+  // Weekly Theme Section
+  themeSection: {
     alignItems: 'center',
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
-  titleIconRow: {
+  liturgicalSeason: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  themeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    marginVertical: spacing.xs,
   },
-  pageTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    textAlign: 'center',
-    letterSpacing: 0.2,
+  diamond: {
+    fontSize: 12,
   },
-  pageSubtitle: {
-    fontSize: 13,
+  themeTitle: {
+    fontSize: 22,
+    fontFamily: 'serif',
+    fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 18,
+    letterSpacing: 0.3,
+  },
+  themeDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
     fontWeight: '300',
+    paddingHorizontal: spacing.md,
   },
 
-  // Somatic Card
-  somaticCard: {
+  // Weekly Practice Invitation Card
+  invitationCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -776,87 +1054,105 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 1,
-  },
-  somaticHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+  },
+  plantEmoji: {
+    fontSize: 32,
     marginBottom: spacing.xs,
   },
-  somaticLabel: {
+  invitationLabel: {
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  somaticTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 20,
+  invitationText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
-  somaticDescription: {
+  practiceTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  practiceDescription: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '300',
+    textAlign: 'center',
   },
-  somaticActions: {
+  invitationActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
-  beginButton: {
+  beginPracticeButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
     paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.lg,
   },
-  beginButtonText: {
+  beginPracticeText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  skipText: {
+  skipPracticeText: {
     fontSize: 13,
     fontWeight: '400',
   },
 
-  // Scripture Section
-  scriptureSection: {
+  // Daily Scripture Section
+  dailyScriptureSection: {
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
   },
-  scriptureLabel: {
-    fontSize: 10,
+  dayOfWeek: {
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
-  scriptureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  dailyThemeTitle: {
+    fontSize: 20,
+    fontFamily: 'serif',
+    fontWeight: '400',
     textAlign: 'center',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+    marginBottom: spacing.xs,
+  },
+  scriptureCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 1,
   },
   scriptureReference: {
-    fontSize: 12,
-    textAlign: 'center',
-    fontWeight: '400',
-  },
-  scriptureText: {
-    fontSize: 15,
-    fontWeight: '400',
-    textAlign: 'center',
-    lineHeight: 22,
-    letterSpacing: 0.1,
-    marginTop: spacing.xs,
-  },
-  reflectionPrompt: {
     fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  scriptureQuote: {
+    fontSize: 18,
+    fontFamily: 'serif',
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 26,
+    letterSpacing: 0.2,
+  },
+  scripturePrompt: {
+    fontSize: 14,
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 18,
+    lineHeight: 20,
     fontWeight: '300',
     marginTop: spacing.xs,
   },
@@ -986,7 +1282,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
-  // Modal styles
+  // Ambient Sound Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -994,7 +1290,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
-  modalContent: {
+  soundModalContent: {
     borderRadius: borderRadius.xl,
     padding: spacing.xl,
     width: '100%',
@@ -1005,55 +1301,40 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  modalTitle: {
+  soundModalTitle: {
     fontSize: typography.h2,
     fontWeight: typography.semibold,
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
-  modalInvitation: {
-    fontSize: typography.body,
-    textAlign: 'center',
     marginBottom: spacing.lg,
-    fontStyle: 'italic',
-  },
-  modalExerciseInfo: {
-    marginBottom: spacing.xl,
-  },
-  modalExerciseTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.sm,
     textAlign: 'center',
   },
-  modalExerciseDescription: {
-    fontSize: typography.body,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  modalButtons: {
-    gap: spacing.md,
-  },
-  modalBeginButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md + 4,
+  soundOption: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
   },
-  modalBeginButtonText: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
+  soundOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
   },
-  modalLaterButton: {
+  soundEmoji: {
+    fontSize: 24,
+  },
+  soundLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1,
+  },
+  soundCloseButton: {
     paddingVertical: spacing.md,
     alignItems: 'center',
+    marginTop: spacing.md,
   },
-  modalLaterButtonText: {
+  soundCloseText: {
     fontSize: typography.body,
     fontWeight: typography.medium,
   },
