@@ -311,6 +311,9 @@ export default function DailyGiftScreen() {
   const modalBeginButton = 'Begin Practice';
   const modalLaterButton = 'Maybe Later';
 
+  const scriptureLabel = 'SCRIPTURE';
+  const scriptureTitleDisplay = 'Helper and Shield';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
@@ -388,13 +391,13 @@ export default function DailyGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Simple Title Section */}
+        {/* Title Section with Sparkles */}
         <View style={styles.titleSection}>
           <View style={styles.titleIconRow}>
             <IconSymbol 
               ios_icon_name="sparkles"
               android_material_icon_name="auto-awesome"
-              size={16}
+              size={14}
               color={colors.primary}
             />
             <Text style={[styles.pageTitle, { color: textColor }]}>
@@ -403,7 +406,7 @@ export default function DailyGiftScreen() {
             <IconSymbol 
               ios_icon_name="sparkles"
               android_material_icon_name="auto-awesome"
-              size={16}
+              size={14}
               color={colors.primary}
             />
           </View>
@@ -413,17 +416,17 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {/* Weekly Somatic Invitation Card (Simple) */}
+        {/* Weekly Somatic Invitation Card */}
         {hasSomaticExercise && (
           <View style={[styles.somaticCard, { backgroundColor: cardBg }]}>
             <View style={styles.somaticHeader}>
               <IconSymbol 
                 ios_icon_name="figure.mind.and.body"
                 android_material_icon_name="self-improvement"
-                size={24}
+                size={20}
                 color={colors.primary}
               />
-              <Text style={[styles.somaticLabel, { color: textColor }]}>
+              <Text style={[styles.somaticLabel, { color: colors.primary }]}>
                 WEEKLY SOMATIC INVITATION
               </Text>
             </View>
@@ -436,23 +439,44 @@ export default function DailyGiftScreen() {
               {exerciseDescriptionDisplay}
             </Text>
 
-            {!hasCompletedPractice && (
-              <TouchableOpacity 
-                style={styles.beginButton}
-                onPress={handleBeginPractice}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.beginButtonText}>
-                  {beginButtonText}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.somaticActions}>
+              {!hasCompletedPractice && (
+                <>
+                  <TouchableOpacity 
+                    style={styles.beginButton}
+                    onPress={handleBeginPractice}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.beginButtonText}>
+                      {beginButtonText}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    onPress={handleMaybeLater}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.skipText, { color: textSecondaryColor }]}>
+                      {skipButtonText}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
         )}
 
-        {/* Scripture Section (Simple) */}
+        {/* Scripture Section */}
         <View style={styles.scriptureSection}>
-          <Text style={[styles.scriptureReference, { color: colors.primary }]}>
+          <Text style={[styles.scriptureLabel, { color: colors.primary }]}>
+            {scriptureLabel}
+          </Text>
+          
+          <Text style={[styles.scriptureTitle, { color: textColor }]}>
+            {scriptureTitleDisplay}
+          </Text>
+          
+          <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
             {referenceDisplay}
           </Text>
           
@@ -465,7 +489,7 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {/* Response Section */}
+        {/* Response Section - KEEP EXACTLY THE SAME */}
         {!dailyGift.hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
             <Text style={[styles.reflectionTitle, { color: textColor }]}>
@@ -718,104 +742,126 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl * 2,
   },
   
-  // Simple Title Section
+  // Title Section with Sparkles
   titleSection: {
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
   titleIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   pageTitle: {
-    fontSize: 20,
-    fontWeight: '400',
+    fontSize: 18,
+    fontWeight: '500',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    fontStyle: 'italic',
+    lineHeight: 18,
     fontWeight: '300',
-    lineHeight: 20,
   },
 
-  // Simple Somatic Card
+  // Somatic Card
   somaticCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 1,
   },
   somaticHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
   },
   somaticLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   somaticTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   somaticDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '300',
+  },
+  somaticActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
   beginButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    marginTop: spacing.sm,
   },
   beginButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-
-  // Simple Scripture Section
-  scriptureSection: {
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  scriptureReference: {
+  skipText: {
     fontSize: 13,
+    fontWeight: '400',
+  },
+
+  // Scripture Section
+  scriptureSection: {
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  scriptureLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  scriptureTitle: {
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  scriptureText: {
-    fontSize: 18,
-    fontWeight: '400',
-    textAlign: 'center',
-    lineHeight: 28,
     letterSpacing: 0.2,
   },
+  scriptureReference: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '400',
+  },
+  scriptureText: {
+    fontSize: 15,
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 22,
+    letterSpacing: 0.1,
+    marginTop: spacing.xs,
+  },
   reflectionPrompt: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: 18,
     fontWeight: '300',
+    marginTop: spacing.xs,
   },
 
-  // Reflection Card
+  // Reflection Card - KEEP EXACTLY THE SAME
   reflectionCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
