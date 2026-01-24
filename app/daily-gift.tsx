@@ -65,6 +65,9 @@ export default function DailyGiftScreen() {
   // Category for sharing to community
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
+  // Response mode selection
+  const [responseMode, setResponseMode] = useState<'text' | 'create' | 'voice'>('text');
+
   // Mood and body sensation tags
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
@@ -131,6 +134,7 @@ export default function DailyGiftScreen() {
       reflectionText, 
       shareToComm,
       shareAnonymously,
+      responseMode,
       selectedMoods,
       selectedSensations 
     });
@@ -143,7 +147,7 @@ export default function DailyGiftScreen() {
         shareToComm,
         category: shareCategory,
         isAnonymous: shareAnonymously,
-        responseMode: 'text',
+        responseMode: responseMode,
         moods: selectedMoods,
         sensations: selectedSensations,
       });
@@ -194,6 +198,21 @@ export default function DailyGiftScreen() {
     setSelectedSensations(prev => 
       prev.includes(sensation) ? prev.filter(s => s !== sensation) : [...prev, sensation]
     );
+  };
+
+  const handleResponseModeSelect = (mode: 'text' | 'create' | 'voice') => {
+    console.log('[DailyGift] User selected response mode:', mode);
+    setResponseMode(mode);
+    
+    // Navigate to artwork canvas if Create is selected
+    if (mode === 'create') {
+      router.push('/artwork-canvas');
+    }
+    
+    // TODO: Implement voice recording when Voice is selected
+    if (mode === 'voice') {
+      console.log('[DailyGift] Voice recording not yet implemented');
+    }
   };
 
   if (isLoadingGift) {
@@ -281,6 +300,7 @@ export default function DailyGiftScreen() {
   const sensationTagsTitle = 'How is your body?';
   const moodTagsSubtitle = 'Optional';
   const sensationTagsSubtitle = 'Optional';
+  const responseModeTitle = 'How would you like to respond?';
 
   const beginButtonText = 'Begin Practice';
   const skipButtonText = 'Skip';
@@ -445,92 +465,105 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
 
-        {/* Response Section (Keep existing formatting) */}
+        {/* Response Section */}
         {!dailyGift.hasReflected ? (
           <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
             <Text style={[styles.reflectionTitle, { color: textColor }]}>
               {reflectionTitle}
             </Text>
 
-            {/* Mood Tags */}
+            {/* Response Mode Buttons */}
             <Text style={[styles.sectionTitle, { color: textColor }]}>
-              {moodTagsTitle}
+              {responseModeTitle}
             </Text>
-            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
-              {moodTagsSubtitle}
-            </Text>
-            <View style={styles.tagsContainer}>
-              {moodOptions.map((mood, index) => {
-                const isSelected = selectedMoods.includes(mood);
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.tag,
-                      { borderColor: inputBorder },
-                      isSelected && styles.tagSelected
-                    ]}
-                    onPress={() => toggleMood(mood)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.tagText,
-                      { color: isSelected ? colors.primary : textSecondaryColor }
-                    ]}>
-                      {mood}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={styles.responseModeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.responseModeButton,
+                  { borderColor: inputBorder },
+                  responseMode === 'text' && styles.responseModeButtonSelected
+                ]}
+                onPress={() => handleResponseModeSelect('text')}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="text.alignleft"
+                  android_material_icon_name="text-fields"
+                  size={24}
+                  color={responseMode === 'text' ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.responseModeText,
+                  { color: responseMode === 'text' ? colors.primary : textSecondaryColor }
+                ]}>
+                  Text
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.responseModeButton,
+                  { borderColor: inputBorder },
+                  responseMode === 'create' && styles.responseModeButtonSelected
+                ]}
+                onPress={() => handleResponseModeSelect('create')}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="paintbrush.fill"
+                  android_material_icon_name="brush"
+                  size={24}
+                  color={responseMode === 'create' ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.responseModeText,
+                  { color: responseMode === 'create' ? colors.primary : textSecondaryColor }
+                ]}>
+                  Create
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.responseModeButton,
+                  { borderColor: inputBorder },
+                  responseMode === 'voice' && styles.responseModeButtonSelected
+                ]}
+                onPress={() => handleResponseModeSelect('voice')}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="mic.fill"
+                  android_material_icon_name="mic"
+                  size={24}
+                  color={responseMode === 'voice' ? colors.primary : textSecondaryColor}
+                />
+                <Text style={[
+                  styles.responseModeText,
+                  { color: responseMode === 'voice' ? colors.primary : textSecondaryColor }
+                ]}>
+                  Voice
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Body Sensation Tags */}
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              {sensationTagsTitle}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
-              {sensationTagsSubtitle}
-            </Text>
-            <View style={styles.tagsContainer}>
-              {sensationOptions.map((sensation, index) => {
-                const isSelected = selectedSensations.includes(sensation);
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.tag,
-                      { borderColor: inputBorder },
-                      isSelected && styles.tagSelected
-                    ]}
-                    onPress={() => toggleSensation(sensation)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.tagText,
-                      { color: isSelected ? colors.primary : textSecondaryColor }
-                    ]}>
-                      {sensation}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Text Input */}
-            <TextInput
-              style={[styles.reflectionInput, { 
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-                color: textColor 
-              }]}
-              placeholder={reflectionPlaceholder}
-              placeholderTextColor={textSecondaryColor}
-              value={reflectionText}
-              onChangeText={setReflectionText}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
+            {/* Text Input (only show for text mode) */}
+            {responseMode === 'text' && (
+              <TextInput
+                style={[styles.reflectionInput, { 
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                  color: textColor 
+                }]}
+                placeholder={reflectionPlaceholder}
+                placeholderTextColor={textSecondaryColor}
+                value={reflectionText}
+                onChangeText={setReflectionText}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+            )}
 
             {/* Share Toggle */}
             <TouchableOpacity 
@@ -563,6 +596,70 @@ export default function DailyGiftScreen() {
                 {saveButtonText}
               </Text>
             </TouchableOpacity>
+
+            {/* Mood Tags - Moved to Bottom */}
+            <Text style={[styles.sectionTitle, { color: textColor, marginTop: spacing.lg }]}>
+              {moodTagsTitle}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+              {moodTagsSubtitle}
+            </Text>
+            <View style={styles.tagsContainer}>
+              {moodOptions.map((mood, index) => {
+                const isSelected = selectedMoods.includes(mood);
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.tag,
+                      { borderColor: inputBorder },
+                      isSelected && styles.tagSelected
+                    ]}
+                    onPress={() => toggleMood(mood)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.tagText,
+                      { color: isSelected ? colors.primary : textSecondaryColor }
+                    ]}>
+                      {mood}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Body Sensation Tags - Moved to Bottom */}
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              {sensationTagsTitle}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: textSecondaryColor }]}>
+              {sensationTagsSubtitle}
+            </Text>
+            <View style={styles.tagsContainer}>
+              {sensationOptions.map((sensation, index) => {
+                const isSelected = selectedSensations.includes(sensation);
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.tag,
+                      { borderColor: inputBorder },
+                      isSelected && styles.tagSelected
+                    ]}
+                    onPress={() => toggleSensation(sensation)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.tagText,
+                      { color: isSelected ? colors.primary : textSecondaryColor }
+                    ]}>
+                      {sensation}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         ) : (
           <View style={[styles.completedCard, { backgroundColor: cardBg }]}>
@@ -718,7 +815,7 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
 
-  // Reflection Card (Keep existing formatting)
+  // Reflection Card
   reflectionCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
@@ -744,6 +841,31 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: spacing.xs,
   },
+  
+  // Response Mode Buttons
+  responseModeContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  responseModeButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    gap: spacing.xs,
+  },
+  responseModeButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  responseModeText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -771,7 +893,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     minHeight: 120,
     borderWidth: 1,
-    marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
   shareToggle: {
