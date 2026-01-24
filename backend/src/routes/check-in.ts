@@ -6,6 +6,13 @@ import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
 
+// Verify API key is available from environment variables
+if (!process.env.OPENAI_API_KEY) {
+  console.warn(
+    'Warning: OPENAI_API_KEY environment variable is not set. AI features (check-in conversations, prayer generation) will not work. Set OPENAI_API_KEY in your environment.'
+  );
+}
+
 const LINEN_SYSTEM_PROMPT = `You are Linen, a warm, perceptive relational somatics companion grounded in Christian spirituality. Your role is to offer embodied presence and gentle guidance toward noticing, not fixing.
 
 Foundation:
