@@ -26,19 +26,26 @@ interface WeeklyTheme {
 interface DailyContent {
   id: string;
   dayOfWeek: number;
+  dayTitle?: string;
   scriptureReference: string;
   scriptureText: string;
-  reflectionPrompt: string;
+  reflectionQuestion: string;
+  somaticPrompt?: string | null;
 }
 
+// This is what the backend ACTUALLY returns
 interface DailyGiftResponse {
-  id: string;
-  weekStartDate: string;
-  liturgicalSeason: string;
-  themeTitle: string;
-  themeDescription: string;
-  somaticExercise: SomaticExercise | null;
-  currentDayContent: DailyContent | null;
+  weeklyTheme: {
+    id: string;
+    weekStartDate: string;
+    liturgicalSeason: string;
+    themeTitle: string;
+    themeDescription: string;
+    featuredExerciseId: string | null;
+    reflectionPrompt: string | null;
+    somaticExercise: SomaticExercise | null;
+  };
+  dailyContent: DailyContent | null;
 }
 
 interface SomaticExercise {
@@ -128,23 +135,23 @@ export default function DailyGiftScreen() {
         const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
         
         console.log('[DailyGift] Daily gift loaded successfully:', {
-          themeTitle: response.themeTitle,
-          liturgicalSeason: response.liturgicalSeason,
-          hasSomaticExercise: !!response.somaticExercise,
-          hasDailyContent: !!response.currentDayContent,
-          dayOfWeek: response.currentDayContent?.dayOfWeek,
+          themeTitle: response.weeklyTheme.themeTitle,
+          liturgicalSeason: response.weeklyTheme.liturgicalSeason,
+          hasSomaticExercise: !!response.weeklyTheme.somaticExercise,
+          hasDailyContent: !!response.dailyContent,
+          dayOfWeek: response.dailyContent?.dayOfWeek,
         });
         
         setDailyGiftResponse(response);
         setIsLoadingGift(false);
 
         // Check if user has already reflected today
-        if (response.currentDayContent) {
-          await checkReflectionStatus(response.currentDayContent.id);
+        if (response.dailyContent) {
+          await checkReflectionStatus(response.dailyContent.id);
         }
 
         // Check weekly practice completion status
-        if (response.somaticExercise) {
+        if (response.weeklyTheme.somaticExercise) {
           await checkWeeklyPracticeStatus();
         }
       } catch (error) {
@@ -219,7 +226,7 @@ export default function DailyGiftScreen() {
   };
 
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim() || !dailyGiftResponse || !dailyGiftResponse.currentDayContent) {
+    if (!reflectionText.trim() || !dailyGiftResponse || !dailyGiftResponse.dailyContent) {
       console.log('[DailyGift] Cannot save reflection - missing data');
       return;
     }
@@ -238,7 +245,7 @@ export default function DailyGiftScreen() {
       // Note: Backend expects 'dailyGiftId' but we're using the new dailyContent system
       // The backend should be updated to accept 'dailyContentId' instead
       const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', {
-        dailyGiftId: dailyGiftResponse.currentDayContent.id, // Using dailyContent.id as dailyGiftId for now
+        dailyGiftId: dailyGiftResponse.dailyContent.id, // Using dailyContent.id as dailyGiftId for now
         reflectionText: reflectionText.trim(),
         shareToComm,
         category: shareCategory,
@@ -260,7 +267,7 @@ export default function DailyGiftScreen() {
 
   const handleBeginPractice = () => {
     console.log('[DailyGift] User tapped Begin Practice for somatic exercise');
-    const somaticExercise = dailyGiftResponse?.somaticExercise;
+    const somaticExercise = dailyGiftResponse?.weeklyTheme.somaticExercise;
     if (somaticExercise) {
       router.push({
         pathname: '/somatic-practice',
@@ -345,7 +352,7 @@ export default function DailyGiftScreen() {
     );
   }
 
-  if (!dailyGiftResponse || !dailyGiftResponse.currentDayContent) {
+  if (!dailyGiftResponse || !dailyGiftResponse.dailyContent) {
     const errorTitle = 'Unable to load today\'s gift';
     const errorSubtext = 'The daily gift is being prepared. Please try again in a moment.';
     const retryButtonText = 'Try Again';
@@ -412,17 +419,17 @@ export default function DailyGiftScreen() {
   }
 
   // Prepare display variables (ATOMIC JSX)
-  const dailyContent = dailyGiftResponse.currentDayContent;
+  const dailyContent = dailyGiftResponse.dailyContent;
   const scriptureDisplay = dailyContent.scriptureText;
   const referenceDisplay = dailyContent.scriptureReference;
-  const reflectionPromptDisplay = dailyContent.reflectionPrompt;
+  const reflectionPromptDisplay = dailyContent.reflectionQuestion;
   const saveButtonText = isLoading ? 'Saving...' : 'Save';
 
-  const liturgicalSeasonDisplay = dailyGiftResponse.liturgicalSeason.toUpperCase();
-  const themeTitleDisplay = dailyGiftResponse.themeTitle;
-  const themeDescriptionDisplay = dailyGiftResponse.themeDescription;
+  const liturgicalSeasonDisplay = dailyGiftResponse.weeklyTheme.liturgicalSeason.toUpperCase();
+  const themeTitleDisplay = dailyGiftResponse.weeklyTheme.themeTitle;
+  const themeDescriptionDisplay = dailyGiftResponse.weeklyTheme.themeDescription;
   
-  const somaticExercise = dailyGiftResponse.somaticExercise;
+  const somaticExercise = dailyGiftResponse.weeklyTheme.somaticExercise;
   const hasSomaticExercise = somaticExercise !== null && somaticExercise !== undefined;
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
@@ -452,9 +459,9 @@ export default function DailyGiftScreen() {
   const currentDate = new Date();
   const dayOfWeekDisplay = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
   
-  // Use a simple day title based on day of week (since backend doesn't provide it yet)
+  // Use dayTitle from backend if available, otherwise use a simple day title based on day of week
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
-  const dayTitleDisplay = dayTitles[dailyContent.dayOfWeek] || 'Reflection';
+  const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
