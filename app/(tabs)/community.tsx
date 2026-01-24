@@ -172,8 +172,8 @@ export default function CommunityScreen() {
     { id: 'feed', label: 'Feed', icon: 'favorite' as const },
     { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
     { id: 'care', label: 'Care', icon: 'chat' as const },
-    { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
+    { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
   ];
 
   const sharedTodayText = `${stats.sharedToday}`;
