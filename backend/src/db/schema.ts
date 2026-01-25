@@ -126,7 +126,7 @@ export const somaticExercises = pgTable('somatic_exercises', {
   title: text('title').notNull(),
   description: text('description').notNull(),
   category: text('category', {
-    enum: ['grounding', 'breath', 'movement', 'release'],
+    enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'],
   }).notNull(),
   duration: text('duration').notNull(),
   instructions: text('instructions').notNull(),

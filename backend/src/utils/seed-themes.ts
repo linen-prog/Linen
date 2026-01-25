@@ -457,6 +457,83 @@ const SOMATIC_EXERCISES = [
       'Step 3: Breathe into each area, allowing it to soften and release.\n' +
       'Step 4: Move slowly from feet to head, releasing with each exhale.',
   },
+  {
+    title: 'Sacred Pause',
+    description: 'Create space between stimulus and response',
+    category: 'awareness' as const,
+    duration: '7 min',
+    instructions:
+      'Step 1: Notice when you feel reactive or overwhelmed.\n' +
+      'Step 2: Place both hands on your belly and breathe deeply.\n' +
+      'Step 3: Count to five on the inhale, hold for three, exhale for seven.\n' +
+      'Step 4: Ask yourself: "What do I truly need right now?"',
+  },
+  {
+    title: 'Heart-Centered Breathing',
+    description: 'Connect with your heart\'s wisdom',
+    category: 'breath' as const,
+    duration: '8 min',
+    instructions:
+      'Step 1: Sit comfortably and place both hands over your heart.\n' +
+      'Step 2: Breathe slowly, imagining breath flowing in and out of your heart.\n' +
+      'Step 3: With each breath, feel gratitude or compassion.\n' +
+      'Step 4: Notice any sensations, emotions, or insights that arise.',
+  },
+  {
+    title: 'Gentle Movement Prayer',
+    description: 'Pray with your whole body',
+    category: 'movement' as const,
+    duration: '10 min',
+    instructions:
+      'Step 1: Stand with feet hip-width apart, arms at your sides.\n' +
+      'Step 2: Slowly raise your arms overhead as you breathe in, offering a prayer.\n' +
+      'Step 3: Lower your arms as you breathe out, releasing what you carry.\n' +
+      'Step 4: Repeat this movement prayer, letting your body speak to God.',
+  },
+  {
+    title: 'Noticing Without Fixing',
+    description: 'Practice compassionate awareness',
+    category: 'awareness' as const,
+    duration: '6 min',
+    instructions:
+      'Step 1: Sit quietly and scan your body for sensations.\n' +
+      'Step 2: Notice any discomfort, tension, or emotion without trying to change it.\n' +
+      'Step 3: Say to yourself: "I see you. You are welcome here."\n' +
+      'Step 4: Breathe with whatever arises, offering it gentle presence.',
+  },
+  {
+    title: 'Anchoring in the Present',
+    description: 'Return to the here and now',
+    category: 'grounding' as const,
+    duration: '5 min',
+    instructions:
+      'Step 1: Name five things you can see around you.\n' +
+      'Step 2: Name four things you can touch or feel.\n' +
+      'Step 3: Name three things you can hear.\n' +
+      'Step 4: Name two things you can smell, and one thing you can taste.',
+  },
+  {
+    title: 'Releasing the Grip',
+    description: 'Let go of what you\'re holding too tightly',
+    category: 'release' as const,
+    duration: '8 min',
+    instructions:
+      'Step 1: Make tight fists with both hands and hold for 10 seconds.\n' +
+      'Step 2: Release your hands and notice the sensation of letting go.\n' +
+      'Step 3: Breathe deeply and ask: "What am I gripping that I can release?"\n' +
+      'Step 4: With each exhale, imagine releasing control, fear, or burden.',
+  },
+  {
+    title: 'Compassionate Touch',
+    description: 'Offer yourself the comfort you need',
+    category: 'self-compassion' as const,
+    duration: '7 min',
+    instructions:
+      'Step 1: Place one hand on your heart and one on your belly.\n' +
+      'Step 2: Feel the warmth and weight of your hands.\n' +
+      'Step 3: Speak kindly to yourself: "May I be gentle with myself."\n' +
+      'Step 4: Breathe slowly, receiving your own compassion.',
+  },
 ];
 
 /**
@@ -524,12 +601,42 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
 
     app.logger.info({ exerciseCount: exercises.length }, 'Fetched somatic exercises for assignment');
 
+    // Determine which theme should start based on current date
+    // Late January (after Epiphany, Jan 6-ish) is Ordinary Time
+    const now = new Date();
+    const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    const currentMonth = pacificTime.getMonth(); // 0-11
+    const currentDay = pacificTime.getDate();
+
+    // Find the starting index: Ordinary Time after Epiphany starts at index 8 (after Advent 4, Christmas 2, Epiphany 2)
+    // But we need to account for the current date in the liturgical year
+    // For now, if we're after January 6 (Epiphany), we're in Ordinary Time
+    let startingThemeIndex = 0;
+    if (currentMonth === 0 && currentDay > 6) {
+      // Late January - Ordinary Time after Epiphany (start at index 8)
+      startingThemeIndex = 8;
+    } else if (currentMonth > 0 && currentMonth < 2) {
+      // February - still in Ordinary Time
+      startingThemeIndex = 8;
+    } else if (currentMonth >= 2 && currentMonth < 4) {
+      // March-April - could be Lent or Easter, use Lent starting point (index 10)
+      startingThemeIndex = 10;
+    }
+    // Add more logic for other seasons as needed
+
+    app.logger.info(
+      { currentMonth, currentDay, startingThemeIndex },
+      'Calculated starting theme index based on current date'
+    );
+
     const startDate = new Date(getNextMondayPacific());
     startDate.setHours(0, 0, 0, 0);
 
     const themesToCreate = [];
     for (let i = 0; i < LITURGICAL_THEMES.length; i++) {
-      const themeData = LITURGICAL_THEMES[i];
+      // Rotate through themes starting from the calculated index
+      const themeIndex = (startingThemeIndex + i) % LITURGICAL_THEMES.length;
+      const themeData = LITURGICAL_THEMES[themeIndex];
       const weekDate = new Date(startDate);
       weekDate.setDate(weekDate.getDate() + i * 7);
 
