@@ -625,7 +625,7 @@ export default function DailyGiftScreen() {
             </Text>
           </View>
 
-          {hasSomaticExercise && !hasCompletedPractice && !hasSkippedPractice && (
+          {hasSomaticExercise && (
             <View style={[styles.invitationCard, { backgroundColor: cardBg }]}>
               <Text style={styles.plantEmoji}>
                 🌱
