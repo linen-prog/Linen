@@ -46,6 +46,12 @@ export default function CheckInScreen() {
   const [careRequestText, setCareRequestText] = useState('');
   const [careAnonymous, setCareAnonymous] = useState(false);
   const [isSubmittingCare, setIsSubmittingCare] = useState(false);
+  const [showMessageShareModal, setShowMessageShareModal] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState<string>('');
+  const [selectedMessageContent, setSelectedMessageContent] = useState<string>('');
+  const [messageShareCategory, setMessageShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('wisdom');
+  const [messageShareAnonymous, setMessageShareAnonymous] = useState(false);
+  const [isSharingMessage, setIsSharingMessage] = useState(false);
 
   useEffect(() => {
     const startConversation = async () => {
@@ -318,6 +324,62 @@ export default function CheckInScreen() {
     }
   };
 
+  const handleShareMessage = async () => {
+    if (!selectedMessageId) {
+      return;
+    }
+
+    console.log('[CheckIn] User sharing AI message to community', { 
+      messageId: selectedMessageId, 
+      category: messageShareCategory, 
+      anonymous: messageShareAnonymous 
+    });
+    setIsSharingMessage(true);
+
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/check-in/share-message', {
+        messageId: selectedMessageId,
+        category: messageShareCategory,
+        isAnonymous: messageShareAnonymous,
+      });
+      
+      console.log('[CheckIn] ✅ AI message shared to community successfully in category:', messageShareCategory);
+      setShowMessageShareModal(false);
+      setSelectedMessageId('');
+      setSelectedMessageContent('');
+      setMessageShareCategory('wisdom');
+      setMessageShareAnonymous(false);
+      setIsSharingMessage(false);
+      
+      const categoryLabel = messageShareCategory.charAt(0).toUpperCase() + messageShareCategory.slice(1);
+      
+      // Show success message with option to view community
+      Alert.alert(
+        'Shared!',
+        `This reflection has been shared with the community in the ${categoryLabel} tab.`,
+        [
+          {
+            text: 'View Community',
+            onPress: () => {
+              console.log('[CheckIn] User navigating to community page');
+              router.push('/(tabs)/community');
+            }
+          },
+          {
+            text: 'OK',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('[CheckIn] ❌ Failed to share AI message:', error);
+      setIsSharingMessage(false);
+      const errorMessage = error?.message || 'Failed to share message. Please try again.';
+      Alert.alert('Error', errorMessage);
+    }
+  };
+
   const handleAcknowledgeCrisis = () => {
     console.log('[CheckIn] User acknowledged crisis resources');
     setShowCrisisModal(false);
@@ -353,6 +415,24 @@ export default function CheckInScreen() {
             </StreamdownRN>
           )}
         </View>
+        {!isUser && (
+          <TouchableOpacity 
+            style={styles.shareMessageButton}
+            onPress={() => {
+              console.log('[CheckIn] User tapped share icon for message:', item.id);
+              setSelectedMessageId(item.id);
+              setSelectedMessageContent(item.content);
+              setShowMessageShareModal(true);
+            }}
+          >
+            <IconSymbol 
+              ios_icon_name="square.and.arrow.up"
+              android_material_icon_name="share"
+              size={18}
+              color={textSecondaryColor}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -893,6 +973,115 @@ export default function CheckInScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Share AI Message Modal */}
+      <Modal
+        visible={showMessageShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMessageShareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <IconSymbol 
+                ios_icon_name="square.and.arrow.up"
+                android_material_icon_name="share"
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Share with Community
+              </Text>
+            </View>
+
+            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+              Share this reflection with the community. Choose where to share:
+            </Text>
+
+            <View style={styles.categoryGrid}>
+              {categories.map(category => {
+                const isSelected = messageShareCategory === category.id;
+                const categoryLabel = category.label;
+                
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryCard,
+                      { backgroundColor: inputBg, borderColor: inputBorder },
+                      isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                    ]}
+                    onPress={() => setMessageShareCategory(category.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name={category.icon}
+                      android_material_icon_name={category.icon}
+                      size={32}
+                      color={isSelected ? '#FFFFFF' : colors.primary}
+                    />
+                    <Text style={[
+                      styles.categoryLabel,
+                      { color: isSelected ? '#FFFFFF' : textColor }
+                    ]}>
+                      {categoryLabel}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.anonymousToggle}
+              onPress={() => setMessageShareAnonymous(!messageShareAnonymous)}
+            >
+              <IconSymbol 
+                ios_icon_name={messageShareAnonymous ? 'checkmark.square.fill' : 'square'}
+                android_material_icon_name={messageShareAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={colors.primary}
+              />
+              <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                Share anonymously
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.shareActions}>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={handleShareMessage}
+                disabled={isSharingMessage}
+              >
+                {isSharingMessage ? (
+                  <Text style={styles.primaryButtonText}>
+                    Sharing...
+                  </Text>
+                ) : (
+                  <Text style={styles.primaryButtonText}>
+                    Share
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowMessageShareModal(false);
+                  setSelectedMessageId('');
+                  setSelectedMessageContent('');
+                  setMessageShareCategory('wisdom');
+                  setMessageShareAnonymous(false);
+                }}
+                disabled={isSharingMessage}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -964,10 +1153,16 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
+    alignItems: 'flex-end',
     marginBottom: spacing.sm,
+    gap: spacing.xs,
   },
   messageContainerUser: {
     justifyContent: 'flex-end',
+  },
+  shareMessageButton: {
+    padding: spacing.xs,
+    marginBottom: spacing.xs,
   },
   messageBubble: {
     maxWidth: '80%',
