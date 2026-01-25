@@ -424,115 +424,421 @@ function getDailyContent(seasonWeek: string, dayOfWeek: number) {
  * Sample somatic exercises for seeding
  */
 const SOMATIC_EXERCISES = [
+  // Week 1 - Ordinary Time
   {
-    title: 'Loving Kindness Breath',
-    description: 'Breathe with compassion for yourself',
-    category: 'breath' as const,
-    duration: '5 min',
-    instructions:
-      'Step 1: Find a comfortable seated position.\n' +
-      'Step 2: Place one hand on your heart.\n' +
-      'Step 3: Breathe in slowly, saying to yourself "I am loved".\n' +
-      'Step 4: Breathe out, releasing tension and self-criticism.',
-  },
-  {
-    title: 'Grounding Practice',
-    description: 'Connect with the earth beneath you',
+    title: 'Grounding in the Everyday',
+    description: 'Notice the sacred in ordinary moments',
     category: 'grounding' as const,
-    duration: '10 min',
-    instructions:
-      'Step 1: Stand or sit with feet flat on the ground.\n' +
-      'Step 2: Notice the sensation of your feet touching the floor.\n' +
-      'Step 3: Imagine roots growing from your feet deep into the earth.\n' +
-      'Step 4: Feel yourself held and supported by the earth.',
+    duration: '5 min',
+    instructions: 'Step 1: Stand or sit with feet flat on the ground.\nStep 2: Notice the sensation of your feet touching the floor.\nStep 3: Breathe slowly and name three ordinary things you\'re grateful for.\nStep 4: Feel yourself held and supported by the earth.',
   },
+  // Week 2
   {
-    title: 'Body Scan for Release',
-    description: 'Release tension held in your body',
-    category: 'release' as const,
-    duration: '15 min',
-    instructions:
-      'Step 1: Lie down or sit comfortably.\n' +
-      'Step 2: Starting at your toes, notice any tension or sensations.\n' +
-      'Step 3: Breathe into each area, allowing it to soften and release.\n' +
-      'Step 4: Move slowly from feet to head, releasing with each exhale.',
-  },
-  {
-    title: 'Sacred Pause',
-    description: 'Create space between stimulus and response',
-    category: 'awareness' as const,
-    duration: '7 min',
-    instructions:
-      'Step 1: Notice when you feel reactive or overwhelmed.\n' +
-      'Step 2: Place both hands on your belly and breathe deeply.\n' +
-      'Step 3: Count to five on the inhale, hold for three, exhale for seven.\n' +
-      'Step 4: Ask yourself: "What do I truly need right now?"',
-  },
-  {
-    title: 'Heart-Centered Breathing',
-    description: 'Connect with your heart\'s wisdom',
+    title: 'Breath of Becoming',
+    description: 'Trust the slow work of grace',
     category: 'breath' as const,
-    duration: '8 min',
-    instructions:
-      'Step 1: Sit comfortably and place both hands over your heart.\n' +
-      'Step 2: Breathe slowly, imagining breath flowing in and out of your heart.\n' +
-      'Step 3: With each breath, feel gratitude or compassion.\n' +
-      'Step 4: Notice any sensations, emotions, or insights that arise.',
+    duration: '7 min',
+    instructions: 'Step 1: Sit comfortably and place one hand on your heart.\nStep 2: Breathe in slowly, imagining yourself as a seed in soil.\nStep 3: Breathe out, releasing the need to rush your growth.\nStep 4: Repeat, trusting the slow work of becoming.',
   },
+  // Week 3
   {
-    title: 'Gentle Movement Prayer',
-    description: 'Pray with your whole body',
-    category: 'movement' as const,
+    title: 'Turning Inward',
+    description: 'Face what you\'ve avoided with compassion',
+    category: 'awareness' as const,
     duration: '10 min',
-    instructions:
-      'Step 1: Stand with feet hip-width apart, arms at your sides.\n' +
-      'Step 2: Slowly raise your arms overhead as you breathe in, offering a prayer.\n' +
-      'Step 3: Lower your arms as you breathe out, releasing what you carry.\n' +
-      'Step 4: Repeat this movement prayer, letting your body speak to God.',
+    instructions: 'Step 1: Sit quietly and close your eyes.\nStep 2: Notice any discomfort or tension in your body.\nStep 3: Breathe into that place without trying to fix it.\nStep 4: Say to yourself: "I see you. You are welcome here."',
   },
+  // Week 4
   {
-    title: 'Noticing Without Fixing',
-    description: 'Practice compassionate awareness',
+    title: 'Desert Stillness',
+    description: 'Strip away distractions and meet yourself',
+    category: 'release' as const,
+    duration: '12 min',
+    instructions: 'Step 1: Find a quiet space and sit in silence.\nStep 2: Notice what arises when there are no distractions.\nStep 3: Breathe with whatever emotions or thoughts emerge.\nStep 4: Release the need to fill the silence.',
+  },
+  // Week 5 - Lent Begins
+  {
+    title: 'Releasing What Must Die',
+    description: 'Let go of habits, fears, and false selves',
+    category: 'release' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Make tight fists with both hands and hold for 10 seconds.\nStep 2: Release your hands and notice the sensation of letting go.\nStep 3: Breathe deeply and ask: "What must die in me?"\nStep 4: With each exhale, imagine releasing what no longer serves.',
+  },
+  // Week 6
+  {
+    title: 'Fasting from Control',
+    description: 'Clear space and wait',
     category: 'awareness' as const,
     duration: '6 min',
-    instructions:
-      'Step 1: Sit quietly and scan your body for sensations.\n' +
-      'Step 2: Notice any discomfort, tension, or emotion without trying to change it.\n' +
-      'Step 3: Say to yourself: "I see you. You are welcome here."\n' +
-      'Step 4: Breathe with whatever arises, offering it gentle presence.',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Notice the urge to control or fix things.\nStep 3: Breathe and release the grip of control.\nStep 4: Ask yourself: "What am I trying to control that I can release?"',
   },
+  // Week 7
   {
-    title: 'Anchoring in the Present',
-    description: 'Return to the here and now',
-    category: 'grounding' as const,
-    duration: '5 min',
-    instructions:
-      'Step 1: Name five things you can see around you.\n' +
-      'Step 2: Name four things you can touch or feel.\n' +
-      'Step 3: Name three things you can hear.\n' +
-      'Step 4: Name two things you can smell, and one thing you can taste.',
+    title: 'Walking Toward the Cross',
+    description: 'Practice surrender with each step',
+    category: 'movement' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Walk slowly, either indoors or outdoors.\nStep 2: With each step, say: "I surrender."\nStep 3: Notice what arises in your body as you walk.\nStep 4: Trust that you are being led.',
   },
+  // Week 8
   {
-    title: 'Releasing the Grip',
-    description: 'Let go of what you\'re holding too tightly',
-    category: 'release' as const,
+    title: 'Feeling the Weight',
+    description: 'Acknowledge the burden of the cross',
+    category: 'awareness' as const,
     duration: '8 min',
-    instructions:
-      'Step 1: Make tight fists with both hands and hold for 10 seconds.\n' +
-      'Step 2: Release your hands and notice the sensation of letting go.\n' +
-      'Step 3: Breathe deeply and ask: "What am I gripping that I can release?"\n' +
-      'Step 4: With each exhale, imagine releasing control, fear, or burden.',
+    instructions: 'Step 1: Sit or stand and imagine holding a heavy weight.\nStep 2: Notice where you feel heaviness in your body.\nStep 3: Breathe into that heaviness without trying to lift it.\nStep 4: Ask: "What weight am I carrying that isn\'t mine?"',
   },
+  // Week 9
   {
-    title: 'Compassionate Touch',
-    description: 'Offer yourself the comfort you need',
+    title: 'Washing Feet',
+    description: 'Practice humility and service',
     category: 'self-compassion' as const,
     duration: '7 min',
-    instructions:
-      'Step 1: Place one hand on your heart and one on your belly.\n' +
-      'Step 2: Feel the warmth and weight of your hands.\n' +
-      'Step 3: Speak kindly to yourself: "May I be gentle with myself."\n' +
-      'Step 4: Breathe slowly, receiving your own compassion.',
+    instructions: 'Step 1: Sit comfortably and place your hands on your feet.\nStep 2: Imagine washing your own feet with care.\nStep 3: Speak kindly to yourself: "You are worthy of care."\nStep 4: Breathe slowly, receiving your own compassion.',
+  },
+  // Week 10 - Holy Week
+  {
+    title: 'Tomb Stillness',
+    description: 'Rest in the darkness and wait',
+    category: 'grounding' as const,
+    duration: '15 min',
+    instructions: 'Step 1: Lie down in a quiet, dark space.\nStep 2: Close your eyes and breathe slowly.\nStep 3: Rest in the stillness without trying to fix or change anything.\nStep 4: Trust that resurrection is coming.',
+  },
+  // Week 11 - Easter
+  {
+    title: 'Resurrection Breath',
+    description: 'Breathe in new life',
+    category: 'breath' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Stand with your arms at your sides.\nStep 2: Breathe in deeply, raising your arms overhead.\nStep 3: Breathe out, lowering your arms and releasing death.\nStep 4: Repeat, celebrating the new life within you.',
+  },
+  // Week 12
+  {
+    title: 'Recognizing the Gardener',
+    description: 'Notice where Christ appears',
+    category: 'awareness' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit quietly and close your eyes.\nStep 2: Recall a moment when you didn\'t recognize grace.\nStep 3: Breathe and ask: "Where is Christ appearing that I\'m missing?"\nStep 4: Open your eyes and look for the sacred in the ordinary.',
+  },
+  // Week 13
+  {
+    title: 'Touching the Wounds',
+    description: 'Find peace in your scars',
+    category: 'self-compassion' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Place your hands on a part of your body that holds pain.\nStep 2: Breathe into that place with compassion.\nStep 3: Say to yourself: "Peace be with you."\nStep 4: Notice how your wounds have been transformed.',
+  },
+  // Week 14
+  {
+    title: 'Casting Nets',
+    description: 'Trust in abundance',
+    category: 'movement' as const,
+    duration: '6 min',
+    instructions: 'Step 1: Stand and extend your arms wide.\nStep 2: Imagine casting a net into the water.\nStep 3: Breathe and trust that provision is coming.\nStep 4: Pull your arms back, receiving abundance.',
+  },
+  // Week 15 - Ascension
+  {
+    title: 'Released and Sent',
+    description: 'Feel the Spirit equipping you',
+    category: 'breath' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Breathe in, imagining the Spirit filling you.\nStep 3: Breathe out, imagining yourself being sent.\nStep 4: Repeat, trusting that you are equipped.',
+  },
+  // Week 16 - Pentecost
+  {
+    title: 'Wind and Fire',
+    description: 'Receive the Spirit\'s breath',
+    category: 'breath' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Stand with your arms at your sides.\nStep 2: Breathe in deeply, imagining wind filling you.\nStep 3: Breathe out, imagining fire igniting within you.\nStep 4: Repeat, feeling the Spirit\'s power.',
+  },
+  // Week 17 - Ordinary Time
+  {
+    title: 'Forgiving Breath',
+    description: 'Practice the hard work of release',
+    category: 'release' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit comfortably and place one hand on your heart.\nStep 2: Breathe in, naming someone you need to forgive.\nStep 3: Breathe out, releasing resentment and pain.\nStep 4: Repeat, trusting that forgiveness is a process.',
+  },
+  // Week 18
+  {
+    title: 'Loving Your Enemies',
+    description: 'Embody radical love',
+    category: 'self-compassion' as const,
+    duration: '12 min',
+    instructions: 'Step 1: Sit quietly and bring to mind someone who has harmed you.\nStep 2: Place both hands on your heart.\nStep 3: Breathe and say: "May they be at peace."\nStep 4: Notice what arises in your body as you practice this.',
+  },
+  // Week 19
+  {
+    title: 'Running to Embrace',
+    description: 'Experience unreserved welcome',
+    category: 'movement' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Stand and imagine someone running toward you.\nStep 2: Open your arms wide to receive their embrace.\nStep 3: Breathe and feel the joy of being welcomed.\nStep 4: Ask: "Where do I experience this kind of love?"',
+  },
+  // Week 20
+  {
+    title: 'Welcoming the Stranger',
+    description: 'Practice hospitality in your body',
+    category: 'awareness' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Imagine welcoming someone unfamiliar.\nStep 3: Notice any resistance or fear in your body.\nStep 4: Breathe and release the need to protect yourself.',
+  },
+  // Week 21
+  {
+    title: 'Stopping to Help',
+    description: 'Feel the cost of compassion',
+    category: 'awareness' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit quietly and recall a time you stopped to help.\nStep 2: Notice what it cost you—time, energy, comfort.\nStep 3: Breathe into that cost without resentment.\nStep 4: Ask: "What does it cost to truly help another?"',
+  },
+  // Week 22
+  {
+    title: 'Sitting at Jesus\'s Feet',
+    description: 'Practice presence over productivity',
+    category: 'grounding' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit on the floor or in a low chair.\nStep 2: Imagine sitting at Jesus\'s feet, listening.\nStep 3: Breathe slowly and release the need to do.\nStep 4: Simply be present.',
+  },
+  // Week 23
+  {
+    title: 'Blessed Are',
+    description: 'Embody the Beatitudes',
+    category: 'self-compassion' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit comfortably and place both hands on your heart.\nStep 2: Breathe in, saying: "Blessed am I."\nStep 3: Breathe out, releasing shame or unworthiness.\nStep 4: Repeat, trusting that you are blessed.',
+  },
+  // Week 24
+  {
+    title: 'Salt and Light',
+    description: 'Feel your purpose in your body',
+    category: 'awareness' as const,
+    duration: '6 min',
+    instructions: 'Step 1: Stand with your arms at your sides.\nStep 2: Breathe in, imagining yourself as salt—preserving, flavoring.\nStep 3: Breathe out, imagining yourself as light—illuminating, guiding.\nStep 4: Repeat, feeling your purpose.',
+  },
+  // Week 25
+  {
+    title: 'Building on Rock',
+    description: 'Ground yourself in what holds',
+    category: 'grounding' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Stand with feet hip-width apart.\nStep 2: Imagine roots growing from your feet into solid rock.\nStep 3: Breathe and feel yourself held by what is unshakable.\nStep 4: Ask: "What foundation am I building on?"',
+  },
+  // Week 26
+  {
+    title: 'Seeds in Soil',
+    description: 'Trust where you\'re planted',
+    category: 'awareness' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit comfortably and close your eyes.\nStep 2: Imagine yourself as a seed in soil.\nStep 3: Breathe and trust the darkness around you.\nStep 4: Ask: "What is growing in me that I can\'t yet see?"',
+  },
+  // Week 27
+  {
+    title: 'Mustard Seed Faith',
+    description: 'Honor the small beginnings',
+    category: 'self-compassion' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Hold a small object in your hand.\nStep 2: Breathe and notice its smallness.\nStep 3: Say to yourself: "Small things matter."\nStep 4: Trust that small faith can grow.',
+  },
+  // Week 28
+  {
+    title: 'Treasure Seeking',
+    description: 'Notice what you\'re willing to give up',
+    category: 'awareness' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit quietly and close your eyes.\nStep 2: Imagine finding a treasure buried in a field.\nStep 3: Breathe and ask: "What would I give up to have this?"\nStep 4: Notice what arises in your body.',
+  },
+  // Week 29
+  {
+    title: 'Narrow Gate',
+    description: 'Feel the barriers you must pass through',
+    category: 'movement' as const,
+    duration: '6 min',
+    instructions: 'Step 1: Stand and imagine a narrow doorway.\nStep 2: Breathe and notice what you must leave behind to pass through.\nStep 3: Step forward, releasing what doesn\'t fit.\nStep 4: Trust that the way is narrow but leads to life.',
+  },
+  // Week 30
+  {
+    title: 'Bearing Burdens',
+    description: 'Practice carrying one another',
+    category: 'self-compassion' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Imagine someone placing their burden in your hands.\nStep 3: Breathe and feel the weight without collapsing.\nStep 4: Ask: "How can I carry this with love?"',
+  },
+  // Week 31
+  {
+    title: 'Feeding the Multitude',
+    description: 'Trust that there is enough',
+    category: 'breath' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit comfortably and place both hands on your belly.\nStep 2: Breathe in, imagining abundance filling you.\nStep 3: Breathe out, releasing scarcity and fear.\nStep 4: Repeat, trusting that there is enough.',
+  },
+  // Week 32
+  {
+    title: 'Walking on Water',
+    description: 'Step out in faith and doubt',
+    category: 'movement' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Stand and imagine stepping onto water.\nStep 2: Breathe and notice the fear in your body.\nStep 3: Step forward anyway, trusting you\'ll be held.\nStep 4: Ask: "Where is Jesus calling me to step out?"',
+  },
+  // Week 33
+  {
+    title: 'Transfiguration Light',
+    description: 'See the divine in the ordinary',
+    category: 'awareness' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit in a space with natural light.\nStep 2: Close your eyes and notice the light on your face.\nStep 3: Breathe and imagine seeing someone shine with divine light.\nStep 4: Ask: "Where have I seen the divine in someone?"',
+  },
+  // Week 34
+  {
+    title: 'Widow\'s Offering',
+    description: 'Give from your poverty',
+    category: 'release' as const,
+    duration: '6 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Imagine giving away something precious.\nStep 3: Breathe and notice the fear of not having enough.\nStep 4: Release the fear and trust that giving is sacred.',
+  },
+  // Week 35
+  {
+    title: 'Lazarus Rising',
+    description: 'Call forth what was dead',
+    category: 'breath' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Lie down or sit comfortably.\nStep 2: Breathe in deeply, imagining life returning.\nStep 3: Breathe out, releasing death and decay.\nStep 4: Repeat, trusting that resurrection is possible.',
+  },
+  // Week 36
+  {
+    title: 'Gratitude Breath',
+    description: 'Give thanks in all circumstances',
+    category: 'breath' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Sit comfortably and place one hand on your heart.\nStep 2: Breathe in, naming something you\'re grateful for.\nStep 3: Breathe out, releasing complaint or resentment.\nStep 4: Repeat, cultivating gratitude.',
+  },
+  // Week 37
+  {
+    title: 'Returning to Say Thank You',
+    description: 'Practice recognition and gratitude',
+    category: 'movement' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Stand and imagine walking away from a blessing.\nStep 2: Pause and turn around.\nStep 3: Walk back, saying: "Thank you."\nStep 4: Notice how gratitude changes your body.',
+  },
+  // Week 38
+  {
+    title: 'Harvest Humility',
+    description: 'Acknowledge dependence on grace',
+    category: 'grounding' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Breathe and name what you\'ve received.\nStep 3: Acknowledge that you didn\'t earn it.\nStep 4: Say: "I am dependent on grace."',
+  },
+  // Week 39
+  {
+    title: 'Trusting Provision',
+    description: 'Release anxiety about tomorrow',
+    category: 'release' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit comfortably and place both hands on your belly.\nStep 2: Breathe in, imagining provision for today.\nStep 3: Breathe out, releasing worry about tomorrow.\nStep 4: Repeat, trusting that you will be cared for.',
+  },
+  // Week 40
+  {
+    title: 'Watching and Waiting',
+    description: 'Practice patient expectation',
+    category: 'awareness' as const,
+    duration: '12 min',
+    instructions: 'Step 1: Sit in a quiet space and close your eyes.\nStep 2: Breathe slowly and wait without agenda.\nStep 3: Notice the urge to fill the silence.\nStep 4: Resist the urge and simply wait.',
+  },
+  // Week 41
+  {
+    title: 'Communion of Saints',
+    description: 'Feel the cloud of witnesses',
+    category: 'awareness' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit quietly and imagine those who have gone before.\nStep 2: Breathe and feel their presence surrounding you.\nStep 3: Say their names aloud or in your heart.\nStep 4: Trust that you are not alone.',
+  },
+  // Week 42
+  {
+    title: 'Alpha and Omega',
+    description: 'Hold the beginning and the end',
+    category: 'breath' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit comfortably and place both hands on your heart.\nStep 2: Breathe in, saying: "Beginning."\nStep 3: Breathe out, saying: "End."\nStep 4: Repeat, trusting that Christ holds both.',
+  },
+  // Week 43
+  {
+    title: 'Return to Advent',
+    description: 'Prepare to wait again',
+    category: 'grounding' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit with your hands open in your lap.\nStep 2: Breathe and notice the cycle returning.\nStep 3: Release the need for newness.\nStep 4: Trust that waiting is sacred.',
+  },
+  // Week 44 - Advent Begins
+  {
+    title: 'Carrying the Weight',
+    description: 'Feel what you\'ve been holding',
+    category: 'awareness' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit or stand and imagine holding a heavy weight.\nStep 2: Notice where you feel heaviness in your body.\nStep 3: Breathe into that heaviness without trying to lift it.\nStep 4: Ask: "What burdens am I carrying?"',
+  },
+  // Week 45
+  {
+    title: 'Watching in Darkness',
+    description: 'Keep vigil in the unknown',
+    category: 'awareness' as const,
+    duration: '12 min',
+    instructions: 'Step 1: Sit in a dark or dimly lit space.\nStep 2: Close your eyes and breathe slowly.\nStep 3: Notice the darkness without fear.\nStep 4: Trust that light is coming.',
+  },
+  // Week 46
+  {
+    title: 'Breath Before Promise',
+    description: 'Make space for the holy',
+    category: 'breath' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Sit comfortably and place one hand on your heart.\nStep 2: Breathe in slowly, creating space.\nStep 3: Breathe out, releasing what fills that space.\nStep 4: Repeat, making room for the holy to arrive.',
+  },
+  // Week 47
+  {
+    title: 'Opening Your Hands',
+    description: 'Receive and let go',
+    category: 'release' as const,
+    duration: '7 min',
+    instructions: 'Step 1: Sit with your hands in tight fists.\nStep 2: Breathe in and slowly open your hands.\nStep 3: Breathe out, releasing what you\'re gripping.\nStep 4: Repeat, practicing openness.',
+  },
+  // Week 48 - Christmas
+  {
+    title: 'Incarnate Touch',
+    description: 'Feel God in flesh',
+    category: 'self-compassion' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Place both hands on your body—arms, legs, face.\nStep 2: Breathe and feel the warmth of your own touch.\nStep 3: Say: "God became flesh like mine."\nStep 4: Honor your body as sacred.',
+  },
+  // Week 49
+  {
+    title: 'Joy Embodied',
+    description: 'Celebrate with your whole body',
+    category: 'movement' as const,
+    duration: '6 min',
+    instructions: 'Step 1: Stand and raise your arms overhead.\nStep 2: Breathe in deeply, feeling joy rise.\nStep 3: Lower your arms and breathe out, releasing sorrow.\nStep 4: Repeat, celebrating with your body.',
+  },
+  // Week 50 - Epiphany
+  {
+    title: 'Following the Star',
+    description: 'Notice what guides you',
+    category: 'awareness' as const,
+    duration: '10 min',
+    instructions: 'Step 1: Sit quietly and close your eyes.\nStep 2: Imagine a light guiding you forward.\nStep 3: Breathe and ask: "What is guiding me?"\nStep 4: Trust the light you see.',
+  },
+  // Week 51
+  {
+    title: 'Light Revealed',
+    description: 'See what was hidden',
+    category: 'awareness' as const,
+    duration: '8 min',
+    instructions: 'Step 1: Sit in a space with natural light.\nStep 2: Close your eyes and notice the light on your face.\nStep 3: Breathe and ask: "What is being revealed to me?"\nStep 4: Open your eyes and see with new sight.',
+  },
+  // Week 52
+  {
+    title: 'Everyday Sacred',
+    description: 'Find the holy in the ordinary',
+    category: 'grounding' as const,
+    duration: '5 min',
+    instructions: 'Step 1: Stand or sit with feet flat on the ground.\nStep 2: Notice the sensation of your feet touching the floor.\nStep 3: Breathe slowly and name three ordinary things you\'re grateful for.\nStep 4: Feel the sacred in the everyday.',
   },
 ];
 
@@ -602,31 +908,46 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
     app.logger.info({ exerciseCount: exercises.length }, 'Fetched somatic exercises for assignment');
 
     // Determine which theme should start based on current date
-    // Late January (after Epiphany, Jan 6-ish) is Ordinary Time
+    // The 52-exercise array starts with Week 1 (Ordinary Time, late January)
+    // So we always start at index 0 - the exercises are paired with themes in order
     const now = new Date();
     const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
     const currentMonth = pacificTime.getMonth(); // 0-11
     const currentDay = pacificTime.getDate();
 
-    // Find the starting index: Ordinary Time after Epiphany starts at index 8 (after Advent 4, Christmas 2, Epiphany 2)
-    // But we need to account for the current date in the liturgical year
-    // For now, if we're after January 6 (Epiphany), we're in Ordinary Time
+    // Calculate which week of the year we're in to determine starting theme index
     let startingThemeIndex = 0;
-    if (currentMonth === 0 && currentDay > 6) {
-      // Late January - Ordinary Time after Epiphany (start at index 8)
-      startingThemeIndex = 8;
-    } else if (currentMonth > 0 && currentMonth < 2) {
-      // February - still in Ordinary Time
-      startingThemeIndex = 8;
-    } else if (currentMonth >= 2 && currentMonth < 4) {
-      // March-April - could be Lent or Easter, use Lent starting point (index 10)
-      startingThemeIndex = 10;
+
+    // Late January (after Epiphany) - Ordinary Time
+    if (currentMonth === 0 && currentDay > 23) {
+      startingThemeIndex = 0; // Week 1 - Ordinary Time
+    } else if (currentMonth === 1) {
+      // February - weeks 2-4 of Ordinary Time
+      startingThemeIndex = 1;
+    } else if (currentMonth === 2) {
+      // March - weeks 5-9, mostly Lent
+      startingThemeIndex = 4;
+    } else if (currentMonth === 3) {
+      // April - weeks 10-14, Easter
+      startingThemeIndex = 9;
+    } else if (currentMonth === 4) {
+      // May - weeks 15-18, Ascension/Pentecost
+      startingThemeIndex = 14;
+    } else if (currentMonth > 4 && currentMonth < 11) {
+      // June-October - Ordinary Time (weeks 17-40)
+      const weekOfYear = Math.floor((currentDay + 30 * currentMonth) / 7) - 23; // approximate
+      startingThemeIndex = Math.max(16, Math.min(39, weekOfYear));
+    } else if (currentMonth === 10) {
+      // November - weeks 41-43
+      startingThemeIndex = 40;
+    } else if (currentMonth === 11) {
+      // December - weeks 44-49, Advent and Christmas
+      startingThemeIndex = 43;
     }
-    // Add more logic for other seasons as needed
 
     app.logger.info(
-      { currentMonth, currentDay, startingThemeIndex },
-      'Calculated starting theme index based on current date'
+      { currentMonth, currentDay, startingThemeIndex, totalExercises: exercises.length },
+      'Calculated starting theme index based on current date (52-exercise pairing)'
     );
 
     const startDate = new Date(getNextMondayPacific());
