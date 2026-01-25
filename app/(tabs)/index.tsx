@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  console.log('User viewing Home screen');
+  console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
 
   const [checkInStreak, setCheckInStreak] = useState(0);
@@ -20,7 +19,7 @@ export default function HomeScreen() {
         // Fetch user info
         const { authenticatedGet } = await import('@/utils/api');
         const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
-        console.log('User data loaded:', userResponse);
+        console.log('🏠 [Home] User data loaded:', userResponse);
         
         // Extract first name from the user's name field
         const userName = userResponse.user?.name || '';
@@ -29,11 +28,11 @@ export default function HomeScreen() {
 
         // Fetch streaks
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
-        console.log('Streaks loaded:', streaksResponse);
+        console.log('🏠 [Home] Streaks loaded:', streaksResponse);
         setCheckInStreak(streaksResponse.checkInStreak);
         setReflectionStreak(streaksResponse.reflectionStreak);
       } catch (error) {
-        console.error('Failed to load user data:', error);
+        console.error('🏠 [Home] Failed to load user data:', error);
         // Use defaults on error
         setFirstName('Friend');
         setCheckInStreak(0);
@@ -51,191 +50,181 @@ export default function HomeScreen() {
   const cardBg = colors.card;
 
   const handleCheckIn = () => {
-    console.log('User tapped Check-In card');
+    console.log('🏠 [Home] User tapped Check-In card');
+    console.log('🏠 [Home] Navigating to: /check-in');
     router.push('/check-in');
   };
 
   const handleDailyGift = () => {
-    console.log('User tapped Daily Gift card');
+    console.log('🏠 [Home] User tapped Daily Gift card');
+    console.log('🏠 [Home] Navigating to: /daily-gift');
     router.push('/daily-gift');
   };
 
   const handleCommunity = () => {
-    console.log('User tapped Community card');
+    console.log('🏠 [Home] User tapped Community card');
+    console.log('🏠 [Home] Navigating to: /community');
     router.push('/community');
   };
 
   const handleWeeklyRecap = () => {
-    console.log('User tapped Weekly Recap card');
+    console.log('🏠 [Home] User tapped Weekly Recap card');
+    console.log('🏠 [Home] Navigating to: /weekly-recap');
     router.push('/weekly-recap');
   };
 
   const greetingText = `Peace to you, ${firstName}`;
   const checkInStreakText = `${checkInStreak}`;
+  const checkInBestText = `best: 2`;
   const reflectionStreakText = `${reflectionStreak}`;
+  const reflectionBestText = `best: 4`;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.greeting, { color: textColor }]}>
-            {greetingText}
-          </Text>
-        </View>
-
-        {/* Streak cards */}
-        <View style={styles.streakContainer}>
-          <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-            <View style={styles.streakRow}>
-              <IconSymbol 
-                ios_icon_name="message.fill"
-                android_material_icon_name="chat"
-                size={12}
-                color={colors.primary}
-              />
-              <Text style={[styles.streakNumber, { color: textColor }]}>
-                {checkInStreakText}
-              </Text>
-              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                Check-In
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-            <View style={styles.streakRow}>
-              <IconSymbol 
-                ios_icon_name="gift.fill"
-                android_material_icon_name="card-giftcard"
-                size={12}
-                color={colors.accent}
-              />
-              <Text style={[styles.streakNumber, { color: textColor }]}>
-                {reflectionStreakText}
-              </Text>
-              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                Reflection
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.mainCards}>
-          <TouchableOpacity 
-            style={[styles.mainCard, { backgroundColor: cardBg }]}
-            onPress={handleCheckIn}
-            activeOpacity={0.7}
-          >
-            <View style={styles.mainCardIcon}>
-              <IconSymbol 
-                ios_icon_name="message.fill"
-                android_material_icon_name="chat"
-                size={24}
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.mainCardContent}>
-              <Text style={[styles.mainCardTitle, { color: textColor }]}>
-                Check-In
-              </Text>
-              <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                Share what&apos;s on your heart
-              </Text>
-            </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={textSecondaryColor}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.mainCard, { backgroundColor: cardBg }]}
-            onPress={handleDailyGift}
-            activeOpacity={0.7}
-          >
-            <View style={styles.mainCardIcon}>
-              <IconSymbol 
-                ios_icon_name="gift.fill"
-                android_material_icon_name="card-giftcard"
-                size={24}
-                color={colors.accent}
-              />
-            </View>
-            <View style={styles.mainCardContent}>
-              <Text style={[styles.mainCardTitle, { color: textColor }]}>
-                Open Your Daily Gift
-              </Text>
-              <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                One daily scripture reflection
-              </Text>
-            </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={textSecondaryColor}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.mainCard, { backgroundColor: cardBg }]}
-            onPress={handleCommunity}
-            activeOpacity={0.7}
-          >
-            <View style={styles.mainCardIcon}>
-              <IconSymbol 
-                ios_icon_name="person.3.fill"
-                android_material_icon_name="group"
-                size={24}
-                color={colors.prayer}
-              />
-            </View>
-            <View style={styles.mainCardContent}>
-              <Text style={[styles.mainCardTitle, { color: textColor }]}>
-                Community
-              </Text>
-              <Text style={[styles.mainCardDescription, { color: textSecondaryColor }]}>
-                Share and hold others in prayer
-              </Text>
-            </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={textSecondaryColor}
-            />
-          </TouchableOpacity>
-
-          {/* Weekly Recap card */}
-          <TouchableOpacity 
-            style={[styles.weeklyRecapCard, { backgroundColor: cardBg }]}
-            onPress={handleWeeklyRecap}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="calendar"
-              android_material_icon_name="calendar-today"
-              size={16}
-              color={colors.primary}
-            />
-            <Text style={[styles.weeklyRecapText, { color: textColor }]}>
-              Weekly Recap
+    <React.Fragment>
+      <Stack.Screen
+        options={{
+          title: 'Linen',
+          headerShown: true,
+        }}
+      />
+      <View style={[styles.container, { backgroundColor: bgColor }]}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.greeting, { color: textColor }]}>
+              {greetingText}
             </Text>
-            <IconSymbol 
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={16}
-              color={textSecondaryColor}
-            />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+
+          {/* Streak cards */}
+          <View style={styles.streakContainer}>
+            <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Check-In Streak
+              </Text>
+              <View style={styles.streakRow}>
+                <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                  {checkInStreakText}
+                </Text>
+                <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                  {checkInBestText}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Reflection Streak
+              </Text>
+              <View style={styles.streakRow}>
+                <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                  {reflectionStreakText}
+                </Text>
+                <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                  {reflectionBestText}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Primary Actions - Check-In and Open Your Gift */}
+          <View style={styles.primaryActions}>
+            <TouchableOpacity 
+              style={[styles.primaryCard, { backgroundColor: cardBg }]}
+              onPress={handleCheckIn}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.primaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="message.fill"
+                  android_material_icon_name="chat"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                Check-In
+              </Text>
+              <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                What&apos;s on your mind?
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.primaryCard, { backgroundColor: cardBg }]}
+              onPress={handleDailyGift}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.primaryIconContainer, { backgroundColor: colors.accent + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="gift.fill"
+                  android_material_icon_name="card-giftcard"
+                  size={40}
+                  color={colors.accent}
+                />
+              </View>
+              <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                Open Your Gift
+              </Text>
+              <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                Daily scripture reflection
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Secondary Actions - Community and Weekly Recap */}
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity 
+              style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+              onPress={handleCommunity}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryIconContainer, { backgroundColor: colors.prayer + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="person.3.fill"
+                  android_material_icon_name="group"
+                  size={24}
+                  color={colors.prayer}
+                />
+              </View>
+              <View style={styles.secondaryCardContent}>
+                <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                  Community
+                </Text>
+                <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                  Share your reflections
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+              onPress={handleWeeklyRecap}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.secondaryCardContent}>
+                <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                  Weekly Recap
+                </Text>
+                <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                  See your journey this week
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    </React.Fragment>
   );
 }
 
@@ -245,7 +234,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl * 2,
   },
   header: {
     paddingTop: spacing.lg,
@@ -257,81 +246,105 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.md,
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   streakCard: {
     flex: 1,
-    borderRadius: borderRadius.sm,
-    padding: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     elevation: 1,
+  },
+  streakLabel: {
+    fontSize: 12,
+    fontWeight: typography.regular,
+    marginBottom: spacing.xs,
   },
   streakRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
   streakNumber: {
-    fontSize: 11,
-    fontWeight: typography.semibold,
+    fontSize: 28,
+    fontWeight: typography.bold,
   },
-  streakLabel: {
-    fontSize: 10,
+  streakBest: {
+    fontSize: 12,
     fontWeight: typography.regular,
   },
-  mainCards: {
-    marginTop: spacing.sm,
+  primaryActions: {
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  primaryCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    minHeight: 180,
+    justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  primaryCardTitle: {
+    fontSize: 22,
+    fontWeight: typography.bold,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  primaryCardDescription: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  secondaryActions: {
     gap: spacing.md,
   },
-  mainCard: {
+  secondaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
   },
-  mainCardIcon: {
-    marginRight: spacing.sm,
+  secondaryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
-  mainCardContent: {
+  secondaryCardContent: {
     flex: 1,
   },
-  mainCardTitle: {
-    fontSize: typography.body,
+  secondaryCardTitle: {
+    fontSize: 16,
     fontWeight: typography.semibold,
     marginBottom: 2,
   },
-  mainCardDescription: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  weeklyRecapCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.sm,
-    padding: spacing.sm,
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 1,
-    elevation: 1,
-    marginTop: spacing.xs,
-  },
-  weeklyRecapText: {
-    flex: 1,
+  secondaryCardDescription: {
     fontSize: 13,
-    fontWeight: typography.medium,
+    lineHeight: 18,
   },
 });
