@@ -42,34 +42,51 @@ function getCurrentWeekIndex(): number {
   const currentDay = pacificTime.getDate();
 
   // Calculate which week of the year we're in to determine week index
-  // The 52-week cycle starts with Week 1 (Ordinary Time, late January)
+  // Array structure:
+  // 0-3: Advent (4 weeks)
+  // 4-5: Christmas (2 weeks)
+  // 6-7: Epiphany (2 weeks)
+  // 8-9: Ordinary Time early (2 weeks) - LATE JANUARY/EARLY FEBRUARY
+  // 10-15: Lent (6 weeks)
+  // 16-21: Easter (6 weeks)
+  // 22-43: Ordinary Time mid (22 weeks)
+  // 44-50: Thanksgiving/Advent prep (7 weeks)
+  // 51: Final week before Advent cycle restarts
   let weekIndex = 0;
 
-  // Late January (after Epiphany) - Ordinary Time
-  if (currentMonth === 0 && currentDay > 23) {
-    weekIndex = 0; // Week 1 - Ordinary Time
+  // Late January (after Epiphany on Jan 6, Epiphany II is Jan 13-19, then Ordinary Time begins ~Jan 20)
+  if (currentMonth === 0 && currentDay > 19) {
+    weekIndex = 8; // Ordinary Time begins (index 8 = "The Everyday Sacred")
   } else if (currentMonth === 1) {
-    // February - weeks 2-4 of Ordinary Time
-    weekIndex = 1;
+    // February - weeks 8-9 of Ordinary Time early
+    if (currentDay < 15) {
+      weekIndex = 8; // Still in first Ordinary Time week
+    } else {
+      weekIndex = 9; // Second Ordinary Time week
+    }
   } else if (currentMonth === 2) {
-    // March - weeks 5-9, mostly Lent
-    weekIndex = 4;
+    // March - weeks 10-15, Lent
+    weekIndex = 10;
   } else if (currentMonth === 3) {
-    // April - weeks 10-14, Easter
-    weekIndex = 9;
+    // April - weeks 16-21, Easter
+    weekIndex = 16;
   } else if (currentMonth === 4) {
-    // May - weeks 15-18, Ascension/Pentecost
-    weekIndex = 14;
+    // May - weeks 22-24, Ordinary Time continues
+    weekIndex = 22;
   } else if (currentMonth > 4 && currentMonth < 11) {
-    // June-October - Ordinary Time (weeks 17-40)
-    const weekOfYear = Math.floor((currentDay + 30 * currentMonth) / 7) - 23; // approximate
-    weekIndex = Math.max(16, Math.min(39, weekOfYear));
+    // June-October - Ordinary Time continues (weeks 22-43)
+    const weekOfYear = Math.floor((currentDay + 30 * currentMonth) / 7) - 8;
+    weekIndex = Math.max(22, Math.min(43, weekOfYear));
   } else if (currentMonth === 10) {
-    // November - weeks 41-43
-    weekIndex = 40;
+    // November - weeks 44-47, Thanksgiving/Ordinary Time tail
+    weekIndex = 44;
   } else if (currentMonth === 11) {
-    // December - weeks 44-49, Advent and Christmas
-    weekIndex = 43;
+    // December - weeks 48-51, Advent begins (around Dec 1-2)
+    if (currentDay < 5) {
+      weekIndex = 47; // Late Thanksgiving
+    } else {
+      weekIndex = 48; // Advent begins
+    }
   }
 
   return weekIndex;
