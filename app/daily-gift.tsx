@@ -445,9 +445,6 @@ export default function DailyGiftScreen() {
   const hasSomaticPrompt = !!dailyContent.somaticPrompt;
   const tryButtonText = 'Try';
 
-  const currentDate = new Date();
-  const dayOfWeekDisplay = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-  
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
@@ -612,8 +609,14 @@ export default function DailyGiftScreen() {
             </Text>
             
             <View style={styles.themeTitleRow}>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
+              </Text>
               <Text style={[styles.themeTitle, { color: textColor }]}>
                 {themeTitleDisplay}
+              </Text>
+              <Text style={[styles.diamond, { color: colors.primary }]}>
+                ◆
               </Text>
             </View>
             
@@ -1136,7 +1139,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center',
     letterSpacing: 0.3,
-    flex: 1,
   },
   themeIcons: {
     flexDirection: 'row',
