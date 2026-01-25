@@ -33,7 +33,6 @@ interface DailyContent {
   somaticPrompt?: string | null;
 }
 
-// This is what the backend ACTUALLY returns
 interface DailyGiftResponse {
   weeklyTheme: {
     id: string;
@@ -86,35 +85,27 @@ export default function DailyGiftScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
 
-  // Gift opening state
   const [isGiftOpened, setIsGiftOpened] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
 
-  // Ambient sound modal
   const [showAmbientSounds, setShowAmbientSounds] = useState(false);
   const [selectedSound, setSelectedSound] = useState<string | null>(null);
 
-  // Weekly practice invitation state
   const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
   const [hasSkippedPractice, setHasSkippedPractice] = useState(false);
 
-  // Somatic prompt state (for daily somatic invitation)
   const [hasSkippedSomaticPrompt, setHasSkippedSomaticPrompt] = useState(false);
 
-  // Category for sharing to community
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
-  // Response mode selection
   const [responseMode, setResponseMode] = useState<'text' | 'create' | 'voice'>('text');
 
-  // Mood and body sensation tags
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
 
-  // Ambient sound options
   const ambientSounds = [
     { id: 'rain', label: 'Gentle Rain', icon: '🌧️' },
     { id: 'ocean', label: 'Ocean Waves', icon: '🌊' },
@@ -122,7 +113,6 @@ export default function DailyGiftScreen() {
     { id: 'silence', label: 'Silence', icon: '🤫' },
   ];
 
-  // Create glitter particles
   const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
     id: index,
     angle: (index / 30) * Math.PI * 2,
@@ -148,12 +138,10 @@ export default function DailyGiftScreen() {
         setDailyGiftResponse(response);
         setIsLoadingGift(false);
 
-        // Check if user has already reflected today
         if (response.dailyContent) {
           await checkReflectionStatus(response.dailyContent.id);
         }
 
-        // Check weekly practice completion status
         if (response.weeklyTheme.somaticExercise) {
           await checkWeeklyPracticeStatus();
         }
@@ -172,9 +160,6 @@ export default function DailyGiftScreen() {
       console.log('[DailyGift] Checking if user has reflected today for dailyContentId:', dailyContentId);
       const response = await authenticatedGet<any[]>('/api/daily-gift/my-reflections');
       
-      // Check if there's a reflection for today's daily content
-      // The API returns an array of reflections with dailyGiftId field
-      // Since we're using the new dailyContent system, we check if dailyGiftId matches our dailyContentId
       const todayReflection = response.find(
         (r: any) => r.dailyGiftId === dailyContentId
       );
@@ -187,7 +172,6 @@ export default function DailyGiftScreen() {
       setHasReflected(!!todayReflection);
     } catch (error) {
       console.error('[DailyGift] Failed to check reflection status:', error);
-      // If the API fails, assume not reflected to allow user to try
       setHasReflected(false);
     }
   };
@@ -220,7 +204,6 @@ export default function DailyGiftScreen() {
     console.log('[DailyGift] User tapped gift box - starting glitter animation');
     setIsOpening(true);
 
-    // Open gift after animation completes
     setTimeout(() => {
       console.log('[DailyGift] Animation complete - revealing content');
       setIsGiftOpened(true);
@@ -245,16 +228,12 @@ export default function DailyGiftScreen() {
     setIsLoading(true);
 
     try {
-      // Note: Backend expects 'dailyGiftId' but we're using the new dailyContent system
-      // The backend should be updated to accept 'dailyContentId' instead
       const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', {
-        dailyGiftId: dailyGiftResponse.dailyContent.id, // Using dailyContent.id as dailyGiftId for now
+        dailyGiftId: dailyGiftResponse.dailyContent.id,
         reflectionText: reflectionText.trim(),
         shareToComm,
         category: shareCategory,
         isAnonymous: shareAnonymously,
-        // Note: responseMode, moods, and sensations are not yet supported by backend
-        // These will be ignored until backend is updated
       });
       
       console.log('[DailyGift] Reflection saved successfully:', response);
@@ -263,7 +242,6 @@ export default function DailyGiftScreen() {
     } catch (error) {
       console.error('[DailyGift] Failed to save reflection:', error);
       setIsLoading(false);
-      // Show error to user
       alert('Failed to save reflection. Please try again.');
     }
   };
@@ -293,7 +271,6 @@ export default function DailyGiftScreen() {
   const handleTrySomaticPrompt = () => {
     console.log('[DailyGift] User tapped Try for somatic prompt');
     setHasSkippedSomaticPrompt(true);
-    // TODO: Could navigate to a somatic practice screen or show instructions
   };
 
   const handleSkipSomaticPrompt = () => {
@@ -319,12 +296,10 @@ export default function DailyGiftScreen() {
     console.log('[DailyGift] User selected response mode:', mode);
     setResponseMode(mode);
     
-    // Navigate to artwork canvas if Create is selected
     if (mode === 'create') {
       router.push('/artwork-canvas');
     }
     
-    // TODO: Implement voice recording when Voice is selected
     if (mode === 'voice') {
       console.log('[DailyGift] Voice recording not yet implemented');
     }
@@ -379,7 +354,6 @@ export default function DailyGiftScreen() {
           }}
         />
         
-        {/* Custom Header */}
         <View style={[styles.header, { backgroundColor: bgColor }]}>
           <TouchableOpacity 
             onPress={() => router.back()}
@@ -415,7 +389,6 @@ export default function DailyGiftScreen() {
             onPress={() => {
               console.log('[DailyGift] User tapped retry button');
               setIsLoadingGift(true);
-              // Reload the component by navigating back and forth
               router.back();
               setTimeout(() => {
                 router.push('/daily-gift');
@@ -432,7 +405,6 @@ export default function DailyGiftScreen() {
     );
   }
 
-  // Prepare display variables (ATOMIC JSX)
   const dailyContent = dailyGiftResponse.dailyContent;
   const scriptureDisplay = dailyContent.scriptureText;
   const referenceDisplay = dailyContent.scriptureReference;
@@ -467,18 +439,15 @@ export default function DailyGiftScreen() {
   const tapText = 'Tap to open';
 
   const invitationLabel = 'WEEKLY SOMATIC INVITATION';
-  const invitationText = 'You are invited to practice with us this week';
+  const invitationText = 'You are invited to practice';
 
-  // Somatic prompt card text
   const somaticPromptDisplay = dailyContent.somaticPrompt || '';
   const hasSomaticPrompt = !!dailyContent.somaticPrompt;
   const tryButtonText = 'Try';
 
-  // Get current date for display
   const currentDate = new Date();
   const dayOfWeekDisplay = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
   
-  // Use dayTitle from backend if available, otherwise use a simple day title based on day of week
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
@@ -490,7 +459,6 @@ export default function DailyGiftScreen() {
         }}
       />
 
-      {/* Custom Header */}
       <View style={[styles.header, { backgroundColor: bgColor }]}>
         <TouchableOpacity 
           onPress={() => router.back()}
@@ -534,7 +502,6 @@ export default function DailyGiftScreen() {
         </View>
       </View>
 
-      {/* Ambient Sound Modal */}
       <Modal
         visible={showAmbientSounds}
         transparent={true}
@@ -595,7 +562,6 @@ export default function DailyGiftScreen() {
       </Modal>
 
       {!isGiftOpened ? (
-        // UNOPENED STATE
         <View style={styles.unopenedContainer}>
           <Text style={[styles.giftTitle, { color: textColor }]}>
             {giftTitleText}
@@ -620,7 +586,6 @@ export default function DailyGiftScreen() {
               />
             </TouchableOpacity>
 
-            {/* Glitter particles */}
             {isOpening && glitterParticles.map((particle) => (
               <GlitterParticle
                 key={particle.id}
@@ -637,12 +602,10 @@ export default function DailyGiftScreen() {
           </Text>
         </View>
       ) : (
-        // OPENED STATE
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Weekly Theme Section with Icons */}
           <View style={styles.themeSection}>
             <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
               {liturgicalSeasonDisplay}
@@ -652,34 +615,6 @@ export default function DailyGiftScreen() {
               <Text style={[styles.themeTitle, { color: textColor }]}>
                 {themeTitleDisplay}
               </Text>
-              
-              <View style={styles.themeIcons}>
-                <TouchableOpacity 
-                  onPress={handleAmbientSoundPress}
-                  style={styles.themeIconButton}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="speaker.wave.2"
-                    android_material_icon_name="volume-up"
-                    size={20}
-                    color={textColor}
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  onPress={handleCommunityPress}
-                  style={styles.themeIconButton}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="person.2"
-                    android_material_icon_name="group"
-                    size={20}
-                    color={textColor}
-                  />
-                </TouchableOpacity>
-              </View>
             </View>
             
             <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
@@ -687,7 +622,6 @@ export default function DailyGiftScreen() {
             </Text>
           </View>
 
-          {/* Weekly Practice Invitation Card */}
           {hasSomaticExercise && !hasCompletedPractice && !hasSkippedPractice && (
             <View style={[styles.invitationCard, { backgroundColor: cardBg }]}>
               <Text style={styles.plantEmoji}>
@@ -733,7 +667,6 @@ export default function DailyGiftScreen() {
             </View>
           )}
 
-          {/* Somatic Invitation Card (Simple Prompt) */}
           {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
             <View style={[styles.somaticPromptCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.somaticPromptText, { color: textColor }]}>
@@ -763,7 +696,6 @@ export default function DailyGiftScreen() {
             </View>
           )}
 
-          {/* Daily Scripture Section */}
           <View style={styles.dailyScriptureSection}>
             <View style={styles.dailyThemeTitleRow}>
               <Text style={[styles.diamond, { color: colors.primary }]}>
@@ -792,14 +724,12 @@ export default function DailyGiftScreen() {
             </View>
           </View>
 
-          {/* ========== YOUR REFLECTION SECTION - DO NOT CHANGE BELOW THIS LINE ========== */}
           {!hasReflected ? (
             <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.reflectionTitle, { color: textColor }]}>
                 {reflectionTitle}
               </Text>
 
-              {/* Response Mode Buttons */}
               <Text style={[styles.sectionTitle, { color: textColor }]}>
                 {responseModeTitle}
               </Text>
@@ -874,7 +804,6 @@ export default function DailyGiftScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Text Input (only show for text mode) */}
               {responseMode === 'text' && (
                 <TextInput
                   style={[styles.reflectionInput, { 
@@ -892,7 +821,6 @@ export default function DailyGiftScreen() {
                 />
               )}
 
-              {/* Share Toggle */}
               <TouchableOpacity 
                 style={styles.shareToggle}
                 onPress={() => {
@@ -912,7 +840,6 @@ export default function DailyGiftScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Save Button */}
               <TouchableOpacity 
                 style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
                 onPress={handleSaveReflection}
@@ -924,7 +851,6 @@ export default function DailyGiftScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Mood Tags - Moved to Bottom */}
               <Text style={[styles.sectionTitle, { color: textColor, marginTop: spacing.lg }]}>
                 {moodTagsTitle}
               </Text>
@@ -956,7 +882,6 @@ export default function DailyGiftScreen() {
                 })}
               </View>
 
-              {/* Body Sensation Tags - Moved to Bottom */}
               <Text style={[styles.sectionTitle, { color: textColor }]}>
                 {sensationTagsTitle}
               </Text>
@@ -1127,7 +1052,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  // Unopened State
   unopenedContainer: {
     flex: 1,
     alignItems: 'center',
@@ -1181,7 +1105,6 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
 
-  // Opened State
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
@@ -1189,7 +1112,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl * 2,
   },
 
-  // Weekly Theme Section with Icons
   themeSection: {
     alignItems: 'center',
     gap: spacing.xs,
@@ -1231,7 +1153,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
 
-  // Weekly Practice Invitation Card
   invitationCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
@@ -1293,7 +1214,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // Somatic Prompt Card (Simple)
   somaticPromptCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
@@ -1330,7 +1250,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  // Daily Scripture Section
   dailyScriptureSection: {
     gap: spacing.sm,
   },
@@ -1383,7 +1302,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  // Reflection Card - KEEP EXACTLY THE SAME
   reflectionCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
@@ -1410,7 +1328,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   
-  // Response Mode Buttons
   responseModeContainer: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -1508,7 +1425,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
-  // Ambient Sound Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
