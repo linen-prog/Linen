@@ -130,10 +130,21 @@ export default function DailyGiftScreen() {
         console.log('[DailyGift] Daily gift loaded successfully:', {
           themeTitle: response.weeklyTheme.themeTitle,
           liturgicalSeason: response.weeklyTheme.liturgicalSeason,
+          themeDescription: response.weeklyTheme.themeDescription,
+          weekStartDate: response.weeklyTheme.weekStartDate,
           hasSomaticExercise: !!response.weeklyTheme.somaticExercise,
+          somaticExerciseTitle: response.weeklyTheme.somaticExercise?.title,
+          featuredExerciseId: response.weeklyTheme.featuredExerciseId,
           hasDailyContent: !!response.dailyContent,
           dayOfWeek: response.dailyContent?.dayOfWeek,
         });
+        
+        if (!response.weeklyTheme.somaticExercise) {
+          console.warn('[DailyGift] ⚠️ WARNING: No somatic exercise returned from backend!', {
+            featuredExerciseId: response.weeklyTheme.featuredExerciseId,
+            themeId: response.weeklyTheme.id,
+          });
+        }
         
         setDailyGiftResponse(response);
         setIsLoadingGift(false);
