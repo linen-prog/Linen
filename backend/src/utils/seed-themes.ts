@@ -512,6 +512,18 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
 
     app.logger.info('No weekly themes found. Auto-seeding 52 weeks of themes...');
 
+    // Fetch all somatic exercises to assign to themes
+    const exercises = await app.db
+      .select()
+      .from(schema.somaticExercises);
+
+    if (!exercises.length) {
+      app.logger.error({}, 'No somatic exercises found. Cannot seed themes with featured exercises.');
+      throw new Error('Somatic exercises must be seeded before themes');
+    }
+
+    app.logger.info({ exerciseCount: exercises.length }, 'Fetched somatic exercises for assignment');
+
     const startDate = new Date(getNextMondayPacific());
     startDate.setHours(0, 0, 0, 0);
 
@@ -521,11 +533,16 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
       const weekDate = new Date(startDate);
       weekDate.setDate(weekDate.getDate() + i * 7);
 
+      // Cycle through exercises: week 0 gets exercise 0, week 1 gets exercise 1, etc.
+      const exerciseIndex = i % exercises.length;
+      const featuredExerciseId = exercises[exerciseIndex].id;
+
       const themeRecord = {
         weekStartDate: weekDate.toISOString().split('T')[0],
         liturgicalSeason: themeData.season,
         themeTitle: themeData.title,
         themeDescription: themeData.description,
+        featuredExerciseId,
       };
 
       themesToCreate.push(themeRecord);
@@ -565,8 +582,13 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
     }
 
     app.logger.info(
-      { themesCreated: createdThemes.length, dailyContentCreated: createdThemes.length * 7 },
-      'Auto-seeding complete: 52 weeks of themes with daily content created'
+      {
+        themesCreated: createdThemes.length,
+        dailyContentCreated: createdThemes.length * 7,
+        exercisesAssigned: exercises.length,
+        exerciseCycleLength: exercises.length,
+      },
+      'Auto-seeding complete: 52 weeks of themes with daily content and featured exercises created'
     );
   } catch (error) {
     app.logger.error({ err: error }, 'Failed to auto-seed themes');
