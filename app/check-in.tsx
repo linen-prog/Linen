@@ -49,7 +49,6 @@ export default function CheckInScreen() {
   const [showMessageShareModal, setShowMessageShareModal] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string>('');
   const [selectedMessageContent, setSelectedMessageContent] = useState<string>('');
-  const [messageShareCategory, setMessageShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('wisdom');
   const [messageShareAnonymous, setMessageShareAnonymous] = useState(false);
   const [isSharingMessage, setIsSharingMessage] = useState(false);
 
@@ -244,10 +243,12 @@ export default function CheckInScreen() {
       setShowPrayerModal(false);
       setIsSharing(false);
       
+      const categoryLabel = shareCategory.charAt(0).toUpperCase() + shareCategory.slice(1);
+      
       // Show success message with option to view community
       Alert.alert(
         'Shared!',
-        `Your prayer has been shared with the community in the ${shareCategory.charAt(0).toUpperCase() + shareCategory.slice(1)} tab.`,
+        `Your prayer has been shared with the community in the ${categoryLabel} tab.`,
         [
           {
             text: 'View Community',
@@ -329,9 +330,8 @@ export default function CheckInScreen() {
       return;
     }
 
-    console.log('[CheckIn] User sharing AI message to community', { 
+    console.log('[CheckIn] User sharing AI message to Wisdom feed', { 
       messageId: selectedMessageId, 
-      category: messageShareCategory, 
       anonymous: messageShareAnonymous 
     });
     setIsSharingMessage(true);
@@ -340,24 +340,21 @@ export default function CheckInScreen() {
       const { authenticatedPost } = await import('@/utils/api');
       await authenticatedPost('/api/check-in/share-message', {
         messageId: selectedMessageId,
-        category: messageShareCategory,
+        category: 'wisdom',
         isAnonymous: messageShareAnonymous,
       });
       
-      console.log('[CheckIn] ✅ AI message shared to community successfully in category:', messageShareCategory);
+      console.log('[CheckIn] ✅ AI message shared to Wisdom feed successfully');
       setShowMessageShareModal(false);
       setSelectedMessageId('');
       setSelectedMessageContent('');
-      setMessageShareCategory('wisdom');
       setMessageShareAnonymous(false);
       setIsSharingMessage(false);
-      
-      const categoryLabel = messageShareCategory.charAt(0).toUpperCase() + messageShareCategory.slice(1);
       
       // Show success message with option to view community
       Alert.alert(
         'Shared!',
-        `This reflection has been shared with the community in the ${categoryLabel} tab.`,
+        'This reflection has been shared with the community in the Wisdom tab.',
         [
           {
             text: 'View Community',
@@ -974,7 +971,7 @@ export default function CheckInScreen() {
         </View>
       </Modal>
 
-      {/* Share AI Message Modal */}
+      {/* Share AI Message Modal - Wisdom Only */}
       <Modal
         visible={showMessageShareModal}
         transparent
@@ -983,52 +980,43 @@ export default function CheckInScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => {
+                setShowMessageShareModal(false);
+                setSelectedMessageId('');
+                setSelectedMessageContent('');
+                setMessageShareAnonymous(false);
+              }}
+            >
+              <IconSymbol 
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={24}
+                color={textSecondaryColor}
+              />
+            </TouchableOpacity>
+
             <View style={styles.modalHeader}>
               <IconSymbol 
-                ios_icon_name="square.and.arrow.up"
-                android_material_icon_name="share"
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
                 size={32}
                 color={colors.primary}
               />
               <Text style={[styles.modalTitle, { color: textColor }]}>
-                Share with Community
+                Share to Community Wisdom
               </Text>
             </View>
 
-            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-              Share this reflection with the community. Choose where to share:
+            <Text style={[styles.modalText, { color: textColor }]}>
+              This message touched your heart. Would you like to share it with the community so others can be encouraged?
             </Text>
 
-            <View style={styles.categoryGrid}>
-              {categories.map(category => {
-                const isSelected = messageShareCategory === category.id;
-                const categoryLabel = category.label;
-                
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryCard,
-                      { backgroundColor: inputBg, borderColor: inputBorder },
-                      isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
-                    ]}
-                    onPress={() => setMessageShareCategory(category.id)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name={category.icon}
-                      android_material_icon_name={category.icon}
-                      size={32}
-                      color={isSelected ? '#FFFFFF' : colors.primary}
-                    />
-                    <Text style={[
-                      styles.categoryLabel,
-                      { color: isSelected ? '#FFFFFF' : textColor }
-                    ]}>
-                      {categoryLabel}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={styles.messagePreviewContainer}>
+              <Text style={[styles.messagePreviewText, { color: textSecondaryColor }]} numberOfLines={4}>
+                {selectedMessageContent}
+              </Text>
             </View>
 
             <TouchableOpacity 
@@ -1042,7 +1030,7 @@ export default function CheckInScreen() {
                 color={colors.primary}
               />
               <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                Share anonymously
+                Share anonymously (don&apos;t show my name)
               </Text>
             </TouchableOpacity>
 
@@ -1069,7 +1057,6 @@ export default function CheckInScreen() {
                   setShowMessageShareModal(false);
                   setSelectedMessageId('');
                   setSelectedMessageContent('');
-                  setMessageShareCategory('wisdom');
                   setMessageShareAnonymous(false);
                 }}
                 disabled={isSharingMessage}
@@ -1260,6 +1247,13 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  closeButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 10,
+    padding: spacing.xs,
+  },
   modalHeader: {
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -1275,6 +1269,19 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: spacing.lg,
     textAlign: 'center',
+  },
+  messagePreviewContainer: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  messagePreviewText: {
+    fontSize: typography.small,
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   crisisButtons: {
     gap: spacing.xl,
