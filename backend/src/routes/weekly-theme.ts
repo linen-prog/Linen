@@ -34,6 +34,47 @@ function getNextSundayPacific(): string {
   return date.toISOString().split('T')[0];
 }
 
+// Calculate which week (0-51) of the 52-week liturgical cycle we're in
+function getCurrentWeekIndex(): number {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const currentMonth = pacificTime.getMonth(); // 0-11
+  const currentDay = pacificTime.getDate();
+
+  // Calculate which week of the year we're in to determine week index
+  // The 52-week cycle starts with Week 1 (Ordinary Time, late January)
+  let weekIndex = 0;
+
+  // Late January (after Epiphany) - Ordinary Time
+  if (currentMonth === 0 && currentDay > 23) {
+    weekIndex = 0; // Week 1 - Ordinary Time
+  } else if (currentMonth === 1) {
+    // February - weeks 2-4 of Ordinary Time
+    weekIndex = 1;
+  } else if (currentMonth === 2) {
+    // March - weeks 5-9, mostly Lent
+    weekIndex = 4;
+  } else if (currentMonth === 3) {
+    // April - weeks 10-14, Easter
+    weekIndex = 9;
+  } else if (currentMonth === 4) {
+    // May - weeks 15-18, Ascension/Pentecost
+    weekIndex = 14;
+  } else if (currentMonth > 4 && currentMonth < 11) {
+    // June-October - Ordinary Time (weeks 17-40)
+    const weekOfYear = Math.floor((currentDay + 30 * currentMonth) / 7) - 23; // approximate
+    weekIndex = Math.max(16, Math.min(39, weekOfYear));
+  } else if (currentMonth === 10) {
+    // November - weeks 41-43
+    weekIndex = 40;
+  } else if (currentMonth === 11) {
+    // December - weeks 44-49, Advent and Christmas
+    weekIndex = 43;
+  }
+
+  return weekIndex;
+}
+
 // Liturgical calendar data for 52 weeks
 const LITURGICAL_THEMES = [
   {
@@ -373,31 +414,48 @@ export function registerWeeklyThemeRoutes(app: App) {
       app.logger.info('Fetching current weekly theme');
 
       try {
-        // Get current Monday (week start) in Pacific Time
-        const mondayDate = getCurrentMondayPacific();
-
-        // Try to find theme for the current week
-        let theme = await app.db
+        // Get all themes ordered by weekStartDate
+        const allThemes = await app.db
           .select()
           .from(schema.weeklyThemes)
-          .where(eq(schema.weeklyThemes.weekStartDate, mondayDate))
-          .limit(1);
+          .orderBy(schema.weeklyThemes.weekStartDate);
 
-        // If no theme exists, get the most recent one
-        if (!theme.length) {
-          app.logger.warn({ date: mondayDate }, 'No theme found for current week, fetching most recent');
-          const recentThemes = await app.db
+        if (!allThemes.length) {
+          app.logger.error({}, 'No themes exist in database');
+          return reply.status(404).send({ error: 'No theme available' });
+        }
+
+        // Calculate which week (0-51) we're in
+        const currentWeekIndex = getCurrentWeekIndex();
+        app.logger.info({ currentWeekIndex, totalThemes: allThemes.length }, 'Calculated current week index');
+
+        // Get the theme at the current week index (with wraparound for 52-week cycle)
+        const themeIndex = currentWeekIndex % allThemes.length;
+        let theme = allThemes[themeIndex];
+
+        // Ensure the theme has a featuredExerciseId; if not, assign one randomly
+        if (!theme.featuredExerciseId) {
+          app.logger.warn({ themeId: theme.id, themeTitle: theme.themeTitle }, 'Theme missing featured exercise, assigning one');
+
+          const allExercises = await app.db
             .select()
-            .from(schema.weeklyThemes)
-            .orderBy(schema.weeklyThemes.weekStartDate)
-            .limit(1);
+            .from(schema.somaticExercises);
 
-          if (!recentThemes.length) {
-            app.logger.error({}, 'No themes exist in database');
-            return reply.status(404).send({ error: 'No theme available' });
+          if (allExercises.length > 0) {
+            const randomExercise = allExercises[Math.floor(Math.random() * allExercises.length)];
+            theme = {
+              ...theme,
+              featuredExerciseId: randomExercise.id,
+            };
+
+            // Update the database with the assigned exercise
+            await app.db
+              .update(schema.weeklyThemes)
+              .set({ featuredExerciseId: randomExercise.id })
+              .where(eq(schema.weeklyThemes.id, theme.id));
+
+            app.logger.info({ themeId: theme.id, exerciseId: randomExercise.id }, 'Assigned random exercise to theme');
           }
-
-          theme = recentThemes;
         }
 
         // Get current day of week in Pacific Time (0=Sunday, 1=Monday, ..., 6=Saturday)
@@ -411,7 +469,7 @@ export function registerWeeklyThemeRoutes(app: App) {
           .from(schema.dailyContent)
           .where(
             and(
-              eq(schema.dailyContent.weeklyThemeId, theme[0].id),
+              eq(schema.dailyContent.weeklyThemeId, theme.id),
               eq(schema.dailyContent.dayOfWeek, currentDayOfWeek)
             )
           )
@@ -422,11 +480,11 @@ export function registerWeeklyThemeRoutes(app: App) {
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
-        if (theme[0].featuredExerciseId) {
+        if (theme.featuredExerciseId) {
           const exerciseData = await app.db
             .select()
             .from(schema.somaticExercises)
-            .where(eq(schema.somaticExercises.id, theme[0].featuredExerciseId))
+            .where(eq(schema.somaticExercises.id, theme.featuredExerciseId))
             .limit(1);
           if (exerciseData.length) {
             featuredExercise = exerciseData[0];
@@ -434,19 +492,19 @@ export function registerWeeklyThemeRoutes(app: App) {
         }
 
         app.logger.info(
-          { themeId: theme[0].id, dayOfWeek: currentDayOfWeek, weekStartDate: mondayDate },
+          { themeId: theme.id, weekIndex: currentWeekIndex, dayOfWeek: currentDayOfWeek, weekStartDate: theme.weekStartDate },
           'Current weekly theme retrieved'
         );
 
         return reply.send({
           weeklyTheme: {
-            id: theme[0].id,
-            weekStartDate: theme[0].weekStartDate,
-            liturgicalSeason: theme[0].liturgicalSeason,
-            themeTitle: theme[0].themeTitle,
-            themeDescription: theme[0].themeDescription,
-            featuredExerciseId: theme[0].featuredExerciseId || null,
-            reflectionPrompt: theme[0].reflectionPrompt || null,
+            id: theme.id,
+            weekStartDate: theme.weekStartDate,
+            liturgicalSeason: theme.liturgicalSeason,
+            themeTitle: theme.themeTitle,
+            themeDescription: theme.themeDescription,
+            featuredExerciseId: theme.featuredExerciseId || null,
+            reflectionPrompt: theme.reflectionPrompt || null,
             somaticExercise: featuredExercise,
           },
           dailyContent: dailyContent
