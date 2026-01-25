@@ -421,10 +421,82 @@ function getDailyContent(seasonWeek: string, dayOfWeek: number) {
 }
 
 /**
+ * Sample somatic exercises for seeding
+ */
+const SOMATIC_EXERCISES = [
+  {
+    title: 'Loving Kindness Breath',
+    description: 'Breathe with compassion for yourself',
+    category: 'breath' as const,
+    duration: '5 min',
+    instructions:
+      'Step 1: Find a comfortable seated position.\n' +
+      'Step 2: Place one hand on your heart.\n' +
+      'Step 3: Breathe in slowly, saying to yourself "I am loved".\n' +
+      'Step 4: Breathe out, releasing tension and self-criticism.',
+  },
+  {
+    title: 'Grounding Practice',
+    description: 'Connect with the earth beneath you',
+    category: 'grounding' as const,
+    duration: '10 min',
+    instructions:
+      'Step 1: Stand or sit with feet flat on the ground.\n' +
+      'Step 2: Notice the sensation of your feet touching the floor.\n' +
+      'Step 3: Imagine roots growing from your feet deep into the earth.\n' +
+      'Step 4: Feel yourself held and supported by the earth.',
+  },
+  {
+    title: 'Body Scan for Release',
+    description: 'Release tension held in your body',
+    category: 'release' as const,
+    duration: '15 min',
+    instructions:
+      'Step 1: Lie down or sit comfortably.\n' +
+      'Step 2: Starting at your toes, notice any tension or sensations.\n' +
+      'Step 3: Breathe into each area, allowing it to soften and release.\n' +
+      'Step 4: Move slowly from feet to head, releasing with each exhale.',
+  },
+];
+
+/**
+ * Seed somatic exercises if database is empty
+ */
+async function seedSomaticExercisesIfEmpty(app: App): Promise<void> {
+  try {
+    // Check if exercises already exist
+    const existing = await app.db
+      .select()
+      .from(schema.somaticExercises)
+      .limit(1);
+
+    if (existing.length > 0) {
+      app.logger.info('Somatic exercises already seeded');
+      return;
+    }
+
+    app.logger.info('Auto-seeding somatic exercises...');
+
+    await app.db.insert(schema.somaticExercises).values(SOMATIC_EXERCISES);
+
+    app.logger.info(
+      { exercisesCreated: SOMATIC_EXERCISES.length },
+      'Somatic exercises created'
+    );
+  } catch (error) {
+    app.logger.error({ err: error }, 'Failed to seed somatic exercises');
+    throw error;
+  }
+}
+
+/**
  * Seed weekly themes and daily content if database is empty
  */
 export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
   try {
+    // First seed somatic exercises (required for weekly themes)
+    await seedSomaticExercisesIfEmpty(app);
+
     app.logger.info('Checking if weekly themes exist...');
 
     // Check if any themes exist

@@ -145,6 +145,31 @@ export const somaticCompletions = pgTable('somatic_completions', {
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
 
+// Weekly practice completions table (tracks weekly featured exercise completion)
+export const weeklyPracticeCompletions = pgTable(
+  'weekly_practice_completions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    exerciseId: uuid('exercise_id')
+      .notNull()
+      .references(() => somaticExercises.id, { onDelete: 'cascade' }),
+    weeklyThemeId: uuid('weekly_theme_id')
+      .notNull()
+      .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
+    reflectionNotes: text('reflection_notes'),
+    completedAt: timestamp('completed_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('weekly_practice_user_week_unique').on(
+      table.userId,
+      table.weeklyThemeId
+    ),
+  ]
+);
+
 // Weekly themes table
 export const weeklyThemes = pgTable(
   'weekly_themes',

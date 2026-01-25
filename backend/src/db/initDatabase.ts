@@ -195,6 +195,18 @@ export async function initializeDatabase(db: any, app?: App) {
     `);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "weekly_practice_completions" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "exercise_id" uuid NOT NULL REFERENCES "somatic_exercises"("id") ON DELETE CASCADE,
+        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "reflection_notes" text,
+        "completed_at" timestamp NOT NULL DEFAULT now(),
+        UNIQUE("user_id", "weekly_theme_id")
+      )
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "weekly_themes" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "week_start_date" date NOT NULL UNIQUE,
