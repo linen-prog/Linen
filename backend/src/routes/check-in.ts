@@ -298,7 +298,7 @@ export function registerCheckInRoutes(app: App) {
         );
 
         const { text: responseText } = await generateText({
-          model: gateway('gpt-5.2-turbo'),
+          model: gateway('openai/gpt-4o'),
           system: LINEN_SYSTEM_PROMPT,
           messages: aiMessages,
         });
