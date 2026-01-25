@@ -1011,4 +1011,113 @@ Write only the prayer, nothing else.`;
       }
     }
   );
+
+  // Share an individual AI message from check-in to community
+  app.fastify.post(
+    '/api/check-in/share-message',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          messageId: string;
+          category: 'feed' | 'wisdom' | 'care' | 'prayers';
+          isAnonymous: boolean;
+        };
+      }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { messageId, category, isAnonymous } = request.body;
+
+      // Validate input
+      if (!messageId || typeof messageId !== 'string' || messageId.trim().length === 0) {
+        app.logger.warn({ userId: session.user.id }, 'Invalid messageId provided');
+        return reply.status(400).send({ error: 'messageId is required' });
+      }
+
+      if (!category || !['feed', 'wisdom', 'care', 'prayers'].includes(category)) {
+        app.logger.warn({ userId: session.user.id, category }, 'Invalid category provided');
+        return reply.status(400).send({ error: 'Invalid category' });
+      }
+
+      app.logger.info(
+        { userId: session.user.id, messageId, category, isAnonymous },
+        'Sharing check-in message to community'
+      );
+
+      try {
+        // Look up the message by messageId
+        const message = await app.db.query.checkInMessages.findFirst({
+          where: eq(schema.checkInMessages.id, messageId as any),
+        });
+
+        if (!message) {
+          app.logger.warn({ userId: session.user.id, messageId }, 'Message not found');
+          return reply.status(404).send({ error: 'Message not found' });
+        }
+
+        // Verify the message role is 'assistant' (only AI messages can be shared)
+        if (message.role !== 'assistant') {
+          app.logger.warn(
+            { userId: session.user.id, messageId, role: message.role },
+            'Cannot share non-assistant message'
+          );
+          return reply.status(400).send({ error: 'Only AI messages can be shared' });
+        }
+
+        // Get the conversationId from the message
+        const conversationId = message.conversationId;
+
+        // Verify the conversation belongs to the authenticated user
+        const conversation = await app.db.query.checkInConversations.findFirst({
+          where: and(
+            eq(schema.checkInConversations.id, conversationId),
+            eq(schema.checkInConversations.userId, session.user.id)
+          ),
+        });
+
+        if (!conversation) {
+          app.logger.warn(
+            { userId: session.user.id, conversationId, messageId },
+            'Conversation not found or unauthorized'
+          );
+          return reply.status(403).send({ error: 'Unauthorized' });
+        }
+
+        // Get user name from session
+        const userName = session.user.name || null;
+
+        // Create the community post with the message content
+        const [post] = await app.db
+          .insert(schema.communityPosts)
+          .values({
+            userId: session.user.id,
+            authorName: isAnonymous ? null : userName,
+            isAnonymous,
+            category: category as any,
+            content: message.content,
+            contentType: 'companion',
+            scriptureReference: null,
+          })
+          .returning();
+
+        app.logger.info(
+          { userId: session.user.id, messageId, postId: post.id, category },
+          'Check-in message shared to community'
+        );
+
+        return reply.send({
+          success: true,
+          postId: post.id,
+        });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, messageId },
+          'Failed to share check-in message to community'
+        );
+        throw error;
+      }
+    }
+  );
 }
