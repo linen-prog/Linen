@@ -480,6 +480,16 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
+        {/* Gentle Introduction */}
+        <View style={[styles.introCard, { backgroundColor: colors.primaryLight }]}>
+          <Text style={[styles.introText, { color: colors.primary }]}>
+            Everything here is optional. Nothing is required to belong.
+          </Text>
+          <Text style={[styles.introSubtext, { color: colors.primary }]}>
+            This space exists for care, not classification. Share what feels right, when it feels right.
+          </Text>
+        </View>
+
         {/* Profile Card with Avatar */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <TouchableOpacity 
@@ -504,7 +514,7 @@ export default function ProfileScreen() {
                 setShowDisplayNameModal(true);
               }}>
                 <Text style={[styles.editLink, { color: colors.primary }]}>
-                  Edit display name
+                  Edit display name (optional)
                 </Text>
               </TouchableOpacity>
             </View>
@@ -516,6 +526,9 @@ export default function ProfileScreen() {
           <View style={[styles.card, { backgroundColor: colors.card }]}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               Your Journey
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+              A gentle record of your time here
             </Text>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
@@ -560,7 +573,7 @@ export default function ProfileScreen() {
             Community Preview
           </Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-            How you appear in the community feed
+            How you might appear to others (if you choose to share)
           </Text>
           <View style={styles.previewContainer}>
             <View style={[styles.previewAvatar, { backgroundColor: colors.primaryLight }]}>
@@ -585,7 +598,7 @@ export default function ProfileScreen() {
         {/* Presence Mode */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Presence & Boundaries
+            Presence & Boundaries (Optional)
           </Text>
         </View>
 
@@ -648,7 +661,7 @@ export default function ProfileScreen() {
                   Emotional Safety
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  Set your comfort boundaries
+                  Set boundaries that honor your needs
                 </Text>
               </View>
             </View>
@@ -826,7 +839,7 @@ export default function ProfileScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Choose Avatar
+                Choose Avatar (Optional)
               </Text>
               <TouchableOpacity onPress={() => setShowAvatarModal(false)}>
                 <IconSymbol 
@@ -837,6 +850,10 @@ export default function ProfileScreen() {
                 />
               </TouchableOpacity>
             </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              Choose what feels right for you, or leave it as is
+            </Text>
 
             <ScrollView style={styles.modalScroll}>
               <TouchableOpacity 
@@ -931,14 +948,14 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-              How do you want to show up in the community?
+              How would you like to be known? You can always change this or leave it blank.
             </Text>
 
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
               value={tempDisplayName}
               onChangeText={setTempDisplayName}
-              placeholder="Enter display name"
+              placeholder="Enter display name (optional)"
               placeholderTextColor={colors.textLight}
             />
 
@@ -979,7 +996,7 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-              How visible do you want to be?
+              This is just for you. Choose what feels true today, or skip it entirely.
             </Text>
 
             <ScrollView style={styles.modalScroll}>
@@ -1051,7 +1068,7 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-              What helps you feel safe here?
+              These are invitations, not requirements. Set what honors your needs.
             </Text>
 
             <ScrollView style={styles.modalScroll}>
@@ -1148,6 +1165,10 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              Choose what serves you. You can change these anytime.
+            </Text>
+
             <View style={styles.toggleItem}>
               <View style={styles.toggleItemLeft}>
                 <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
@@ -1216,11 +1237,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   headerTitle: {
     fontSize: typography.h1,
     fontWeight: typography.semibold,
+  },
+  introCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  introText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.xs,
+    lineHeight: 24,
+  },
+  introSubtext: {
+    fontSize: typography.bodySmall,
+    lineHeight: 20,
   },
   card: {
     borderRadius: borderRadius.lg,
@@ -1428,6 +1464,7 @@ const styles = StyleSheet.create({
   modalDescription: {
     fontSize: typography.body,
     marginBottom: spacing.lg,
+    lineHeight: 22,
   },
   modalScroll: {
     maxHeight: 400,
