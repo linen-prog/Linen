@@ -57,9 +57,9 @@ const AVATAR_ICONS = [
 ];
 
 const PRESENCE_MODES = [
-  { id: 'quiet', icon: '🕊️', label: 'Quiet presence', description: 'Observing gently' },
-  { id: 'open', icon: '💬', label: 'Open to connection', description: 'Ready to engage' },
-  { id: 'observer', icon: '👁️', label: 'Observer', description: 'Reading & reflecting' },
+  { id: 'quiet', icon: '🌱', label: 'Quiet presence', description: 'Observing gently' },
+  { id: 'open', icon: '🤍', label: 'Ready to connect', description: 'Open to engage' },
+  { id: 'observer', icon: '🕊️', label: 'Observer', description: 'Reading & reflecting' },
   { id: 'sharing', icon: '✨', label: 'Sharing gently', description: 'Offering reflections' },
   { id: 'private', icon: '🔒', label: 'Private', description: 'Personal practice' },
 ];
@@ -336,7 +336,7 @@ export default function ProfileScreen() {
   };
 
   const handleSaveBoundaries = async () => {
-    console.log('ProfileScreen (iOS): Saving boundaries');
+    console.log('ProfileScreen (iOS): Saving boundaries -', tempBoundaries);
     setSaving(true);
     try {
       // TODO: Backend Integration - PUT /api/profile
@@ -358,7 +358,7 @@ export default function ProfileScreen() {
   };
 
   const handleSaveNotifications = async () => {
-    console.log('ProfileScreen (iOS): Saving notifications');
+    console.log('ProfileScreen (iOS): Saving notifications -', tempNotifications);
     setSaving(true);
     try {
       // TODO: Backend Integration - PUT /api/profile
