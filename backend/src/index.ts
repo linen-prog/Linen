@@ -11,6 +11,7 @@ import { registerArtworkRoutes } from './routes/artwork.js';
 import { registerWeeklyPracticeRoutes } from './routes/weekly-practice.js';
 import { registerWeeklyRecapRoutes } from './routes/weekly-recap.js';
 import { registerProfileRoutes } from './routes/profile.js';
+import { registerAuthHealthRoutes } from './routes/auth-health.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -36,6 +37,7 @@ app.withAuth();
 app.withStorage();
 
 // Register routes - IMPORTANT: Always use registration functions to avoid circular dependency issues
+registerAuthHealthRoutes(app);
 registerDailyGiftRoutes(app);
 registerCheckInRoutes(app);
 registerCommunityRoutes(app);

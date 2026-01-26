@@ -333,6 +333,40 @@ export async function initializeDatabase(db: any, app?: App) {
       CREATE INDEX IF NOT EXISTS "recap_preferences_delivery" ON "recap_preferences"("delivery_day", "delivery_time")
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "user_profiles" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL UNIQUE REFERENCES "user"("id") ON DELETE CASCADE,
+        "display_name" text,
+        "avatar_type" text NOT NULL DEFAULT 'default',
+        "avatar_url" text,
+        "avatar_icon" text,
+        "presence_mode" text NOT NULL DEFAULT 'open',
+        "comfort_receiving_replies" boolean NOT NULL DEFAULT true,
+        "comfort_reading_more" boolean NOT NULL DEFAULT true,
+        "comfort_support_messages" boolean NOT NULL DEFAULT true,
+        "comfort_no_tags" boolean NOT NULL DEFAULT false,
+        "notifications_enabled" boolean NOT NULL DEFAULT true,
+        "reminder_notifications" boolean NOT NULL DEFAULT true,
+        "check_in_streak" integer NOT NULL DEFAULT 0,
+        "reflection_streak" integer NOT NULL DEFAULT 0,
+        "total_reflections" integer NOT NULL DEFAULT 0,
+        "days_in_community" integer NOT NULL DEFAULT 0,
+        "member_since" timestamp,
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "updated_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    // Create indexes for user_profiles
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "user_profiles_user_id_unique" ON "user_profiles"("user_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "user_profiles_created" ON "user_profiles"("created_at")
+    `);
+
     console.log('Database tables initialized successfully');
 
     // Auto-seed weekly themes if database is empty
