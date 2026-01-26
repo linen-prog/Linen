@@ -68,28 +68,19 @@ function openOAuthPopup(provider: string): Promise<string> {
   });
 }
 
-// Create a guest user session
-const createGuestUser = (): User => {
-  return {
-    id: 'guest-user',
-    email: 'guest@linen.app',
-    name: 'Guest',
-  };
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[AuthContext] Initializing auth state (guest mode enabled)...');
-    initializeGuestSession();
+    console.log('[AuthContext] Initializing auth state...');
+    initializeAuthSession();
   }, []);
 
-  const initializeGuestSession = async () => {
+  const initializeAuthSession = async () => {
     try {
       setLoading(true);
-      console.log('[AuthContext] Setting up guest session...');
+      console.log('[AuthContext] Checking for existing session...');
       
       // Check if we already have a user stored
       const storedUser = await getUserData();
@@ -99,19 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] Restored existing session:', storedUser.email);
         setUser(storedUser);
       } else {
-        // Create a guest user session
-        const guestUser = createGuestUser();
-        const guestToken = 'guest-token-' + Date.now();
-        
-        console.log('[AuthContext] Creating new guest session');
-        await storeUserData(guestUser);
-        await storeBearerToken(guestToken);
-        setUser(guestUser);
+        console.log('[AuthContext] No existing session found - user needs to log in');
+        setUser(null);
       }
     } catch (error) {
-      console.error("[AuthContext] Failed to initialize guest session:", error);
-      // Even if storage fails, set a guest user in memory
-      setUser(createGuestUser());
+      console.error("[AuthContext] Failed to initialize auth session:", error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -127,8 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Bearer token exists:', !!token);
       
       if (!token) {
-        console.log('[AuthContext] No token found, creating guest session');
-        await initializeGuestSession();
+        console.log('[AuthContext] No token found - user needs to log in');
+        setUser(null);
         return;
       }
 
@@ -138,13 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] Restored user from storage:', storedUser.email);
         setUser(storedUser);
       } else {
-        console.log('[AuthContext] Token exists but no user data found, creating guest session');
-        await initializeGuestSession();
+        console.log('[AuthContext] Token exists but no user data found');
+        setUser(null);
       }
     } catch (error) {
       console.error("[AuthContext] Failed to fetch user:", error);
-      // Fallback to guest user
-      setUser(createGuestUser());
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -210,8 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Signing out...');
       await authClient.signOut();
       await clearAuthTokens();
-      // After sign out, create a new guest session
-      await initializeGuestSession();
+      // After sign out, clear user state
+      setUser(null);
     } catch (error) {
       console.error("[AuthContext] Sign out failed:", error);
       throw error;

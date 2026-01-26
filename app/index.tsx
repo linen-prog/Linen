@@ -12,8 +12,8 @@ export default function LandingScreen() {
 
   const handleContinue = () => {
     console.log('User tapped Begin Your Journey button on Landing screen');
-    // Skip auth and go directly to home
-    router.replace('/(tabs)');
+    // Navigate to auth screen for login/signup
+    router.push('/auth');
   };
 
   const titleText = 'Linen';

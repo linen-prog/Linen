@@ -166,7 +166,7 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Sign out button pressed');
     Alert.alert(
       'Sign Out',
-      'Are you sure you want to sign out?',
+      'Are you sure you want to sign out? You will need to log in again to access your account.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -176,7 +176,8 @@ export default function ProfileScreen() {
             console.log('ProfileScreen (iOS): Signing out user');
             try {
               await signOut();
-              console.log('ProfileScreen (iOS): Sign out successful');
+              console.log('ProfileScreen (iOS): Sign out successful, redirecting to landing page');
+              router.replace('/');
             } catch (error) {
               console.error('ProfileScreen (iOS): Sign out failed -', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
