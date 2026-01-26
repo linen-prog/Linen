@@ -481,17 +481,10 @@ export default function ProfileScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             Profile
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
-            Everything is optional. Nothing is required to belong. The profile exists for care, not classification.
-          </Text>
-        </View>
-
-        {/* Gentle Introduction */}
-        <View style={[styles.introCard, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.introText, { color: colors.primary }]}>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Everything here is optional. Nothing is required to belong.
           </Text>
-          <Text style={[styles.introSubtext, { color: colors.primary }]}>
+          <Text style={[styles.headerSubtext, { color: colors.textLight }]}>
             This space exists for care, not classification. Share what feels right, when it feels right.
           </Text>
         </View>
@@ -1246,33 +1239,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: typography.h1,
     fontWeight: typography.semibold,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: typography.caption,
-    fontStyle: 'italic',
-    lineHeight: 16,
-    opacity: 0.6,
-  },
-  introCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  introText: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontStyle: 'italic',
+    lineHeight: 22,
+    textAlign: 'center',
     marginBottom: spacing.xs,
-    lineHeight: 24,
   },
-  introSubtext: {
+  headerSubtext: {
     fontSize: typography.bodySmall,
-    lineHeight: 20,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    textAlign: 'center',
   },
   card: {
     borderRadius: borderRadius.lg,
