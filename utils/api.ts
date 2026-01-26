@@ -1,213 +1,182 @@
 
-import Constants from "expo-constants";
-import { Platform } from "react-native";
-import { getBearerToken } from "@/lib/auth";
+import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-/**
- * Backend URL is configured in app.json under expo.extra.backendUrl
- * It is set automatically when the backend is deployed
- */
-export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || "";
+export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
 
-/**
- * Check if backend is properly configured
- */
-export const isBackendConfigured = (): boolean => {
-  return !!BACKEND_URL && BACKEND_URL.length > 0;
-};
+console.log('🔗 API initialized with backend URL:', BACKEND_URL);
 
-/**
- * Generic API call helper with error handling
- *
- * @param endpoint - API endpoint path (e.g., '/users', '/auth/login')
- * @param options - Fetch options (method, headers, body, etc.)
- * @returns Parsed JSON response
- * @throws Error if backend is not configured or request fails
- */
-export const apiCall = async <T = any>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> => {
-  if (!isBackendConfigured()) {
-    throw new Error("Backend URL not configured. Please rebuild the app.");
-  }
-
-  const url = `${BACKEND_URL}${endpoint}`;
-  console.log("[API] Calling:", url, options?.method || "GET");
-
+// Generate a persistent guest token for this device
+async function getGuestToken(): Promise<string> {
+  const GUEST_TOKEN_KEY = 'linen_guest_token';
+  
   try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("[API] Error response:", response.status, text);
-      throw new Error(`API error: ${response.status} - ${text}`);
+    // Try to get existing guest token
+    let guestToken: string | null = null;
+    
+    if (Platform.OS === 'web') {
+      guestToken = localStorage.getItem(GUEST_TOKEN_KEY);
+    } else {
+      guestToken = await SecureStore.getItemAsync(GUEST_TOKEN_KEY);
     }
-
-    const data = await response.json();
-    console.log("[API] Success:", data);
-    return data;
+    
+    // If we have a token, return it
+    if (guestToken) {
+      console.log('[API] Using existing guest token');
+      return guestToken;
+    }
+    
+    // Generate new guest token
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 15);
+    guestToken = `guest-token-${timestamp}-${randomId}`;
+    
+    // Store it for future use
+    if (Platform.OS === 'web') {
+      localStorage.setItem(GUEST_TOKEN_KEY, guestToken);
+    } else {
+      await SecureStore.setItemAsync(GUEST_TOKEN_KEY, guestToken);
+    }
+    
+    console.log('[API] Generated new guest token');
+    return guestToken;
   } catch (error) {
-    console.error("[API] Request failed:", error);
-    throw error;
+    console.error('[API] Failed to get/generate guest token:', error);
+    // Fallback to a temporary token
+    return `guest-token-${Date.now()}-fallback`;
   }
-};
+}
 
-/**
- * GET request helper
- */
-export const apiGet = async <T = any>(endpoint: string): Promise<T> => {
-  return apiCall<T>(endpoint, { method: "GET" });
-};
-
-/**
- * POST request helper
- */
-export const apiPost = async <T = any>(
+// Helper function to make authenticated API calls
+async function makeAuthenticatedRequest(
   endpoint: string,
-  data: any
-): Promise<T> => {
-  return apiCall<T>(endpoint, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-};
-
-/**
- * PUT request helper
- */
-export const apiPut = async <T = any>(
-  endpoint: string,
-  data: any
-): Promise<T> => {
-  return apiCall<T>(endpoint, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-};
-
-/**
- * PATCH request helper
- */
-export const apiPatch = async <T = any>(
-  endpoint: string,
-  data: any
-): Promise<T> => {
-  return apiCall<T>(endpoint, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-};
-
-/**
- * DELETE request helper
- * Always sends a body to avoid FST_ERR_CTP_EMPTY_JSON_BODY errors
- */
-export const apiDelete = async <T = any>(endpoint: string, data: any = {}): Promise<T> => {
-  return apiCall<T>(endpoint, {
-    method: "DELETE",
-    body: JSON.stringify(data),
-  });
-};
-
-/**
- * Authenticated API call helper
- * Automatically retrieves bearer token from storage and adds to Authorization header
- * In guest mode, still includes the guest token for tracking purposes
- *
- * @param endpoint - API endpoint path
- * @param options - Fetch options (method, headers, body, etc.)
- * @returns Parsed JSON response
- * @throws Error if request fails (but not if token is missing in guest mode)
- */
-export const authenticatedApiCall = async <T = any>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> => {
-  const token = await getBearerToken();
-
-  if (!token) {
-    console.warn("[API] No authentication token found (guest mode)");
-    // In guest mode, we still make the request but without auth header
-    // The backend should handle guest requests appropriately
-  }
-
-  const headers: Record<string, string> = {
-    ...options?.headers as Record<string, string>,
+  options: RequestInit = {}
+): Promise<Response> {
+  const guestToken = await getGuestToken();
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${guestToken}`,
+    ...options.headers,
   };
 
-  if (token) {
-    console.log("[API] Making authenticated request with token");
-    headers.Authorization = `Bearer ${token}`;
-  } else {
-    console.log("[API] Making request in guest mode (no auth token)");
-  }
+  console.log(`[API] ${options.method || 'GET'} ${endpoint}`);
 
-  return apiCall<T>(endpoint, {
+  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
     ...options,
     headers,
   });
-};
 
-/**
- * Authenticated GET request
- */
-export const authenticatedGet = async <T = any>(endpoint: string): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, { method: "GET" });
-};
+  if (!response.ok) {
+    console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('[API] Error response:', errorText);
+  }
 
-/**
- * Authenticated POST request
- */
-export const authenticatedPost = async <T = any>(
+  return response;
+}
+
+// Authenticated GET request
+export async function authenticatedGet<T = any>(endpoint: string): Promise<T> {
+  const response = await makeAuthenticatedRequest(endpoint, {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    throw new Error(`GET ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Authenticated POST request
+export async function authenticatedPost<T = any>(
   endpoint: string,
-  data: any
-): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, {
-    method: "POST",
-    body: JSON.stringify(data),
+  data?: any
+): Promise<T> {
+  const response = await makeAuthenticatedRequest(endpoint, {
+    method: 'POST',
+    body: data ? JSON.stringify(data) : JSON.stringify({}),
   });
-};
 
-/**
- * Authenticated PUT request
- */
-export const authenticatedPut = async <T = any>(
+  if (!response.ok) {
+    throw new Error(`POST ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Authenticated PUT request
+export async function authenticatedPut<T = any>(
   endpoint: string,
-  data: any
-): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, {
-    method: "PUT",
-    body: JSON.stringify(data),
+  data?: any
+): Promise<T> {
+  const response = await makeAuthenticatedRequest(endpoint, {
+    method: 'PUT',
+    body: data ? JSON.stringify(data) : JSON.stringify({}),
   });
-};
 
-/**
- * Authenticated PATCH request
- */
-export const authenticatedPatch = async <T = any>(
+  if (!response.ok) {
+    throw new Error(`PUT ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Authenticated DELETE request
+export async function authenticatedDelete<T = any>(
+  endpoint: string
+): Promise<T> {
+  const response = await makeAuthenticatedRequest(endpoint, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error(`DELETE ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Public GET request (no authentication)
+export async function apiGet<T = any>(endpoint: string): Promise<T> {
+  console.log(`[API] GET ${endpoint} (public)`);
+  
+  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
+    throw new Error(`GET ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Public POST request (no authentication)
+export async function apiPost<T = any>(
   endpoint: string,
-  data: any
-): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, {
-    method: "PATCH",
-    body: JSON.stringify(data),
+  data?: any
+): Promise<T> {
+  console.log(`[API] POST ${endpoint} (public)`);
+  
+  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: data ? JSON.stringify(data) : JSON.stringify({}),
   });
-};
 
-/**
- * Authenticated DELETE request
- * Always sends a body to avoid FST_ERR_CTP_EMPTY_JSON_BODY errors
- */
-export const authenticatedDelete = async <T = any>(endpoint: string, data: any = {}): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, {
-    method: "DELETE",
-    body: JSON.stringify(data),
-  });
-};
+  if (!response.ok) {
+    console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
+    throw new Error(`POST ${endpoint} failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}

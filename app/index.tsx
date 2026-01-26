@@ -11,9 +11,9 @@ export default function LandingScreen() {
   const router = useRouter();
 
   const handleContinue = () => {
-    console.log('User tapped Begin Your Journey button on Landing screen');
-    // Navigate to auth screen for login/signup
-    router.push('/auth');
+    console.log('User tapped Begin Your Journey button - entering app as guest');
+    // Navigate directly to the main app (no auth required)
+    router.replace('/(tabs)');
   };
 
   const titleText = 'Linen';
