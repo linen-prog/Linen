@@ -293,3 +293,47 @@ export const recapPreferences = pgTable(
   },
   (table) => [index('recap_preferences_delivery').on(table.deliveryDay, table.deliveryTime)]
 );
+
+// User profiles table
+export const userProfiles = pgTable(
+  'user_profiles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .unique()
+      .references(() => {
+        return { id: true } as any;
+      }, { onDelete: 'cascade' }),
+    displayName: text('display_name'),
+    avatarType: text('avatar_type', {
+      enum: ['photo', 'icon', 'default'],
+    })
+      .default('default')
+      .notNull(),
+    avatarUrl: text('avatar_url'),
+    avatarIcon: text('avatar_icon'), // icon names: 'dove', 'candle', 'heart', 'cross', 'leaf', 'star'
+    presenceMode: text('presence_mode', {
+      enum: ['quiet', 'open', 'observer', 'sharing', 'private'],
+    })
+      .default('open')
+      .notNull(),
+    comfortReceivingReplies: boolean('comfort_receiving_replies').default(true).notNull(),
+    comfortReadingMore: boolean('comfort_reading_more').default(true).notNull(),
+    comfortSupportMessages: boolean('comfort_support_messages').default(true).notNull(),
+    comfortNoTags: boolean('comfort_no_tags').default(false).notNull(),
+    notificationsEnabled: boolean('notifications_enabled').default(true).notNull(),
+    reminderNotifications: boolean('reminder_notifications').default(true).notNull(),
+    checkInStreak: integer('check_in_streak').default(0).notNull(),
+    reflectionStreak: integer('reflection_streak').default(0).notNull(),
+    totalReflections: integer('total_reflections').default(0).notNull(),
+    daysInCommunity: integer('days_in_community').default(0).notNull(),
+    memberSince: timestamp('member_since'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_profiles_user_id_unique').on(table.userId),
+    index('user_profiles_created').on(table.createdAt),
+  ]
+);
