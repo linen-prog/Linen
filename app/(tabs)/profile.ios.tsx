@@ -98,6 +98,7 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Loading profile data');
     loadProfile();
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProfile = async () => {

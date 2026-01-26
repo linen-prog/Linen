@@ -98,17 +98,20 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Loading profile data');
     loadProfile();
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProfile = async () => {
     try {
       setLoading(true);
       console.log('ProfileScreen: Fetching profile from API');
-      // TODO: Backend Integration - GET /api/profile
-      // const response = await authenticatedGet('/api/profile');
-      // setProfile(response);
-      
-      // Mock data for now
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<UserProfile>('/api/profile');
+      console.log('ProfileScreen: Profile loaded successfully:', response);
+      setProfile(response);
+    } catch (error) {
+      console.error('ProfileScreen: Failed to load profile -', error);
+      // Create default profile on error
       const mockProfile: UserProfile = {
         id: '1',
         userId: user?.id || 'guest-user',
@@ -132,9 +135,6 @@ export default function ProfileScreen() {
         updatedAt: new Date().toISOString(),
       };
       setProfile(mockProfile);
-    } catch (error) {
-      console.error('ProfileScreen: Failed to load profile -', error);
-      Alert.alert('Error', 'Failed to load profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -143,22 +143,22 @@ export default function ProfileScreen() {
   const loadStats = async () => {
     try {
       console.log('ProfileScreen: Fetching stats from API');
-      // TODO: Backend Integration - GET /api/profile/stats
-      // const response = await authenticatedGet('/api/profile/stats');
-      // setStats(response);
-      
-      // Mock data for now
-      const mockStats: UserStats = {
-        checkInStreak: 3,
-        reflectionStreak: 5,
-        totalReflections: 12,
-        daysInCommunity: 14,
-        memberSince: new Date().toISOString(),
-        totalSharedPosts: 4,
-      };
-      setStats(mockStats);
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<UserStats>('/api/profile/stats');
+      console.log('ProfileScreen: Stats loaded successfully:', response);
+      setStats(response);
     } catch (error) {
       console.error('ProfileScreen: Failed to load stats -', error);
+      // Use default stats on error
+      const mockStats: UserStats = {
+        checkInStreak: 0,
+        reflectionStreak: 0,
+        totalReflections: 0,
+        daysInCommunity: 0,
+        memberSince: new Date().toISOString(),
+        totalSharedPosts: 0,
+      };
+      setStats(mockStats);
     }
   };
 
@@ -208,22 +208,31 @@ export default function ProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         setSaving(true);
         console.log('ProfileScreen: Uploading photo to server');
-        // TODO: Backend Integration - POST /api/profile/upload-avatar
-        // const formData = new FormData();
-        // formData.append('avatar', { uri: result.assets[0].uri, type: 'image/jpeg', name: 'avatar.jpg' });
-        // const response = await authenticatedPost('/api/profile/upload-avatar', formData);
-        // await updateProfile({ avatarType: 'photo', avatarUrl: response.url });
         
-        // Mock update
-        if (profile) {
-          setProfile({
-            ...profile,
-            avatarType: 'photo',
-            avatarUrl: result.assets[0].uri,
+        try {
+          // Note: The backend expects multipart/form-data for file uploads
+          // For now, we'll update the profile to use the local URI
+          // In production, you'd upload to a storage service first
+          const { authenticatedPut } = await import('@/utils/api');
+          await authenticatedPut('/api/profile', { 
+            avatarType: 'photo', 
+            avatarUrl: result.assets[0].uri 
           });
+          
+          if (profile) {
+            setProfile({
+              ...profile,
+              avatarType: 'photo',
+              avatarUrl: result.assets[0].uri,
+            });
+          }
+          setShowAvatarModal(false);
+        } catch (error) {
+          console.error('ProfileScreen: Failed to update profile with photo:', error);
+          Alert.alert('Error', 'Failed to upload photo. Please try again.');
+        } finally {
+          setSaving(false);
         }
-        setShowAvatarModal(false);
-        setSaving(false);
       }
     } catch (error) {
       console.error('ProfileScreen: Photo upload failed -', error);
@@ -236,8 +245,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Icon selected -', iconId);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { avatarType: 'icon', avatarIcon: iconId });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { avatarType: 'icon', avatarIcon: iconId });
+      console.log('ProfileScreen: Avatar icon updated successfully');
       
       if (profile) {
         setProfile({
@@ -268,8 +278,9 @@ export default function ProfileScreen() {
           onPress: async () => {
             setSaving(true);
             try {
-              // TODO: Backend Integration - DELETE /api/profile/avatar
-              // await authenticatedDelete('/api/profile/avatar');
+              const { authenticatedDelete } = await import('@/utils/api');
+              await authenticatedDelete('/api/profile/avatar');
+              console.log('ProfileScreen: Avatar cleared successfully');
               
               if (profile) {
                 setProfile({
@@ -296,8 +307,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Saving display name -', tempDisplayName);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { displayName: tempDisplayName });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { displayName: tempDisplayName });
+      console.log('ProfileScreen: Display name updated successfully');
       
       if (profile) {
         setProfile({
@@ -318,8 +330,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Saving presence mode -', tempPresenceMode);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { presenceMode: tempPresenceMode });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { presenceMode: tempPresenceMode });
+      console.log('ProfileScreen: Presence mode updated successfully');
       
       if (profile) {
         setProfile({
@@ -340,8 +353,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Saving boundaries -', tempBoundaries);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', tempBoundaries);
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', tempBoundaries);
+      console.log('ProfileScreen: Boundaries updated successfully');
       
       if (profile) {
         setProfile({
@@ -362,8 +376,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Saving notifications -', tempNotifications);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', tempNotifications);
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', tempNotifications);
+      console.log('ProfileScreen: Notifications updated successfully');
       
       if (profile) {
         setProfile({
@@ -380,10 +395,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleViewSharedReflections = () => {
-    console.log('ProfileScreen: Navigating to shared reflections');
-    // TODO: Create a screen to show user's shared posts
-    Alert.alert('Coming Soon', 'View your shared reflections in the community.');
+  const handleViewSharedReflections = async () => {
+    console.log('ProfileScreen: Fetching shared reflections');
+    try {
+      const { authenticatedGet } = await import('@/utils/api');
+      const sharedReflections = await authenticatedGet<any[]>('/api/profile/shared-reflections');
+      console.log('ProfileScreen: Shared reflections loaded:', sharedReflections.length);
+      
+      const reflectionCount = sharedReflections.length;
+      const reflectionText = reflectionCount !== 1 ? 's' : '';
+      const message = `You have shared ${reflectionCount} reflection${reflectionText} with the community.`;
+      
+      // For now, just show count - in future, navigate to a dedicated screen
+      Alert.alert(
+        'Shared Reflections',
+        message,
+        [
+          {
+            text: 'View in Community',
+            onPress: () => {
+              router.push('/(tabs)/community');
+            }
+          },
+          { text: 'OK', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      console.error('ProfileScreen: Failed to load shared reflections -', error);
+      Alert.alert('Error', 'Failed to load shared reflections. Please try again.');
+    }
   };
 
   const handleDeleteAccount = () => {

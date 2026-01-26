@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { apiPost } from '@/utils/api';
-import { storeBearerToken, storeUserData } from '@/lib/auth';
+import { authClient, storeUserData } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthScreen() {
@@ -46,37 +45,31 @@ export default function AuthScreen() {
     setIsLoading(true);
     
     try {
-      console.log('Attempting to register/login user...');
-      const response = await apiPost<{ 
-        success: boolean;
-        user: { id: string; email: string; name?: string; createdAt?: string };
-        session?: { token: string; expiresAt: string };
-        token?: string;
-        isNewUser: boolean;
-      }>(
-        '/api/auth/register',
-        { email: email.trim(), firstName: firstName.trim() || undefined }
-      );
+      console.log('Attempting to sign up/sign in user with Better Auth...');
+      
+      // Use Better Auth email sign-up (which also handles existing users)
+      // Better Auth will create a user if they don't exist, or sign them in if they do
+      const signUpData = await authClient.signUp.email({
+        email: email.trim(),
+        password: email.trim(), // Use email as password for passwordless-like flow
+        name: firstName.trim() || email.split('@')[0],
+      });
 
-      console.log('Auth response received:', response);
+      console.log('Better Auth sign-up response:', signUpData);
 
-      // Extract token from either session.token or token field
-      const sessionToken = response.session?.token || response.token;
+      // Get the session data from Better Auth
+      const session = await authClient.getSession();
+      console.log('Better Auth session:', session);
 
-      if (response.success && response.user && sessionToken) {
-        console.log('[Auth] Storing bearer token from backend');
+      if (session?.user) {
+        console.log('[Auth] User authenticated successfully:', session.user);
         
-        // Store the session token from backend
-        await storeBearerToken(sessionToken);
-        
-        // Store user data for persistence across hot reloads
-        await storeUserData(response.user);
+        // Store user data for persistence
+        await storeUserData(session.user);
 
         // Update auth context directly
-        setUserDirectly(response.user);
+        setUserDirectly(session.user);
 
-        console.log('User authenticated successfully:', response.user);
-        console.log('Token and user data stored securely');
         console.log('Navigating to home screen...');
         
         // Small delay to ensure storage completes
@@ -84,7 +77,7 @@ export default function AuthScreen() {
         
         router.replace('/(tabs)');
       } else {
-        throw new Error('Invalid response from server - missing token');
+        throw new Error('Authentication succeeded but no session found');
       }
     } catch (error) {
       console.error('Auth failed:', error);
@@ -100,6 +93,27 @@ export default function AuthScreen() {
         userMessage = 'Unable to connect to the server. Please check your internet connection.';
       } else if (errorMessage.includes('timeout')) {
         userMessage = 'Connection timed out. Please try again.';
+      } else if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+        // User already exists, try to sign in instead
+        console.log('User already exists, attempting sign in...');
+        try {
+          await authClient.signIn.email({
+            email: email.trim(),
+            password: email.trim(),
+          });
+          
+          const session = await authClient.getSession();
+          if (session?.user) {
+            await storeUserData(session.user);
+            setUserDirectly(session.user);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            router.replace('/(tabs)');
+            return; // Success, exit the function
+          }
+        } catch (signInError) {
+          console.error('Sign in after duplicate error failed:', signInError);
+          userMessage = 'Account exists. Please try again.';
+        }
       }
       
       setErrorMessage(userMessage);

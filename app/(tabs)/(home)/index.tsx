@@ -16,17 +16,18 @@ export default function HomeScreen() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Fetch user info
-        const { authenticatedGet } = await import('@/utils/api');
-        const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
-        console.log('🏠 [Home] User data loaded:', userResponse);
+        // Fetch user info from auth context
+        const { getUserData } = await import('@/lib/auth');
+        const userData = await getUserData();
+        console.log('🏠 [Home] User data loaded from storage:', userData);
         
         // Extract first name from the user's name field
-        const userName = userResponse.user?.name || '';
+        const userName = userData?.name || '';
         const extractedFirstName = userName.split(' ')[0] || 'Friend';
         setFirstName(extractedFirstName);
 
         // Fetch streaks
+        const { authenticatedGet } = await import('@/utils/api');
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
         console.log('🏠 [Home] Streaks loaded:', streaksResponse);
         setCheckInStreak(streaksResponse.checkInStreak);
