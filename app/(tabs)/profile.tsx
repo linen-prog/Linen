@@ -481,6 +481,9 @@ export default function ProfileScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             Profile
           </Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
+            Everything is optional. Nothing is required to belong. The profile exists for care, not classification.
+          </Text>
         </View>
 
         {/* Gentle Introduction */}
@@ -1248,6 +1251,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: typography.h1,
     fontWeight: typography.semibold,
+    marginBottom: spacing.xs,
+  },
+  headerSubtitle: {
+    fontSize: typography.caption,
+    fontStyle: 'italic',
+    lineHeight: 16,
+    opacity: 0.6,
   },
   introCard: {
     borderRadius: borderRadius.lg,
