@@ -88,9 +88,6 @@ export default function DailyGiftScreen() {
   const [isGiftOpened, setIsGiftOpened] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
 
-  const [showAmbientSounds, setShowAmbientSounds] = useState(false);
-  const [selectedSound, setSelectedSound] = useState<string | null>(null);
-
   const [hasCompletedPractice, setHasCompletedPractice] = useState(false);
   const [hasSkippedPractice, setHasSkippedPractice] = useState(false);
 
@@ -105,13 +102,6 @@ export default function DailyGiftScreen() {
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
-
-  const ambientSounds = [
-    { id: 'rain', label: 'Gentle Rain', icon: '🌧️' },
-    { id: 'ocean', label: 'Ocean Waves', icon: '🌊' },
-    { id: 'forest', label: 'Forest Birds', icon: '🌲' },
-    { id: 'silence', label: 'Silence', icon: '🤫' },
-  ];
 
   const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
     id: index,
@@ -321,17 +311,6 @@ export default function DailyGiftScreen() {
     router.push('/(tabs)/community');
   };
 
-  const handleAmbientSoundPress = () => {
-    console.log('[DailyGift] User tapped Ambient Sound icon');
-    setShowAmbientSounds(true);
-  };
-
-  const handleSelectSound = (soundId: string) => {
-    console.log('[DailyGift] User selected ambient sound:', soundId);
-    setSelectedSound(soundId);
-    setShowAmbientSounds(false);
-  };
-
   if (isLoadingGift) {
     const loadingMessage = 'Loading today\'s gift...';
     
@@ -483,19 +462,6 @@ export default function DailyGiftScreen() {
 
         <View style={styles.headerRight}>
           <TouchableOpacity 
-            onPress={handleAmbientSoundPress}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="speaker.wave.2"
-              android_material_icon_name="volume-up"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
             onPress={handleCommunityPress}
             style={styles.headerButton}
             activeOpacity={0.7}
@@ -509,65 +475,6 @@ export default function DailyGiftScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      <Modal
-        visible={showAmbientSounds}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowAmbientSounds(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.soundModalContent, { backgroundColor: cardBg }]}>
-            <Text style={[styles.soundModalTitle, { color: textColor }]}>
-              Ambient Sounds
-            </Text>
-            
-            {ambientSounds.map((sound) => {
-              const isSelected = selectedSound === sound.id;
-              return (
-                <TouchableOpacity
-                  key={sound.id}
-                  style={[
-                    styles.soundOption,
-                    { borderColor: inputBorder },
-                    isSelected && styles.soundOptionSelected
-                  ]}
-                  onPress={() => handleSelectSound(sound.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.soundEmoji}>
-                    {sound.icon}
-                  </Text>
-                  <Text style={[
-                    styles.soundLabel,
-                    { color: isSelected ? colors.primary : textColor }
-                  ]}>
-                    {sound.label}
-                  </Text>
-                  {isSelected && (
-                    <IconSymbol 
-                      ios_icon_name="checkmark"
-                      android_material_icon_name="check"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-
-            <TouchableOpacity
-              style={styles.soundCloseButton}
-              onPress={() => setShowAmbientSounds(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.soundCloseText, { color: textSecondaryColor }]}>
-                Close
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {!isGiftOpened ? (
         <View style={styles.unopenedContainer}>
@@ -1436,61 +1343,5 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     textAlign: 'center',
     lineHeight: 24,
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  soundModalContent: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  soundModalTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  soundOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    marginBottom: spacing.sm,
-  },
-  soundOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '15',
-  },
-  soundEmoji: {
-    fontSize: 24,
-  },
-  soundLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
-  },
-  soundCloseButton: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  soundCloseText: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
   },
 });
