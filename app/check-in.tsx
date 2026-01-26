@@ -23,7 +23,7 @@ interface Prayer {
 }
 
 export default function CheckInScreen() {
-  console.log('User viewing Check-In screen');
+  console.log('[CheckIn] User viewing Check-In screen');
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
@@ -227,18 +227,28 @@ export default function CheckInScreen() {
   };
 
   const handleShareToCommunity = async () => {
-    console.log('[CheckIn] User sharing prayer to community', { category: shareCategory, anonymous: shareAnonymous });
+    console.log('[CheckIn] 🔵 User sharing prayer to community', { 
+      category: shareCategory, 
+      anonymous: shareAnonymous,
+      prayerId: generatedPrayerId 
+    });
     setIsSharing(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost('/api/check-in/share-prayer', {
+      console.log('[CheckIn] 🔵 Calling /api/check-in/share-prayer endpoint...');
+      
+      const response = await authenticatedPost('/api/check-in/share-prayer', {
         prayerId: generatedPrayerId,
         category: shareCategory,
         isAnonymous: shareAnonymous,
       });
       
-      console.log('[CheckIn] ✅ Prayer shared to community successfully in category:', shareCategory);
+      console.log('[CheckIn] ✅ Prayer shared to community successfully!', {
+        category: shareCategory,
+        response: response
+      });
+      
       setShowShareModal(false);
       setShowPrayerModal(false);
       setIsSharing(false);
@@ -265,6 +275,11 @@ export default function CheckInScreen() {
       );
     } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to share prayer:', error);
+      console.error('[CheckIn] ❌ Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status
+      });
       setIsSharing(false);
       const errorMessage = error?.message || 'Failed to share prayer. Please try again.';
       Alert.alert('Error', errorMessage);
@@ -283,17 +298,19 @@ export default function CheckInScreen() {
       return;
     }
 
-    console.log('[CheckIn] User submitting care request', { anonymous: careAnonymous });
+    console.log('[CheckIn] 🔵 User submitting care request', { anonymous: careAnonymous });
     setIsSubmittingCare(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost('/api/check-in/request-care', {
+      console.log('[CheckIn] 🔵 Calling /api/check-in/request-care endpoint...');
+      
+      const response = await authenticatedPost('/api/check-in/request-care', {
         content: requestText,
         isAnonymous: careAnonymous,
       });
       
-      console.log('[CheckIn] ✅ Care request submitted successfully');
+      console.log('[CheckIn] ✅ Care request submitted successfully!', response);
       setShowCareModal(false);
       setCareRequestText('');
       setCareAnonymous(false);
@@ -319,6 +336,11 @@ export default function CheckInScreen() {
       );
     } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to submit care request:', error);
+      console.error('[CheckIn] ❌ Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status
+      });
       setIsSubmittingCare(false);
       const errorMessage = error?.message || 'Failed to share care request. Please try again.';
       Alert.alert('Error', errorMessage);
@@ -330,7 +352,7 @@ export default function CheckInScreen() {
       return;
     }
 
-    console.log('[CheckIn] User sharing AI message to Wisdom feed', { 
+    console.log('[CheckIn] 🔵 User sharing AI message to Wisdom feed', { 
       messageId: selectedMessageId, 
       anonymous: messageShareAnonymous 
     });
@@ -338,13 +360,15 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost('/api/check-in/share-message', {
+      console.log('[CheckIn] 🔵 Calling /api/check-in/share-message endpoint...');
+      
+      const response = await authenticatedPost('/api/check-in/share-message', {
         messageId: selectedMessageId,
         category: 'wisdom',
         isAnonymous: messageShareAnonymous,
       });
       
-      console.log('[CheckIn] ✅ AI message shared to Wisdom feed successfully');
+      console.log('[CheckIn] ✅ AI message shared to Wisdom feed successfully!', response);
       setShowMessageShareModal(false);
       setSelectedMessageId('');
       setSelectedMessageContent('');
@@ -371,6 +395,11 @@ export default function CheckInScreen() {
       );
     } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to share AI message:', error);
+      console.error('[CheckIn] ❌ Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status
+      });
       setIsSharingMessage(false);
       const errorMessage = error?.message || 'Failed to share message. Please try again.';
       Alert.alert('Error', errorMessage);

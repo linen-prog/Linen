@@ -81,7 +81,7 @@ export default function CommunityScreen() {
   };
 
   const loadPosts = async (category: string) => {
-    console.log('[Community] Loading posts for category:', category);
+    console.log('[Community] 🔵 Loading posts for category:', category);
     setIsLoading(true);
     
     try {
@@ -90,35 +90,36 @@ export default function CommunityScreen() {
       let endpoint = '';
       if (category === 'my-shared') {
         endpoint = '/api/community/my-posts';
-        console.log('[Community] Fetching user\'s shared posts from:', endpoint);
+        console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
       } else {
         // Map frontend tab names to backend categories
         // Feed shows daily-gift reflections
         // Wisdom, Care, Prayers show companion content filtered by category
         endpoint = `/api/community/posts?category=${category}`;
-        console.log('[Community] Fetching posts from:', endpoint);
+        console.log('[Community] 🔵 Fetching posts from:', endpoint);
       }
       
       const response = await authenticatedGet<Post[]>(endpoint);
-      console.log('[Community] Posts loaded for', category, ':', response.length, 'posts');
+      console.log('[Community] ✅ Posts loaded for', category, ':', response.length, 'posts');
       
-      // Log details of posts for debugging
-      if (category === 'my-shared') {
-        console.log('[Community] My Shared posts details:', response.map(p => ({
-          id: p.id,
-          category: p.category,
-          contentType: p.contentType,
-          prayerCount: p.prayerCount,
-          createdAt: p.createdAt
-        })));
-      }
+      // Log details of ALL posts for debugging
+      console.log('[Community] 📊 Post details:', response.map(p => ({
+        id: p.id,
+        category: p.category,
+        contentType: p.contentType,
+        authorName: p.authorName,
+        isAnonymous: p.isAnonymous,
+        prayerCount: p.prayerCount,
+        contentPreview: p.content.substring(0, 50) + '...',
+        createdAt: p.createdAt
+      })));
       
       setPosts(response.map(post => ({
         ...post,
         createdAt: new Date(post.createdAt),
       })));
     } catch (error) {
-      console.error('[Community] Failed to load posts:', error);
+      console.error('[Community] ❌ Failed to load posts:', error);
       setPosts([]);
     } finally {
       setIsLoading(false);
