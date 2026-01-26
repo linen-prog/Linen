@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, or } from 'drizzle-orm';
+import { eq, and, desc, or, gte, lt } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
@@ -449,6 +449,70 @@ export function registerCommunityRoutes(app: App) {
           { err: error, userId: session.user.id, postId },
           'Failed to delete post'
         );
+        throw error;
+      }
+    }
+  );
+
+  // Get community statistics (no auth required)
+  app.fastify.get(
+    '/api/community/stats',
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      app.logger.info('Fetching community statistics');
+
+      try {
+        // Get current date in Pacific timezone
+        const now = new Date();
+        const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+
+        // Set start of today (00:00:00)
+        const todayStart = new Date(pacificTime);
+        todayStart.setHours(0, 0, 0, 0);
+
+        // Set end of today (23:59:59)
+        const todayEnd = new Date(pacificTime);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        // Convert to ISO strings for database comparison
+        const todayStartISO = todayStart.toISOString();
+        const todayEndISO = todayEnd.toISOString();
+
+        app.logger.info(
+          { todayStartISO, todayEndISO },
+          'Calculating community stats for Pacific timezone'
+        );
+
+        // Count posts created today
+        const todayPosts = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(
+            and(
+              gte(schema.communityPosts.createdAt, new Date(todayStartISO)),
+              lt(schema.communityPosts.createdAt, new Date(todayEndISO))
+            )
+          );
+
+        const sharedToday = todayPosts.length;
+
+        // Count all prayers
+        const allPrayers = await app.db
+          .select()
+          .from(schema.communityPrayers);
+
+        const liftedInPrayer = allPrayers.length;
+
+        app.logger.info(
+          { sharedToday, liftedInPrayer },
+          'Community statistics retrieved'
+        );
+
+        return reply.send({
+          sharedToday,
+          liftedInPrayer,
+        });
+      } catch (error) {
+        app.logger.error({ err: error }, 'Failed to fetch community statistics');
         throw error;
       }
     }
