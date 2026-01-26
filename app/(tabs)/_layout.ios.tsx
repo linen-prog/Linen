@@ -7,7 +7,7 @@ export default function TabLayout() {
     <NativeTabs>
       <NativeTabs.Trigger key="home" name="index">
         <Icon sf="house.fill" />
-        <Label>Home</Label>
+        <Label>Linen</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger key="community" name="community">
         <Icon sf="person.3.fill" />
@@ -17,6 +17,7 @@ export default function TabLayout() {
         <Icon sf="person.circle.fill" />
         <Label>Profile</Label>
       </NativeTabs.Trigger>
+      {/* The (home) folder is hidden from tabs */}
     </NativeTabs>
   );
 }

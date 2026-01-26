@@ -29,7 +29,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Linen',
           tabBarIcon: ({ color }) => (
             <IconSymbol 
               ios_icon_name="house.fill"
@@ -66,6 +66,13 @@ export default function TabLayout() {
               color={color}
             />
           ),
+        }}
+      />
+      {/* Hide the (home) folder from tabs */}
+      <Tabs.Screen
+        name="(home)"
+        options={{
+          href: null, // This hides it from the tab bar
         }}
       />
     </Tabs>
