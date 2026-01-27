@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
@@ -444,6 +444,22 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleOpenPrivacyPolicy = async () => {
+    console.log('ProfileScreen: Opening privacy policy');
+    const privacyUrl = 'https://ts4lxkyubgrt4.mocha.app/privacy';
+    try {
+      const supported = await Linking.canOpenURL(privacyUrl);
+      if (supported) {
+        await Linking.openURL(privacyUrl);
+      } else {
+        Alert.alert('Error', 'Unable to open privacy policy link.');
+      }
+    } catch (error) {
+      console.error('ProfileScreen: Failed to open privacy policy -', error);
+      Alert.alert('Error', 'Failed to open privacy policy. Please try again.');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -775,6 +791,40 @@ export default function ProfileScreen() {
               </View>
               <Text style={[styles.menuItemText, { color: colors.text }]}>
                 Notifications
+              </Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textLight} 
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Legal */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Legal
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={handleOpenPrivacyPolicy}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="lock.shield" 
+                  android_material_icon_name="privacy-tip" 
+                  size={20} 
+                  color={colors.primary} 
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                Privacy Policy
               </Text>
             </View>
             <IconSymbol 
