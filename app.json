@@ -1,16 +1,17 @@
+
 {
   "expo": {
     "name": "Linen",
     "slug": "Linen",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/c7d8c00a-d42f-4f75-9ef2-bb675b6498d8.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/c7d8c00a-d42f-4f75-9ef2-bb675b6498d8.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#F5F1E8"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,14 +22,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/c7d8c00a-d42f-4f75-9ef2-bb675b6498d8.png",
+        "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.linen.app"
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/c7d8c00a-d42f-4f75-9ef2-bb675b6498d8.png",
       "bundler": "metro"
     },
     "plugins": [
