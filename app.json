@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.linen.app",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -26,7 +27,8 @@
         "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.linen.app"
+      "package": "com.linen.app",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/images/c7d8c00a-d42f-4f75-9ef2-bb675b6498d8.png",
