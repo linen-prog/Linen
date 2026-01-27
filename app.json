@@ -36,7 +36,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "natively",
+    "scheme": "Linen",
     "experiments": {
       "typedRoutes": true
     },
