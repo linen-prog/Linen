@@ -20,6 +20,21 @@ export default function LandingScreen() {
   const taglineText = 'Faith that lives in your body';
   const introText = 'Embodied Christian spirituality rooted in Scripture and Christian tradition through gentle somatic practice, creative expression, and contemplative care';
   const buttonText = 'Begin Your Journey';
+  
+  const whatIsSomaticTitle = 'What is Somatic';
+  const somaticQuoteIntro = '"Somatic" comes from the Greek word ';
+  const somaticQuoteWord = 'soma';
+  const somaticQuoteEnd = ', meaning "body."';
+  
+  const somaticParagraph1 = 'Somatic practices are gentle techniques that help you notice and connect with what\'s happening in your body — your breath, tension, sensations, and felt sense. Rather than just thinking about your experiences, somatic awareness invites you to ';
+  const somaticParagraph1Italic = 'feel';
+  const somaticParagraph1End = ' them.';
+  
+  const somaticParagraph2 = 'Our bodies hold wisdom, memory, and often the very emotions we struggle to name. When we pay attention to physical sensations — a tightness in the chest, warmth in the hands, heaviness in the shoulders — we gain access to deeper layers of understanding and healing.';
+  
+  const scriptureQuote = '"Do you not know that your bodies are temples of the Holy Spirit, who is in you?"';
+  const scriptureReference = '— 1 Corinthians 6:19';
+  
   const whatMakesLinenDifferentTitle = 'What Makes Linen Different';
   
   const scriptureCompanionTitle = 'Scripture-Rooted Spiritual Companion';
@@ -82,6 +97,45 @@ export default function LandingScreen() {
         >
           <Text style={styles.beginButtonText}>{buttonText}</Text>
         </TouchableOpacity>
+
+        <View style={styles.sectionHeader}>
+          <IconSymbol 
+            ios_icon_name="sparkles" 
+            android_material_icon_name="auto-awesome" 
+            size={24} 
+            color={colors.primary} 
+          />
+          <Text style={styles.sectionTitle}>{whatIsSomaticTitle}</Text>
+          <IconSymbol 
+            ios_icon_name="sparkles" 
+            android_material_icon_name="auto-awesome" 
+            size={24} 
+            color={colors.primary} 
+          />
+        </View>
+
+        <View style={styles.somaticSection}>
+          <View style={styles.somaticQuoteContainer}>
+            <Text style={styles.somaticQuoteText}>
+              <Text style={styles.somaticQuoteNormal}>{somaticQuoteIntro}</Text>
+              <Text style={styles.somaticQuoteItalic}>{somaticQuoteWord}</Text>
+              <Text style={styles.somaticQuoteNormal}>{somaticQuoteEnd}</Text>
+            </Text>
+          </View>
+
+          <Text style={styles.somaticParagraph}>
+            <Text style={styles.somaticParagraphNormal}>{somaticParagraph1}</Text>
+            <Text style={styles.somaticParagraphItalic}>{somaticParagraph1Italic}</Text>
+            <Text style={styles.somaticParagraphNormal}>{somaticParagraph1End}</Text>
+          </Text>
+
+          <Text style={styles.somaticParagraph}>{somaticParagraph2}</Text>
+
+          <View style={styles.scriptureBox}>
+            <Text style={styles.scriptureQuote}>{scriptureQuote}</Text>
+            <Text style={styles.scriptureReference}>{scriptureReference}</Text>
+          </View>
+        </View>
 
         <View style={styles.sectionHeader}>
           <IconSymbol 
@@ -335,6 +389,57 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: typography.bold,
     color: colors.text,
+  },
+  somaticSection: {
+    marginBottom: spacing.xl + spacing.lg,
+  },
+  somaticQuoteContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  somaticQuoteText: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  somaticQuoteNormal: {
+    color: colors.text,
+  },
+  somaticQuoteItalic: {
+    color: colors.text,
+    fontStyle: 'italic',
+  },
+  somaticParagraph: {
+    fontSize: typography.body,
+    lineHeight: 26,
+    marginBottom: spacing.lg,
+    textAlign: 'left',
+  },
+  somaticParagraphNormal: {
+    color: colors.text,
+  },
+  somaticParagraphItalic: {
+    color: colors.text,
+    fontStyle: 'italic',
+  },
+  scriptureBox: {
+    backgroundColor: '#D8E8D8',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginTop: spacing.lg,
+  },
+  scriptureQuote: {
+    fontSize: typography.body,
+    color: colors.text,
+    lineHeight: 26,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  scriptureReference: {
+    fontSize: typography.body,
+    color: colors.text,
+    textAlign: 'center',
   },
   featuresGrid: {
     gap: spacing.lg,
