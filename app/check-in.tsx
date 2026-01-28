@@ -59,17 +59,18 @@ export default function CheckInScreen() {
         const { authenticatedPost } = await import('@/utils/api');
         const response = await authenticatedPost<{ 
           conversationId: string; 
-          messages: Array<{ role: string; content: string; createdAt: string }>;
+          messages: Array<{ id: string; role: string; content: string; createdAt: string }>;
           isNewConversation: boolean;
         }>('/api/check-in/start', {});
         console.log('[CheckIn] Conversation started successfully:', response);
+        console.log('[CheckIn] Message IDs from backend:', response.messages.map(m => ({ id: m.id, role: m.role })));
         setConversationId(response.conversationId);
         
         // Load existing messages (but don't show initial AI greeting for new conversations)
         const loadedMessages = response.messages
           .filter(msg => msg.role === 'user' || response.messages.length > 1)
-          .map((msg, index) => ({
-            id: `${index}`,
+          .map((msg) => ({
+            id: msg.id,
             role: msg.role as 'user' | 'assistant',
             content: msg.content,
             createdAt: new Date(msg.createdAt),
@@ -354,13 +355,14 @@ export default function CheckInScreen() {
 
     console.log('[CheckIn] 🔵 User sharing AI message to Wisdom feed', { 
       messageId: selectedMessageId, 
+      messageIdType: typeof selectedMessageId,
       anonymous: messageShareAnonymous 
     });
     setIsSharingMessage(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      console.log('[CheckIn] 🔵 Calling /api/check-in/share-message endpoint...');
+      console.log('[CheckIn] 🔵 Calling /api/check-in/share-message endpoint with messageId:', selectedMessageId);
       
       const response = await authenticatedPost('/api/check-in/share-message', {
         messageId: selectedMessageId,
