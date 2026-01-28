@@ -324,6 +324,7 @@ export function registerCheckInRoutes(app: App) {
         return reply.send({
           conversationId: conversation.id,
           messages: messages.map((m) => ({
+            id: m.id,
             role: m.role,
             content: m.content,
             createdAt: m.createdAt,
