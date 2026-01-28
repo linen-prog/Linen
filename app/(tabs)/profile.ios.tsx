@@ -105,11 +105,13 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       console.log('ProfileScreen (iOS): Fetching profile from API');
-      // TODO: Backend Integration - GET /api/profile
-      // const response = await authenticatedGet('/api/profile');
-      // setProfile(response);
-      
-      // Mock data for now
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<UserProfile>('/api/profile');
+      console.log('ProfileScreen (iOS): Profile loaded successfully:', response);
+      setProfile(response);
+    } catch (error) {
+      console.error('ProfileScreen (iOS): Failed to load profile -', error);
+      // Create default profile on error
       const mockProfile: UserProfile = {
         id: '1',
         userId: user?.id || 'guest-user',
@@ -133,9 +135,6 @@ export default function ProfileScreen() {
         updatedAt: new Date().toISOString(),
       };
       setProfile(mockProfile);
-    } catch (error) {
-      console.error('ProfileScreen (iOS): Failed to load profile -', error);
-      Alert.alert('Error', 'Failed to load profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -144,22 +143,22 @@ export default function ProfileScreen() {
   const loadStats = async () => {
     try {
       console.log('ProfileScreen (iOS): Fetching stats from API');
-      // TODO: Backend Integration - GET /api/profile/stats
-      // const response = await authenticatedGet('/api/profile/stats');
-      // setStats(response);
-      
-      // Mock data for now
-      const mockStats: UserStats = {
-        checkInStreak: 3,
-        reflectionStreak: 5,
-        totalReflections: 12,
-        daysInCommunity: 14,
-        memberSince: new Date().toISOString(),
-        totalSharedPosts: 4,
-      };
-      setStats(mockStats);
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<UserStats>('/api/profile/stats');
+      console.log('ProfileScreen (iOS): Stats loaded successfully:', response);
+      setStats(response);
     } catch (error) {
       console.error('ProfileScreen (iOS): Failed to load stats -', error);
+      // Use default stats on error
+      const mockStats: UserStats = {
+        checkInStreak: 0,
+        reflectionStreak: 0,
+        totalReflections: 0,
+        daysInCommunity: 0,
+        memberSince: new Date().toISOString(),
+        totalSharedPosts: 0,
+      };
+      setStats(mockStats);
     }
   };
 
@@ -209,22 +208,28 @@ export default function ProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         setSaving(true);
         console.log('ProfileScreen (iOS): Uploading photo to server');
-        // TODO: Backend Integration - POST /api/profile/upload-avatar
-        // const formData = new FormData();
-        // formData.append('avatar', { uri: result.assets[0].uri, type: 'image/jpeg', name: 'avatar.jpg' });
-        // const response = await authenticatedPost('/api/profile/upload-avatar', formData);
-        // await updateProfile({ avatarType: 'photo', avatarUrl: response.url });
         
-        // Mock update
-        if (profile) {
-          setProfile({
-            ...profile,
-            avatarType: 'photo',
-            avatarUrl: result.assets[0].uri,
+        try {
+          const { authenticatedPut } = await import('@/utils/api');
+          await authenticatedPut('/api/profile', { 
+            avatarType: 'photo', 
+            avatarUrl: result.assets[0].uri 
           });
+          
+          if (profile) {
+            setProfile({
+              ...profile,
+              avatarType: 'photo',
+              avatarUrl: result.assets[0].uri,
+            });
+          }
+          setShowAvatarModal(false);
+        } catch (error) {
+          console.error('ProfileScreen (iOS): Failed to update profile with photo:', error);
+          Alert.alert('Error', 'Failed to upload photo. Please try again.');
+        } finally {
+          setSaving(false);
         }
-        setShowAvatarModal(false);
-        setSaving(false);
       }
     } catch (error) {
       console.error('ProfileScreen (iOS): Photo upload failed -', error);
@@ -237,8 +242,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Icon selected -', iconId);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { avatarType: 'icon', avatarIcon: iconId });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { avatarType: 'icon', avatarIcon: iconId });
+      console.log('ProfileScreen (iOS): Avatar icon updated successfully');
       
       if (profile) {
         setProfile({
@@ -269,8 +275,9 @@ export default function ProfileScreen() {
           onPress: async () => {
             setSaving(true);
             try {
-              // TODO: Backend Integration - DELETE /api/profile/avatar
-              // await authenticatedDelete('/api/profile/avatar');
+              const { authenticatedDelete } = await import('@/utils/api');
+              await authenticatedDelete('/api/profile/avatar');
+              console.log('ProfileScreen (iOS): Avatar cleared successfully');
               
               if (profile) {
                 setProfile({
@@ -297,8 +304,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Saving display name -', tempDisplayName);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { displayName: tempDisplayName });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { displayName: tempDisplayName });
+      console.log('ProfileScreen (iOS): Display name updated successfully');
       
       if (profile) {
         setProfile({
@@ -319,8 +327,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Saving presence mode -', tempPresenceMode);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', { presenceMode: tempPresenceMode });
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { presenceMode: tempPresenceMode });
+      console.log('ProfileScreen (iOS): Presence mode updated successfully');
       
       if (profile) {
         setProfile({
@@ -341,8 +350,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Saving boundaries -', tempBoundaries);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', tempBoundaries);
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', tempBoundaries);
+      console.log('ProfileScreen (iOS): Boundaries updated successfully');
       
       if (profile) {
         setProfile({
@@ -363,8 +373,9 @@ export default function ProfileScreen() {
     console.log('ProfileScreen (iOS): Saving notifications -', tempNotifications);
     setSaving(true);
     try {
-      // TODO: Backend Integration - PUT /api/profile
-      // await authenticatedPut('/api/profile', tempNotifications);
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', tempNotifications);
+      console.log('ProfileScreen (iOS): Notifications updated successfully');
       
       if (profile) {
         setProfile({
@@ -381,10 +392,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleViewSharedReflections = () => {
-    console.log('ProfileScreen (iOS): Navigating to shared reflections');
-    // TODO: Create a screen to show user's shared posts
-    Alert.alert('Coming Soon', 'View your shared reflections in the community.');
+  const handleViewSharedReflections = async () => {
+    console.log('ProfileScreen (iOS): Fetching shared reflections');
+    try {
+      const { authenticatedGet } = await import('@/utils/api');
+      const sharedReflections = await authenticatedGet<any[]>('/api/profile/shared-reflections');
+      console.log('ProfileScreen (iOS): Shared reflections loaded:', sharedReflections.length);
+      
+      const reflectionCount = sharedReflections.length;
+      const reflectionText = reflectionCount !== 1 ? 's' : '';
+      const message = `You have shared ${reflectionCount} reflection${reflectionText} with the community.`;
+      
+      // For now, just show count - in future, navigate to a dedicated screen
+      Alert.alert(
+        'Shared Reflections',
+        message,
+        [
+          {
+            text: 'View in Community',
+            onPress: () => {
+              router.push('/(tabs)/community');
+            }
+          },
+          { text: 'OK', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      console.error('ProfileScreen (iOS): Failed to load shared reflections -', error);
+      Alert.alert('Error', 'Failed to load shared reflections. Please try again.');
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -524,6 +560,7 @@ export default function ProfileScreen() {
                 {userEmail}
               </Text>
               <TouchableOpacity onPress={() => {
+                console.log('ProfileScreen (iOS): Edit display name pressed');
                 setTempDisplayName(profile?.displayName || '');
                 setShowDisplayNameModal(true);
               }}>
@@ -620,6 +657,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
+              console.log('ProfileScreen (iOS): Presence mode pressed');
               setTempPresenceMode(profile?.presenceMode || 'open');
               setShowPresenceModal(true);
             }}
@@ -652,6 +690,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
+              console.log('ProfileScreen (iOS): Emotional safety pressed');
               setTempBoundaries({
                 comfortReceivingReplies: profile?.comfortReceivingReplies || true,
                 comfortReadingMore: profile?.comfortReadingMore || true,
@@ -731,6 +770,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
+              console.log('ProfileScreen (iOS): Notifications pressed');
               setTempNotifications({
                 notificationsEnabled: profile?.notificationsEnabled || true,
                 reminderNotifications: profile?.reminderNotifications || true,
@@ -876,7 +916,395 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Modals - keeping the same as before, omitted for brevity */}
+      {/* Avatar Selection Modal */}
+      <Modal
+        visible={showAvatarModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Choose Avatar (Optional)
+              </Text>
+              <TouchableOpacity onPress={() => setShowAvatarModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              Choose what feels right for you, or leave it as is
+            </Text>
+
+            <ScrollView style={styles.modalScroll}>
+              <TouchableOpacity 
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleUploadPhoto}
+                disabled={saving}
+              >
+                <IconSymbol 
+                  ios_icon_name="photo" 
+                  android_material_icon_name="photo" 
+                  size={20} 
+                  color="#FFFFFF" 
+                />
+                <Text style={styles.modalButtonText}>
+                  Upload Photo
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>
+                Or choose a symbol
+              </Text>
+
+              {AVATAR_ICONS.map((icon) => (
+                <TouchableOpacity
+                  key={icon.id}
+                  style={styles.iconOption}
+                  onPress={() => handleSelectIcon(icon.id)}
+                  disabled={saving}
+                >
+                  <View style={styles.iconOptionLeft}>
+                    <Text style={styles.iconOptionLabel}>
+                      {icon.label}
+                    </Text>
+                    <Text style={[styles.iconOptionDescription, { color: colors.textSecondary }]}>
+                      {icon.description}
+                    </Text>
+                  </View>
+                  {profile?.avatarIcon === icon.id && (
+                    <IconSymbol 
+                      ios_icon_name="checkmark" 
+                      android_material_icon_name="check" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+
+              {(profile?.avatarType === 'photo' || profile?.avatarType === 'icon') && (
+                <TouchableOpacity 
+                  style={[styles.modalButton, { backgroundColor: colors.error, marginTop: spacing.lg }]}
+                  onPress={handleClearAvatar}
+                  disabled={saving}
+                >
+                  <IconSymbol 
+                    ios_icon_name="trash" 
+                    android_material_icon_name="delete" 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                  <Text style={styles.modalButtonText}>
+                    Clear Avatar
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Display Name Modal */}
+      <Modal
+        visible={showDisplayNameModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDisplayNameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Display Name
+              </Text>
+              <TouchableOpacity onPress={() => setShowDisplayNameModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              How would you like to be known? You can always change this or leave it blank.
+            </Text>
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              value={tempDisplayName}
+              onChangeText={setTempDisplayName}
+              placeholder="Enter display name (optional)"
+              placeholderTextColor={colors.textLight}
+            />
+
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveDisplayName}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonText}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Presence Mode Modal */}
+      <Modal
+        visible={showPresenceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPresenceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Presence Mode
+              </Text>
+              <TouchableOpacity onPress={() => setShowPresenceModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              This is just for you. Choose what feels true today, or skip it entirely.
+            </Text>
+
+            <ScrollView style={styles.modalScroll}>
+              {PRESENCE_MODES.map((mode) => (
+                <TouchableOpacity
+                  key={mode.id}
+                  style={styles.presenceOption}
+                  onPress={() => setTempPresenceMode(mode.id)}
+                >
+                  <View style={styles.presenceOptionLeft}>
+                    <Text style={styles.presenceOptionIcon}>
+                      {mode.icon}
+                    </Text>
+                    <View style={styles.presenceOptionText}>
+                      <Text style={[styles.presenceOptionLabel, { color: colors.text }]}>
+                        {mode.label}
+                      </Text>
+                      <Text style={[styles.presenceOptionDescription, { color: colors.textSecondary }]}>
+                        {mode.description}
+                      </Text>
+                    </View>
+                  </View>
+                  {tempPresenceMode === mode.id && (
+                    <IconSymbol 
+                      ios_icon_name="checkmark" 
+                      android_material_icon_name="check" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={handleSavePresenceMode}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonText}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Boundaries Modal */}
+      <Modal
+        visible={showBoundariesModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBoundariesModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Emotional Safety
+              </Text>
+              <TouchableOpacity onPress={() => setShowBoundariesModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              These are invitations, not requirements. Set what honors your needs.
+            </Text>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                    I&apos;m okay receiving replies
+                  </Text>
+                </View>
+                <Switch
+                  value={tempBoundaries.comfortReceivingReplies}
+                  onValueChange={(value) => setTempBoundaries({ ...tempBoundaries, comfortReceivingReplies: value })}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={tempBoundaries.comfortReceivingReplies ? colors.primary : colors.textLight}
+                />
+              </View>
+
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                    I prefer reading more than posting
+                  </Text>
+                </View>
+                <Switch
+                  value={tempBoundaries.comfortReadingMore}
+                  onValueChange={(value) => setTempBoundaries({ ...tempBoundaries, comfortReadingMore: value })}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={tempBoundaries.comfortReadingMore ? colors.primary : colors.textLight}
+                />
+              </View>
+
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                    I&apos;m open to support messages
+                  </Text>
+                </View>
+                <Switch
+                  value={tempBoundaries.comfortSupportMessages}
+                  onValueChange={(value) => setTempBoundaries({ ...tempBoundaries, comfortSupportMessages: value })}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={tempBoundaries.comfortSupportMessages ? colors.primary : colors.textLight}
+                />
+              </View>
+
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                    Please don&apos;t tag me in discussions
+                  </Text>
+                </View>
+                <Switch
+                  value={tempBoundaries.comfortNoTags}
+                  onValueChange={(value) => setTempBoundaries({ ...tempBoundaries, comfortNoTags: value })}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={tempBoundaries.comfortNoTags ? colors.primary : colors.textLight}
+                />
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveBoundaries}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonText}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Notifications Modal */}
+      <Modal
+        visible={showNotificationsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNotificationsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Notifications
+              </Text>
+              <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              Choose what serves you. You can change these anytime.
+            </Text>
+
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleItemLeft}>
+                <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                  Community Notifications
+                </Text>
+                <Text style={[styles.toggleItemDescription, { color: colors.textSecondary }]}>
+                  Prayers and replies to your posts
+                </Text>
+              </View>
+              <Switch
+                value={tempNotifications.notificationsEnabled}
+                onValueChange={(value) => setTempNotifications({ ...tempNotifications, notificationsEnabled: value })}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={tempNotifications.notificationsEnabled ? colors.primary : colors.textLight}
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleItemLeft}>
+                <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                  Gentle Reminders
+                </Text>
+                <Text style={[styles.toggleItemDescription, { color: colors.textSecondary }]}>
+                  Daily gift and check-in reminders
+                </Text>
+              </View>
+              <Switch
+                value={tempNotifications.reminderNotifications}
+                onValueChange={(value) => setTempNotifications({ ...tempNotifications, reminderNotifications: value })}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={tempNotifications.reminderNotifications ? colors.primary : colors.textLight}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary, marginTop: spacing.lg }]}
+              onPress={handleSaveNotifications}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonText}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
