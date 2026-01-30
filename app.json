@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Linen",
@@ -16,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.linen.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -28,7 +27,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.linen.app",
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
