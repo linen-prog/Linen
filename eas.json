@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -41,9 +42,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-asc-app-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "linenprayer@gmail.com",
+        "appleTeamId": "ZSU6WP9K6J"
       },
       "android": {
         "serviceAccountKeyPath": "./path-to-service-account.json",
