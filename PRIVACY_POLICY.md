@@ -1,7 +1,7 @@
 
 # Privacy Policy for Linen
 
-**Last Updated:** [Current Date]
+**Last Updated:** January 30, 2026
 
 ## Introduction
 
@@ -120,7 +120,7 @@ You have the right to:
 
 - **In-App:** Use Profile settings to manage your data and preferences
 - **Delete Account:** Available in Profile > Account Settings
-- **Contact Us:** Email [your-support-email] for data requests
+- **Contact Us:** Email support@linenapp.com for data requests
 
 ## Data Retention
 
@@ -174,9 +174,8 @@ Linen is not:
 
 If you have questions about this Privacy Policy or our privacy practices:
 
-**Email:** [your-support-email]
-**Website:** [your-website-url]
-**Address:** [your-business-address]
+**Email:** support@linenapp.com
+**In-App:** Use the Profile > Help & Support section
 
 ## Consent
 
@@ -184,4 +183,4 @@ By using Linen, you consent to this Privacy Policy and agree to its terms.
 
 ---
 
-**This privacy policy is effective as of [Date] and applies to all users of the Linen mobile application.**
+**This privacy policy is effective as of January 30, 2026 and applies to all users of the Linen mobile application.**
