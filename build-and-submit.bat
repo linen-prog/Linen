@@ -6,11 +6,16 @@ echo ========================================
 echo.
 echo This script will:
 echo 1. Clear EAS cache
-echo 2. Build your iOS app for production
+echo 2. Build your iOS app for production (Release configuration)
 echo 3. Submit it to TestFlight
 echo.
 echo Current version: 1.0.1
 echo Current build number: 3
+echo.
+echo IMPORTANT: Before running this script, increment the build number in app.json!
+echo   - Open app.json
+echo   - Change "buildNumber": "3" to "buildNumber": "4" (or next number)
+echo   - Save the file
 echo.
 pause
 
@@ -40,7 +45,9 @@ call npx eas build:cancel --all
 echo Cache cleared.
 
 echo.
-echo [Step 4/5] Building iOS app...
+echo [Step 4/5] Building iOS app with production profile...
+echo Configuration: Release
+echo Bundle Identifier: com.linen.app
 echo This will take 10-20 minutes...
 call npx eas build --platform ios --profile production --clear-cache
 if errorlevel 1 (
@@ -67,5 +74,7 @@ echo Next steps:
 echo 1. Check your email for TestFlight notifications
 echo 2. The app will appear in App Store Connect within 5-10 minutes
 echo 3. TestFlight processing takes 10-30 minutes
+echo.
+echo REMEMBER: Increment the build number in app.json before your next build!
 echo.
 pause
