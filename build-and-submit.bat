@@ -5,8 +5,9 @@ echo   LINEN iOS BUILD AND SUBMIT TO TESTFLIGHT
 echo ========================================
 echo.
 echo This script will:
-echo 1. Build your iOS app for production
-echo 2. Submit it to TestFlight
+echo 1. Clear EAS cache
+echo 2. Build your iOS app for production
+echo 3. Submit it to TestFlight
 echo.
 echo Current version: 1.0.1
 echo Current build number: 3
@@ -16,7 +17,7 @@ pause
 cd C:\Users\jtav8\Downloads\natively-app-update
 
 echo.
-echo [Step 1/4] Installing dependencies...
+echo [Step 1/5] Installing dependencies...
 call npm install
 if errorlevel 1 (
     echo ERROR: npm install failed
@@ -25,7 +26,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [Step 2/4] Logging into EAS...
+echo [Step 2/5] Logging into EAS...
 call npx eas login
 if errorlevel 1 (
     echo ERROR: EAS login failed
@@ -34,9 +35,14 @@ if errorlevel 1 (
 )
 
 echo.
-echo [Step 3/4] Building iOS app...
+echo [Step 3/5] Clearing EAS cache...
+call npx eas build:cancel --all
+echo Cache cleared.
+
+echo.
+echo [Step 4/5] Building iOS app...
 echo This will take 10-20 minutes...
-call npx eas build --platform ios --profile production
+call npx eas build --platform ios --profile production --clear-cache
 if errorlevel 1 (
     echo ERROR: iOS build failed
     pause
@@ -44,7 +50,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [Step 4/4] Submitting to TestFlight...
+echo [Step 5/5] Submitting to TestFlight...
 call npx eas submit --platform ios --profile production
 if errorlevel 1 (
     echo ERROR: TestFlight submission failed
