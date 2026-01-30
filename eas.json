@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -42,6 +43,7 @@
     "production": {
       "ios": {
         "appleId": "linenprayer@gmail.com",
+        "ascAppId": "6740269073",
         "appleTeamId": "ZSU6WP9K6J"
       },
       "android": {
