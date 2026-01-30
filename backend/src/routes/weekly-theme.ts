@@ -492,8 +492,57 @@ export function registerWeeklyThemeRoutes(app: App) {
           )
           .limit(1);
 
-        // Fallback to default content if not found
-        let dailyContent = dailyContentRecord[0] || null;
+        // Get daily content for today, or generate it if not found
+        let dailyContent = dailyContentRecord[0];
+        let generatedContent = null;
+
+        // If no daily content in database, generate appropriate content based on theme
+        if (!dailyContent) {
+          app.logger.info(
+            { themeId: theme.id, weekIndex: currentWeekIndex, dayOfWeek: currentDayOfWeek },
+            'Generating daily content from theme'
+          );
+
+          const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const dayName = dayTitles[currentDayOfWeek];
+
+          // Generate scripture references that vary by day
+          const scriptureReferences = [
+            'Psalm 139:1-14',     // Day 0: Knowing and being known
+            'Proverbs 27:12',     // Day 1: Wisdom and discernment
+            'Psalm 34:1-8',       // Day 2: Worship and trust
+            'John 15:1-8',        // Day 3: Abiding and fruitfulness
+            'Romans 12:1-2',      // Day 4: Transformation
+            'Philippians 4:8-9',  // Day 5: Rejoicing and peace
+            'Colossians 3:15-17', // Day 6: Peace and gratitude
+          ];
+
+          const scripturePrompts = [
+            `As you begin the week, reflect on: ${theme.themeTitle}. What does this theme stir in you?`,
+            `What is one way you can embody this week's theme: "${theme.themeTitle}"?`,
+            `In the middle of your week, pause with: ${theme.themeTitle}. What are you noticing?`,
+            `How is God speaking to you about: ${theme.themeTitle}?`,
+            `What practice or insight from this week's theme feels most alive in you?`,
+            `As the week concludes, what will you carry forward from: ${theme.themeTitle}?`,
+            `Reflect on the week's theme: ${theme.themeTitle}. What is God inviting you into next week?`,
+          ];
+
+          // Create generated daily content object (not storing in DB, just for response)
+          generatedContent = {
+            id: null,
+            dayOfWeek: currentDayOfWeek,
+            dayTitle: dayName,
+            scriptureReference: scriptureReferences[currentDayOfWeek],
+            scriptureText: theme.themeDescription,
+            reflectionPrompt: scripturePrompts[currentDayOfWeek],
+            somaticPrompt: null,
+          };
+
+          app.logger.info(
+            { themeId: theme.id, dayOfWeek: currentDayOfWeek, scriptureRef: scriptureReferences[currentDayOfWeek] },
+            'Generated daily content successfully'
+          );
+        }
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
@@ -513,6 +562,9 @@ export function registerWeeklyThemeRoutes(app: App) {
           'Current weekly theme retrieved'
         );
 
+        // Use generated content if database content not found
+        const contentToReturn = generatedContent || dailyContent;
+
         return reply.send({
           weeklyTheme: {
             id: theme.id,
@@ -524,25 +576,15 @@ export function registerWeeklyThemeRoutes(app: App) {
             reflectionPrompt: theme.reflectionPrompt || null,
             somaticExercise: featuredExercise,
           },
-          dailyContent: dailyContent
-            ? {
-                id: dailyContent.id,
-                dayOfWeek: dailyContent.dayOfWeek,
-                dayTitle: dailyContent.dayTitle,
-                scriptureReference: dailyContent.scriptureReference,
-                scriptureText: dailyContent.scriptureText,
-                reflectionQuestion: dailyContent.reflectionPrompt,
-                somaticPrompt: dailyContent.somaticPrompt || null,
-              }
-            : {
-                id: null,
-                dayOfWeek: currentDayOfWeek,
-                dayTitle: 'Daily Reflection',
-                scriptureReference: 'Psalm 46:10',
-                scriptureText: 'Be still, and know that I am God.',
-                reflectionQuestion: 'In stillness, what do you notice? What is God saying to you?',
-                somaticPrompt: null,
-              },
+          dailyContent: {
+            id: contentToReturn.id,
+            dayOfWeek: contentToReturn.dayOfWeek,
+            dayTitle: contentToReturn.dayTitle,
+            scriptureReference: contentToReturn.scriptureReference,
+            scriptureText: contentToReturn.scriptureText,
+            reflectionQuestion: contentToReturn.reflectionPrompt,
+            somaticPrompt: contentToReturn.somaticPrompt || null,
+          },
         });
       } catch (error) {
         app.logger.error({ err: error }, 'Failed to fetch current weekly theme');
