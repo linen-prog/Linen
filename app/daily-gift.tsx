@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
@@ -111,50 +112,59 @@ export default function DailyGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  useEffect(() => {
-    const loadDailyGift = async () => {
-      try {
-        console.log('[DailyGift] Loading daily gift from /api/weekly-theme/current...');
-        const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
-        
-        console.log('[DailyGift] Daily gift loaded successfully:', {
-          themeTitle: response.weeklyTheme.themeTitle,
-          liturgicalSeason: response.weeklyTheme.liturgicalSeason,
-          themeDescription: response.weeklyTheme.themeDescription,
-          weekStartDate: response.weeklyTheme.weekStartDate,
-          hasSomaticExercise: !!response.weeklyTheme.somaticExercise,
-          somaticExerciseTitle: response.weeklyTheme.somaticExercise?.title,
+  const loadDailyGift = useCallback(async () => {
+    try {
+      console.log('[DailyGift] Loading daily gift from /api/weekly-theme/current...');
+      setIsLoadingGift(true);
+      
+      const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
+      
+      console.log('[DailyGift] Daily gift loaded successfully:', {
+        themeTitle: response.weeklyTheme.themeTitle,
+        liturgicalSeason: response.weeklyTheme.liturgicalSeason,
+        themeDescription: response.weeklyTheme.themeDescription,
+        weekStartDate: response.weeklyTheme.weekStartDate,
+        hasSomaticExercise: !!response.weeklyTheme.somaticExercise,
+        somaticExerciseTitle: response.weeklyTheme.somaticExercise?.title,
+        featuredExerciseId: response.weeklyTheme.featuredExerciseId,
+        hasDailyContent: !!response.dailyContent,
+        dayOfWeek: response.dailyContent?.dayOfWeek,
+        dayTitle: response.dailyContent?.dayTitle,
+        scriptureReference: response.dailyContent?.scriptureReference,
+        scriptureText: response.dailyContent?.scriptureText?.substring(0, 50) + '...',
+      });
+      
+      if (!response.weeklyTheme.somaticExercise) {
+        console.warn('[DailyGift] ⚠️ WARNING: No somatic exercise returned from backend!', {
           featuredExerciseId: response.weeklyTheme.featuredExerciseId,
-          hasDailyContent: !!response.dailyContent,
-          dayOfWeek: response.dailyContent?.dayOfWeek,
+          themeId: response.weeklyTheme.id,
         });
-        
-        if (!response.weeklyTheme.somaticExercise) {
-          console.warn('[DailyGift] ⚠️ WARNING: No somatic exercise returned from backend!', {
-            featuredExerciseId: response.weeklyTheme.featuredExerciseId,
-            themeId: response.weeklyTheme.id,
-          });
-        }
-        
-        setDailyGiftResponse(response);
-        setIsLoadingGift(false);
-
-        if (response.dailyContent) {
-          await checkReflectionStatus(response.dailyContent.id);
-        }
-
-        if (response.weeklyTheme.somaticExercise) {
-          await checkWeeklyPracticeStatus();
-        }
-      } catch (error) {
-        console.error('[DailyGift] Failed to load daily gift:', error);
-        console.error('[DailyGift] Error details:', error);
-        setIsLoadingGift(false);
       }
-    };
+      
+      setDailyGiftResponse(response);
+      setIsLoadingGift(false);
 
-    loadDailyGift();
+      if (response.dailyContent) {
+        await checkReflectionStatus(response.dailyContent.id);
+      }
+
+      if (response.weeklyTheme.somaticExercise) {
+        await checkWeeklyPracticeStatus();
+      }
+    } catch (error) {
+      console.error('[DailyGift] Failed to load daily gift:', error);
+      console.error('[DailyGift] Error details:', error);
+      setIsLoadingGift(false);
+    }
   }, []);
+
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[DailyGift] Screen focused - reloading daily gift data');
+      loadDailyGift();
+    }, [loadDailyGift])
+  );
 
   const checkReflectionStatus = async (dailyContentId: string) => {
     try {
@@ -378,11 +388,7 @@ export default function DailyGiftScreen() {
             style={styles.retryButton}
             onPress={() => {
               console.log('[DailyGift] User tapped retry button');
-              setIsLoadingGift(true);
-              router.back();
-              setTimeout(() => {
-                router.push('/daily-gift');
-              }, 100);
+              loadDailyGift();
             }}
             activeOpacity={0.8}
           >
