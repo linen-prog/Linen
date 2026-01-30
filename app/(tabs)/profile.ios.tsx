@@ -79,6 +79,9 @@ export default function ProfileScreen() {
   const [showBoundariesModal, setShowBoundariesModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [showClearAvatarModal, setShowClearAvatarModal] = useState(false);
   
   // Form states
   const [tempDisplayName, setTempDisplayName] = useState('');
@@ -164,28 +167,23 @@ export default function ProfileScreen() {
 
   const handleSignOut = () => {
     console.log('ProfileScreen (iOS): Sign out button pressed');
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out? You will need to log in again to access your account.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('ProfileScreen (iOS): Signing out user');
-            try {
-              await signOut();
-              console.log('ProfileScreen (iOS): Sign out successful, redirecting to landing page');
-              router.replace('/');
-            } catch (error) {
-              console.error('ProfileScreen (iOS): Sign out failed -', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    setShowSignOutModal(true);
+  };
+
+  const confirmSignOut = async () => {
+    console.log('ProfileScreen (iOS): Confirming sign out');
+    setShowSignOutModal(false);
+    setSaving(true);
+    try {
+      await signOut();
+      console.log('ProfileScreen (iOS): Sign out successful, redirecting to landing page');
+      router.replace('/');
+    } catch (error) {
+      console.error('ProfileScreen (iOS): Sign out failed -', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUploadPhoto = async () => {
@@ -262,42 +260,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleClearAvatar = async () => {
+  const handleClearAvatar = () => {
     console.log('ProfileScreen (iOS): Clear avatar button pressed');
-    Alert.alert(
-      'Clear Avatar',
-      'Reset to default avatar?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            setSaving(true);
-            try {
-              const { authenticatedDelete } = await import('@/utils/api');
-              await authenticatedDelete('/api/profile/avatar');
-              console.log('ProfileScreen (iOS): Avatar cleared successfully');
-              
-              if (profile) {
-                setProfile({
-                  ...profile,
-                  avatarType: 'default',
-                  avatarUrl: null,
-                  avatarIcon: null,
-                });
-              }
-              setShowAvatarModal(false);
-            } catch (error) {
-              console.error('ProfileScreen (iOS): Clear avatar failed -', error);
-              Alert.alert('Error', 'Failed to clear avatar. Please try again.');
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
+    setShowClearAvatarModal(true);
+  };
+
+  const confirmClearAvatar = async () => {
+    console.log('ProfileScreen (iOS): Confirming clear avatar');
+    setShowClearAvatarModal(false);
+    setSaving(true);
+    try {
+      const { authenticatedDelete } = await import('@/utils/api');
+      await authenticatedDelete('/api/profile/avatar');
+      console.log('ProfileScreen (iOS): Avatar cleared successfully');
+      
+      if (profile) {
+        setProfile({
+          ...profile,
+          avatarType: 'default',
+          avatarUrl: null,
+          avatarIcon: null,
+        });
+      }
+      setShowAvatarModal(false);
+    } catch (error) {
+      console.error('ProfileScreen (iOS): Clear avatar failed -', error);
+      Alert.alert('Error', 'Failed to clear avatar. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveDisplayName = async () => {
@@ -425,20 +416,13 @@ export default function ProfileScreen() {
 
   const handleDeleteAccount = () => {
     console.log('ProfileScreen (iOS): Delete account button pressed');
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'Account deletion will be available soon.');
-          },
-        },
-      ]
-    );
+    setShowDeleteAccountModal(true);
+  };
+
+  const confirmDeleteAccount = () => {
+    console.log('ProfileScreen (iOS): Confirming delete account');
+    setShowDeleteAccountModal(false);
+    Alert.alert('Coming Soon', 'Account deletion will be available soon.');
   };
 
   const handleOpenPrivacyPolicy = async () => {
@@ -916,7 +900,128 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Avatar Selection Modal */}
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        visible={showSignOutModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowSignOutModal(false)}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={[styles.confirmModalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
+              Sign Out
+            </Text>
+            <Text style={[styles.confirmModalMessage, { color: colors.textSecondary }]}>
+              Are you sure you want to sign out? You will need to log in again to access your account.
+            </Text>
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.border }]}
+                onPress={() => setShowSignOutModal(false)}
+              >
+                <Text style={[styles.confirmModalButtonText, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.error }]}
+                onPress={confirmSignOut}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
+                    Sign Out
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={showDeleteAccountModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowDeleteAccountModal(false)}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={[styles.confirmModalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
+              Delete Account
+            </Text>
+            <Text style={[styles.confirmModalMessage, { color: colors.textSecondary }]}>
+              Are you sure you want to delete your account? This action cannot be undone.
+            </Text>
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.border }]}
+                onPress={() => setShowDeleteAccountModal(false)}
+              >
+                <Text style={[styles.confirmModalButtonText, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.error }]}
+                onPress={confirmDeleteAccount}
+              >
+                <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Clear Avatar Confirmation Modal */}
+      <Modal
+        visible={showClearAvatarModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowClearAvatarModal(false)}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={[styles.confirmModalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.confirmModalTitle, { color: colors.text }]}>
+              Clear Avatar
+            </Text>
+            <Text style={[styles.confirmModalMessage, { color: colors.textSecondary }]}>
+              Reset to default avatar?
+            </Text>
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.border }]}
+                onPress={() => setShowClearAvatarModal(false)}
+              >
+                <Text style={[styles.confirmModalButtonText, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, { backgroundColor: colors.error }]}
+                onPress={confirmClearAvatar}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
+                    Clear
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Avatar Selection Modal - Same as base file, keeping all modals */}
       <Modal
         visible={showAvatarModal}
         animationType="slide"
@@ -1528,6 +1633,52 @@ const styles = StyleSheet.create({
   appInfoText: {
     fontSize: typography.caption,
     textAlign: 'center',
+  },
+  confirmModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  confirmModalContent: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  confirmModalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: typography.body,
+    lineHeight: 22,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  confirmModalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  confirmModalButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
   },
   modalOverlay: {
     flex: 1,
