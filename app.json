@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Linen",
@@ -60,6 +61,5 @@
       "meditation",
       "christian"
     ]
-  },
-  "scheme": "Linen"
+  }
 }
