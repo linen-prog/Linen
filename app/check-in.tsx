@@ -59,7 +59,7 @@ export default function CheckInScreen() {
         const { authenticatedPost } = await import('@/utils/api');
         const response = await authenticatedPost<{ 
           conversationId: string; 
-          messages: Array<{ id: string; role: string; content: string; createdAt: string }>;
+          messages: { id: string; role: string; content: string; createdAt: string }[];
           isNewConversation: boolean;
         }>('/api/check-in/start', {});
         console.log('[CheckIn] Conversation started successfully:', response);
@@ -937,95 +937,127 @@ export default function CheckInScreen() {
         </View>
       </Modal>
 
-      {/* Care Request Modal */}
+      {/* Care Request Modal - FIXED FOR KEYBOARD */}
       <Modal
         visible={showCareModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowCareModal(false)}
+        onRequestClose={() => {
+          setShowCareModal(false);
+          setCareRequestText('');
+          setCareAnonymous(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Request Care
-              </Text>
-            </View>
-
-            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-              Share what you need care for. The community can send you encouragement and prayers.
-            </Text>
-
-            <TextInput
-              style={[styles.careInput, { 
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-                color: textColor 
-              }]}
-              placeholder="What do you need care for?"
-              placeholderTextColor={textSecondaryColor}
-              value={careRequestText}
-              onChangeText={setCareRequestText}
-              multiline
-              maxLength={500}
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
-
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={0}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlayInner}
+            activeOpacity={1}
+            onPress={() => {
+              setShowCareModal(false);
+              setCareRequestText('');
+              setCareAnonymous(false);
+            }}
+          >
             <TouchableOpacity 
-              style={styles.anonymousToggle}
-              onPress={() => setCareAnonymous(!careAnonymous)}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              style={styles.careModalWrapper}
             >
-              <IconSymbol 
-                ios_icon_name={careAnonymous ? 'checkmark.square.fill' : 'square'}
-                android_material_icon_name={careAnonymous ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                Share anonymously
-              </Text>
+              <View style={[styles.careModalContainer, { backgroundColor: cardBg }]}>
+                <ScrollView 
+                  style={styles.careModalScrollView}
+                  contentContainerStyle={styles.careModalContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                >
+                  <View style={styles.modalHeader}>
+                    <IconSymbol 
+                      ios_icon_name="heart.fill"
+                      android_material_icon_name="favorite"
+                      size={32}
+                      color={colors.primary}
+                    />
+                    <Text style={[styles.modalTitle, { color: textColor }]}>
+                      Request Care
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+                    Share what you need care for. The community can send you encouragement and prayers.
+                  </Text>
+
+                  <TextInput
+                    style={[styles.careInput, { 
+                      backgroundColor: inputBg,
+                      borderColor: inputBorder,
+                      color: textColor 
+                    }]}
+                    placeholder="What do you need care for?"
+                    placeholderTextColor={textSecondaryColor}
+                    value={careRequestText}
+                    onChangeText={setCareRequestText}
+                    multiline
+                    maxLength={500}
+                    numberOfLines={6}
+                    textAlignVertical="top"
+                  />
+
+                  <TouchableOpacity 
+                    style={styles.anonymousToggle}
+                    onPress={() => setCareAnonymous(!careAnonymous)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name={careAnonymous ? 'checkmark.square.fill' : 'square'}
+                      android_material_icon_name={careAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                      size={24}
+                      color={colors.primary}
+                    />
+                    <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                      Share anonymously
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.shareActions}>
+                    <TouchableOpacity 
+                      style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                      onPress={handleSubmitCareRequest}
+                      disabled={isSubmittingCare}
+                    >
+                      {isSubmittingCare ? (
+                        <Text style={styles.primaryButtonText}>
+                          Sharing...
+                        </Text>
+                      ) : (
+                        <Text style={styles.primaryButtonText}>
+                          Share
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        setShowCareModal(false);
+                        setCareRequestText('');
+                        setCareAnonymous(false);
+                      }}
+                      disabled={isSubmittingCare}
+                    >
+                      <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </View>
             </TouchableOpacity>
-
-            <View style={styles.shareActions}>
-              <TouchableOpacity 
-                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={handleSubmitCareRequest}
-                disabled={isSubmittingCare}
-              >
-                {isSubmittingCare ? (
-                  <Text style={styles.primaryButtonText}>
-                    Sharing...
-                  </Text>
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    Share Care Request
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => {
-                  setShowCareModal(false);
-                  setCareRequestText('');
-                  setCareAnonymous(false);
-                }}
-                disabled={isSubmittingCare}
-              >
-                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Share AI Message Modal - Wisdom Only */}
@@ -1280,6 +1312,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
+  },
+  modalOverlayInner: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    width: '100%',
+  },
+  careModalWrapper: {
+    width: '100%',
+    maxHeight: '90%',
+  },
+  careModalContainer: {
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    maxHeight: '100%',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  careModalScrollView: {
+    maxHeight: '100%',
+  },
+  careModalContent: {
+    padding: spacing.xl,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xxl : spacing.xl,
   },
   modalContent: {
     borderRadius: borderRadius.xl,
