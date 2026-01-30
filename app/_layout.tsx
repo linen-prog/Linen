@@ -10,12 +10,14 @@ import { Alert } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DefaultTheme,
+  DarkTheme,
   Theme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { BACKEND_URL } from "@/utils/api";
 import { colors } from "@/styles/commonStyles";
 // Note: Error logging is auto-initialized via index.ts import
@@ -27,8 +29,9 @@ export const unstable_settings = {
   initialRouteName: "index", // Start at landing page
 };
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const networkState = useNetworkState();
+  const { isDark } = useTheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -41,7 +44,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     console.log('🔗 Backend URL:', BACKEND_URL);
-  }, []);
+    console.log('🎨 Theme mode:', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   React.useEffect(() => {
     if (
@@ -59,7 +63,7 @@ export default function RootLayout() {
     return null;
   }
 
-  // Always use light theme with cream colors
+  // Custom light theme
   const CustomLightTheme: Theme = {
     ...DefaultTheme,
     dark: false,
@@ -73,10 +77,27 @@ export default function RootLayout() {
     },
   };
 
+  // Custom dark theme
+  const CustomDarkTheme: Theme = {
+    ...DarkTheme,
+    dark: true,
+    colors: {
+      primary: colors.primary,
+      background: colors.backgroundDark,
+      card: colors.cardDark,
+      text: colors.textDark,
+      border: colors.borderDark,
+      notification: colors.error,
+    },
+  };
+
+  const currentTheme = isDark ? CustomDarkTheme : CustomLightTheme;
+  const statusBarStyle = isDark ? "light" : "dark";
+
   return (
     <>
-      <StatusBar style="dark" animated />
-        <ThemeProvider value={CustomLightTheme}>
+      <StatusBar style={statusBarStyle} animated />
+        <NavigationThemeProvider value={currentTheme}>
           <AuthProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
@@ -103,11 +124,19 @@ export default function RootLayout() {
                   {/* Main app with tabs */}
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 </Stack>
-                <SystemBars style={"dark"} />
+                <SystemBars style={statusBarStyle} />
               </GestureHandlerRootView>
             </WidgetProvider>
           </AuthProvider>
-        </ThemeProvider>
+        </NavigationThemeProvider>
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
   );
 }

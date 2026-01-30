@@ -6,6 +6,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 
 // Helper to resolve image sources
@@ -67,6 +68,7 @@ const PRESENCE_MODES = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { themeMode, isDark, setThemeMode } = useTheme();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -82,6 +84,7 @@ export default function ProfileScreen() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showClearAvatarModal, setShowClearAvatarModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   
   // Form states
   const [tempDisplayName, setTempDisplayName] = useState('');
@@ -492,7 +495,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -507,7 +510,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor: colors.background }]} 
+      style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} 
       edges={['top']}
     >
       <ScrollView
@@ -519,10 +522,10 @@ export default function ProfileScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          <Text style={[styles.headerTitle, { color: isDark ? colors.textDark : colors.text }]}>
             Profile
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.headerSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
             Everything here is optional. Nothing is required to belong.
           </Text>
           <Text style={[styles.headerSubtext, { color: colors.textLight }]}>
@@ -531,7 +534,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Profile Card with Avatar */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
           <TouchableOpacity 
             style={styles.profileHeader}
             onPress={() => {
@@ -543,10 +546,10 @@ export default function ProfileScreen() {
               {getAvatarDisplay()}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.text }]}>
+              <Text style={[styles.profileName, { color: isDark ? colors.textDark : colors.text }]}>
                 {displayName}
               </Text>
-              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
+              <Text style={[styles.profileEmail, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
                 {userEmail}
               </Text>
               <TouchableOpacity onPress={() => {
@@ -563,11 +566,11 @@ export default function ProfileScreen() {
 
         {/* Journey Stats */}
         {stats && (
-          <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+          <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+            <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
               Your Journey
             </Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
               A gentle record of your time here
             </Text>
             <View style={styles.statsGrid}>
@@ -714,14 +717,53 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Appearance */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+            Appearance
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => setShowThemeModal(true)}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="moon.stars" 
+                  android_material_icon_name="dark-mode" 
+                  size={20} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.menuItemTextContainer}>
+                <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                  Theme
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                  {themeMode === 'auto' ? 'Auto (System)' : themeMode === 'dark' ? 'Dark' : 'Light'}
+                </Text>
+              </View>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textLight} 
+            />
+          </TouchableOpacity>
+        </View>
+
         {/* Community */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
             Community
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={handleViewSharedReflections}
@@ -736,10 +778,10 @@ export default function ProfileScreen() {
                 />
               </View>
               <View style={styles.menuItemTextContainer}>
-                <Text style={[styles.menuItemText, { color: colors.text }]}>
+                <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
                   My Shared Reflections
                 </Text>
-                <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
+                <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
                   {stats?.totalSharedPosts || 0} posts shared
                 </Text>
               </View>
@@ -752,7 +794,7 @@ export default function ProfileScreen() {
             />
           </TouchableOpacity>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
 
           <TouchableOpacity 
             style={styles.menuItem}
@@ -773,7 +815,7 @@ export default function ProfileScreen() {
                   color={colors.primary} 
                 />
               </View>
-              <Text style={[styles.menuItemText, { color: colors.text }]}>
+              <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
                 Notifications
               </Text>
             </View>
@@ -1345,9 +1387,9 @@ export default function ProfileScreen() {
         onRequestClose={() => setShowNotificationsModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
+              <Text style={[styles.modalTitle, { color: isDark ? colors.textDark : colors.text }]}>
                 Notifications
               </Text>
               <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
@@ -1355,47 +1397,47 @@ export default function ProfileScreen() {
                   ios_icon_name="xmark" 
                   android_material_icon_name="close" 
                   size={24} 
-                  color={colors.text} 
+                  color={isDark ? colors.textDark : colors.text} 
                 />
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+            <Text style={[styles.modalDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
               Choose what serves you. You can change these anytime.
             </Text>
 
             <View style={styles.toggleItem}>
               <View style={styles.toggleItemLeft}>
-                <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
                   Community Notifications
                 </Text>
-                <Text style={[styles.toggleItemDescription, { color: colors.textSecondary }]}>
+                <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
                   Prayers and replies to your posts
                 </Text>
               </View>
               <Switch
                 value={tempNotifications.notificationsEnabled}
                 onValueChange={(value) => setTempNotifications({ ...tempNotifications, notificationsEnabled: value })}
-                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
                 thumbColor={tempNotifications.notificationsEnabled ? colors.primary : colors.textLight}
               />
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
 
             <View style={styles.toggleItem}>
               <View style={styles.toggleItemLeft}>
-                <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
+                <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
                   Gentle Reminders
                 </Text>
-                <Text style={[styles.toggleItemDescription, { color: colors.textSecondary }]}>
+                <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
                   Daily gift and check-in reminders
                 </Text>
               </View>
               <Switch
                 value={tempNotifications.reminderNotifications}
                 onValueChange={(value) => setTempNotifications({ ...tempNotifications, reminderNotifications: value })}
-                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
                 thumbColor={tempNotifications.reminderNotifications ? colors.primary : colors.textLight}
               />
             </View>
@@ -1409,6 +1451,146 @@ export default function ProfileScreen() {
                 Save
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Theme Modal */}
+      <Modal
+        visible={showThemeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowThemeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: isDark ? colors.textDark : colors.text }]}>
+                Theme
+              </Text>
+              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={isDark ? colors.textDark : colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+              Choose how Linen appears to you
+            </Text>
+
+            <ScrollView style={styles.modalScroll}>
+              <TouchableOpacity
+                style={styles.themeOption}
+                onPress={() => {
+                  console.log('ProfileScreen: Theme set to auto');
+                  setThemeMode('auto');
+                  setShowThemeModal(false);
+                }}
+              >
+                <View style={styles.themeOptionLeft}>
+                  <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                    <IconSymbol 
+                      ios_icon_name="circle.lefthalf.filled" 
+                      android_material_icon_name="brightness-auto" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  </View>
+                  <View style={styles.themeOptionText}>
+                    <Text style={[styles.themeOptionLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                      Auto (System)
+                    </Text>
+                    <Text style={[styles.themeOptionDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                      Follow your device settings
+                    </Text>
+                  </View>
+                </View>
+                {themeMode === 'auto' && (
+                  <IconSymbol 
+                    ios_icon_name="checkmark" 
+                    android_material_icon_name="check" 
+                    size={20} 
+                    color={colors.primary} 
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.themeOption}
+                onPress={() => {
+                  console.log('ProfileScreen: Theme set to light');
+                  setThemeMode('light');
+                  setShowThemeModal(false);
+                }}
+              >
+                <View style={styles.themeOptionLeft}>
+                  <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                    <IconSymbol 
+                      ios_icon_name="sun.max" 
+                      android_material_icon_name="light-mode" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  </View>
+                  <View style={styles.themeOptionText}>
+                    <Text style={[styles.themeOptionLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                      Light
+                    </Text>
+                    <Text style={[styles.themeOptionDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                      Warm, gentle tones
+                    </Text>
+                  </View>
+                </View>
+                {themeMode === 'light' && (
+                  <IconSymbol 
+                    ios_icon_name="checkmark" 
+                    android_material_icon_name="check" 
+                    size={20} 
+                    color={colors.primary} 
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.themeOption}
+                onPress={() => {
+                  console.log('ProfileScreen: Theme set to dark');
+                  setThemeMode('dark');
+                  setShowThemeModal(false);
+                }}
+              >
+                <View style={styles.themeOptionLeft}>
+                  <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                    <IconSymbol 
+                      ios_icon_name="moon.stars" 
+                      android_material_icon_name="dark-mode" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  </View>
+                  <View style={styles.themeOptionText}>
+                    <Text style={[styles.themeOptionLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                      Dark
+                    </Text>
+                    <Text style={[styles.themeOptionDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                      Restful, calming darkness
+                    </Text>
+                  </View>
+                </View>
+                {themeMode === 'dark' && (
+                  <IconSymbol 
+                    ios_icon_name="checkmark" 
+                    android_material_icon_name="check" 
+                    size={20} 
+                    color={colors.primary} 
+                  />
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1809,6 +1991,32 @@ const styles = StyleSheet.create({
     fontWeight: typography.medium,
   },
   toggleItemDescription: {
+    fontSize: typography.bodySmall,
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    marginBottom: spacing.sm,
+  },
+  themeOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  themeOptionText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  themeOptionLabel: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  themeOptionDescription: {
     fontSize: typography.bodySmall,
   },
 });
