@@ -75,7 +75,7 @@ interface GlitterParticle {
 }
 
 export default function DailyGiftScreen() {
-  console.log('User viewing Daily Gift screen');
+  console.log('[DailyGift] Component rendered');
   const router = useRouter();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
@@ -114,28 +114,38 @@ export default function DailyGiftScreen() {
 
   const loadDailyGift = useCallback(async () => {
     try {
-      console.log('[DailyGift] Loading daily gift from /api/weekly-theme/current...');
+      const timestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${timestamp} - Loading daily gift from /api/weekly-theme/current...`);
       setIsLoadingGift(true);
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
       
-      console.log('[DailyGift] Daily gift loaded successfully:', {
+      console.log(`[DailyGift] ${timestamp} - Daily gift loaded successfully:`, {
+        timestamp,
         themeTitle: response.weeklyTheme.themeTitle,
         liturgicalSeason: response.weeklyTheme.liturgicalSeason,
-        themeDescription: response.weeklyTheme.themeDescription,
         weekStartDate: response.weeklyTheme.weekStartDate,
         hasSomaticExercise: !!response.weeklyTheme.somaticExercise,
         somaticExerciseTitle: response.weeklyTheme.somaticExercise?.title,
-        featuredExerciseId: response.weeklyTheme.featuredExerciseId,
         hasDailyContent: !!response.dailyContent,
         dayOfWeek: response.dailyContent?.dayOfWeek,
         dayTitle: response.dailyContent?.dayTitle,
         scriptureReference: response.dailyContent?.scriptureReference,
-        scriptureText: response.dailyContent?.scriptureText?.substring(0, 50) + '...',
+        scriptureTextPreview: response.dailyContent?.scriptureText?.substring(0, 100) + '...',
+        reflectionPromptPreview: response.dailyContent?.reflectionQuestion?.substring(0, 100) + '...',
       });
       
+      // Detailed logging for debugging
+      if (response.dailyContent) {
+        console.log(`[DailyGift] ${timestamp} - FULL SCRIPTURE DATA:`, {
+          reference: response.dailyContent.scriptureReference,
+          fullText: response.dailyContent.scriptureText,
+          fullPrompt: response.dailyContent.reflectionQuestion,
+        });
+      }
+      
       if (!response.weeklyTheme.somaticExercise) {
-        console.warn('[DailyGift] ⚠️ WARNING: No somatic exercise returned from backend!', {
+        console.warn(`[DailyGift] ${timestamp} - ⚠️ WARNING: No somatic exercise returned from backend!`, {
           featuredExerciseId: response.weeklyTheme.featuredExerciseId,
           themeId: response.weeklyTheme.id,
         });
@@ -152,8 +162,9 @@ export default function DailyGiftScreen() {
         await checkWeeklyPracticeStatus();
       }
     } catch (error) {
-      console.error('[DailyGift] Failed to load daily gift:', error);
-      console.error('[DailyGift] Error details:', error);
+      const timestamp = new Date().toISOString();
+      console.error(`[DailyGift] ${timestamp} - Failed to load daily gift:`, error);
+      console.error(`[DailyGift] ${timestamp} - Error details:`, error);
       setIsLoadingGift(false);
     }
   }, []);
@@ -161,21 +172,23 @@ export default function DailyGiftScreen() {
   // Reload data whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      console.log('[DailyGift] Screen focused - reloading daily gift data');
+      const timestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${timestamp} - Screen focused - reloading daily gift data`);
       loadDailyGift();
     }, [loadDailyGift])
   );
 
   const checkReflectionStatus = async (dailyContentId: string) => {
     try {
-      console.log('[DailyGift] Checking if user has reflected today for dailyContentId:', dailyContentId);
+      const timestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${timestamp} - Checking if user has reflected today for dailyContentId:`, dailyContentId);
       const response = await authenticatedGet<any[]>('/api/daily-gift/my-reflections');
       
       const todayReflection = response.find(
         (r: any) => r.dailyGiftId === dailyContentId
       );
       
-      console.log('[DailyGift] Reflection status:', { 
+      console.log(`[DailyGift] ${timestamp} - Reflection status:`, { 
         hasReflected: !!todayReflection, 
         totalReflections: response.length,
         lookingFor: dailyContentId 
@@ -189,10 +202,11 @@ export default function DailyGiftScreen() {
 
   const checkWeeklyPracticeStatus = async () => {
     try {
-      console.log('[DailyGift] Checking weekly practice completion status...');
+      const timestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${timestamp} - Checking weekly practice completion status...`);
       const response = await authenticatedGet<WeeklyPracticeStatus>('/api/weekly-practice/check-completion');
       
-      console.log('[DailyGift] Weekly practice status:', response);
+      console.log(`[DailyGift] ${timestamp} - Weekly practice status:`, response);
       setHasCompletedPractice(response.hasCompleted);
     } catch (error) {
       console.error('[DailyGift] Failed to check weekly practice status:', error);
@@ -387,7 +401,8 @@ export default function DailyGiftScreen() {
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => {
-              console.log('[DailyGift] User tapped retry button');
+              const timestamp = new Date().toISOString();
+              console.log(`[DailyGift] ${timestamp} - User tapped retry button`);
               loadDailyGift();
             }}
             activeOpacity={0.8}
@@ -443,6 +458,14 @@ export default function DailyGiftScreen() {
 
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
+
+  // Log what we're about to display
+  console.log('[DailyGift] Displaying content:', {
+    dayTitle: dayTitleDisplay,
+    scriptureRef: referenceDisplay,
+    scripturePreview: scriptureDisplay.substring(0, 50) + '...',
+    somaticExercise: exerciseTitleDisplay,
+  });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
