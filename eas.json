@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -19,7 +20,11 @@
     },
     "production": {
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "bundleIdentifier": "com.linen.app"
+      },
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
