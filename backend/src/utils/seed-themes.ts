@@ -406,18 +406,56 @@ const DAILY_SCRIPTURES: Record<string, Array<{ ref: string; text: string; prompt
 };
 
 /**
- * Get daily content for a specific day of week and season
+ * Get daily content for a specific day of week and season/week
+ * Uses predefined scripture data for weeks 1-13, generates content for weeks 14-52
  */
-function getDailyContent(seasonWeek: string, dayOfWeek: number) {
-  const key = Object.keys(DAILY_SCRIPTURES).find((k) => k.startsWith(seasonWeek.split('-')[0]));
-  if (!key || !DAILY_SCRIPTURES[key]?.[dayOfWeek]) {
-    return {
-      ref: 'Psalm 46:10',
-      text: 'Be still, and know that I am God.',
-      prompt: 'In stillness, what do you notice? What is God saying to you?',
-    };
+function getDailyContent(seasonWeek: string, dayOfWeek: number, weekIndex: number, themeData: any) {
+  // Try to find predefined scripture data for this season-week combination
+  const key = Object.keys(DAILY_SCRIPTURES).find((k) => k === seasonWeek);
+
+  if (key && DAILY_SCRIPTURES[key]?.[dayOfWeek]) {
+    return DAILY_SCRIPTURES[key][dayOfWeek];
   }
-  return DAILY_SCRIPTURES[key][dayOfWeek];
+
+  // For weeks with predefined data, also try the season name alone (fallback)
+  const seasonName = seasonWeek.split('-')[0];
+  const seasonKey = Object.keys(DAILY_SCRIPTURES).find((k) => k.startsWith(seasonName + '-'));
+
+  if (seasonKey && DAILY_SCRIPTURES[seasonKey]?.[dayOfWeek]) {
+    return DAILY_SCRIPTURES[seasonKey][dayOfWeek];
+  }
+
+  // For weeks 14-52 without predefined data, generate thematic content
+  // based on the theme title and description
+  const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = dayTitles[dayOfWeek];
+
+  // Generate a scripture reference and prompt based on the theme
+  const scriptureReferences = [
+    'Psalm 139:1-14',     // Day 0: Knowing and being known
+    'Proverbs 27:12',     // Day 1: Wisdom and discernment
+    'Psalm 34:1-8',       // Day 2: Worship and trust
+    'John 15:1-8',        // Day 3: Abiding and fruitfulness
+    'Romans 12:1-2',      // Day 4: Transformation
+    'Philippians 4:8-9',  // Day 5: Rejoicing and peace
+    'Colossians 3:15-17', // Day 6: Peace and gratitude
+  ];
+
+  const scripturePrompts = [
+    `As you begin the week, reflect on: ${themeData.themeTitle}. What does this theme stir in you?`,
+    `What is one way you can embody this week's theme: "${themeData.themeTitle}"?`,
+    `In the middle of your week, pause with: ${themeData.themeTitle}. What are you noticing?`,
+    `How is God speaking to you about: ${themeData.themeTitle}?`,
+    `What practice or insight from this week's theme feels most alive in you?`,
+    `As the week concludes, what will you carry forward from: ${themeData.themeTitle}?`,
+    `Reflect on the week's theme: ${themeData.themeTitle}. What is God inviting you into next week?`,
+  ];
+
+  return {
+    ref: scriptureReferences[dayOfWeek],
+    text: themeData.themeDescription,
+    prompt: scripturePrompts[dayOfWeek],
+  };
 }
 
 /**
@@ -987,11 +1025,12 @@ export async function autoSeedThemesIfEmpty(app: App): Promise<void> {
     // Create daily content for each theme
     for (let i = 0; i < createdThemes.length; i++) {
       const themeId = createdThemes[i].id;
-      const seasonWeek = `${createdThemes[i].liturgicalSeason}-${i + 1}`;
+      const themeData = LITURGICAL_THEMES[(startingThemeIndex + i) % LITURGICAL_THEMES.length];
+      const seasonWeek = `${createdThemes[i].liturgicalSeason}-${((i % 52) % 13) + 1}`;
 
       const dailyContent = [];
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-        const content = getDailyContent(seasonWeek, dayOfWeek);
+        const content = getDailyContent(seasonWeek, dayOfWeek, i, themeData);
 
         // Day titles for each day of week
         const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
