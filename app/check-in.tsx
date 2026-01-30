@@ -215,40 +215,47 @@ export default function CheckInScreen() {
         conversationId,
       });
       
-      console.log('[CheckIn] Prayer generated:', response);
+      console.log('[CheckIn] ✅ Prayer generated successfully:', { prayerId: response.prayerId, prayerLength: response.prayer.length });
       setGeneratedPrayer(response.prayer);
       setGeneratedPrayerId(response.prayerId);
+      console.log('[CheckIn] 🔵 Prayer ID set in state:', response.prayerId);
       setShowPrayerModal(true);
       setIsGeneratingPrayer(false);
     } catch (error) {
-      console.error('[CheckIn] Failed to generate prayer:', error);
+      console.error('[CheckIn] ❌ Failed to generate prayer:', error);
       setIsGeneratingPrayer(false);
       Alert.alert('Error', 'Failed to generate prayer. Please try again.');
     }
   };
 
   const handleShareToCommunity = async () => {
-    console.log('[CheckIn] 🔵 User sharing prayer to community', { 
-      category: shareCategory, 
-      anonymous: shareAnonymous,
-      prayerId: generatedPrayerId 
-    });
+    console.log('[CheckIn] 🔵 handleShareToCommunity called');
+    console.log('[CheckIn] 🔵 Prayer ID:', generatedPrayerId);
+    console.log('[CheckIn] 🔵 Category:', shareCategory);
+    console.log('[CheckIn] 🔵 Anonymous:', shareAnonymous);
+    
+    if (!generatedPrayerId) {
+      console.error('[CheckIn] ❌ No prayer ID available for sharing');
+      Alert.alert('Error', 'No prayer to share. Please generate a prayer first.');
+      return;
+    }
+    
     setIsSharing(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
       console.log('[CheckIn] 🔵 Calling /api/check-in/share-prayer endpoint...');
       
-      const response = await authenticatedPost('/api/check-in/share-prayer', {
+      const requestBody = {
         prayerId: generatedPrayerId,
         category: shareCategory,
         isAnonymous: shareAnonymous,
-      });
+      };
+      console.log('[CheckIn] 🔵 Request body:', requestBody);
       
-      console.log('[CheckIn] ✅ Prayer shared to community successfully!', {
-        category: shareCategory,
-        response: response
-      });
+      const response = await authenticatedPost('/api/check-in/share-prayer', requestBody);
+      
+      console.log('[CheckIn] ✅ Prayer shared to community successfully!', response);
       
       setShowShareModal(false);
       setShowPrayerModal(false);
@@ -350,6 +357,7 @@ export default function CheckInScreen() {
 
   const handleShareMessage = async () => {
     if (!selectedMessageId) {
+      console.error('[CheckIn] ❌ No message ID selected for sharing');
       return;
     }
 
@@ -777,7 +785,13 @@ export default function CheckInScreen() {
               <TouchableOpacity 
                 style={[styles.primaryButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
-                  console.log('[CheckIn] User opening share modal');
+                  console.log('[CheckIn] 🔵 User clicked "Share with Community" button in prayer modal');
+                  console.log('[CheckIn] 🔵 Current prayer ID:', generatedPrayerId);
+                  if (!generatedPrayerId) {
+                    console.error('[CheckIn] ❌ Prayer ID is empty when trying to share!');
+                    Alert.alert('Error', 'Prayer ID is missing. Please try generating the prayer again.');
+                    return;
+                  }
                   setShowShareModal(true);
                 }}
               >
@@ -846,7 +860,10 @@ export default function CheckInScreen() {
                       { backgroundColor: inputBg, borderColor: inputBorder },
                       isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
-                    onPress={() => setShareCategory(category.id)}
+                    onPress={() => {
+                      console.log('[CheckIn] 🔵 User selected category:', category.id);
+                      setShareCategory(category.id);
+                    }}
                   >
                     <IconSymbol 
                       ios_icon_name={category.icon}
@@ -867,7 +884,10 @@ export default function CheckInScreen() {
 
             <TouchableOpacity 
               style={styles.anonymousToggle}
-              onPress={() => setShareAnonymous(!shareAnonymous)}
+              onPress={() => {
+                console.log('[CheckIn] 🔵 User toggled anonymous:', !shareAnonymous);
+                setShareAnonymous(!shareAnonymous);
+              }}
             >
               <IconSymbol 
                 ios_icon_name={shareAnonymous ? 'checkmark.square.fill' : 'square'}
@@ -883,7 +903,10 @@ export default function CheckInScreen() {
             <View style={styles.shareActions}>
               <TouchableOpacity 
                 style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={handleShareToCommunity}
+                onPress={() => {
+                  console.log('[CheckIn] 🔵 User clicked final "Share" button');
+                  handleShareToCommunity();
+                }}
                 disabled={isSharing}
               >
                 {isSharing ? (
@@ -899,7 +922,10 @@ export default function CheckInScreen() {
 
               <TouchableOpacity 
                 style={styles.cancelButton}
-                onPress={() => setShowShareModal(false)}
+                onPress={() => {
+                  console.log('[CheckIn] 🔵 User cancelled sharing');
+                  setShowShareModal(false);
+                }}
                 disabled={isSharing}
               >
                 <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
