@@ -178,7 +178,9 @@ export default function CheckInScreen() {
       setIsLoading(false);
       
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({ animated: true });
+        }
       }, 100);
     } catch (error) {
       console.error('[CheckIn] Failed to send message:', error);
@@ -192,11 +194,13 @@ export default function CheckInScreen() {
         createdAt: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      
+      setTimeout(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({ animated: true });
+        }
+      }, 100);
     }
-
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
   };
 
   const handlePrayerIconPress = () => {

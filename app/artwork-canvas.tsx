@@ -99,6 +99,7 @@ export default function ArtworkCanvasScreen() {
   const hasLoadedRef = useRef(false);
   const photoPositionRef = useRef({ x: 0, y: 0 });
   const initialPhotoTouchRef = useRef({ x: 0, y: 0 });
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Use refs to always have the latest values during drawing
   const selectedColorRef = useRef(selectedColor);
@@ -345,93 +346,99 @@ export default function ArtworkCanvasScreen() {
   const handleUploadPhoto = async () => {
     console.log('[Canvas] User requesting to upload photo');
     
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-      allowsMultipleSelection: false,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      console.log('[Canvas] User selected photo:', result.assets[0].uri);
-      setIsUploadingPhoto(true);
-
-      try {
-        // Upload photo to backend
-        const formData = new FormData();
-        
-        // Prepare file data for upload
-        const fileUri = result.assets[0].uri;
-        const fileName = result.assets[0].fileName || `photo-${Date.now()}.jpg`;
-        const fileType = result.assets[0].mimeType || 'image/jpeg';
-        
-        console.log('[Canvas] Preparing to upload photo:', { fileName, fileType, uri: fileUri });
-        
-        // For web, fetch the blob and append it
-        if (Platform.OS === 'web') {
-          const response = await fetch(fileUri);
-          const blob = await response.blob();
-          formData.append('image', blob, fileName);
-        } else {
-          // For native, use the file object format
-          formData.append('image', {
-            uri: fileUri,
-            type: fileType,
-            name: fileName,
-          } as any);
-        }
-
-        // Make authenticated request with multipart form data
-        const { BACKEND_URL } = await import('@/utils/api');
-        const { getBearerToken } = await import('@/lib/auth');
-        const token = await getBearerToken();
-        
-        if (!token) {
-          throw new Error('Authentication required to upload photos');
-        }
-
-        console.log('[Canvas] Uploading photo to backend...');
-        const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error('[Canvas] Upload failed:', uploadResponse.status, errorText);
-          throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
-        }
-
-        const uploadResult = await uploadResponse.json() as { url: string; filename: string; key?: string };
-        console.log('[Canvas] Photo uploaded successfully:', uploadResult);
-        
-        // Use the uploaded URL directly (backend returns signed URL)
-        const imageUrl = uploadResult.url;
-        
-        setBackgroundImage(imageUrl);
-        setPhotoPosition({ x: 0, y: 0 });
-        setPhotoScale(1);
-        photoPositionRef.current = { x: 0, y: 0 };
-        setIsUploadingPhoto(false);
-        
-        console.log('[Canvas] Background image set to:', imageUrl);
-        Alert.alert('Photo Added', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
-      } catch (error) {
-        console.error('[Canvas] Failed to upload photo:', error);
-        setIsUploadingPhoto(false);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        Alert.alert('Upload Failed', `Could not upload photo: ${errorMessage}. Please try again.`);
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+        return;
       }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        console.log('[Canvas] User selected photo:', result.assets[0].uri);
+        setIsUploadingPhoto(true);
+
+        try {
+          // Upload photo to backend
+          const formData = new FormData();
+          
+          // Prepare file data for upload
+          const fileUri = result.assets[0].uri;
+          const fileName = result.assets[0].fileName || `photo-${Date.now()}.jpg`;
+          const fileType = result.assets[0].mimeType || 'image/jpeg';
+          
+          console.log('[Canvas] Preparing to upload photo:', { fileName, fileType, uri: fileUri });
+          
+          // For web, fetch the blob and append it
+          if (Platform.OS === 'web') {
+            const response = await fetch(fileUri);
+            const blob = await response.blob();
+            formData.append('image', blob, fileName);
+          } else {
+            // For native, use the file object format
+            formData.append('image', {
+              uri: fileUri,
+              type: fileType,
+              name: fileName,
+            } as any);
+          }
+
+          // Make authenticated request with multipart form data
+          const { BACKEND_URL } = await import('@/utils/api');
+          const { getBearerToken } = await import('@/lib/auth');
+          const token = await getBearerToken();
+          
+          if (!token) {
+            throw new Error('Authentication required to upload photos');
+          }
+
+          console.log('[Canvas] Uploading photo to backend...');
+          const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            console.error('[Canvas] Upload failed:', uploadResponse.status, errorText);
+            throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
+          }
+
+          const uploadResult = await uploadResponse.json() as { url: string; filename: string; key?: string };
+          console.log('[Canvas] Photo uploaded successfully:', uploadResult);
+          
+          // Use the uploaded URL directly (backend returns signed URL)
+          const imageUrl = uploadResult.url;
+          
+          setBackgroundImage(imageUrl);
+          setPhotoPosition({ x: 0, y: 0 });
+          setPhotoScale(1);
+          photoPositionRef.current = { x: 0, y: 0 };
+          setIsUploadingPhoto(false);
+          
+          console.log('[Canvas] Background image set to:', imageUrl);
+          Alert.alert('Photo Added', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
+        } catch (error) {
+          console.error('[Canvas] Failed to upload photo:', error);
+          setIsUploadingPhoto(false);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          Alert.alert('Upload Failed', `Could not upload photo: ${errorMessage}. Please try again.`);
+        }
+      }
+    } catch (error) {
+      console.error('[Canvas] Failed to access photo library:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Error', `Could not access photo library: ${errorMessage}`);
     }
   };
 

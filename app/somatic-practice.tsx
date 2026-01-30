@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -51,7 +51,7 @@ export default function SomaticPracticeScreen() {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isTimerRunning && timeRemaining > 0) {
       interval = setInterval(() => {
@@ -71,12 +71,12 @@ export default function SomaticPracticeScreen() {
         clearInterval(interval);
       }
     };
-  }, [isTimerRunning, timeRemaining]);
+  }, [isTimerRunning, timeRemaining, handleTimerComplete]);
 
-  const handleTimerComplete = () => {
+  const handleTimerComplete = useCallback(() => {
     console.log('[SomaticPractice] Timer completed');
     setShowCelebration(true);
-  };
+  }, []);
 
   const handleStartPractice = () => {
     console.log('[SomaticPractice] User started practice');

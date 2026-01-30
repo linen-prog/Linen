@@ -120,6 +120,11 @@ export default function DailyGiftScreen() {
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
       
+      // Validate response has required data
+      if (!response || !response.weeklyTheme) {
+        throw new Error('Invalid response from server - missing weekly theme data');
+      }
+      
       console.log(`[DailyGift] ${timestamp} - Daily gift loaded successfully:`, {
         timestamp,
         themeTitle: response.weeklyTheme.themeTitle,

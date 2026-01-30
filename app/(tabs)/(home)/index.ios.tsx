@@ -16,17 +16,18 @@ export default function HomeScreen() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Fetch user info
-        const { authenticatedGet } = await import('@/utils/api');
-        const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
-        console.log('🏠 [Home iOS] User data loaded:', userResponse);
+        // Fetch user info from auth context (consistent with base file)
+        const { getUserData } = await import('@/lib/auth');
+        const userData = await getUserData();
+        console.log('🏠 [Home iOS] User data loaded from storage:', userData);
         
         // Extract first name from the user's name field
-        const userName = userResponse.user?.name || '';
+        const userName = userData?.name || '';
         const extractedFirstName = userName.split(' ')[0] || 'Friend';
         setFirstName(extractedFirstName);
 
         // Fetch streaks
+        const { authenticatedGet } = await import('@/utils/api');
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
         console.log('🏠 [Home iOS] Streaks loaded:', streaksResponse);
         setCheckInStreak(streaksResponse.checkInStreak);
@@ -255,10 +256,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 1,
   },
   streakLabel: {
@@ -289,10 +287,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 180,
     justifyContent: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
     elevation: 4,
   },
   primaryIconContainer: {
@@ -322,10 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 1,
   },
   secondaryIconContainer: {

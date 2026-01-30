@@ -53,10 +53,19 @@ export default function OpenGiftScreen() {
     setIsOpening(true);
 
     // Navigate after animation completes
-    setTimeout(() => {
+    const navigationTimer = setTimeout(() => {
       console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
-      router.replace('/daily-gift');
+      try {
+        router.replace('/daily-gift');
+      } catch (error) {
+        console.error('🎁 [OpenGift] Navigation error:', error);
+        // Fallback: try push instead of replace
+        router.push('/daily-gift');
+      }
     }, 1200);
+
+    // Cleanup timer on unmount
+    return () => clearTimeout(navigationTimer);
   };
 
   const titleText = 'Your Daily Gift';
