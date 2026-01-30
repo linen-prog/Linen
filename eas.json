@@ -26,7 +26,8 @@
     },
     "production": {
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "bundleIdentifier": "com.linen.app"
       },
       "android": {
         "buildType": "aab"
