@@ -391,7 +391,15 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   somaticSection: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     marginBottom: spacing.xl + spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   somaticQuoteContainer: {
     alignItems: 'center',
