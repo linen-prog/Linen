@@ -2,6 +2,27 @@
 # ✅ Linen App - Configuration Verification Report
 
 Generated: January 2025
+**Last Updated:** After fixing iOS build error
+
+---
+
+## ⚠️ CRITICAL FIX APPLIED - READ THIS FIRST
+
+**Issue:** iOS build was failing with error:
+```
+"ios.production.android.buildType" must be one of [apk, app-bundle]
+```
+
+**Root Cause:** The `bundleIdentifier` was incorrectly placed in the `eas.json` iOS production config, causing EAS to detect Android configuration in the iOS build profile.
+
+**Fix Applied:** ✅ Removed `bundleIdentifier` from `eas.json` iOS production config.
+
+**Important:** The `bundleIdentifier` should ONLY be in `app.json`, NOT in `eas.json`.
+
+**Build Command Updated:** Always use `--clear-cache` flag:
+```bash
+npx eas build --platform ios --profile production --clear-cache --non-interactive
+```
 
 ---
 
