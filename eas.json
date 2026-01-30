@@ -9,9 +9,6 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      },
-      "android": {
-        "buildType": "apk"
       }
     },
     "preview": {
@@ -19,24 +16,12 @@
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"
-      },
-      "android": {
-        "buildType": "apk"
       }
     },
     "production": {
       "ios": {
         "buildConfiguration": "Release",
         "bundleIdentifier": "com.linen.app"
-      },
-      "android": {
-        "buildType": "app-bundle"
-      }
-    },
-    "production-apk": {
-      "extends": "production",
-      "android": {
-        "buildType": "apk"
       }
     }
   },
@@ -46,10 +31,6 @@
         "appleId": "linenprayer@gmail.com",
         "ascAppId": "6740269073",
         "appleTeamId": "ZSU6WP9K6J"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./path-to-service-account.json",
-        "track": "internal"
       }
     }
   }
