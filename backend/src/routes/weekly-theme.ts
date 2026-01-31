@@ -517,15 +517,15 @@ export function registerWeeklyThemeRoutes(app: App) {
             'Colossians 3:15-17', // Day 6: Peace and gratitude
           ];
 
-          // Scripture texts that match each reference
+          // Scripture texts that rotate daily
           const scriptureTexts = [
-            'Search me, God, and know my heart; test me and know my anxious thoughts. See if there is any offensive way in me, and lead me in the way everlasting.',
-            'The prudent see danger and take refuge, but the simple keep going and pay the penalty.',
-            'I will extol the Lord at all times; his praise will always be on my lips. Taste and see that the Lord is good; blessed is the one who takes refuge in him.',
-            'I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing.',
-            'Do not conform to the pattern of this world, but be transformed by the renewing of your mind. Then you will be able to test and approve what God\'s will is.',
-            'Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure, whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things.',
-            'Let the peace of Christ rule in your hearts, since as members of one body you were called to peace. And be thankful.',
+            'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures.',
+            'Come to me, all who are weary and burdened, and I will give you rest.',
+            'Be still, and know that I am God.',
+            'The Lord is near to all who call on him, to all who call on him in truth.',
+            'Cast all your anxiety on him because he cares for you.',
+            'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you.',
+            'The steadfast love of the Lord never ceases; his mercies never come to an end.',
           ];
 
           const scripturePrompts = [
