@@ -34,7 +34,8 @@ function getNextSundayPacific(): string {
   return date.toISOString().split('T')[0];
 }
 
-// Calculate which day of the year (0-364) it is in Pacific Time
+// Calculate which scripture to show - rotates hourly for testing purposes
+// TEMPORARY: This rotates hourly instead of daily to allow quick testing of the scripture rotation system
 function getDayOfYear(): number {
   const now = new Date();
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
@@ -42,16 +43,24 @@ function getDayOfYear(): number {
   const year = pacificTime.getFullYear();
   const month = pacificTime.getMonth();
   const day = pacificTime.getDate();
+  const hours = pacificTime.getHours();
+  const minutes = pacificTime.getMinutes();
 
   // Create startOfYear in Pacific Time to ensure correct calculation
   const startOfYearStr = new Date(year, 0, 1).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
   const startOfYear = new Date(startOfYearStr);
 
-  // Calculate days since start of year
+  // Calculate days since start of year (for reference, not used in hourly mode)
   const diff = pacificTime.getTime() - startOfYear.getTime();
-  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const daysIntoYear = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  return dayOfYear; // 0 = Jan 1, 364 = Dec 31
+  // TEMPORARY FOR TESTING: Rotate scripture based on hour and minute
+  // This creates a unique value every hour to cycle through different scriptures
+  // Changes at the start of each hour (minute resets)
+  const minutesSinceHourStart = minutes;
+  const hourlyRotation = (hours * 15 + Math.floor(minutes / 4)) % 365; // 0-364, rotates through scriptures
+
+  return hourlyRotation; // Rotates through 0-364 hourly for testing
 }
 
 // Calculate which week (0-51) of the 52-week liturgical cycle we're in
@@ -854,10 +863,13 @@ export function registerWeeklyThemeRoutes(app: App) {
             pacificYear: pacificTime.getFullYear(),
             pacificMonth: pacificTime.getMonth() + 1,
             pacificDay: pacificTime.getDate(),
+            pacificHour: pacificTime.getHours(),
+            pacificMinute: pacificTime.getMinutes(),
             dayOfWeek: currentDayOfWeek,
             dayOfYear,
+            note: 'TESTING MODE: Scripture rotates hourly - refresh at different times to see different scriptures',
           },
-          'Pacific Time details for daily scripture calculation'
+          'Pacific Time details for hourly scripture rotation (TESTING MODE)'
         );
 
         // Get daily content for today
