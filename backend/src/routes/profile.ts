@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
@@ -161,6 +161,30 @@ export function registerProfileRoutes(app: App) {
         }
 
         const p = profile[0];
+
+        // If displayName was updated, propagate the change to all non-anonymous community posts
+        if (displayName !== undefined && displayName.trim().length > 0) {
+          app.logger.info(
+            { userId: session.user.id, newDisplayName: displayName },
+            'Propagating displayName change to community posts'
+          );
+
+          const updatedPosts = await app.db
+            .update(schema.communityPosts)
+            .set({ authorName: displayName })
+            .where(
+              and(
+                eq(schema.communityPosts.userId, session.user.id),
+                eq(schema.communityPosts.isAnonymous, false)
+              )
+            )
+            .returning();
+
+          app.logger.info(
+            { userId: session.user.id, postsUpdated: updatedPosts.length, newDisplayName: displayName },
+            'displayName change propagated to community posts'
+          );
+        }
 
         app.logger.info(
           { userId: session.user.id, profileId: p.id, updates: Object.keys(updateData) },
