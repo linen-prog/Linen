@@ -32,6 +32,7 @@ interface DailyContent {
   scriptureText: string;
   reflectionQuestion: string;
   somaticPrompt?: string | null;
+  dayOfYear?: number;
 }
 
 interface DailyGiftResponse {
@@ -131,7 +132,9 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${loadTimestamp} - Daily gift loaded successfully:`, {
         timestamp: loadTimestamp,
         currentDate: now.toLocaleDateString(),
-        dayOfYear: dayOfYear,
+        clientDayOfYear: dayOfYear,
+        serverDayOfYear: response.dailyContent?.dayOfYear,
+        dayOfYearMatch: response.dailyContent?.dayOfYear === dayOfYear,
         themeTitle: response.weeklyTheme.themeTitle,
         liturgicalSeason: response.weeklyTheme.liturgicalSeason,
         weekStartDate: response.weeklyTheme.weekStartDate,
@@ -146,13 +149,20 @@ export default function DailyGiftScreen() {
       });
       
       if (response.dailyContent) {
-        console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE FOR DAY ${dayOfYear}:`, {
+        console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE VERIFICATION:`, {
           date: now.toLocaleDateString(),
-          dayOfYear: dayOfYear,
+          clientDayOfYear: dayOfYear,
+          serverDayOfYear: response.dailyContent.dayOfYear,
+          dayOfYearMatch: response.dailyContent.dayOfYear === dayOfYear,
           reference: response.dailyContent.scriptureReference,
           fullText: response.dailyContent.scriptureText,
           fullPrompt: response.dailyContent.reflectionQuestion,
         });
+        
+        // Alert if there's a mismatch between client and server day calculations
+        if (response.dailyContent.dayOfYear !== undefined && response.dailyContent.dayOfYear !== dayOfYear) {
+          console.warn(`[DailyGift] ⚠️ DAY MISMATCH: Client calculated day ${dayOfYear} but server returned day ${response.dailyContent.dayOfYear}`);
+        }
       }
       
       if (!response.weeklyTheme.somaticExercise) {
@@ -475,7 +485,9 @@ export default function DailyGiftScreen() {
 
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
-    dayOfYear: dayOfYear,
+    clientDayOfYear: dayOfYear,
+    serverDayOfYear: dailyContent.dayOfYear,
+    displayedDayOfYear: dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear,
     dayTitle: dayTitleDisplay,
     scriptureRef: referenceDisplay,
     scripturePreview: scriptureDisplay.substring(0, 50) + '...',
@@ -699,7 +711,7 @@ export default function DailyGiftScreen() {
                   color={textSecondaryColor}
                 />
                 <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
-                  Day {dayOfYear} of 365 • Unique daily scripture
+                  Day {dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear} of 365 • Unique daily scripture
                 </Text>
               </View>
             </View>
