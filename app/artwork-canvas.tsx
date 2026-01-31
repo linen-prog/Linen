@@ -1157,26 +1157,23 @@ export default function ArtworkCanvasScreen() {
       console.log('[Canvas] Artwork saved before sharing:', savedArtwork);
 
       // Determine the artwork URL to share
-      // Use the photo URL from the saved artwork (if it has one)
+      // Priority: 1. photoUrls from saved artwork, 2. backgroundImage state
       const artworkUrlToShare = (savedArtwork.photoUrls && savedArtwork.photoUrls.length > 0) 
         ? savedArtwork.photoUrls[0] 
-        : backgroundImage || null;
+        : backgroundImage;
       
-      console.log('[Canvas] Artwork URL to share:', artworkUrlToShare);
+      console.log('[Canvas] 🎨 Sharing artwork with URL:', artworkUrlToShare);
 
-      // Don't include text content - just share the artwork image
-      const shareContent = '';
-
-      // Share to community with the artwork URL
+      // Share to community with ONLY the artwork URL, no text content
       await authenticatedPost('/api/community/post', {
-        content: shareContent,
+        content: '', // Empty string - no text, just artwork
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
         artworkUrl: artworkUrlToShare,
       });
 
-      console.log('[Canvas] Artwork shared to community successfully with artworkUrl:', artworkUrlToShare);
+      console.log('[Canvas] ✅ Artwork shared to community successfully');
       setIsSharing(false);
       setShowShareModal(false);
       setShowPostSaveModal(false);
@@ -1188,7 +1185,7 @@ export default function ArtworkCanvasScreen() {
       // Show celebratory success modal
       setShowShareSuccessModal(true);
     } catch (error) {
-      console.error('[Canvas] Failed to share artwork:', error);
+      console.error('[Canvas] ❌ Failed to share artwork:', error);
       setIsSharing(false);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       Alert.alert('Share Failed', `Could not share your artwork: ${errorMessage}. Please try again.`);
