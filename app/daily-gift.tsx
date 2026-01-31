@@ -121,7 +121,6 @@ export default function DailyGiftScreen() {
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
       
-      // Validate response has required data
       if (!response || !response.weeklyTheme) {
         throw new Error('Invalid response from server - missing weekly theme data');
       }
@@ -146,7 +145,6 @@ export default function DailyGiftScreen() {
         reflectionPromptPreview: response.dailyContent?.reflectionQuestion?.substring(0, 100) + '...',
       });
       
-      // Detailed logging for debugging scripture rotation
       if (response.dailyContent) {
         console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE FOR DAY ${dayOfYear}:`, {
           date: now.toLocaleDateString(),
@@ -182,7 +180,6 @@ export default function DailyGiftScreen() {
     }
   }, []);
 
-  // Reload data whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       const focusTimestamp = new Date().toISOString();
@@ -472,12 +469,10 @@ export default function DailyGiftScreen() {
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
-  // Calculate day of year for display
   const now = new Date();
   const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
   const todayDateDisplay = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // Log what we're about to display
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
     dayOfYear: dayOfYear,
@@ -704,7 +699,7 @@ export default function DailyGiftScreen() {
                   color={textSecondaryColor}
                 />
                 <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
-                  Day {dayOfYear} of 365 • Changes daily
+                  Day {dayOfYear} of 365 • Unique daily scripture
                 </Text>
               </View>
             </View>
