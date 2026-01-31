@@ -31,7 +31,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert, Modal, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert, Modal, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -58,6 +58,7 @@ interface Post {
     peace: number;
   };
   userReaction?: string | null;
+  artworkUrl?: string | null;
 }
 
 interface CareMessage {
@@ -85,6 +86,8 @@ export default function CommunityScreen() {
   const [showCareModal, setShowCareModal] = useState<string | null>(null);
   const [careMessages, setCareMessages] = useState<CareMessage[]>([]);
   const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
+  const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
+  const [careAnonymous, setCareAnonymous] = useState(false);
 
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
@@ -278,18 +281,24 @@ export default function CommunityScreen() {
     }
   };
 
-  const handleSendCare = async (postId: string, message: string, isAnonymous: boolean) => {
-    console.log('[Community] Sending care message to post:', postId);
+  const handleSendCare = async () => {
+    if (!showCareModal || !selectedCareMessage) {
+      return;
+    }
+    
+    console.log('[Community] Sending care message to post:', showCareModal);
     
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost(`/api/community/send-care/${postId}`, {
-        message,
-        isAnonymous,
+      await authenticatedPost(`/api/community/send-care/${showCareModal}`, {
+        message: selectedCareMessage,
+        isAnonymous: careAnonymous,
       });
       
       console.log('[Community] Care message sent successfully');
       setShowCareModal(null);
+      setSelectedCareMessage('');
+      setCareAnonymous(false);
       
       Alert.alert(
         '💚 Care Sent',
@@ -588,6 +597,16 @@ export default function CommunityScreen() {
                     </Text>
                   )}
 
+                  {post.artworkUrl && (
+                    <View style={styles.artworkImageContainer}>
+                      <Image 
+                        source={{ uri: post.artworkUrl }}
+                        style={styles.artworkImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  )}
+
                   <Text style={[styles.postContent, { color: textColor }]}>
                     {post.content}
                   </Text>
@@ -629,52 +648,94 @@ export default function CommunityScreen() {
                     {post.reactions && (
                       <View style={styles.reactionsDisplay}>
                         {post.reactions.praying > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'praying' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'praying')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>🙏</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.praying}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         {post.reactions.holding > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'holding' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'holding')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>💙</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.holding}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         {post.reactions.light > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'light' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'light')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>🕯️</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.light}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         {post.reactions.amen > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'amen' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'amen')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>✨</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.amen}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         {post.reactions.growing > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'growing' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'growing')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>🌱</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.growing}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         {post.reactions.peace > 0 && (
-                          <View style={styles.reactionBadge}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.reactionBadge,
+                              post.userReaction === 'peace' && styles.reactionBadgeActive
+                            ]}
+                            onPress={() => handleReact(post.id, 'peace')}
+                            activeOpacity={0.7}
+                          >
                             <Text style={styles.reactionEmoji}>🕊️</Text>
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
                               {post.reactions.peace}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                       </View>
                     )}
@@ -784,11 +845,19 @@ export default function CommunityScreen() {
         visible={showCareModal !== null}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowCareModal(null)}
+        onRequestClose={() => {
+          setShowCareModal(null);
+          setSelectedCareMessage('');
+          setCareAnonymous(false);
+        }}
       >
         <Pressable 
           style={styles.modalOverlay}
-          onPress={() => setShowCareModal(null)}
+          onPress={() => {
+            setShowCareModal(null);
+            setSelectedCareMessage('');
+            setCareAnonymous(false);
+          }}
         >
           <Pressable 
             style={[styles.careModal, { backgroundColor: cardBg }]}
@@ -798,7 +867,11 @@ export default function CommunityScreen() {
               <Text style={[styles.careModalTitle, { color: textColor }]}>
                 Send Care
               </Text>
-              <TouchableOpacity onPress={() => setShowCareModal(null)}>
+              <TouchableOpacity onPress={() => {
+                setShowCareModal(null);
+                setSelectedCareMessage('');
+                setCareAnonymous(false);
+              }}>
                 <IconSymbol
                   ios_icon_name="xmark"
                   android_material_icon_name="close"
@@ -814,53 +887,98 @@ export default function CommunityScreen() {
             <ScrollView style={styles.careMessagesList}>
               <CareMessageOption
                 message="Holding you gently in this moment"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Holding you gently in this moment", isAnon)}
+                onPress={() => setSelectedCareMessage("Holding you gently in this moment")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "Holding you gently in this moment"}
               />
               <CareMessageOption
                 message="You are not walking this path alone"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "You are not walking this path alone", isAnon)}
+                onPress={() => setSelectedCareMessage("You are not walking this path alone")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "You are not walking this path alone"}
               />
               <CareMessageOption
                 message="May you feel surrounded by care today"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "May you feel surrounded by care today", isAnon)}
+                onPress={() => setSelectedCareMessage("May you feel surrounded by care today")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "May you feel surrounded by care today"}
               />
               <CareMessageOption
                 message="Sending gentle strength your way"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Sending gentle strength your way", isAnon)}
+                onPress={() => setSelectedCareMessage("Sending gentle strength your way")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "Sending gentle strength your way"}
               />
               <CareMessageOption
                 message="Your courage in sharing is beautiful"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Your courage in sharing is beautiful", isAnon)}
+                onPress={() => setSelectedCareMessage("Your courage in sharing is beautiful")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "Your courage in sharing is beautiful"}
               />
               <CareMessageOption
                 message="May you sense the warmth of community around you"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "May you sense the warmth of community around you", isAnon)}
+                onPress={() => setSelectedCareMessage("May you sense the warmth of community around you")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "May you sense the warmth of community around you"}
               />
               <CareMessageOption
                 message="Breathing alongside you with compassion"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Breathing alongside you with compassion", isAnon)}
+                onPress={() => setSelectedCareMessage("Breathing alongside you with compassion")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "Breathing alongside you with compassion"}
               />
               <CareMessageOption
                 message="You are worthy of all the care you need"
-                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "You are worthy of all the care you need", isAnon)}
+                onPress={() => setSelectedCareMessage("You are worthy of all the care you need")}
                 textColor={textColor}
                 bgColor={bgColor}
+                isSelected={selectedCareMessage === "You are worthy of all the care you need"}
               />
             </ScrollView>
+
+            {/* Single "Send anonymously" toggle at the bottom */}
+            <View style={styles.careModalFooter}>
+              <TouchableOpacity
+                style={styles.anonymousToggleRow}
+                onPress={() => setCareAnonymous(!careAnonymous)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, careAnonymous && styles.checkboxChecked]}>
+                  {careAnonymous && (
+                    <IconSymbol
+                      ios_icon_name="checkmark"
+                      android_material_icon_name="check"
+                      size={14}
+                      color="#FFFFFF"
+                    />
+                  )}
+                </View>
+                <Text style={[styles.anonymousToggleText, { color: textColor }]}>
+                  Send anonymously
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.sendCareButtonModal,
+                  !selectedCareMessage && styles.sendCareButtonDisabled
+                ]}
+                onPress={handleSendCare}
+                disabled={!selectedCareMessage}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.sendCareButtonModalText}>
+                  Send Care
+                </Text>
+              </TouchableOpacity>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -873,44 +991,32 @@ function CareMessageOption({
   message, 
   onPress, 
   textColor, 
-  bgColor 
+  bgColor,
+  isSelected 
 }: { 
   message: string; 
-  onPress: (isAnonymous: boolean) => void;
+  onPress: () => void;
   textColor: string;
   bgColor: string;
+  isSelected: boolean;
 }) {
-  const [isAnonymous, setIsAnonymous] = React.useState(false);
-
   return (
-    <View style={styles.careMessageOption}>
-      <TouchableOpacity
-        style={[styles.careMessageButton, { backgroundColor: bgColor }]}
-        onPress={() => onPress(isAnonymous)}
-      >
-        <Text style={[styles.careMessageButtonText, { color: textColor }]}>
-          {message}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.anonymousToggle}
-        onPress={() => setIsAnonymous(!isAnonymous)}
-      >
-        <View style={[styles.checkbox, isAnonymous && styles.checkboxChecked]}>
-          {isAnonymous && (
-            <IconSymbol
-              ios_icon_name="checkmark"
-              android_material_icon_name="check"
-              size={14}
-              color="#FFFFFF"
-            />
-          )}
-        </View>
-        <Text style={[styles.anonymousToggleText, { color: textColor }]}>
-          Send anonymously
-        </Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      style={[
+        styles.careMessageButton, 
+        { backgroundColor: bgColor, borderColor: colors.border },
+        isSelected && styles.careMessageButtonSelected
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[
+        styles.careMessageButtonText, 
+        { color: isSelected ? colors.primary : textColor }
+      ]}>
+        {message}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -1106,6 +1212,18 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  artworkImageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+    backgroundColor: colors.border || '#F5F5F5',
+  },
+  artworkImage: {
+    width: '100%',
+    height: '100%',
+  },
   postContent: {
     fontSize: typography.body,
     lineHeight: 26,
@@ -1159,6 +1277,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: borderRadius.full,
     backgroundColor: colors.primaryLight || '#F5F5F5',
+  },
+  reactionBadgeActive: {
+    backgroundColor: colors.primary + '30',
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   reactionEmoji: {
     fontSize: 16,
@@ -1251,27 +1374,34 @@ const styles = StyleSheet.create({
   },
   careMessagesList: {
     maxHeight: 400,
-  },
-  careMessageOption: {
     marginBottom: spacing.md,
-    gap: spacing.sm,
   },
   careMessageButton: {
     padding: spacing.md,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border || '#E0E0E0',
+    borderWidth: 2,
+    marginBottom: spacing.sm,
+  },
+  careMessageButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
   },
   careMessageButtonText: {
     fontSize: typography.body,
     fontStyle: 'italic',
     textAlign: 'center',
   },
-  anonymousToggle: {
+  careModalFooter: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border || '#E0E0E0',
+    paddingTop: spacing.md,
+    gap: spacing.md,
+  },
+  anonymousToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingLeft: spacing.sm,
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   checkbox: {
     width: 20,
@@ -1286,7 +1416,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   anonymousToggleText: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.body,
+  },
+  sendCareButtonModal: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  sendCareButtonDisabled: {
+    opacity: 0.4,
+  },
+  sendCareButtonModalText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
   careMessagesSection: {
     paddingHorizontal: spacing.lg,
