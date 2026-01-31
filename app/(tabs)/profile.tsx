@@ -20,6 +20,7 @@ interface UserProfile {
   id: string;
   userId: string;
   displayName: string | null;
+  companionName: string | null;
   avatarType: 'photo' | 'icon' | 'default';
   avatarUrl: string | null;
   avatarIcon: string | null;
@@ -81,6 +82,7 @@ export default function ProfileScreen() {
   const [showBoundariesModal, setShowBoundariesModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
+  const [showCompanionNameModal, setShowCompanionNameModal] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showClearAvatarModal, setShowClearAvatarModal] = useState(false);
@@ -88,6 +90,7 @@ export default function ProfileScreen() {
   
   // Form states
   const [tempDisplayName, setTempDisplayName] = useState('');
+  const [tempCompanionName, setTempCompanionName] = useState('');
   const [tempPresenceMode, setTempPresenceMode] = useState<string>('open');
   const [tempBoundaries, setTempBoundaries] = useState({
     comfortReceivingReplies: true,
@@ -122,6 +125,7 @@ export default function ProfileScreen() {
         id: '1',
         userId: user?.id || 'guest-user',
         displayName: user?.name || null,
+        companionName: null,
         avatarType: 'default',
         avatarUrl: null,
         avatarIcon: null,
@@ -322,6 +326,37 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('ProfileScreen: Save display name failed -', error);
       Alert.alert('Error', 'Failed to update display name. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCompanionName = async () => {
+    console.log('ProfileScreen: Saving companion name -', tempCompanionName);
+    setSaving(true);
+    try {
+      const { authenticatedPut } = await import('@/utils/api');
+      await authenticatedPut('/api/profile', { companionName: tempCompanionName });
+      console.log('ProfileScreen: Companion name updated successfully');
+      
+      if (profile) {
+        setProfile({
+          ...profile,
+          companionName: tempCompanionName,
+        });
+      }
+      setShowCompanionNameModal(false);
+      
+      // Show success message
+      const companionNameDisplay = tempCompanionName || 'your companion';
+      Alert.alert(
+        'Companion Named',
+        `Your AI companion is now called ${companionNameDisplay}. This name will appear in your check-in conversations.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('ProfileScreen: Save companion name failed -', error);
+      Alert.alert('Error', 'Failed to update companion name. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -643,6 +678,48 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Companion Name */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            AI Companion (Optional)
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              setTempCompanionName(profile?.companionName || '');
+              setShowCompanionNameModal(true);
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="sparkles" 
+                  android_material_icon_name="auto-awesome" 
+                  size={20} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.menuItemTextContainer}>
+                <Text style={[styles.menuItemText, { color: colors.text }]}>
+                  Companion Name
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
+                  {profile?.companionName || 'Not set'}
+                </Text>
+              </View>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textLight} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Presence Mode */}
@@ -1211,6 +1288,55 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={handleSaveDisplayName}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonText}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Companion Name Modal */}
+      <Modal
+        visible={showCompanionNameModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCompanionNameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Companion Name
+              </Text>
+              <TouchableOpacity onPress={() => setShowCompanionNameModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+              Give your AI companion a personal name. This name will appear in your check-in conversations, creating a more personal connection.
+            </Text>
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              value={tempCompanionName}
+              onChangeText={setTempCompanionName}
+              placeholder="Grace, Hope, Peace..."
+              placeholderTextColor={colors.textLight}
+              maxLength={50}
+            />
+
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveCompanionName}
               disabled={saving}
             >
               <Text style={styles.modalButtonText}>

@@ -40,6 +40,7 @@ export default function CheckInScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [companionName, setCompanionName] = useState<string | null>(null);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [showPrayerOptions, setShowPrayerOptions] = useState(false);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
@@ -66,7 +67,17 @@ export default function CheckInScreen() {
     const startConversation = async () => {
       try {
         console.log('[CheckIn] Starting check-in conversation...');
-        const { authenticatedPost } = await import('@/utils/api');
+        const { authenticatedPost, authenticatedGet } = await import('@/utils/api');
+        
+        // Fetch companion name from profile
+        try {
+          const profile = await authenticatedGet<{ companionName: string | null }>('/api/profile');
+          console.log('[CheckIn] Companion name loaded:', profile.companionName);
+          setCompanionName(profile.companionName);
+        } catch (error) {
+          console.error('[CheckIn] Failed to load companion name:', error);
+        }
+        
         const response = await authenticatedPost<{ 
           conversationId: string; 
           messages: { id: string; role: string; content: string; createdAt: string }[];
@@ -425,9 +436,16 @@ export default function CheckInScreen() {
               {messageContent}
             </Text>
           ) : (
-            <StreamdownRN theme="light">
-              {messageContent}
-            </StreamdownRN>
+            <React.Fragment>
+              <StreamdownRN theme="light">
+                {messageContent}
+              </StreamdownRN>
+              {companionName && (
+                <Text style={[styles.companionSignature, { color: textSecondaryColor }]}>
+                  — {companionName}
+                </Text>
+              )}
+            </React.Fragment>
           )}
         </View>
         {!isUser && (
@@ -511,13 +529,15 @@ export default function CheckInScreen() {
   const prayerIconColor = colors.primary;
   const careIconColor = colors.primary;
   const labelColor = colors.textSecondary;
+  
+  const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
         options={{
           headerShown: true,
-          title: 'Heart Conversation',
+          title: headerTitle,
           headerBackTitle: 'Home',
           headerStyle: {
             backgroundColor: bgColor,
@@ -1428,6 +1448,12 @@ const styles = StyleSheet.create({
   },
   messageTextUser: {
     color: '#FFFFFF',
+  },
+  companionSignature: {
+    fontSize: typography.small,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
+    textAlign: 'right',
   },
   inputContainer: {
     flexDirection: 'row',
