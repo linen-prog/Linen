@@ -49,11 +49,13 @@ export function registerCommunityRoutes(app: App) {
           // User not authenticated
         }
 
-        // For each post, check if current user has prayed
+        // For each post, check if current user has prayed and get artwork for somatic posts
         const result = await Promise.all(
           posts.map(async (post) => {
             let userHasPrayed = false;
             let userHasFlagged = false;
+            let artworkUrl: string | null = null;
+
             if (userId) {
               const prayer = await app.db
                 .select()
@@ -82,6 +84,20 @@ export function registerCommunityRoutes(app: App) {
               userHasFlagged = flag.length > 0;
             }
 
+            // Get artwork URL for somatic posts
+            if (post.contentType === 'somatic') {
+              const artwork = await app.db
+                .select()
+                .from(schema.userArtworks)
+                .where(eq(schema.userArtworks.userId, post.userId))
+                .orderBy(desc(schema.userArtworks.updatedAt))
+                .limit(1);
+
+              if (artwork.length > 0 && artwork[0].photoUrls && Array.isArray(artwork[0].photoUrls) && artwork[0].photoUrls.length > 0) {
+                artworkUrl = artwork[0].photoUrls[0];
+              }
+            }
+
             return {
               id: post.id,
               authorName: post.authorName,
@@ -95,6 +111,7 @@ export function registerCommunityRoutes(app: App) {
               createdAt: post.createdAt,
               userHasPrayed,
               userHasFlagged,
+              artworkUrl,
             };
           })
         );
@@ -278,23 +295,45 @@ export function registerCommunityRoutes(app: App) {
           .where(eq(schema.communityPosts.userId, session.user.id))
           .orderBy(desc(schema.communityPosts.createdAt));
 
+        // For each post, get artwork URL for somatic posts
+        const result = await Promise.all(
+          posts.map(async (p) => {
+            let artworkUrl: string | null = null;
+
+            // Get artwork URL for somatic posts
+            if (p.contentType === 'somatic') {
+              const artwork = await app.db
+                .select()
+                .from(schema.userArtworks)
+                .where(eq(schema.userArtworks.userId, p.userId))
+                .orderBy(desc(schema.userArtworks.updatedAt))
+                .limit(1);
+
+              if (artwork.length > 0 && artwork[0].photoUrls && Array.isArray(artwork[0].photoUrls) && artwork[0].photoUrls.length > 0) {
+                artworkUrl = artwork[0].photoUrls[0];
+              }
+            }
+
+            return {
+              id: p.id,
+              category: p.category,
+              content: p.content,
+              contentType: p.contentType,
+              scriptureReference: p.scriptureReference,
+              prayerCount: p.prayerCount,
+              isFlagged: p.isFlagged,
+              createdAt: p.createdAt,
+              artworkUrl,
+            };
+          })
+        );
+
         app.logger.info(
-          { userId: session.user.id, count: posts.length },
+          { userId: session.user.id, count: result.length },
           'User community posts retrieved'
         );
 
-        return reply.send(
-          posts.map((p) => ({
-            id: p.id,
-            category: p.category,
-            content: p.content,
-            contentType: p.contentType,
-            scriptureReference: p.scriptureReference,
-            prayerCount: p.prayerCount,
-            isFlagged: p.isFlagged,
-            createdAt: p.createdAt,
-          }))
-        );
+        return reply.send(result);
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id },
