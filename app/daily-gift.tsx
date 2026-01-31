@@ -75,7 +75,8 @@ interface GlitterParticle {
 }
 
 export default function DailyGiftScreen() {
-  console.log('[DailyGift] Component rendered');
+  const timestamp = new Date().toISOString();
+  console.log(`[DailyGift] ${timestamp} - Component rendered`);
   const router = useRouter();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
@@ -114,8 +115,8 @@ export default function DailyGiftScreen() {
 
   const loadDailyGift = useCallback(async () => {
     try {
-      const timestamp = new Date().toISOString();
-      console.log(`[DailyGift] ${timestamp} - Loading daily gift from /api/weekly-theme/current...`);
+      const loadTimestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current...`);
       setIsLoadingGift(true);
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
@@ -125,8 +126,13 @@ export default function DailyGiftScreen() {
         throw new Error('Invalid response from server - missing weekly theme data');
       }
       
-      console.log(`[DailyGift] ${timestamp} - Daily gift loaded successfully:`, {
-        timestamp,
+      const now = new Date();
+      const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`[DailyGift] ${loadTimestamp} - Daily gift loaded successfully:`, {
+        timestamp: loadTimestamp,
+        currentDate: now.toLocaleDateString(),
+        dayOfYear: dayOfYear,
         themeTitle: response.weeklyTheme.themeTitle,
         liturgicalSeason: response.weeklyTheme.liturgicalSeason,
         weekStartDate: response.weeklyTheme.weekStartDate,
@@ -140,9 +146,11 @@ export default function DailyGiftScreen() {
         reflectionPromptPreview: response.dailyContent?.reflectionQuestion?.substring(0, 100) + '...',
       });
       
-      // Detailed logging for debugging
+      // Detailed logging for debugging scripture rotation
       if (response.dailyContent) {
-        console.log(`[DailyGift] ${timestamp} - FULL SCRIPTURE DATA:`, {
+        console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE FOR DAY ${dayOfYear}:`, {
+          date: now.toLocaleDateString(),
+          dayOfYear: dayOfYear,
           reference: response.dailyContent.scriptureReference,
           fullText: response.dailyContent.scriptureText,
           fullPrompt: response.dailyContent.reflectionQuestion,
@@ -150,7 +158,7 @@ export default function DailyGiftScreen() {
       }
       
       if (!response.weeklyTheme.somaticExercise) {
-        console.warn(`[DailyGift] ${timestamp} - ⚠️ WARNING: No somatic exercise returned from backend!`, {
+        console.warn(`[DailyGift] ${loadTimestamp} - ⚠️ WARNING: No somatic exercise returned from backend!`, {
           featuredExerciseId: response.weeklyTheme.featuredExerciseId,
           themeId: response.weeklyTheme.id,
         });
@@ -167,9 +175,9 @@ export default function DailyGiftScreen() {
         await checkWeeklyPracticeStatus();
       }
     } catch (error) {
-      const timestamp = new Date().toISOString();
-      console.error(`[DailyGift] ${timestamp} - Failed to load daily gift:`, error);
-      console.error(`[DailyGift] ${timestamp} - Error details:`, error);
+      const errorTimestamp = new Date().toISOString();
+      console.error(`[DailyGift] ${errorTimestamp} - Failed to load daily gift:`, error);
+      console.error(`[DailyGift] ${errorTimestamp} - Error details:`, error);
       setIsLoadingGift(false);
     }
   }, []);
@@ -177,23 +185,23 @@ export default function DailyGiftScreen() {
   // Reload data whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      const timestamp = new Date().toISOString();
-      console.log(`[DailyGift] ${timestamp} - Screen focused - reloading daily gift data`);
+      const focusTimestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${focusTimestamp} - Screen focused - reloading daily gift data`);
       loadDailyGift();
     }, [loadDailyGift])
   );
 
   const checkReflectionStatus = async (dailyContentId: string) => {
     try {
-      const timestamp = new Date().toISOString();
-      console.log(`[DailyGift] ${timestamp} - Checking if user has reflected today for dailyContentId:`, dailyContentId);
+      const checkTimestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${checkTimestamp} - Checking if user has reflected today for dailyContentId:`, dailyContentId);
       const response = await authenticatedGet<any[]>('/api/daily-gift/my-reflections');
       
       const todayReflection = response.find(
         (r: any) => r.dailyGiftId === dailyContentId
       );
       
-      console.log(`[DailyGift] ${timestamp} - Reflection status:`, { 
+      console.log(`[DailyGift] ${checkTimestamp} - Reflection status:`, { 
         hasReflected: !!todayReflection, 
         totalReflections: response.length,
         lookingFor: dailyContentId 
@@ -207,11 +215,11 @@ export default function DailyGiftScreen() {
 
   const checkWeeklyPracticeStatus = async () => {
     try {
-      const timestamp = new Date().toISOString();
-      console.log(`[DailyGift] ${timestamp} - Checking weekly practice completion status...`);
+      const practiceTimestamp = new Date().toISOString();
+      console.log(`[DailyGift] ${practiceTimestamp} - Checking weekly practice completion status...`);
       const response = await authenticatedGet<WeeklyPracticeStatus>('/api/weekly-practice/check-completion');
       
-      console.log(`[DailyGift] ${timestamp} - Weekly practice status:`, response);
+      console.log(`[DailyGift] ${practiceTimestamp} - Weekly practice status:`, response);
       setHasCompletedPractice(response.hasCompleted);
     } catch (error) {
       console.error('[DailyGift] Failed to check weekly practice status:', error);
@@ -406,8 +414,8 @@ export default function DailyGiftScreen() {
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => {
-              const timestamp = new Date().toISOString();
-              console.log(`[DailyGift] ${timestamp} - User tapped retry button`);
+              const retryTimestamp = new Date().toISOString();
+              console.log(`[DailyGift] ${retryTimestamp} - User tapped retry button`);
               loadDailyGift();
             }}
             activeOpacity={0.8}
@@ -464,8 +472,15 @@ export default function DailyGiftScreen() {
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
 
+  // Calculate day of year for display
+  const now = new Date();
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+  const todayDateDisplay = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
   // Log what we're about to display
   console.log('[DailyGift] Displaying content:', {
+    date: todayDateDisplay,
+    dayOfYear: dayOfYear,
     dayTitle: dayTitleDisplay,
     scriptureRef: referenceDisplay,
     scripturePreview: scriptureDisplay.substring(0, 50) + '...',
@@ -518,6 +533,10 @@ export default function DailyGiftScreen() {
           
           <Text style={[styles.giftSubtitle, { color: textSecondaryColor }]}>
             {giftSubtitleText}
+          </Text>
+          
+          <Text style={[styles.dateDisplay, { color: textSecondaryColor }]}>
+            {todayDateDisplay}
           </Text>
 
           <View style={styles.giftBoxContainer}>
@@ -676,6 +695,18 @@ export default function DailyGiftScreen() {
               <Text style={[styles.scripturePrompt, { color: textSecondaryColor }]}>
                 {reflectionPromptDisplay}
               </Text>
+              
+              <View style={styles.dailyIndicator}>
+                <IconSymbol 
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={12}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
+                  Day {dayOfYear} of 365 • Changes daily
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -1024,9 +1055,15 @@ const styles = StyleSheet.create({
   giftSubtitle: {
     fontSize: 16,
     fontStyle: 'italic',
-    marginBottom: spacing.xxl * 2,
+    marginBottom: spacing.xs,
     textAlign: 'center',
     fontWeight: '300',
+  },
+  dateDisplay: {
+    fontSize: 13,
+    marginBottom: spacing.xxl * 2,
+    textAlign: 'center',
+    fontWeight: '400',
   },
   giftBoxContainer: {
     position: 'relative',
@@ -1254,6 +1291,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '300',
     marginTop: spacing.xs,
+  },
+  dailyIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  dailyIndicatorText: {
+    fontSize: 11,
+    fontWeight: '400',
   },
 
   reflectionCard: {
