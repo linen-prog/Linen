@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder, Animated as RNAnimated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
@@ -18,7 +18,8 @@ import Animated, {
   withTiming,
   withRepeat,
   Easing,
-  interpolate
+  interpolate,
+  runOnJS
 } from 'react-native-reanimated';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
@@ -44,6 +45,26 @@ interface Sparkle {
   x: number;
   y: number;
   delay: number;
+}
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
+  size: number;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  message: string;
+  icon: string;
+  materialIcon: string;
+  threshold: number;
 }
 
 const BRUSH_OPTIONS: BrushOption[] = [
@@ -84,6 +105,30 @@ const ENCOURAGING_MESSAGES = [
   "Your heart is showing through! 💝",
   "Gorgeous work! Keep creating! 🌈",
   "You're doing amazing! ⭐",
+  "Every stroke tells a story! 📖",
+  "Your spirit shines through! ✨",
+  "What a gift you're creating! 🎁",
+  "This is truly special! 💎",
+  "Keep expressing yourself! 🌺",
+];
+
+const ACHIEVEMENTS: Achievement[] = [
+  { id: 'first_stroke', title: 'First Stroke!', message: 'Your creative journey begins! 🎨', icon: 'paintbrush', materialIcon: 'brush', threshold: 1 },
+  { id: 'getting_started', title: 'Getting Started!', message: 'You\'re finding your rhythm! 🌟', icon: 'hand.draw', materialIcon: 'gesture', threshold: 10 },
+  { id: 'creative_flow', title: 'Creative Flow!', message: 'You\'re in the zone! 💫', icon: 'sparkles', materialIcon: 'auto-awesome', threshold: 25 },
+  { id: 'artistic_soul', title: 'Artistic Soul!', message: 'Your creativity is boundless! 🎭', icon: 'heart.fill', materialIcon: 'favorite', threshold: 50 },
+  { id: 'master_creator', title: 'Master Creator!', message: 'What a masterpiece! 👑', icon: 'star.fill', materialIcon: 'star', threshold: 100 },
+];
+
+const DRAWING_PROMPTS = [
+  "Draw something that brings you peace 🕊️",
+  "Express a feeling without words 💭",
+  "Create something that makes you smile 😊",
+  "Draw your happy place 🌈",
+  "Capture a moment of gratitude 🙏",
+  "Illustrate hope 🌟",
+  "Draw what love looks like to you 💝",
+  "Express joy through color 🎨",
 ];
 
 export default function ArtworkCanvasScreen() {
@@ -120,6 +165,13 @@ export default function ArtworkCanvasScreen() {
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [strokeCount, setStrokeCount] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [showAchievement, setShowAchievement] = useState(false);
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(new Set());
+  const [showPrompt, setShowPrompt] = useState(true);
+  const [currentPrompt, setCurrentPrompt] = useState('');
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
@@ -128,6 +180,7 @@ export default function ArtworkCanvasScreen() {
   const initialPhotoTouchRef = useRef({ x: 0, y: 0 });
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEncouragementRef = useRef(0);
+  const particleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const selectedColorRef = useRef(selectedColor);
   const brushSizeRef = useRef(brushSize);
@@ -139,15 +192,33 @@ export default function ArtworkCanvasScreen() {
   const colorPickerScale = useSharedValue(1);
   const celebrationScale = useSharedValue(0);
   const celebrationOpacity = useSharedValue(0);
+  const achievementScale = useSharedValue(0);
+  const achievementOpacity = useSharedValue(0);
+  const promptOpacity = useSharedValue(1);
+  const cursorScale = useSharedValue(0);
+
+  // Select random prompt on mount
+  useEffect(() => {
+    const randomPrompt = DRAWING_PROMPTS[Math.floor(Math.random() * DRAWING_PROMPTS.length)];
+    setCurrentPrompt(randomPrompt);
+    
+    // Auto-hide prompt after 8 seconds
+    const timer = setTimeout(() => {
+      promptOpacity.value = withTiming(0, { duration: 500 });
+      setTimeout(() => setShowPrompt(false), 500);
+    }, 8000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     selectedColorRef.current = selectedColor;
     console.log('[Canvas] Color updated to:', selectedColor);
     
-    // Animate color change
+    // Animate color change with bounce
     colorPickerScale.value = withSequence(
-      withSpring(1.2, { damping: 10 }),
-      withSpring(1, { damping: 10 })
+      withSpring(1.3, { damping: 8, stiffness: 200 }),
+      withSpring(1, { damping: 10, stiffness: 150 })
     );
     
     // Haptic feedback
@@ -165,14 +236,14 @@ export default function ArtworkCanvasScreen() {
     selectedBrushRef.current = selectedBrush;
     console.log('[Canvas] Brush type updated to:', selectedBrush);
     
-    // Animate brush change
+    // Animate brush change with rotation
     brushPreviewScale.value = withSequence(
-      withSpring(1.3, { damping: 8 }),
-      withSpring(1, { damping: 8 })
+      withSpring(1.4, { damping: 6, stiffness: 180 }),
+      withSpring(1, { damping: 8, stiffness: 150 })
     );
     brushPreviewRotation.value = withSequence(
-      withTiming(10, { duration: 100 }),
-      withTiming(-10, { duration: 100 }),
+      withTiming(15, { duration: 100 }),
+      withTiming(-15, { duration: 100 }),
       withTiming(0, { duration: 100 })
     );
     
@@ -186,13 +257,41 @@ export default function ArtworkCanvasScreen() {
   useEffect(() => {
     brushPreviewScale.value = withRepeat(
       withSequence(
-        withTiming(1.05, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+        withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       false
     );
   }, []);
+
+  // Particle system for drawing effects
+  useEffect(() => {
+    if (particles.length > 0) {
+      particleTimerRef.current = setInterval(() => {
+        setParticles(prev => 
+          prev
+            .map(p => ({
+              ...p,
+              x: p.x + p.vx,
+              y: p.y + p.vy,
+              life: p.life - 0.02,
+              vy: p.vy + 0.1, // gravity
+            }))
+            .filter(p => p.life > 0)
+        );
+      }, 16);
+    } else if (particleTimerRef.current) {
+      clearInterval(particleTimerRef.current);
+      particleTimerRef.current = null;
+    }
+    
+    return () => {
+      if (particleTimerRef.current) {
+        clearInterval(particleTimerRef.current);
+      }
+    };
+  }, [particles.length > 0]);
 
   useEffect(() => {
     if (hasLoadedRef.current) {
@@ -255,6 +354,39 @@ export default function ArtworkCanvasScreen() {
     loadExistingArtwork();
   }, []);
 
+  // Check for achievements
+  useEffect(() => {
+    if (strokeCount > 0) {
+      const achievement = ACHIEVEMENTS.find(
+        a => a.threshold === strokeCount && !unlockedAchievements.has(a.id)
+      );
+      
+      if (achievement) {
+        console.log('[Canvas] Achievement unlocked:', achievement.title);
+        setCurrentAchievement(achievement);
+        setUnlockedAchievements(prev => new Set([...prev, achievement.id]));
+        setShowAchievement(true);
+        
+        achievementScale.value = withSequence(
+          withSpring(1, { damping: 8 }),
+          withTiming(0, { duration: 300, delay: 3000 })
+        );
+        achievementOpacity.value = withSequence(
+          withTiming(1, { duration: 200 }),
+          withTiming(0, { duration: 300, delay: 3000 })
+        );
+        
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        
+        setTimeout(() => {
+          setShowAchievement(false);
+        }, 3300);
+      }
+    }
+  }, [strokeCount]);
+
   // Show encouraging messages periodically
   useEffect(() => {
     if (strokeCount > 0 && strokeCount % 5 === 0 && strokeCount !== lastEncouragementRef.current) {
@@ -274,6 +406,28 @@ export default function ArtworkCanvasScreen() {
     }
   }, [strokeCount]);
 
+  const createParticles = (x: number, y: number, color: string) => {
+    const newParticles: Particle[] = [];
+    const particleCount = selectedBrushRef.current === 'glitter' ? 8 : 3;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const speed = 1 + Math.random() * 2;
+      newParticles.push({
+        id: Date.now() + i,
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1,
+        life: 1,
+        color,
+        size: brushSizeRef.current * 0.3,
+      });
+    }
+    
+    setParticles(prev => [...prev, ...newParticles]);
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
@@ -285,6 +439,10 @@ export default function ArtworkCanvasScreen() {
         const { locationX, locationY } = evt.nativeEvent;
         console.log('[Canvas] Touch started at:', locationX, locationY);
         console.log('[Canvas] Using color:', selectedColorRef.current, 'size:', brushSizeRef.current, 'brush:', selectedBrushRef.current);
+        
+        // Show cursor
+        setCursorPosition({ x: locationX, y: locationY });
+        cursorScale.value = withSpring(1, { damping: 10 });
         
         // Haptic feedback on touch start
         if (Platform.OS !== 'web') {
@@ -307,9 +465,17 @@ export default function ArtworkCanvasScreen() {
         setCurrentStroke(newStroke);
         setUndoneStrokes([]);
         console.log('[Canvas] New stroke created:', { color: newStroke.color, size: newStroke.brushSize, type: newStroke.brushType });
+        
+        // Create initial particles
+        if (selectedBrushRef.current === 'glitter' || selectedBrushRef.current === 'spray') {
+          createParticles(locationX, locationY, selectedColorRef.current);
+        }
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
+        
+        // Update cursor position
+        setCursorPosition({ x: locationX, y: locationY });
         
         if (currentStrokeRef.current) {
           const updatedStroke = {
@@ -318,6 +484,13 @@ export default function ArtworkCanvasScreen() {
           };
           currentStrokeRef.current = updatedStroke;
           setCurrentStroke(updatedStroke);
+          
+          // Create particles along the stroke
+          if (updatedStroke.points.length % 3 === 0) {
+            if (selectedBrushRef.current === 'glitter' || selectedBrushRef.current === 'spray') {
+              createParticles(locationX, locationY, selectedColorRef.current);
+            }
+          }
           
           if (updatedStroke.points.length % 10 === 0) {
             console.log('[Canvas] Stroke now has', updatedStroke.points.length, 'points');
@@ -328,6 +501,10 @@ export default function ArtworkCanvasScreen() {
       },
       onPanResponderRelease: () => {
         console.log('[Canvas] Touch ended, current stroke has', currentStrokeRef.current?.points.length || 0, 'points');
+        
+        // Hide cursor
+        cursorScale.value = withTiming(0, { duration: 200 });
+        setTimeout(() => setCursorPosition(null), 200);
         
         // Haptic feedback on touch end
         if (Platform.OS !== 'web') {
@@ -449,6 +626,7 @@ export default function ArtworkCanvasScreen() {
             setIsEditingPhoto(false);
             photoPositionRef.current = { x: 0, y: 0 };
             setStrokeCount(0);
+            setParticles([]);
             
             if (Platform.OS !== 'web') {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -552,7 +730,7 @@ export default function ArtworkCanvasScreen() {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           }
           
-          Alert.alert('Photo Added', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
+          Alert.alert('Photo Added! 🎨', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
         } catch (error) {
           console.error('[Canvas] Failed to upload photo:', error);
           setIsUploadingPhoto(false);
@@ -667,7 +845,7 @@ export default function ArtworkCanvasScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       
-      Alert.alert('Shared!', 'Your artwork has been shared with the community.', [
+      Alert.alert('Shared! 🎉', 'Your artwork has been shared with the community.', [
         { 
           text: 'View Community', 
           onPress: () => {
@@ -896,6 +1074,19 @@ export default function ArtworkCanvasScreen() {
     opacity: celebrationOpacity.value,
   }));
 
+  const achievementStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: achievementScale.value }],
+    opacity: achievementOpacity.value,
+  }));
+
+  const promptStyle = useAnimatedStyle(() => ({
+    opacity: promptOpacity.value,
+  }));
+
+  const cursorStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cursorScale.value }],
+  }));
+
   // Generate sparkles for celebration
   const celebrationSparkles: Sparkle[] = Array.from({ length: 20 }, (_, i) => ({
     id: i,
@@ -953,6 +1144,35 @@ export default function ArtworkCanvasScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
+        {/* Drawing Prompt */}
+        {showPrompt && (
+          <Animated.View style={[styles.promptBanner, { backgroundColor: colors.primaryLight + '30' }, promptStyle]}>
+            <IconSymbol 
+              ios_icon_name="lightbulb.fill"
+              android_material_icon_name="lightbulb"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={[styles.promptText, { color: colors.primary }]}>
+              {currentPrompt}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => {
+                promptOpacity.value = withTiming(0, { duration: 300 });
+                setTimeout(() => setShowPrompt(false), 300);
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol 
+                ios_icon_name="xmark.circle.fill"
+                android_material_icon_name="cancel"
+                size={20}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
         {/* Brush Preview Indicator */}
         <Animated.View style={[styles.brushPreview, brushPreviewStyle]}>
           <View style={[styles.brushPreviewCircle, { 
@@ -1001,6 +1221,26 @@ export default function ArtworkCanvasScreen() {
           </Animated.View>
         )}
 
+        {/* Achievement Notification */}
+        {showAchievement && currentAchievement && (
+          <Animated.View style={[styles.achievementBanner, { backgroundColor: colors.accent }, achievementStyle]}>
+            <IconSymbol 
+              ios_icon_name={currentAchievement.icon}
+              android_material_icon_name={currentAchievement.materialIcon}
+              size={32}
+              color="#FFFFFF"
+            />
+            <View style={styles.achievementTextContainer}>
+              <Text style={styles.achievementTitle}>
+                {currentAchievement.title}
+              </Text>
+              <Text style={styles.achievementMessage}>
+                {currentAchievement.message}
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Canvas Area */}
         <View 
           style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
@@ -1046,8 +1286,39 @@ export default function ArtworkCanvasScreen() {
                     />
                   );
                 })}
+
+                {/* Cursor preview */}
+                {cursorPosition && !isEditingPhoto && (
+                  <Circle
+                    cx={cursorPosition.x}
+                    cy={cursorPosition.y}
+                    r={brushSize / 2}
+                    fill={selectedColor}
+                    opacity={0.3}
+                    stroke={selectedColor}
+                    strokeWidth={1}
+                  />
+                )}
               </Svg>
             )}
+            
+            {/* Particle effects */}
+            {particles.map(particle => (
+              <View
+                key={particle.id}
+                style={[
+                  styles.particle,
+                  {
+                    left: particle.x,
+                    top: particle.y,
+                    width: particle.size,
+                    height: particle.size,
+                    backgroundColor: particle.color,
+                    opacity: particle.life,
+                  }
+                ]}
+              />
+            ))}
             
             {!backgroundImage && strokes.length === 0 && !currentStroke && (
               <View style={styles.canvasPlaceholder}>
@@ -1750,6 +2021,21 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
+  promptBanner: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  promptText: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+  },
   brushPreview: {
     position: 'absolute',
     top: 80,
@@ -1815,6 +2101,38 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     color: '#FFFFFF',
   },
+  achievementBanner: {
+    position: 'absolute',
+    top: 200,
+    left: spacing.lg,
+    right: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    zIndex: 30,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  achievementTextContainer: {
+    flex: 1,
+  },
+  achievementTitle: {
+    fontSize: typography.h4,
+    fontWeight: typography.bold,
+    color: '#FFFFFF',
+    marginBottom: spacing.xs / 2,
+  },
+  achievementMessage: {
+    fontSize: typography.bodySmall,
+    color: '#FFFFFF',
+    opacity: 0.95,
+  },
   celebrationOverlay: {
     position: 'absolute',
     top: 0,
@@ -1867,6 +2185,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  particle: {
+    position: 'absolute',
+    borderRadius: 100,
+    pointerEvents: 'none',
   },
   canvasPlaceholder: {
     position: 'absolute',
