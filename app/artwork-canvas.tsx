@@ -1149,7 +1149,7 @@ export default function ArtworkCanvasScreen() {
       });
       
       // Save the artwork first
-      const savedArtwork = await authenticatedPost<{ artworkUrl?: string }>('/api/artwork/save', {
+      const savedArtwork = await authenticatedPost<{ id: string; photoUrls: string[] }>('/api/artwork/save', {
         artworkData,
         photoUrls: backgroundImage ? [backgroundImage] : [],
       });
@@ -1157,14 +1157,15 @@ export default function ArtworkCanvasScreen() {
       console.log('[Canvas] Artwork saved before sharing:', savedArtwork);
 
       // Determine the artwork URL to share
-      // Priority: savedArtwork.artworkUrl (if backend returns it) > backgroundImage (the photo URL)
-      const artworkUrlToShare = savedArtwork.artworkUrl || backgroundImage || null;
+      // Use the photo URL from the saved artwork (if it has one)
+      const artworkUrlToShare = (savedArtwork.photoUrls && savedArtwork.photoUrls.length > 0) 
+        ? savedArtwork.photoUrls[0] 
+        : backgroundImage || null;
       
       console.log('[Canvas] Artwork URL to share:', artworkUrlToShare);
 
-      const shareContent = backgroundImage 
-        ? 'Shared my artwork from this week\'s reflection'
-        : 'Shared my artwork from this week\'s reflection';
+      // Don't include text content - just share the artwork image
+      const shareContent = '';
 
       // Share to community with the artwork URL
       await authenticatedPost('/api/community/post', {

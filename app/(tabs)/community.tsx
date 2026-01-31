@@ -645,9 +645,11 @@ export default function CommunityScreen() {
                     </View>
                   )}
 
-                  <Text style={[styles.postContent, { color: textColor }]}>
-                    {post.content}
-                  </Text>
+                  {post.content && post.content.trim().length > 0 && (
+                    <Text style={[styles.postContent, { color: textColor }]}>
+                      {post.content}
+                    </Text>
+                  )}
 
                   <View style={styles.postFooter}>
                     <TouchableOpacity 
