@@ -860,82 +860,54 @@ export function registerWeeklyThemeRoutes(app: App) {
           'Pacific Time details for daily scripture calculation'
         );
 
-        // Get daily content for today
-        let dailyContentRecord = await app.db
-          .select()
-          .from(schema.dailyContent)
-          .where(
-            and(
-              eq(schema.dailyContent.weeklyThemeId, theme.id),
-              eq(schema.dailyContent.dayOfWeek, currentDayOfWeek)
-            )
-          )
-          .limit(1);
-
-        // Get daily content for today, or generate it if not found
-        let dailyContent = dailyContentRecord[0];
-        let generatedContent = null;
-        let usedDayOfYear = dayOfYear; // Track which dayOfYear was used
-
-        // If no daily content in database, generate appropriate content based on theme
-        if (!dailyContent) {
-          app.logger.info(
-            {
-              themeId: theme.id,
-              weekIndex: currentWeekIndex,
-              dayOfWeek: currentDayOfWeek,
-              dayOfYear,
-            },
-            'No database content found - generating from 365-day scripture cycle'
-          );
-
-          const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          const dayName = dayTitles[currentDayOfWeek];
-
-          // Get the unique scripture for this day of the year (0-364)
-          const dailyScripture = DAILY_SCRIPTURES_365[dayOfYear];
-
-          if (!dailyScripture) {
-            app.logger.error(
-              { dayOfYear, arrayLength: DAILY_SCRIPTURES_365.length },
-              'ERROR: Daily scripture not found for dayOfYear'
-            );
-            throw new Error(`Daily scripture not found for day ${dayOfYear}`);
-          }
-
-          // Create generated daily content object (not storing in DB, just for response)
-          generatedContent = {
-            id: null,
+        // ALWAYS generate daily content from the 365-day scripture cycle
+        // Do NOT use database content - the DAILY_SCRIPTURES_365 array is the source of truth
+        app.logger.info(
+          {
+            themeId: theme.id,
+            weekIndex: currentWeekIndex,
             dayOfWeek: currentDayOfWeek,
-            dayTitle: dayName,
-            scriptureReference: dailyScripture.ref,
-            scriptureText: dailyScripture.text,
-            reflectionPrompt: dailyScripture.prompt,
-            somaticPrompt: null,
-            dayOfYear, // Include dayOfYear in generated content
-          };
+            dayOfYear,
+          },
+          'Generating daily content from 365-day scripture cycle'
+        );
 
-          app.logger.info(
-            {
-              themeId: theme.id,
-              dayOfYear,
-              dayOfWeek: currentDayOfWeek,
-              scriptureRef: dailyScripture.ref,
-              scriptureText: dailyScripture.text.substring(0, 100),
-            },
-            'Successfully generated daily content from 365-day scripture cycle'
+        const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = dayTitles[currentDayOfWeek];
+
+        // Get the unique scripture for this day of the year (0-364)
+        const dailyScripture = DAILY_SCRIPTURES_365[dayOfYear];
+
+        if (!dailyScripture) {
+          app.logger.error(
+            { dayOfYear, arrayLength: DAILY_SCRIPTURES_365.length },
+            'ERROR: Daily scripture not found for dayOfYear'
           );
-        } else {
-          app.logger.info(
-            {
-              themeId: theme.id,
-              dayOfYear,
-              dayOfWeek: currentDayOfWeek,
-              scriptureRef: dailyContent.scriptureReference,
-            },
-            'Using database daily content'
-          );
+          throw new Error(`Daily scripture not found for day ${dayOfYear}`);
         }
+
+        // Create daily content object from 365-day scripture cycle
+        const dailyContent = {
+          id: null,
+          dayOfWeek: currentDayOfWeek,
+          dayTitle: dayName,
+          scriptureReference: dailyScripture.ref,
+          scriptureText: dailyScripture.text,
+          reflectionPrompt: dailyScripture.prompt,
+          somaticPrompt: null,
+          dayOfYear, // Include dayOfYear in content
+        };
+
+        app.logger.info(
+          {
+            themeId: theme.id,
+            dayOfYear,
+            dayOfWeek: currentDayOfWeek,
+            scriptureRef: dailyScripture.ref,
+            scriptureText: dailyScripture.text.substring(0, 100),
+          },
+          'Daily content generated from 365-day scripture cycle'
+        );
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
@@ -955,19 +927,16 @@ export function registerWeeklyThemeRoutes(app: App) {
           'Current weekly theme retrieved'
         );
 
-        // Use generated content if database content not found
-        const contentToReturn = generatedContent || dailyContent;
-
-        // Ensure dayOfYear is included in response for debugging
+        // Format the response with all daily content fields
         const responseContent = {
-          id: contentToReturn.id,
-          dayOfWeek: contentToReturn.dayOfWeek,
-          dayTitle: contentToReturn.dayTitle,
-          scriptureReference: contentToReturn.scriptureReference,
-          scriptureText: contentToReturn.scriptureText,
-          reflectionQuestion: contentToReturn.reflectionPrompt,
-          somaticPrompt: contentToReturn.somaticPrompt || null,
-          dayOfYear: contentToReturn.dayOfYear || usedDayOfYear, // Always include dayOfYear
+          id: dailyContent.id,
+          dayOfWeek: dailyContent.dayOfWeek,
+          dayTitle: dailyContent.dayTitle,
+          scriptureReference: dailyContent.scriptureReference,
+          scriptureText: dailyContent.scriptureText,
+          reflectionQuestion: dailyContent.reflectionPrompt,
+          somaticPrompt: dailyContent.somaticPrompt || null,
+          dayOfYear: dailyContent.dayOfYear, // Always include dayOfYear
         };
 
         app.logger.info(
