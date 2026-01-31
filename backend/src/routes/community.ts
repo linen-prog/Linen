@@ -721,14 +721,11 @@ export function registerCommunityRoutes(app: App) {
       request: FastifyRequest<{ Params: { postId: string }; Body: { message: string; isAnonymous?: boolean } }>,
       reply: FastifyReply
     ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
       const { postId } = request.params;
       const { message, isAnonymous = false } = request.body;
-      const session = (request as any).session;
-
-      if (!session?.user?.id) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
       const senderId = session.user.id;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -788,11 +785,8 @@ export function registerCommunityRoutes(app: App) {
   app.fastify.get(
     '/api/community/care-messages',
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-      const session = (request as any).session;
-
-      if (!session?.user?.id) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
+      const session = await requireAuth(request, reply);
+      if (!session) return;
 
       const recipientId = session.user.id;
 
