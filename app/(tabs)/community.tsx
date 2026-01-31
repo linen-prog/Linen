@@ -661,104 +661,108 @@ export default function CommunityScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Reaction Section - Always show all reaction types */}
+                  {/* Reaction Section - Always show all reaction types in 2 rows */}
                   <View style={styles.reactionSection}>
                     <View style={styles.reactionsDisplay}>
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'praying' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'praying')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>🙏</Text>
-                        {reactions.praying > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.praying}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
+                      <View style={styles.reactionRow}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'praying' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'praying')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>🙏</Text>
+                          {reactions.praying > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.praying}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'holding' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'holding')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>💙</Text>
+                          {reactions.holding > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.holding}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'light' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'light')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>🕯️</Text>
+                          {reactions.light > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.light}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
                       
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'holding' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'holding')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>💙</Text>
-                        {reactions.holding > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.holding}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'light' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'light')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>🕯️</Text>
-                        {reactions.light > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.light}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'amen' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'amen')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>✨</Text>
-                        {reactions.amen > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.amen}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'growing' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'growing')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>🌱</Text>
-                        {reactions.growing > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.growing}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={[
-                          styles.reactionBadge,
-                          post.userReaction === 'peace' && styles.reactionBadgeActive
-                        ]}
-                        onPress={() => handleReact(post.id, 'peace')}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactionEmoji}>🕊️</Text>
-                        {reactions.peace > 0 && (
-                          <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                            {reactions.peace}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
+                      <View style={styles.reactionRow}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'amen' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'amen')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>✨</Text>
+                          {reactions.amen > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.amen}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'growing' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'growing')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>🌱</Text>
+                          {reactions.growing > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.growing}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.reactionBadge,
+                            post.userReaction === 'peace' && styles.reactionBadgeActive
+                          ]}
+                          onPress={() => handleReact(post.id, 'peace')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactionEmoji}>🕊️</Text>
+                          {reactions.peace > 0 && (
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {reactions.peace}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
@@ -1286,9 +1290,12 @@ const styles = StyleSheet.create({
     fontWeight: typography.medium,
   },
   reactionsDisplay: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.xs,
+  },
+  reactionRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'flex-start',
   },
   reactionBadge: {
     flexDirection: 'row',
