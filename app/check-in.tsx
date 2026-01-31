@@ -1133,7 +1133,7 @@ export default function CheckInScreen() {
         </View>
       </Modal>
 
-      {/* Celebratory Prayer Success Modal */}
+      {/* Celebratory Prayer Success Modal - GREEN THEME */}
       <Modal
         visible={showPrayerSuccessModal}
         transparent
@@ -1143,83 +1143,83 @@ export default function CheckInScreen() {
           setShareAnonymous(false);
         }}
       >
-        <View style={styles.celebrationOverlay}>
-          <View style={styles.celebrationModal}>
+        <View style={styles.prayerCelebrationOverlay}>
+          <View style={styles.prayerCelebrationModal}>
             {/* Decorative hearts */}
-            <View style={styles.decorativeHeartTopLeft}>
-              <Text style={styles.decorativeHeartText}>
+            <View style={styles.prayerDecorativeHeartTopLeft}>
+              <Text style={styles.prayerDecorativeHeartText}>
                 ♡
               </Text>
             </View>
-            <View style={styles.decorativeHeartBottomRight}>
-              <Text style={styles.decorativeHeartText}>
+            <View style={styles.prayerDecorativeHeartBottomRight}>
+              <Text style={styles.prayerDecorativeHeartText}>
                 ♡
               </Text>
             </View>
             
             {/* Sparkle decorations */}
-            <View style={styles.sparkleTopRight}>
-              <Text style={styles.sparkleText}>
+            <View style={styles.prayerSparkleTopRight}>
+              <Text style={styles.prayerSparkleText}>
                 ✨
               </Text>
             </View>
-            <View style={styles.sparkleBottomLeft}>
-              <Text style={styles.sparkleText}>
+            <View style={styles.prayerSparkleBottomLeft}>
+              <Text style={styles.prayerSparkleText}>
                 ✨
               </Text>
             </View>
 
             {/* Main icon with circle background */}
-            <View style={styles.celebrationIconContainer}>
-              <View style={styles.celebrationIconCircle}>
+            <View style={styles.prayerCelebrationIconContainer}>
+              <View style={styles.prayerCelebrationIconCircle}>
                 <IconSymbol 
-                  ios_icon_name="hands.sparkles"
-                  android_material_icon_name="auto-awesome"
+                  ios_icon_name="person.3.fill"
+                  android_material_icon_name="group"
                   size={48}
                   color="#FFFFFF"
                 />
               </View>
-              <View style={styles.celebrationSparkle}>
-                <Text style={styles.celebrationSparkleText}>
+              <View style={styles.prayerCelebrationSparkle}>
+                <Text style={styles.prayerCelebrationSparkleText}>
                   ✨
                 </Text>
               </View>
             </View>
 
             {/* Title */}
-            <Text style={styles.celebrationTitle}>
+            <Text style={styles.prayerCelebrationTitle}>
               Thank you for sharing 🙏
             </Text>
 
             {/* Subtitle */}
-            <Text style={styles.celebrationSubtitle}>
+            <Text style={styles.prayerCelebrationSubtitle}>
               Your prayer has been shared with the community
             </Text>
 
             {/* Anonymous note */}
             {shareAnonymous && (
-              <Text style={styles.celebrationAnonymousNote}>
+              <Text style={styles.prayerCelebrationAnonymousNote}>
                 (shared anonymously)
               </Text>
             )}
 
             {/* Reassurance box */}
-            <View style={styles.celebrationReassuranceBox}>
-              <Text style={styles.celebrationReassuranceText}>
+            <View style={styles.prayerCelebrationReassuranceBox}>
+              <Text style={styles.prayerCelebrationReassuranceText}>
                 Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
               </Text>
             </View>
 
             {/* Continue button */}
             <TouchableOpacity 
-              style={styles.celebrationButton}
+              style={styles.prayerCelebrationButton}
               onPress={() => {
                 console.log('[CheckIn] User closing prayer celebration modal');
                 setShowPrayerSuccessModal(false);
                 setShareAnonymous(false);
               }}
             >
-              <Text style={styles.celebrationButtonText}>
+              <Text style={styles.prayerCelebrationButtonText}>
                 Continue
               </Text>
             </TouchableOpacity>
@@ -1679,7 +1679,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.lg,
   },
-  // Celebratory Modal Styles
+  // Celebratory Care Modal Styles (Pink)
   celebrationOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -1804,6 +1804,135 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   celebrationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  // Celebratory Prayer Modal Styles (Green/Mint)
+  prayerCelebrationOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  prayerCelebrationModal: {
+    backgroundColor: '#F0F9F4',
+    borderRadius: 24,
+    padding: spacing.xxl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  prayerDecorativeHeartTopLeft: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+  },
+  prayerDecorativeHeartBottomRight: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+  },
+  prayerDecorativeHeartText: {
+    fontSize: 24,
+    color: '#B8E6CC',
+  },
+  prayerSparkleTopRight: {
+    position: 'absolute',
+    top: 30,
+    right: 30,
+  },
+  prayerSparkleBottomLeft: {
+    position: 'absolute',
+    bottom: 90,
+    left: 30,
+  },
+  prayerSparkleText: {
+    fontSize: 20,
+    color: '#FFD700',
+  },
+  prayerCelebrationIconContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  prayerCelebrationIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#4A9B6E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4A9B6E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  prayerCelebrationSparkle: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+  },
+  prayerCelebrationSparkleText: {
+    fontSize: 32,
+    color: '#FFD700',
+  },
+  prayerCelebrationTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2D5F45',
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  prayerCelebrationSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    lineHeight: 22,
+  },
+  prayerCelebrationAnonymousNote: {
+    fontSize: 14,
+    color: '#4A9B6E',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  prayerCelebrationReassuranceBox: {
+    backgroundColor: '#E8F5ED',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: '#C8E6D4',
+  },
+  prayerCelebrationReassuranceText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  prayerCelebrationButton: {
+    backgroundColor: '#4A9B6E',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: 28,
+    minWidth: 200,
+    alignItems: 'center',
+    shadowColor: '#4A9B6E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  prayerCelebrationButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
