@@ -121,9 +121,6 @@ export default function CommunityScreen() {
         endpoint = '/api/community/my-posts';
         console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
       } else {
-        // Map frontend tab names to backend categories
-        // Feed shows daily-gift reflections
-        // Wisdom, Care, Prayers show companion content filtered by category
         endpoint = `/api/community/posts?category=${category}`;
         console.log('[Community] 🔵 Fetching posts from:', endpoint);
       }
@@ -131,7 +128,6 @@ export default function CommunityScreen() {
       const response = await authenticatedGet<Post[]>(endpoint);
       console.log('[Community] ✅ Posts loaded for', category, ':', response.length, 'posts');
       
-      // Log details of ALL posts for debugging
       console.log('[Community] 📊 Post details:', response.map(p => ({
         id: p.id,
         category: p.category,
@@ -197,7 +193,6 @@ export default function CommunityScreen() {
         return post;
       }));
       
-      // Reload stats after praying
       loadStats();
     } catch (error) {
       console.error('[Community] Failed to toggle prayer:', error);
@@ -207,7 +202,6 @@ export default function CommunityScreen() {
   const handleFlagPost = async (postId: string) => {
     console.log('[Community] User flagging post:', postId);
     
-    // For now, just log the action - a proper modal should be implemented
     console.log('[Community] Flag post feature - requires confirmation modal');
     
     try {
@@ -281,11 +275,9 @@ export default function CommunityScreen() {
       // Revert optimistic update on error
       setPosts(previousPosts);
       
-      // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
         console.log('[Community] Reaction requires authentication - user is in guest mode');
-        // Silently fail for guest users - they can still view reactions
       } else {
         console.error('[Community] Unexpected error toggling reaction:', errorMessage);
       }
@@ -352,7 +344,6 @@ export default function CommunityScreen() {
   const sharedTodayText = `${stats.sharedToday}`;
   const liftedInPrayerText = `${stats.liftedInPrayer}`;
 
-  // Helper function to get category badge color
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'feed':
@@ -368,7 +359,6 @@ export default function CommunityScreen() {
     }
   };
 
-  // Helper function to get category label
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'feed':
@@ -381,6 +371,26 @@ export default function CommunityScreen() {
         return 'Prayers';
       default:
         return category;
+    }
+  };
+
+  // Helper function to get reaction emoji
+  const getReactionEmoji = (reactionType: string) => {
+    switch (reactionType) {
+      case 'praying':
+        return '🙏';
+      case 'holding':
+        return '💙';
+      case 'light':
+        return '🕯️';
+      case 'amen':
+        return '✨';
+      case 'growing':
+        return '🌱';
+      case 'peace':
+        return '🕊️';
+      default:
+        return '';
     }
   };
 
@@ -582,8 +592,8 @@ export default function CommunityScreen() {
               const categoryColor = getCategoryColor(post.category);
               const categoryLabel = getCategoryLabel(post.category);
               
-              // Ensure reactions object exists with all reaction types
               const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
+              const hasUserReacted = !!post.userReaction;
               
               return (
                 <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
@@ -661,109 +671,36 @@ export default function CommunityScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Reaction Section - Always show all reaction types in 2 rows */}
+                  {/* Reaction Section - Show user's reaction if they've reacted, otherwise show Reactions button */}
                   <View style={styles.reactionSection}>
-                    <View style={styles.reactionsDisplay}>
-                      <View style={styles.reactionRow}>
+                    {hasUserReacted ? (
+                      <View style={styles.userReactionDisplay}>
                         <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'praying' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'praying')}
+                          style={[styles.reactionBadge, styles.reactionBadgeActive]}
+                          onPress={() => setShowReactionPicker(post.id)}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.reactionEmoji}>🙏</Text>
-                          {reactions.praying > 0 && (
+                          <Text style={styles.reactionEmoji}>
+                            {getReactionEmoji(post.userReaction!)}
+                          </Text>
+                          {reactions[post.userReaction! as keyof typeof reactions] > 0 && (
                             <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.praying}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'holding' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'holding')}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>💙</Text>
-                          {reactions.holding > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.holding}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'light' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'light')}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>🕯️</Text>
-                          {reactions.light > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.light}
+                              {reactions[post.userReaction! as keyof typeof reactions]}
                             </Text>
                           )}
                         </TouchableOpacity>
                       </View>
-                      
-                      <View style={styles.reactionRow}>
-                        <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'amen' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'amen')}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>✨</Text>
-                          {reactions.amen > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.amen}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'growing' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'growing')}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>🌱</Text>
-                          {reactions.growing > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.growing}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                          style={[
-                            styles.reactionBadge,
-                            post.userReaction === 'peace' && styles.reactionBadgeActive
-                          ]}
-                          onPress={() => handleReact(post.id, 'peace')}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>🕊️</Text>
-                          {reactions.peace > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions.peace}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                    ) : (
+                      <TouchableOpacity 
+                        style={styles.reactButton}
+                        onPress={() => setShowReactionPicker(post.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
+                          Reactions
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   {/* Send Care Button (only for care category posts) */}
@@ -810,7 +747,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'praying')}
               >
-                <Text style={styles.reactionOptionEmoji}>🙏</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  🙏
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Praying
                 </Text>
@@ -819,7 +758,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'holding')}
               >
-                <Text style={styles.reactionOptionEmoji}>💙</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  💙
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Holding you
                 </Text>
@@ -828,7 +769,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'light')}
               >
-                <Text style={styles.reactionOptionEmoji}>🕯️</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  🕯️
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Light with you
                 </Text>
@@ -837,7 +780,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'amen')}
               >
-                <Text style={styles.reactionOptionEmoji}>✨</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  ✨
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Amen
                 </Text>
@@ -846,7 +791,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'growing')}
               >
-                <Text style={styles.reactionOptionEmoji}>🌱</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  🌱
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Growing together
                 </Text>
@@ -855,7 +802,9 @@ export default function CommunityScreen() {
                 style={styles.reactionOption}
                 onPress={() => showReactionPicker && handleReact(showReactionPicker, 'peace')}
               >
-                <Text style={styles.reactionOptionEmoji}>🕊️</Text>
+                <Text style={styles.reactionOptionEmoji}>
+                  🕊️
+                </Text>
                 <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
                   Peace
                 </Text>
@@ -968,7 +917,6 @@ export default function CommunityScreen() {
               />
             </ScrollView>
 
-            {/* Single "Send anonymously" toggle at the bottom */}
             <View style={styles.careModalFooter}>
               <TouchableOpacity
                 style={styles.anonymousToggleRow}
@@ -1011,7 +959,6 @@ export default function CommunityScreen() {
   );
 }
 
-// Helper component for care message options
 function CareMessageOption({ 
   message, 
   onPress, 
@@ -1045,7 +992,6 @@ function CareMessageOption({
   );
 }
 
-// Helper function to format time ago
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -1057,13 +1003,16 @@ function formatTimeAgo(date: Date): string {
     return 'Just now';
   }
   if (diffMins < 60) {
-    return `${diffMins}m ago`;
+    const minsText = `${diffMins}m ago`;
+    return minsText;
   }
   if (diffHours < 24) {
-    return `${diffHours}h ago`;
+    const hoursText = `${diffHours}h ago`;
+    return hoursText;
   }
   if (diffDays < 7) {
-    return `${diffDays}d ago`;
+    const daysText = `${diffDays}d ago`;
+    return daysText;
   }
   return date.toLocaleDateString();
 }
@@ -1275,7 +1224,6 @@ const styles = StyleSheet.create({
   },
   reactionSection: {
     marginTop: spacing.md,
-    gap: spacing.sm,
   },
   reactButton: {
     alignSelf: 'flex-start',
@@ -1289,13 +1237,9 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
     fontWeight: typography.medium,
   },
-  reactionsDisplay: {
-    gap: spacing.xs,
-  },
-  reactionRow: {
+  userReactionDisplay: {
     flexDirection: 'row',
     gap: spacing.xs,
-    justifyContent: 'flex-start',
   },
   reactionBadge: {
     flexDirection: 'row',
@@ -1495,14 +1439,5 @@ const styles = StyleSheet.create({
   },
   careMessageTime: {
     fontSize: typography.caption,
-  },
-  careMessageText: {
-    fontSize: typography.body,
-    fontStyle: 'italic',
-    lineHeight: 24,
-  },
-  careMessageContext: {
-    fontSize: typography.caption,
-    fontStyle: 'italic',
   },
 });
