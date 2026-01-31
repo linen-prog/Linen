@@ -1148,7 +1148,7 @@ export default function ArtworkCanvasScreen() {
         savedAt: new Date().toISOString(),
       });
       
-      const savedArtwork = await authenticatedPost('/api/artwork/save', {
+      const savedArtwork = await authenticatedPost<{ artworkUrl?: string }>('/api/artwork/save', {
         artworkData,
         photoUrls: backgroundImage ? [backgroundImage] : [],
       });
@@ -1159,14 +1159,16 @@ export default function ArtworkCanvasScreen() {
         ? 'Shared my artwork with a photo background from this week\'s reflection'
         : 'Shared my artwork from this week\'s reflection';
 
+      // Include the artwork URL in the post so it displays in the community feed
       await authenticatedPost('/api/community/post', {
         content: shareContent,
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
+        artworkUrl: savedArtwork.artworkUrl || backgroundImage || null,
       });
 
-      console.log('Artwork shared to community successfully');
+      console.log('Artwork shared to community successfully with artworkUrl:', savedArtwork.artworkUrl || backgroundImage);
       setIsSharing(false);
       setShowShareModal(false);
       setShowPostSaveModal(false);

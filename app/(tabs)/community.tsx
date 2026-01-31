@@ -697,7 +697,7 @@ export default function CommunityScreen() {
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                          Reactions
+                          React
                         </Text>
                       </TouchableOpacity>
                     )}
