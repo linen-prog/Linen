@@ -6,6 +6,15 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  withSequence,
+  withTiming,
+  withRepeat,
+  Easing
+} from 'react-native-reanimated';
 
 interface Message {
   id: string;
@@ -36,7 +45,7 @@ export default function CheckInScreen() {
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCareModal, setShowCareModal] = useState(false);
-  const [showCareShareModal, setShowCareShareModal] = useState(false);
+  const [showCareSuccessModal, setShowCareSuccessModal] = useState(false);
   const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
   const [generatedPrayerId, setGeneratedPrayerId] = useState<string>('');
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
@@ -325,27 +334,10 @@ export default function CheckInScreen() {
       console.log('[CheckIn] ✅ Care request submitted successfully!', response);
       setShowCareModal(false);
       setCareRequestText('');
-      setCareAnonymous(false);
       setIsSubmittingCare(false);
       
-      // Show success message with option to view community
-      Alert.alert(
-        'Shared!',
-        'Your care request has been shared with the community in the Care tab.',
-        [
-          {
-            text: 'View Community',
-            onPress: () => {
-              console.log('[CheckIn] User navigating to community page');
-              router.push('/(tabs)/community');
-            }
-          },
-          {
-            text: 'OK',
-            style: 'cancel'
-          }
-        ]
-      );
+      // Show celebratory success modal
+      setShowCareSuccessModal(true);
     } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to submit care request:', error);
       console.error('[CheckIn] ❌ Error details:', {
@@ -1064,6 +1056,100 @@ export default function CheckInScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Celebratory Care Success Modal */}
+      <Modal
+        visible={showCareSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowCareSuccessModal(false);
+          setCareAnonymous(false);
+        }}
+      >
+        <View style={styles.celebrationOverlay}>
+          <View style={styles.celebrationModal}>
+            {/* Decorative hearts */}
+            <View style={styles.decorativeHeartTopLeft}>
+              <Text style={styles.decorativeHeartText}>
+                ♡
+              </Text>
+            </View>
+            <View style={styles.decorativeHeartBottomRight}>
+              <Text style={styles.decorativeHeartText}>
+                ♡
+              </Text>
+            </View>
+            
+            {/* Sparkle decorations */}
+            <View style={styles.sparkleTopRight}>
+              <Text style={styles.sparkleText}>
+                ✨
+              </Text>
+            </View>
+            <View style={styles.sparkleBottomLeft}>
+              <Text style={styles.sparkleText}>
+                ✨
+              </Text>
+            </View>
+
+            {/* Main icon with circle background */}
+            <View style={styles.celebrationIconContainer}>
+              <View style={styles.celebrationIconCircle}>
+                <IconSymbol 
+                  ios_icon_name="message.fill"
+                  android_material_icon_name="chat"
+                  size={48}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.celebrationSparkle}>
+                <Text style={styles.celebrationSparkleText}>
+                  ✨
+                </Text>
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text style={styles.celebrationTitle}>
+              Your Request is Shared 🎉
+            </Text>
+
+            {/* Subtitle */}
+            <Text style={styles.celebrationSubtitle}>
+              The community will be able to send you encouragement
+            </Text>
+
+            {/* Anonymous note */}
+            {careAnonymous && (
+              <Text style={styles.celebrationAnonymousNote}>
+                (shared anonymously)
+              </Text>
+            )}
+
+            {/* Reassurance box */}
+            <View style={styles.celebrationReassuranceBox}>
+              <Text style={styles.celebrationReassuranceText}>
+                You are not alone. The community is here to hold you with gentle care and support.
+              </Text>
+            </View>
+
+            {/* Continue button */}
+            <TouchableOpacity 
+              style={styles.celebrationButton}
+              onPress={() => {
+                console.log('[CheckIn] User closing celebration modal');
+                setShowCareSuccessModal(false);
+                setCareAnonymous(false);
+              }}
+            >
+              <Text style={styles.celebrationButtonText}>
+                Continue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Share AI Message Modal - Wisdom Only */}
       <Modal
         visible={showMessageShareModal}
@@ -1515,5 +1601,134 @@ const styles = StyleSheet.create({
     minHeight: 120,
     borderWidth: 1,
     marginBottom: spacing.lg,
+  },
+  // Celebratory Modal Styles
+  celebrationOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  celebrationModal: {
+    backgroundColor: '#FFF5F7',
+    borderRadius: 24,
+    padding: spacing.xxl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  decorativeHeartTopLeft: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+  },
+  decorativeHeartBottomRight: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+  },
+  decorativeHeartText: {
+    fontSize: 24,
+    color: '#FFB6C1',
+  },
+  sparkleTopRight: {
+    position: 'absolute',
+    top: 30,
+    right: 30,
+  },
+  sparkleBottomLeft: {
+    position: 'absolute',
+    bottom: 90,
+    left: 30,
+  },
+  sparkleText: {
+    fontSize: 20,
+    color: '#FFD700',
+  },
+  celebrationIconContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  celebrationIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E91E63',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E91E63',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  celebrationSparkle: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+  },
+  celebrationSparkleText: {
+    fontSize: 32,
+    color: '#FFD700',
+  },
+  celebrationTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#8B1538',
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  celebrationSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    lineHeight: 22,
+  },
+  celebrationAnonymousNote: {
+    fontSize: 14,
+    color: '#E91E63',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  celebrationReassuranceBox: {
+    backgroundColor: '#FFF0F3',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: '#FFD6E0',
+  },
+  celebrationReassuranceText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  celebrationButton: {
+    backgroundColor: '#E91E63',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: 28,
+    minWidth: 200,
+    alignItems: 'center',
+    shadowColor: '#E91E63',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  celebrationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
