@@ -564,20 +564,18 @@ export function registerCommunityRoutes(app: App) {
       request: FastifyRequest<{ Params: { postId: string }; Body: { reactionType: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
       const { postId } = request.params;
       const { reactionType } = request.body;
-      const session = (request as any).session;
-
-      if (!session?.user?.id) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
       const userId = session.user.id;
+
       const validReactionTypes = ['praying', 'holding', 'light', 'amen', 'growing', 'peace'];
 
       if (!validReactionTypes.includes(reactionType)) {
         app.logger.warn(
-          { reactionType, validReactionTypes },
+          { reactionType, validReactionTypes, userId },
           'Invalid reaction type provided'
         );
         return reply.status(400).send({ error: 'Invalid reaction type' });
