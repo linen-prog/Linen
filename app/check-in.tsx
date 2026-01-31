@@ -46,6 +46,7 @@ export default function CheckInScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCareModal, setShowCareModal] = useState(false);
   const [showCareSuccessModal, setShowCareSuccessModal] = useState(false);
+  const [showPrayerSuccessModal, setShowPrayerSuccessModal] = useState(false);
   const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
   const [generatedPrayerId, setGeneratedPrayerId] = useState<string>('');
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
@@ -274,26 +275,8 @@ export default function CheckInScreen() {
       setShowPrayerModal(false);
       setIsSharing(false);
       
-      const categoryLabel = shareCategory.charAt(0).toUpperCase() + shareCategory.slice(1);
-      
-      // Show success message with option to view community
-      Alert.alert(
-        'Shared!',
-        `Your prayer has been shared with the community in the ${categoryLabel} tab.`,
-        [
-          {
-            text: 'View Community',
-            onPress: () => {
-              console.log('[CheckIn] User navigating to community page');
-              router.push('/(tabs)/community');
-            }
-          },
-          {
-            text: 'OK',
-            style: 'cancel'
-          }
-        ]
-      );
+      // Show celebratory success modal
+      setShowPrayerSuccessModal(true);
     } catch (error: any) {
       console.error('[CheckIn] ❌ Failed to share prayer:', error);
       console.error('[CheckIn] ❌ Error details:', {
@@ -1140,6 +1123,100 @@ export default function CheckInScreen() {
                 console.log('[CheckIn] User closing celebration modal');
                 setShowCareSuccessModal(false);
                 setCareAnonymous(false);
+              }}
+            >
+              <Text style={styles.celebrationButtonText}>
+                Continue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Celebratory Prayer Success Modal */}
+      <Modal
+        visible={showPrayerSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowPrayerSuccessModal(false);
+          setShareAnonymous(false);
+        }}
+      >
+        <View style={styles.celebrationOverlay}>
+          <View style={styles.celebrationModal}>
+            {/* Decorative hearts */}
+            <View style={styles.decorativeHeartTopLeft}>
+              <Text style={styles.decorativeHeartText}>
+                ♡
+              </Text>
+            </View>
+            <View style={styles.decorativeHeartBottomRight}>
+              <Text style={styles.decorativeHeartText}>
+                ♡
+              </Text>
+            </View>
+            
+            {/* Sparkle decorations */}
+            <View style={styles.sparkleTopRight}>
+              <Text style={styles.sparkleText}>
+                ✨
+              </Text>
+            </View>
+            <View style={styles.sparkleBottomLeft}>
+              <Text style={styles.sparkleText}>
+                ✨
+              </Text>
+            </View>
+
+            {/* Main icon with circle background */}
+            <View style={styles.celebrationIconContainer}>
+              <View style={styles.celebrationIconCircle}>
+                <IconSymbol 
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={48}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.celebrationSparkle}>
+                <Text style={styles.celebrationSparkleText}>
+                  ✨
+                </Text>
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text style={styles.celebrationTitle}>
+              Thank you for sharing 🙏
+            </Text>
+
+            {/* Subtitle */}
+            <Text style={styles.celebrationSubtitle}>
+              Your prayer has been shared with the community
+            </Text>
+
+            {/* Anonymous note */}
+            {shareAnonymous && (
+              <Text style={styles.celebrationAnonymousNote}>
+                (shared anonymously)
+              </Text>
+            )}
+
+            {/* Reassurance box */}
+            <View style={styles.celebrationReassuranceBox}>
+              <Text style={styles.celebrationReassuranceText}>
+                Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
+              </Text>
+            </View>
+
+            {/* Continue button */}
+            <TouchableOpacity 
+              style={styles.celebrationButton}
+              onPress={() => {
+                console.log('[CheckIn] User closing prayer celebration modal');
+                setShowPrayerSuccessModal(false);
+                setShareAnonymous(false);
               }}
             >
               <Text style={styles.celebrationButtonText}>
