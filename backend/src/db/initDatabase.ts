@@ -359,6 +359,12 @@ export async function initializeDatabase(db: any, app?: App) {
       )
     `);
 
+    // Add columns to user_profiles if they don't exist
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_name" text
+    `);
+
     // Create indexes for user_profiles
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS "user_profiles_user_id_unique" ON "user_profiles"("user_id")

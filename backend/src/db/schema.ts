@@ -307,6 +307,7 @@ export const userProfiles = pgTable(
         return { id: true } as any;
       }, { onDelete: 'cascade' }),
     displayName: text('display_name'),
+    companionName: text('companion_name'), // Name given to the AI companion by the user
     avatarType: text('avatar_type', {
       enum: ['photo', 'icon', 'default'],
     })

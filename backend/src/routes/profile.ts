@@ -52,6 +52,7 @@ export function registerProfileRoutes(app: App) {
           id: p.id,
           userId: p.userId,
           displayName: p.displayName,
+          companionName: p.companionName,
           avatarType: p.avatarType,
           avatarUrl: p.avatarUrl,
           avatarIcon: p.avatarIcon,
@@ -84,6 +85,7 @@ export function registerProfileRoutes(app: App) {
       request: FastifyRequest<{
         Body: {
           displayName?: string;
+          companionName?: string;
           avatarType?: string;
           avatarUrl?: string;
           avatarIcon?: string;
@@ -103,6 +105,7 @@ export function registerProfileRoutes(app: App) {
 
       const {
         displayName,
+        companionName,
         avatarType,
         avatarUrl,
         avatarIcon,
@@ -121,6 +124,7 @@ export function registerProfileRoutes(app: App) {
         // Build update object
         const updateData: any = {};
         if (displayName !== undefined) updateData.displayName = displayName;
+        if (companionName !== undefined) updateData.companionName = companionName;
         if (avatarType !== undefined) updateData.avatarType = avatarType;
         if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
         if (avatarIcon !== undefined) updateData.avatarIcon = avatarIcon;
@@ -195,6 +199,7 @@ export function registerProfileRoutes(app: App) {
           id: p.id,
           userId: p.userId,
           displayName: p.displayName,
+          companionName: p.companionName,
           avatarType: p.avatarType,
           avatarUrl: p.avatarUrl,
           avatarIcon: p.avatarIcon,
@@ -272,6 +277,7 @@ export function registerProfileRoutes(app: App) {
         let totalReflections = 0;
         let daysInCommunity = 0;
         let memberSince = null;
+        let companionName = null;
 
         if (profile.length > 0) {
           checkInStreak = profile[0].checkInStreak;
@@ -279,6 +285,7 @@ export function registerProfileRoutes(app: App) {
           totalReflections = profile[0].totalReflections;
           daysInCommunity = profile[0].daysInCommunity;
           memberSince = profile[0].memberSince;
+          companionName = profile[0].companionName;
         }
 
         // Count user's community posts
@@ -297,6 +304,7 @@ export function registerProfileRoutes(app: App) {
             totalReflections,
             daysInCommunity,
             totalSharedPosts,
+            companionName,
           },
           'User journey stats retrieved'
         );
@@ -308,6 +316,7 @@ export function registerProfileRoutes(app: App) {
           daysInCommunity,
           memberSince,
           totalSharedPosts,
+          companionName,
         });
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id }, 'Failed to fetch user stats');
