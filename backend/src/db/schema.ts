@@ -98,6 +98,7 @@ export const communityPosts = pgTable('community_posts', {
     enum: ['companion', 'daily-gift', 'somatic', 'manual'],
   }).default('manual').notNull(),
   scriptureReference: text('scripture_reference'),
+  artworkUrl: text('artwork_url'), // URL to artwork image for somatic posts
   isFlagged: boolean('is_flagged').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

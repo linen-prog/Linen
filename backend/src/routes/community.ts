@@ -54,7 +54,6 @@ export function registerCommunityRoutes(app: App) {
           posts.map(async (post) => {
             let userHasPrayed = false;
             let userHasFlagged = false;
-            let artworkUrl: string | null = null;
 
             if (userId) {
               const prayer = await app.db
@@ -84,20 +83,6 @@ export function registerCommunityRoutes(app: App) {
               userHasFlagged = flag.length > 0;
             }
 
-            // Get artwork URL for somatic posts
-            if (post.contentType === 'somatic') {
-              const artwork = await app.db
-                .select()
-                .from(schema.userArtworks)
-                .where(eq(schema.userArtworks.userId, post.userId))
-                .orderBy(desc(schema.userArtworks.updatedAt))
-                .limit(1);
-
-              if (artwork.length > 0 && artwork[0].photoUrls && Array.isArray(artwork[0].photoUrls) && artwork[0].photoUrls.length > 0) {
-                artworkUrl = artwork[0].photoUrls[0];
-              }
-            }
-
             return {
               id: post.id,
               authorName: post.authorName,
@@ -111,7 +96,7 @@ export function registerCommunityRoutes(app: App) {
               createdAt: post.createdAt,
               userHasPrayed,
               userHasFlagged,
-              artworkUrl,
+              artworkUrl: post.artworkUrl || null,
             };
           })
         );
@@ -143,6 +128,7 @@ export function registerCommunityRoutes(app: App) {
           isAnonymous: boolean;
           contentType?: string;
           scriptureReference?: string;
+          artworkUrl?: string;
         };
       }>,
       reply: FastifyReply
@@ -150,11 +136,11 @@ export function registerCommunityRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { category, content, isAnonymous, contentType = 'manual', scriptureReference } =
+      const { category, content, isAnonymous, contentType = 'manual', scriptureReference, artworkUrl } =
         request.body;
 
       app.logger.info(
-        { userId: session.user.id, category, contentType, isAnonymous },
+        { userId: session.user.id, category, contentType, isAnonymous, hasArtworkUrl: !!artworkUrl },
         'Creating community post'
       );
 
@@ -169,11 +155,12 @@ export function registerCommunityRoutes(app: App) {
             content,
             contentType: (contentType as any) || 'manual',
             scriptureReference: scriptureReference || null,
+            artworkUrl: artworkUrl || null,
           })
           .returning();
 
         app.logger.info(
-          { postId: post.id, userId: session.user.id, contentType },
+          { postId: post.id, userId: session.user.id, contentType, artworkUrl },
           'Community post created'
         );
 
@@ -295,38 +282,18 @@ export function registerCommunityRoutes(app: App) {
           .where(eq(schema.communityPosts.userId, session.user.id))
           .orderBy(desc(schema.communityPosts.createdAt));
 
-        // For each post, get artwork URL for somatic posts
-        const result = await Promise.all(
-          posts.map(async (p) => {
-            let artworkUrl: string | null = null;
-
-            // Get artwork URL for somatic posts
-            if (p.contentType === 'somatic') {
-              const artwork = await app.db
-                .select()
-                .from(schema.userArtworks)
-                .where(eq(schema.userArtworks.userId, p.userId))
-                .orderBy(desc(schema.userArtworks.updatedAt))
-                .limit(1);
-
-              if (artwork.length > 0 && artwork[0].photoUrls && Array.isArray(artwork[0].photoUrls) && artwork[0].photoUrls.length > 0) {
-                artworkUrl = artwork[0].photoUrls[0];
-              }
-            }
-
-            return {
-              id: p.id,
-              category: p.category,
-              content: p.content,
-              contentType: p.contentType,
-              scriptureReference: p.scriptureReference,
-              prayerCount: p.prayerCount,
-              isFlagged: p.isFlagged,
-              createdAt: p.createdAt,
-              artworkUrl,
-            };
-          })
-        );
+        // Format posts for response
+        const result = posts.map((p) => ({
+          id: p.id,
+          category: p.category,
+          content: p.content,
+          contentType: p.contentType,
+          scriptureReference: p.scriptureReference,
+          prayerCount: p.prayerCount,
+          isFlagged: p.isFlagged,
+          createdAt: p.createdAt,
+          artworkUrl: p.artworkUrl || null,
+        }));
 
         app.logger.info(
           { userId: session.user.id, count: result.length },

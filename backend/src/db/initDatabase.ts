@@ -160,6 +160,7 @@ export async function initializeDatabase(db: any, app?: App) {
       ALTER TABLE IF EXISTS "community_posts"
       ADD COLUMN IF NOT EXISTS "content_type" text DEFAULT 'manual',
       ADD COLUMN IF NOT EXISTS "scripture_reference" text,
+      ADD COLUMN IF NOT EXISTS "artwork_url" text,
       ADD COLUMN IF NOT EXISTS "is_flagged" boolean DEFAULT false
     `);
 
