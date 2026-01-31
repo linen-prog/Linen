@@ -242,7 +242,15 @@ export default function CommunityScreen() {
   };
 
   const handleReact = async (postId: string, reactionType: string) => {
-    console.log('[Community] User reacting to post:', postId, 'with:', reactionType);
+    console.log('[Community] User attempting to react to post:', postId, 'with:', reactionType);
+    
+    // Check if user is authenticated
+    if (!user?.id) {
+      console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
+      setShowAuthPrompt(true);
+      setShowReactionPicker(null);
+      return;
+    }
     
     // Optimistically update the UI
     const previousPosts = [...posts];
@@ -282,7 +290,7 @@ export default function CommunityScreen() {
         { reactionType }
       );
       
-      console.log('[Community] Reaction toggled successfully:', response);
+      console.log('[Community] ✅ Reaction toggled successfully:', response);
       
       // Update with actual server response
       setPosts(prev => prev.map(post => {
@@ -298,13 +306,15 @@ export default function CommunityScreen() {
       
       setShowReactionPicker(null);
     } catch (error) {
-      console.error('[Community] Failed to toggle reaction:', error);
+      console.error('[Community] ❌ Failed to toggle reaction:', error);
       // Revert optimistic update on error
       setPosts(previousPosts);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        console.log('[Community] Reaction requires authentication - user is in guest mode');
+        console.log('[Community] ⚠️ Reaction requires authentication - showing auth prompt');
+        setShowAuthPrompt(true);
+        setShowReactionPicker(null);
       } else {
         console.error('[Community] Unexpected error toggling reaction:', errorMessage);
       }
@@ -764,7 +774,10 @@ export default function CommunityScreen() {
                       <View style={styles.userReactionDisplay}>
                         <TouchableOpacity 
                           style={[styles.reactionBadge, styles.reactionBadgeActive]}
-                          onPress={() => setShowReactionPicker(post.id)}
+                          onPress={() => {
+                            console.log('[Community] User tapped their reaction badge - opening reaction picker');
+                            setShowReactionPicker(post.id);
+                          }}
                           activeOpacity={0.7}
                         >
                           <Text style={styles.reactionEmoji}>
@@ -780,7 +793,16 @@ export default function CommunityScreen() {
                     ) : (
                       <TouchableOpacity 
                         style={styles.reactButton}
-                        onPress={() => setShowReactionPicker(post.id)}
+                        onPress={() => {
+                          console.log('[Community] User tapped React button for post:', post.id);
+                          // Check if user is authenticated before showing reaction picker
+                          if (!user?.id) {
+                            console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
+                            setShowAuthPrompt(true);
+                          } else {
+                            setShowReactionPicker(post.id);
+                          }
+                        }}
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
@@ -936,12 +958,13 @@ export default function CommunityScreen() {
               Sign In Required
             </Text>
             <Text style={[styles.authPromptMessage, { color: textSecondaryColor }]}>
-              To send care messages and connect with the community, please sign in or create an account.
+              To react to posts, send care messages, and connect with the community, please sign in or create an account.
             </Text>
             <View style={styles.authPromptButtons}>
               <TouchableOpacity
                 style={[styles.authPromptButton, styles.authPromptButtonPrimary]}
                 onPress={() => {
+                  console.log('[Community] User tapped Sign In from auth prompt');
                   setShowAuthPrompt(false);
                   router.push('/auth');
                 }}
@@ -953,7 +976,10 @@ export default function CommunityScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.authPromptButton, styles.authPromptButtonSecondary]}
-                onPress={() => setShowAuthPrompt(false)}
+                onPress={() => {
+                  console.log('[Community] User dismissed auth prompt');
+                  setShowAuthPrompt(false);
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.authPromptButtonTextSecondary, { color: textColor }]}>
