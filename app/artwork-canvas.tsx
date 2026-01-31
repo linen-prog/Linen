@@ -1,14 +1,25 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import { Stack, useRouter } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Image as SvgImage, Circle } from 'react-native-svg';
+import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import Slider from '@react-native-community/slider';
-import Svg, { Path, Image as SvgImage } from 'react-native-svg';
+import { IconSymbol } from '@/components/IconSymbol';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  withSequence,
+  withTiming,
+  withRepeat,
+  Easing,
+  interpolate
+} from 'react-native-reanimated';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
@@ -28,6 +39,13 @@ interface DrawingStroke {
   isEraser?: boolean;
 }
 
+interface Sparkle {
+  id: number;
+  x: number;
+  y: number;
+  delay: number;
+}
+
 const BRUSH_OPTIONS: BrushOption[] = [
   { id: 'pencil', label: 'Pencil', icon: 'pencil', materialIcon: 'edit', isPremium: false },
   { id: 'marker', label: 'Marker', icon: 'highlighter', materialIcon: 'create', isPremium: false },
@@ -43,24 +61,29 @@ const BRUSH_OPTIONS: BrushOption[] = [
   { id: 'glitter', label: 'Glitter', icon: 'sparkles', materialIcon: 'auto-awesome', isPremium: true },
 ];
 
-// Free tier colors (16 colors, 2 rows)
 const FREE_COLORS = [
-  // Row 1
   '#000000', '#FFFFFF', '#808080', '#8B4513', '#FF0000', '#FF8C00', '#FFD700', '#008000',
-  // Row 2
   '#0000FF', '#800080', '#FFC0CB', '#F5F5DC', '#006400', '#000080', '#800000', '#D2B48C',
 ];
 
-// Premium tier colors (48 colors, 4 rows)
 const PREMIUM_COLORS = [
-  // Grayscale and neutrals
   '#000000', '#1A1A1A', '#333333', '#4D4D4D', '#666666', '#808080', '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#F5F5F5', '#FFFFFF',
-  // Warm colors (reds, oranges, yellows, browns)
   '#8B0000', '#DC143C', '#FF0000', '#FF4500', '#FF6347', '#FF8C00', '#FFA500', '#FFD700', '#FFFF00', '#F0E68C', '#8B4513', '#D2691E',
-  // Cool colors (greens, blues, purples)
   '#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#000080', '#0000FF', '#4169E1', '#87CEEB', '#4B0082', '#800080', '#9370DB',
-  // Pastels and specialty shades
   '#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFDAB9', '#F0E68C', '#E0FFFF', '#B0E0E6', '#DDA0DD', '#EE82EE', '#F5DEB3', '#D2B48C', '#BC8F8F',
+];
+
+const ENCOURAGING_MESSAGES = [
+  "Beautiful start! ✨",
+  "Your creativity is flowing! 🎨",
+  "Keep going, this is lovely! 💫",
+  "What a wonderful expression! 🌟",
+  "Your art is taking shape! 🎭",
+  "So much beauty here! 🌸",
+  "This is coming alive! 🦋",
+  "Your heart is showing through! 💝",
+  "Gorgeous work! Keep creating! 🌈",
+  "You're doing amazing! ⭐",
 ];
 
 export default function ArtworkCanvasScreen() {
@@ -93,6 +116,10 @@ export default function ArtworkCanvasScreen() {
   const [hasSaved, setHasSaved] = useState(false);
   const [showPostSaveModal, setShowPostSaveModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [encouragementMessage, setEncouragementMessage] = useState('');
+  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [strokeCount, setStrokeCount] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
@@ -100,16 +127,33 @@ export default function ArtworkCanvasScreen() {
   const photoPositionRef = useRef({ x: 0, y: 0 });
   const initialPhotoTouchRef = useRef({ x: 0, y: 0 });
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastEncouragementRef = useRef(0);
   
-  // Use refs to always have the latest values during drawing
   const selectedColorRef = useRef(selectedColor);
   const brushSizeRef = useRef(brushSize);
   const selectedBrushRef = useRef(selectedBrush);
 
-  // Update refs when state changes
+  // Animated values for fun effects
+  const brushPreviewScale = useSharedValue(1);
+  const brushPreviewRotation = useSharedValue(0);
+  const colorPickerScale = useSharedValue(1);
+  const celebrationScale = useSharedValue(0);
+  const celebrationOpacity = useSharedValue(0);
+
   useEffect(() => {
     selectedColorRef.current = selectedColor;
     console.log('[Canvas] Color updated to:', selectedColor);
+    
+    // Animate color change
+    colorPickerScale.value = withSequence(
+      withSpring(1.2, { damping: 10 }),
+      withSpring(1, { damping: 10 })
+    );
+    
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   }, [selectedColor]);
 
   useEffect(() => {
@@ -120,7 +164,35 @@ export default function ArtworkCanvasScreen() {
   useEffect(() => {
     selectedBrushRef.current = selectedBrush;
     console.log('[Canvas] Brush type updated to:', selectedBrush);
+    
+    // Animate brush change
+    brushPreviewScale.value = withSequence(
+      withSpring(1.3, { damping: 8 }),
+      withSpring(1, { damping: 8 })
+    );
+    brushPreviewRotation.value = withSequence(
+      withTiming(10, { duration: 100 }),
+      withTiming(-10, { duration: 100 }),
+      withTiming(0, { duration: 100 })
+    );
+    
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   }, [selectedBrush]);
+
+  // Pulse animation for brush preview
+  useEffect(() => {
+    brushPreviewScale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, []);
 
   useEffect(() => {
     if (hasLoadedRef.current) {
@@ -139,15 +211,14 @@ export default function ArtworkCanvasScreen() {
             console.log('[Canvas] Setting background image:', response.backgroundImage);
             setBackgroundImage(response.backgroundImage);
           }
-          // Parse and restore strokes from artworkData
           try {
             const parsed = JSON.parse(response.artworkData);
             console.log('[Canvas] Parsed artwork data:', parsed);
             if (parsed.strokes && Array.isArray(parsed.strokes)) {
               console.log('[Canvas] Restoring', parsed.strokes.length, 'strokes');
               setStrokes(parsed.strokes);
+              setStrokeCount(parsed.strokes.length);
             }
-            // Restore brush settings if available
             if (parsed.brushType) {
               setSelectedBrush(parsed.brushType);
             }
@@ -157,7 +228,6 @@ export default function ArtworkCanvasScreen() {
             if (parsed.color) {
               setSelectedColor(parsed.color);
             }
-            // Restore photo position and scale if available
             if (parsed.photoPosition) {
               console.log('[Canvas] Restoring photo position:', parsed.photoPosition);
               setPhotoPosition(parsed.photoPosition);
@@ -185,7 +255,25 @@ export default function ArtworkCanvasScreen() {
     loadExistingArtwork();
   }, []);
 
-  // Create PanResponder for touch drawing
+  // Show encouraging messages periodically
+  useEffect(() => {
+    if (strokeCount > 0 && strokeCount % 5 === 0 && strokeCount !== lastEncouragementRef.current) {
+      lastEncouragementRef.current = strokeCount;
+      const randomMessage = ENCOURAGING_MESSAGES[Math.floor(Math.random() * ENCOURAGING_MESSAGES.length)];
+      setEncouragementMessage(randomMessage);
+      setShowEncouragement(true);
+      
+      // Haptic feedback for encouragement
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
+      setTimeout(() => {
+        setShowEncouragement(false);
+      }, 2500);
+    }
+  }, [strokeCount]);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
@@ -198,7 +286,11 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] Touch started at:', locationX, locationY);
         console.log('[Canvas] Using color:', selectedColorRef.current, 'size:', brushSizeRef.current, 'brush:', selectedBrushRef.current);
         
-        // Reset saved state when user starts drawing again
+        // Haptic feedback on touch start
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        
         if (hasSaved) {
           setHasSaved(false);
         }
@@ -227,7 +319,6 @@ export default function ArtworkCanvasScreen() {
           currentStrokeRef.current = updatedStroke;
           setCurrentStroke(updatedStroke);
           
-          // Log every 10th point to avoid spam
           if (updatedStroke.points.length % 10 === 0) {
             console.log('[Canvas] Stroke now has', updatedStroke.points.length, 'points');
           }
@@ -237,12 +328,19 @@ export default function ArtworkCanvasScreen() {
       },
       onPanResponderRelease: () => {
         console.log('[Canvas] Touch ended, current stroke has', currentStrokeRef.current?.points.length || 0, 'points');
+        
+        // Haptic feedback on touch end
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        
         if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
           const strokeToSave = currentStrokeRef.current;
           console.log('[Canvas] Saving stroke with color:', strokeToSave.color, 'size:', strokeToSave.brushSize);
           setStrokes(prev => {
             const newStrokes = [...prev, strokeToSave];
             console.log('[Canvas] Stroke saved! Total strokes:', newStrokes.length);
+            setStrokeCount(newStrokes.length);
             return newStrokes;
           });
           currentStrokeRef.current = null;
@@ -254,7 +352,6 @@ export default function ArtworkCanvasScreen() {
     })
   ).current;
 
-  // Create PanResponder for photo manipulation
   const photoPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => isEditingPhoto,
@@ -264,6 +361,10 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] Photo edit touch started at:', locationX, locationY);
         initialPhotoTouchRef.current = { x: locationX, y: locationY };
         photoPositionRef.current = photoPosition;
+        
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
@@ -277,6 +378,10 @@ export default function ArtworkCanvasScreen() {
       },
       onPanResponderRelease: () => {
         console.log('[Canvas] Photo edit touch ended at position:', photoPosition);
+        
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
       },
     })
   ).current;
@@ -295,7 +400,13 @@ export default function ArtworkCanvasScreen() {
     console.log('[Canvas] User undoing stroke');
     const lastStroke = strokes[strokes.length - 1];
     setStrokes(strokes.slice(0, -1));
+    setStrokeCount(strokes.length - 1);
     setUndoneStrokes([...undoneStrokes, lastStroke]);
+    
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   };
 
   const handleRedo = () => {
@@ -307,7 +418,13 @@ export default function ArtworkCanvasScreen() {
     console.log('[Canvas] User redoing stroke');
     const strokeToRedo = undoneStrokes[undoneStrokes.length - 1];
     setStrokes([...strokes, strokeToRedo]);
+    setStrokeCount(strokes.length + 1);
     setUndoneStrokes(undoneStrokes.slice(0, -1));
+    
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   };
 
   const handleClear = () => {
@@ -331,6 +448,11 @@ export default function ArtworkCanvasScreen() {
             setPhotoScale(1);
             setIsEditingPhoto(false);
             photoPositionRef.current = { x: 0, y: 0 };
+            setStrokeCount(0);
+            
+            if (Platform.OS !== 'web') {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            }
           },
         },
       ]
@@ -341,6 +463,10 @@ export default function ArtworkCanvasScreen() {
     console.log('[Canvas] User activating eraser');
     setSelectedBrush('pencil');
     setSelectedColor('#FFFFFF');
+    
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   };
 
   const handleUploadPhoto = async () => {
@@ -366,23 +492,19 @@ export default function ArtworkCanvasScreen() {
         setIsUploadingPhoto(true);
 
         try {
-          // Upload photo to backend
           const formData = new FormData();
           
-          // Prepare file data for upload
           const fileUri = result.assets[0].uri;
           const fileName = result.assets[0].fileName || `photo-${Date.now()}.jpg`;
           const fileType = result.assets[0].mimeType || 'image/jpeg';
           
           console.log('[Canvas] Preparing to upload photo:', { fileName, fileType, uri: fileUri });
           
-          // For web, fetch the blob and append it
           if (Platform.OS === 'web') {
             const response = await fetch(fileUri);
             const blob = await response.blob();
             formData.append('image', blob, fileName);
           } else {
-            // For native, use the file object format
             formData.append('image', {
               uri: fileUri,
               type: fileType,
@@ -390,7 +512,6 @@ export default function ArtworkCanvasScreen() {
             } as any);
           }
 
-          // Make authenticated request with multipart form data
           const { BACKEND_URL } = await import('@/utils/api');
           const { getBearerToken } = await import('@/lib/auth');
           const token = await getBearerToken();
@@ -417,7 +538,6 @@ export default function ArtworkCanvasScreen() {
           const uploadResult = await uploadResponse.json() as { url: string; filename: string; key?: string };
           console.log('[Canvas] Photo uploaded successfully:', uploadResult);
           
-          // Use the uploaded URL directly (backend returns signed URL)
           const imageUrl = uploadResult.url;
           
           setBackgroundImage(imageUrl);
@@ -427,6 +547,11 @@ export default function ArtworkCanvasScreen() {
           setIsUploadingPhoto(false);
           
           console.log('[Canvas] Background image set to:', imageUrl);
+          
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+          
           Alert.alert('Photo Added', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
         } catch (error) {
           console.error('[Canvas] Failed to upload photo:', error);
@@ -471,7 +596,26 @@ export default function ArtworkCanvasScreen() {
       console.log('Artwork saved successfully:', result);
       setIsSaving(false);
       setHasSaved(true);
-      setShowPostSaveModal(true);
+      
+      // Celebration animation
+      setShowCelebration(true);
+      celebrationScale.value = withSequence(
+        withSpring(1, { damping: 8 }),
+        withTiming(0, { duration: 300, delay: 2000 })
+      );
+      celebrationOpacity.value = withSequence(
+        withTiming(1, { duration: 200 }),
+        withTiming(0, { duration: 300, delay: 2000 })
+      );
+      
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
+      setTimeout(() => {
+        setShowCelebration(false);
+        setShowPostSaveModal(true);
+      }, 2300);
     } catch (error) {
       console.error('Failed to save artwork:', error);
       setIsSaving(false);
@@ -485,7 +629,6 @@ export default function ArtworkCanvasScreen() {
     setIsSharing(true);
 
     try {
-      // First, ensure artwork is saved
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
@@ -504,7 +647,6 @@ export default function ArtworkCanvasScreen() {
 
       console.log('Artwork saved before sharing:', savedArtwork);
 
-      // Then share to community with artwork reference
       const shareContent = backgroundImage 
         ? 'Shared my artwork with a photo background from this week\'s reflection'
         : 'Shared my artwork from this week\'s reflection';
@@ -520,6 +662,11 @@ export default function ArtworkCanvasScreen() {
       setIsSharing(false);
       setShowShareModal(false);
       setShowPostSaveModal(false);
+      
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
       Alert.alert('Shared!', 'Your artwork has been shared with the community.', [
         { 
           text: 'View Community', 
@@ -547,8 +694,6 @@ export default function ArtworkCanvasScreen() {
     setIsDownloading(true);
 
     try {
-      // For web, we can use canvas to download
-      // For native, we'll show a message that download is not yet supported
       if (Platform.OS === 'web') {
         Alert.alert('Download', 'Web download functionality coming soon. For now, you can take a screenshot of your artwork.');
         setIsDownloading(false);
@@ -574,15 +719,22 @@ export default function ArtworkCanvasScreen() {
     console.log('[Canvas] User selected brush:', brushType);
     setSelectedBrush(brushType);
     setShowBrushPicker(false);
+    
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   };
 
   const handleColorSelect = (color: string) => {
     console.log('[Canvas] User selected color:', color);
     setSelectedColor(color);
     setShowColorPicker(false);
+    
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
-  // Convert stroke points to SVG path data with brush-specific styling
   const strokeToPath = (stroke: DrawingStroke): string => {
     if (!stroke || !stroke.points || stroke.points.length === 0) {
       return '';
@@ -599,7 +751,6 @@ export default function ArtworkCanvasScreen() {
     return pathData;
   };
 
-  // Get brush-specific stroke properties
   const getBrushProps = (stroke: DrawingStroke) => {
     const baseProps = {
       stroke: stroke.color,
@@ -703,7 +854,7 @@ export default function ArtworkCanvasScreen() {
   const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
 
-  const saveButtonText = isSaving ? 'Saving...' : (hasSaved ? 'Saved' : 'Save Artwork');
+  const saveButtonText = isSaving ? 'Saving...' : (hasSaved ? 'Saved ✓' : 'Save Artwork');
   const headerTitle = 'Create Artwork';
   const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
   const brushSizeLabel = 'Brush Size';
@@ -726,8 +877,32 @@ export default function ArtworkCanvasScreen() {
   const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
   const isEraserMode = selectedColor === '#FFFFFF';
 
-  // All strokes to render (completed + current)
   const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
+
+  // Animated styles
+  const brushPreviewStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: brushPreviewScale.value },
+      { rotate: `${brushPreviewRotation.value}deg` }
+    ],
+  }));
+
+  const colorPickerStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: colorPickerScale.value }],
+  }));
+
+  const celebrationStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: celebrationScale.value }],
+    opacity: celebrationOpacity.value,
+  }));
+
+  // Generate sparkles for celebration
+  const celebrationSparkles: Sparkle[] = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 300 - 150,
+    y: Math.random() * 300 - 150,
+    delay: Math.random() * 200,
+  }));
 
   if (isLoading) {
     return (
@@ -778,6 +953,54 @@ export default function ArtworkCanvasScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
+        {/* Brush Preview Indicator */}
+        <Animated.View style={[styles.brushPreview, brushPreviewStyle]}>
+          <View style={[styles.brushPreviewCircle, { 
+            backgroundColor: selectedColor,
+            width: Math.min(brushSize * 2 + 20, 60),
+            height: Math.min(brushSize * 2 + 20, 60),
+            borderRadius: Math.min(brushSize * 2 + 20, 60) / 2,
+          }]}>
+            <IconSymbol 
+              ios_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.icon || 'pencil'}
+              android_material_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.materialIcon || 'edit'}
+              size={20}
+              color={selectedColor === '#FFFFFF' || selectedColor === '#F5F5F5' ? '#000000' : '#FFFFFF'}
+            />
+          </View>
+          <Text style={[styles.brushPreviewLabel, { color: textColor }]}>
+            {selectedBrushLabel}
+          </Text>
+        </Animated.View>
+
+        {/* Progress Indicator */}
+        {strokeCount > 0 && (
+          <View style={[styles.progressIndicator, { backgroundColor: cardBg }]}>
+            <IconSymbol 
+              ios_icon_name="paintbrush.fill"
+              android_material_icon_name="brush"
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={[styles.progressText, { color: textSecondaryColor }]}>
+              {strokeCount} {strokeCount === 1 ? 'stroke' : 'strokes'}
+            </Text>
+          </View>
+        )}
+
+        {/* Encouragement Message */}
+        {showEncouragement && (
+          <Animated.View 
+            style={[styles.encouragementBanner, { backgroundColor: colors.primary }]}
+            entering={undefined}
+            exiting={undefined}
+          >
+            <Text style={styles.encouragementText}>
+              {encouragementMessage}
+            </Text>
+          </Animated.View>
+        )}
+
         {/* Canvas Area */}
         <View 
           style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
@@ -798,7 +1021,6 @@ export default function ArtworkCanvasScreen() {
                 height={canvasLayout.height}
                 style={styles.svgCanvas}
               >
-                {/* Background image if exists */}
                 {backgroundImage && (
                   <SvgImage
                     href={backgroundImage}
@@ -810,7 +1032,6 @@ export default function ArtworkCanvasScreen() {
                   />
                 )}
                 
-                {/* Render all strokes */}
                 {allStrokes.map((stroke, index) => {
                   const pathData = strokeToPath(stroke);
                   if (!pathData) {
@@ -869,6 +1090,9 @@ export default function ArtworkCanvasScreen() {
             onPress={() => {
               console.log('[Canvas] User opening brush picker');
               setShowBrushPicker(true);
+              if (Platform.OS !== 'web') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
             }}
             activeOpacity={0.7}
           >
@@ -887,16 +1111,21 @@ export default function ArtworkCanvasScreen() {
           </TouchableOpacity>
 
           {/* Color Selector */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: selectedColor, borderWidth: 2, borderColor: cardBg }]}
-            onPress={() => {
-              console.log('[Canvas] User opening color picker');
-              setShowColorPicker(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.colorPreview} />
-          </TouchableOpacity>
+          <Animated.View style={colorPickerStyle}>
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: selectedColor, borderWidth: 2, borderColor: cardBg }]}
+              onPress={() => {
+                console.log('[Canvas] User opening color picker');
+                setShowColorPicker(true);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.colorPreview} />
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Eraser Button */}
           <TouchableOpacity 
@@ -978,6 +1207,9 @@ export default function ArtworkCanvasScreen() {
               onPress={() => {
                 console.log('[Canvas] User toggling photo edit mode');
                 setIsEditingPhoto(!isEditingPhoto);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }
               }}
               activeOpacity={0.7}
             >
@@ -1096,6 +1328,47 @@ export default function ArtworkCanvasScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Celebration Overlay */}
+      {showCelebration && (
+        <Animated.View style={[styles.celebrationOverlay, celebrationStyle]}>
+          <View style={styles.celebrationContent}>
+            <IconSymbol 
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={80}
+              color={colors.accent}
+            />
+            <Text style={styles.celebrationText}>
+              Artwork Saved! ✨
+            </Text>
+            <Text style={styles.celebrationSubtext}>
+              Beautiful work!
+            </Text>
+          </View>
+          {celebrationSparkles.map((sparkle) => (
+            <View
+              key={sparkle.id}
+              style={[
+                styles.celebrationSparkle,
+                {
+                  left: '50%',
+                  top: '50%',
+                  marginLeft: sparkle.x,
+                  marginTop: sparkle.y,
+                }
+              ]}
+            >
+              <IconSymbol 
+                ios_icon_name="sparkle"
+                android_material_icon_name="auto-awesome"
+                size={16}
+                color={colors.primary}
+              />
+            </View>
+          ))}
+        </Animated.View>
+      )}
+
       {/* Brush Picker Modal */}
       <Modal
         visible={showBrushPicker}
@@ -1120,7 +1393,6 @@ export default function ArtworkCanvasScreen() {
             </View>
 
             <ScrollView style={styles.modalScroll}>
-              {/* Free Brushes */}
               <Text style={[styles.brushSectionTitle, { color: textColor }]}>
                 {freeBrushesLabel}
               </Text>
@@ -1155,7 +1427,6 @@ export default function ArtworkCanvasScreen() {
                 })}
               </View>
 
-              {/* Premium Brushes */}
               <View style={styles.premiumSection}>
                 <View style={styles.premiumHeader}>
                   <Text style={[styles.brushSectionTitle, { color: textColor }]}>
@@ -1307,7 +1578,6 @@ export default function ArtworkCanvasScreen() {
                 Your artwork has been saved successfully!
               </Text>
 
-              {/* Share to Community Button */}
               <TouchableOpacity
                 style={styles.postSaveButton}
                 onPress={() => {
@@ -1327,7 +1597,6 @@ export default function ArtworkCanvasScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Download Button */}
               <TouchableOpacity
                 style={[styles.postSaveButton, styles.postSaveButtonSecondary]}
                 onPress={handleDownload}
@@ -1345,7 +1614,6 @@ export default function ArtworkCanvasScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Done Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowPostSaveModal(false)}
@@ -1384,7 +1652,6 @@ export default function ArtworkCanvasScreen() {
             </View>
 
             <View style={styles.shareContent}>
-              {/* Anonymous Toggle */}
               <View style={styles.shareOption}>
                 <Text style={[styles.shareOptionLabel, { color: textColor }]}>
                   {shareAnonymousLabel}
@@ -1398,7 +1665,6 @@ export default function ArtworkCanvasScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Category Selection */}
               <Text style={[styles.shareOptionLabel, { color: textColor, marginTop: spacing.lg }]}>
                 {shareCategoryLabel}
               </Text>
@@ -1428,7 +1694,6 @@ export default function ArtworkCanvasScreen() {
                 })}
               </View>
 
-              {/* Share Button */}
               <TouchableOpacity
                 style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
                 onPress={handleShareToCommunity}
@@ -1440,7 +1705,6 @@ export default function ArtworkCanvasScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowShareModal(false)}
@@ -1485,6 +1749,99 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 40,
+  },
+  brushPreview: {
+    position: 'absolute',
+    top: 80,
+    right: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.xs,
+    zIndex: 10,
+  },
+  brushPreviewCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  brushPreviewLabel: {
+    fontSize: typography.bodySmall - 2,
+    fontWeight: typography.semibold,
+  },
+  progressIndicator: {
+    position: 'absolute',
+    top: 80,
+    left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
+  },
+  progressText: {
+    fontSize: typography.bodySmall - 2,
+    fontWeight: typography.medium,
+  },
+  encouragementBanner: {
+    position: 'absolute',
+    top: 140,
+    left: spacing.lg,
+    right: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    zIndex: 20,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  encouragementText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  celebrationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  celebrationContent: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  celebrationText: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    color: '#FFFFFF',
+  },
+  celebrationSubtext: {
+    fontSize: typography.body,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  celebrationSparkle: {
+    position: 'absolute',
   },
   canvasContainer: {
     flex: 1,
