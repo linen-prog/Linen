@@ -2,6 +2,7 @@
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { getBearerToken } from '@/lib/auth';
 
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
 
@@ -48,16 +49,31 @@ async function getGuestToken(): Promise<string> {
   }
 }
 
+// Helper function to get the appropriate auth token
+async function getAuthToken(): Promise<string> {
+  // First, try to get Better Auth bearer token (for authenticated users)
+  const bearerToken = await getBearerToken();
+  
+  if (bearerToken) {
+    console.log('[API] Using Better Auth bearer token');
+    return bearerToken;
+  }
+  
+  // Fall back to guest token if no Better Auth session
+  console.log('[API] No Better Auth session, using guest token');
+  return await getGuestToken();
+}
+
 // Helper function to make authenticated API calls
 async function makeAuthenticatedRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const guestToken = await getGuestToken();
+  const authToken = await getAuthToken();
   
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${guestToken}`,
+    'Authorization': `Bearer ${authToken}`,
     ...options.headers,
   };
 
@@ -66,6 +82,7 @@ async function makeAuthenticatedRequest(
   const response = await fetch(`${BACKEND_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Include cookies for Better Auth session
   });
 
   if (!response.ok) {

@@ -33,8 +33,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Post {
   id: string;
@@ -78,12 +80,15 @@ interface CommunityStats {
 export default function CommunityScreen() {
   console.log('User viewing Community screen');
 
+  const router = useRouter();
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState('feed');
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showCareModal, setShowCareModal] = useState<string | null>(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [careMessages, setCareMessages] = useState<CareMessage[]>([]);
   const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
   const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
@@ -91,12 +96,13 @@ export default function CommunityScreen() {
 
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
-    if (selectedTab === 'care') {
+    if (selectedTab === 'care' && user) {
+      // Only load care messages if user is authenticated
       loadCareMessages();
     }
     loadPosts(selectedTab);
     loadStats();
-  }, [selectedTab]);
+  }, [selectedTab, user]);
 
   const loadStats = async () => {
     try {
@@ -320,7 +326,18 @@ export default function CommunityScreen() {
       })));
     } catch (error) {
       console.error('[Community] Failed to load care messages:', error);
-      setCareMessages([]);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        console.log('[Community] ⚠️ Authentication required to view care messages');
+        // User needs to authenticate to see care messages
+        setCareMessages([]);
+      } else {
+        console.error('[Community] Unexpected error loading care messages:', errorMessage);
+        setCareMessages([]);
+      }
     } finally {
       setIsLoadingCareMessages(false);
     }
@@ -335,17 +352,32 @@ export default function CommunityScreen() {
     
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost(`/api/community/send-care/${showCareModal}`, {
+      const response = await authenticatedPost(`/api/community/send-care/${showCareModal}`, {
         message: selectedCareMessage,
         isAnonymous: careAnonymous,
       });
       
-      console.log('[Community] Care message sent successfully');
+      console.log('[Community] ✅ Care message sent successfully:', response);
       setShowCareModal(null);
       setSelectedCareMessage('');
       setCareAnonymous(false);
     } catch (error) {
-      console.error('[Community] Failed to send care message:', error);
+      console.error('[Community] ❌ Failed to send care message:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        console.log('[Community] ⚠️ Authentication required - this should not happen as we check before showing modal');
+        // Close the modal and show auth prompt
+        setShowCareModal(null);
+        setSelectedCareMessage('');
+        setCareAnonymous(false);
+        setShowAuthPrompt(true);
+      } else {
+        console.error('[Community] Unexpected error sending care message:', errorMessage);
+        // Keep modal open so user can try again
+      }
     }
   };
 
@@ -524,7 +556,31 @@ export default function CommunityScreen() {
             <Text style={[styles.sectionTitle, { color: textColor }]}>
               Messages You've Received
             </Text>
-            {isLoadingCareMessages ? (
+            {!user ? (
+              <View style={styles.emptyState}>
+                <IconSymbol
+                  ios_icon_name="lock.fill"
+                  android_material_icon_name="lock"
+                  size={32}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+                  Sign in to view care messages
+                </Text>
+                <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
+                  Create an account to receive and send care messages
+                </Text>
+                <TouchableOpacity
+                  style={[styles.signInButton, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push('/auth')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.signInButtonText}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : isLoadingCareMessages ? (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
                   Loading messages...
@@ -738,7 +794,15 @@ export default function CommunityScreen() {
                   {post.category === 'care' && (
                     <TouchableOpacity
                       style={[styles.sendCareButton, { backgroundColor: colors.primaryLight || '#FFF9E6' }]}
-                      onPress={() => setShowCareModal(post.id)}
+                      onPress={() => {
+                        // Check if user is authenticated
+                        if (!user) {
+                          console.log('[Community] User must authenticate to send care');
+                          setShowAuthPrompt(true);
+                        } else {
+                          setShowCareModal(post.id);
+                        }
+                      }}
                     >
                       <IconSymbol
                         ios_icon_name="heart.fill"
@@ -842,6 +906,62 @@ export default function CommunityScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </Pressable>
+      </Modal>
+
+      {/* Authentication Prompt Modal */}
+      <Modal
+        visible={showAuthPrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAuthPrompt(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowAuthPrompt(false)}
+        >
+          <Pressable 
+            style={[styles.authPromptModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.authPromptHeader}>
+              <IconSymbol
+                ios_icon_name="lock.fill"
+                android_material_icon_name="lock"
+                size={48}
+                color={colors.primary}
+              />
+            </View>
+            <Text style={[styles.authPromptTitle, { color: textColor }]}>
+              Sign In Required
+            </Text>
+            <Text style={[styles.authPromptMessage, { color: textSecondaryColor }]}>
+              To send care messages and connect with the community, please sign in or create an account.
+            </Text>
+            <View style={styles.authPromptButtons}>
+              <TouchableOpacity
+                style={[styles.authPromptButton, styles.authPromptButtonPrimary]}
+                onPress={() => {
+                  setShowAuthPrompt(false);
+                  router.push('/auth');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.authPromptButtonTextPrimary}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.authPromptButton, styles.authPromptButtonSecondary]}
+                onPress={() => setShowAuthPrompt(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.authPromptButtonTextSecondary, { color: textColor }]}>
+                  Maybe Later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
 
@@ -1470,5 +1590,69 @@ const styles = StyleSheet.create({
   },
   careMessageTime: {
     fontSize: typography.caption,
+  },
+  authPromptModal: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+    alignItems: 'center',
+  },
+  authPromptHeader: {
+    marginBottom: spacing.lg,
+  },
+  authPromptTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  authPromptMessage: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  authPromptButtons: {
+    width: '100%',
+    gap: spacing.md,
+  },
+  authPromptButton: {
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  authPromptButtonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  authPromptButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border || '#E0E0E0',
+  },
+  authPromptButtonTextPrimary: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  authPromptButtonTextSecondary: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  signInButton: {
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.md,
+  },
+  signInButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
 });
