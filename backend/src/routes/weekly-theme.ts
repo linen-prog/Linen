@@ -517,6 +517,17 @@ export function registerWeeklyThemeRoutes(app: App) {
             'Colossians 3:15-17', // Day 6: Peace and gratitude
           ];
 
+          // Scripture texts that match each reference
+          const scriptureTexts = [
+            'Search me, God, and know my heart; test me and know my anxious thoughts. See if there is any offensive way in me, and lead me in the way everlasting.',
+            'The prudent see danger and take refuge, but the simple keep going and pay the penalty.',
+            'I will extol the Lord at all times; his praise will always be on my lips. Taste and see that the Lord is good; blessed is the one who takes refuge in him.',
+            'I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing.',
+            'Do not conform to the pattern of this world, but be transformed by the renewing of your mind. Then you will be able to test and approve what God\'s will is.',
+            'Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure, whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things.',
+            'Let the peace of Christ rule in your hearts, since as members of one body you were called to peace. And be thankful.',
+          ];
+
           const scripturePrompts = [
             `As you begin the week, reflect on: ${theme.themeTitle}. What does this theme stir in you?`,
             `What is one way you can embody this week's theme: "${theme.themeTitle}"?`,
@@ -533,7 +544,7 @@ export function registerWeeklyThemeRoutes(app: App) {
             dayOfWeek: currentDayOfWeek,
             dayTitle: dayName,
             scriptureReference: scriptureReferences[currentDayOfWeek],
-            scriptureText: theme.themeDescription,
+            scriptureText: scriptureTexts[currentDayOfWeek],
             reflectionPrompt: scripturePrompts[currentDayOfWeek],
             somaticPrompt: null,
           };
