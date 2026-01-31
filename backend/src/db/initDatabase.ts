@@ -367,6 +367,58 @@ export async function initializeDatabase(db: any, app?: App) {
       CREATE INDEX IF NOT EXISTS "user_profiles_created" ON "user_profiles"("created_at")
     `);
 
+    // Post reactions table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "post_reactions" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "post_id" uuid NOT NULL REFERENCES "community_posts"("id") ON DELETE CASCADE,
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "reaction_type" text NOT NULL CHECK ("reaction_type" IN ('praying', 'holding', 'light', 'amen', 'growing', 'peace')),
+        "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS "post_reactions_post_user_unique" ON "post_reactions"("post_id", "user_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "post_reactions_post" ON "post_reactions"("post_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "post_reactions_user" ON "post_reactions"("user_id")
+    `);
+
+    // Care messages table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "care_messages" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "post_id" uuid NOT NULL REFERENCES "community_posts"("id") ON DELETE CASCADE,
+        "sender_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "recipient_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "message" text NOT NULL,
+        "is_anonymous" boolean NOT NULL DEFAULT false,
+        "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "care_messages_post" ON "care_messages"("post_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "care_messages_sender" ON "care_messages"("sender_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "care_messages_recipient" ON "care_messages"("recipient_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "care_messages_created" ON "care_messages"("created_at")
+    `);
+
     console.log('Database tables initialized successfully');
 
     // Auto-seed weekly themes if database is empty

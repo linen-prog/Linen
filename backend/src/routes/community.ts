@@ -517,4 +517,318 @@ export function registerCommunityRoutes(app: App) {
       }
     }
   );
+
+  // React to a community post (toggle reaction)
+  app.fastify.post(
+    '/api/community/react/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string }; Body: { reactionType: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const { postId } = request.params;
+      const { reactionType } = request.body;
+      const session = (request as any).session;
+
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      const validReactionTypes = ['praying', 'holding', 'light', 'amen', 'growing', 'peace'];
+
+      if (!validReactionTypes.includes(reactionType)) {
+        app.logger.warn(
+          { reactionType, validReactionTypes },
+          'Invalid reaction type provided'
+        );
+        return reply.status(400).send({ error: 'Invalid reaction type' });
+      }
+
+      app.logger.info(
+        { postId, userId, reactionType },
+        'Toggling post reaction'
+      );
+
+      try {
+        // Check if reaction already exists
+        const existingReaction = await app.db
+          .select()
+          .from(schema.postReactions)
+          .where(
+            and(
+              eq(schema.postReactions.postId, postId as any),
+              eq(schema.postReactions.userId, userId),
+              eq(schema.postReactions.reactionType, reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace')
+            )
+          )
+          .limit(1);
+
+        if (existingReaction.length > 0) {
+          // Remove reaction
+          await app.db
+            .delete(schema.postReactions)
+            .where(
+              and(
+                eq(schema.postReactions.postId, postId as any),
+                eq(schema.postReactions.userId, userId),
+                eq(schema.postReactions.reactionType, reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace')
+              )
+            );
+          app.logger.info({ postId, userId, reactionType }, 'Reaction removed');
+        } else {
+          // Add reaction
+          await app.db
+            .insert(schema.postReactions)
+            .values({
+              postId: postId as any,
+              userId,
+              reactionType: reactionType as any,
+            });
+          app.logger.info({ postId, userId, reactionType }, 'Reaction added');
+        }
+
+        // Get all reactions for this post
+        const reactions = await app.db
+          .select()
+          .from(schema.postReactions)
+          .where(eq(schema.postReactions.postId, postId as any));
+
+        // Count reactions by type
+        const reactionCounts: Record<string, number> = {
+          praying: 0,
+          holding: 0,
+          light: 0,
+          amen: 0,
+          growing: 0,
+          peace: 0,
+        };
+
+        reactions.forEach((reaction) => {
+          reactionCounts[reaction.reactionType]++;
+        });
+
+        // Get current user's reaction (if any)
+        const userReaction = reactions.find((r) => r.userId === userId)?.reactionType || null;
+
+        app.logger.info(
+          { postId, reactionCounts, userReaction },
+          'Reactions retrieved after toggle'
+        );
+
+        return reply.send({
+          reactions: reactionCounts,
+          userReaction,
+        });
+      } catch (error) {
+        app.logger.error({ err: error, postId, userId }, 'Failed to toggle reaction');
+        throw error;
+      }
+    }
+  );
+
+  // Get reactions for a post
+  app.fastify.get(
+    '/api/community/reactions/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const { postId } = request.params;
+      const session = (request as any).session;
+
+      // Get user ID if authenticated (optional)
+      let userId: string | null = null;
+      if (session?.user?.id) {
+        userId = session.user.id;
+      }
+
+      app.logger.info({ postId, userId }, 'Fetching post reactions');
+
+      try {
+        const reactions = await app.db
+          .select()
+          .from(schema.postReactions)
+          .where(eq(schema.postReactions.postId, postId as any));
+
+        // Count reactions by type
+        const reactionCounts: Record<string, number> = {
+          praying: 0,
+          holding: 0,
+          light: 0,
+          amen: 0,
+          growing: 0,
+          peace: 0,
+        };
+
+        reactions.forEach((reaction) => {
+          reactionCounts[reaction.reactionType]++;
+        });
+
+        // Get current user's reaction (if authenticated and has one)
+        let userReaction: string | null = null;
+        if (userId) {
+          const userReact = reactions.find((r) => r.userId === userId);
+          userReaction = userReact?.reactionType || null;
+        }
+
+        app.logger.info(
+          { postId, reactionCounts, userReaction },
+          'Post reactions retrieved'
+        );
+
+        return reply.send({
+          reactions: reactionCounts,
+          userReaction,
+        });
+      } catch (error) {
+        app.logger.error({ err: error, postId }, 'Failed to fetch post reactions');
+        throw error;
+      }
+    }
+  );
+
+  // Send care message to post author
+  app.fastify.post(
+    '/api/community/send-care/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string }; Body: { message: string; isAnonymous?: boolean } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const { postId } = request.params;
+      const { message, isAnonymous = false } = request.body;
+      const session = (request as any).session;
+
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const senderId = session.user.id;
+
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        app.logger.warn({ postId, senderId }, 'Care message validation failed');
+        return reply.status(400).send({ error: 'Message is required and cannot be empty' });
+      }
+
+      app.logger.info(
+        { postId, senderId, messageLength: message.length, isAnonymous },
+        'Sending care message'
+      );
+
+      try {
+        // Get the post to find the recipient
+        const post = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!post || post.length === 0) {
+          app.logger.warn({ postId }, 'Post not found for care message');
+          return reply.status(404).send({ error: 'Post not found' });
+        }
+
+        const recipientId = post[0].userId;
+
+        // Create the care message
+        const careMessage = await app.db
+          .insert(schema.careMessages)
+          .values({
+            postId: postId as any,
+            senderId,
+            recipientId,
+            message: message.trim(),
+            isAnonymous,
+          })
+          .returning();
+
+        app.logger.info(
+          { messageId: careMessage[0].id, postId, senderId, recipientId },
+          'Care message created successfully'
+        );
+
+        return reply.status(201).send({
+          success: true,
+          messageId: careMessage[0].id,
+        });
+      } catch (error) {
+        app.logger.error({ err: error, postId, senderId }, 'Failed to send care message');
+        throw error;
+      }
+    }
+  );
+
+  // Get care messages received by authenticated user
+  app.fastify.get(
+    '/api/community/care-messages',
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      const session = (request as any).session;
+
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const recipientId = session.user.id;
+
+      app.logger.info({ recipientId }, 'Fetching care messages for user');
+
+      try {
+        const messages = await app.db
+          .select({
+            id: schema.careMessages.id,
+            message: schema.careMessages.message,
+            senderId: schema.careMessages.senderId,
+            isAnonymous: schema.careMessages.isAnonymous,
+            postContent: schema.communityPosts.content,
+            createdAt: schema.careMessages.createdAt,
+          })
+          .from(schema.careMessages)
+          .innerJoin(schema.communityPosts, eq(schema.careMessages.postId, schema.communityPosts.id))
+          .where(eq(schema.careMessages.recipientId, recipientId))
+          .orderBy(desc(schema.careMessages.createdAt));
+
+        // Format messages for response (get sender names if not anonymous)
+        const formattedMessages = await Promise.all(
+          messages.map(async (msg) => {
+            let senderName: string | null = null;
+
+            if (!msg.isAnonymous) {
+              // Try to get sender's display name from user_profiles
+              try {
+                const senderProfile = await app.db
+                  .select({ displayName: schema.userProfiles.displayName })
+                  .from(schema.userProfiles)
+                  .where(eq(schema.userProfiles.userId, msg.senderId))
+                  .limit(1);
+
+                if (senderProfile.length > 0 && senderProfile[0].displayName) {
+                  senderName = senderProfile[0].displayName;
+                }
+              } catch {
+                // Profile not found, leave senderName as null
+              }
+            }
+
+            return {
+              id: msg.id,
+              message: msg.message,
+              senderName,
+              isAnonymous: msg.isAnonymous,
+              postContent: msg.postContent.substring(0, 100) + (msg.postContent.length > 100 ? '...' : ''),
+              createdAt: msg.createdAt,
+            };
+          })
+        );
+
+        app.logger.info(
+          { recipientId, messageCount: formattedMessages.length },
+          'Care messages retrieved'
+        );
+
+        return reply.send(formattedMessages);
+      } catch (error) {
+        app.logger.error({ err: error, recipientId }, 'Failed to fetch care messages');
+        throw error;
+      }
+    }
+  );
 }

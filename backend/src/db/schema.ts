@@ -337,3 +337,52 @@ export const userProfiles = pgTable(
     index('user_profiles_created').on(table.createdAt),
   ]
 );
+
+// Post reactions table (for community posts)
+export const postReactions = pgTable(
+  'post_reactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    reactionType: text('reaction_type', {
+      enum: ['praying', 'holding', 'light', 'amen', 'growing', 'peace'],
+    }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('post_reactions_post_user_unique').on(table.postId, table.userId),
+    index('post_reactions_post').on(table.postId),
+    index('post_reactions_user').on(table.userId),
+  ]
+);
+
+// Care messages table (for community support messages)
+export const careMessages = pgTable(
+  'care_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: 'cascade' }),
+    senderId: text('sender_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    recipientId: text('recipient_id').notNull().references(() => {
+      return { id: true } as any;
+    }, { onDelete: 'cascade' }),
+    message: text('message').notNull(),
+    isAnonymous: boolean('is_anonymous').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('care_messages_post').on(table.postId),
+    index('care_messages_sender').on(table.senderId),
+    index('care_messages_recipient').on(table.recipientId),
+    index('care_messages_created').on(table.createdAt),
+  ]
+);
