@@ -40,7 +40,12 @@ function getDayOfYear(): number {
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
 
   const year = pacificTime.getFullYear();
-  const startOfYear = new Date(year, 0, 1);
+  const month = pacificTime.getMonth();
+  const day = pacificTime.getDate();
+
+  // Create startOfYear in Pacific Time to ensure correct calculation
+  const startOfYearStr = new Date(year, 0, 1).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
+  const startOfYear = new Date(startOfYearStr);
 
   // Calculate days since start of year
   const diff = pacificTime.getTime() - startOfYear.getTime();
@@ -839,6 +844,22 @@ export function registerWeeklyThemeRoutes(app: App) {
         const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
         const currentDayOfWeek = pacificTime.getDay();
 
+        // Get the unique scripture for this day of the year (0-364) - ALWAYS calculate fresh
+        const dayOfYear = getDayOfYear();
+
+        app.logger.info(
+          {
+            utcTime: now.toISOString(),
+            pacificTimeString: pacificTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }),
+            pacificYear: pacificTime.getFullYear(),
+            pacificMonth: pacificTime.getMonth() + 1,
+            pacificDay: pacificTime.getDate(),
+            dayOfWeek: currentDayOfWeek,
+            dayOfYear,
+          },
+          'Pacific Time details for daily scripture calculation'
+        );
+
         // Get daily content for today
         let dailyContentRecord = await app.db
           .select()
@@ -854,20 +875,33 @@ export function registerWeeklyThemeRoutes(app: App) {
         // Get daily content for today, or generate it if not found
         let dailyContent = dailyContentRecord[0];
         let generatedContent = null;
+        let usedDayOfYear = dayOfYear; // Track which dayOfYear was used
 
         // If no daily content in database, generate appropriate content based on theme
         if (!dailyContent) {
           app.logger.info(
-            { themeId: theme.id, weekIndex: currentWeekIndex, dayOfWeek: currentDayOfWeek },
-            'Generating daily content from 365-day scripture cycle'
+            {
+              themeId: theme.id,
+              weekIndex: currentWeekIndex,
+              dayOfWeek: currentDayOfWeek,
+              dayOfYear,
+            },
+            'No database content found - generating from 365-day scripture cycle'
           );
 
           const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
           const dayName = dayTitles[currentDayOfWeek];
 
           // Get the unique scripture for this day of the year (0-364)
-          const dayOfYear = getDayOfYear();
           const dailyScripture = DAILY_SCRIPTURES_365[dayOfYear];
+
+          if (!dailyScripture) {
+            app.logger.error(
+              { dayOfYear, arrayLength: DAILY_SCRIPTURES_365.length },
+              'ERROR: Daily scripture not found for dayOfYear'
+            );
+            throw new Error(`Daily scripture not found for day ${dayOfYear}`);
+          }
 
           // Create generated daily content object (not storing in DB, just for response)
           generatedContent = {
@@ -878,11 +912,28 @@ export function registerWeeklyThemeRoutes(app: App) {
             scriptureText: dailyScripture.text,
             reflectionPrompt: dailyScripture.prompt,
             somaticPrompt: null,
+            dayOfYear, // Include dayOfYear in generated content
           };
 
           app.logger.info(
-            { themeId: theme.id, dayOfYear, dayOfWeek: currentDayOfWeek, scriptureRef: dailyScripture.ref },
-            'Generated daily content from 365-day scripture cycle'
+            {
+              themeId: theme.id,
+              dayOfYear,
+              dayOfWeek: currentDayOfWeek,
+              scriptureRef: dailyScripture.ref,
+              scriptureText: dailyScripture.text.substring(0, 100),
+            },
+            'Successfully generated daily content from 365-day scripture cycle'
+          );
+        } else {
+          app.logger.info(
+            {
+              themeId: theme.id,
+              dayOfYear,
+              dayOfWeek: currentDayOfWeek,
+              scriptureRef: dailyContent.scriptureReference,
+            },
+            'Using database daily content'
           );
         }
 
@@ -907,6 +958,26 @@ export function registerWeeklyThemeRoutes(app: App) {
         // Use generated content if database content not found
         const contentToReturn = generatedContent || dailyContent;
 
+        // Ensure dayOfYear is included in response for debugging
+        const responseContent = {
+          id: contentToReturn.id,
+          dayOfWeek: contentToReturn.dayOfWeek,
+          dayTitle: contentToReturn.dayTitle,
+          scriptureReference: contentToReturn.scriptureReference,
+          scriptureText: contentToReturn.scriptureText,
+          reflectionQuestion: contentToReturn.reflectionPrompt,
+          somaticPrompt: contentToReturn.somaticPrompt || null,
+          dayOfYear: contentToReturn.dayOfYear || usedDayOfYear, // Always include dayOfYear
+        };
+
+        app.logger.info(
+          {
+            dayOfYear: responseContent.dayOfYear,
+            scriptureRef: responseContent.scriptureReference,
+          },
+          'Returning weekly theme with daily content'
+        );
+
         return reply.send({
           weeklyTheme: {
             id: theme.id,
@@ -918,15 +989,7 @@ export function registerWeeklyThemeRoutes(app: App) {
             reflectionPrompt: theme.reflectionPrompt || null,
             somaticExercise: featuredExercise,
           },
-          dailyContent: {
-            id: contentToReturn.id,
-            dayOfWeek: contentToReturn.dayOfWeek,
-            dayTitle: contentToReturn.dayTitle,
-            scriptureReference: contentToReturn.scriptureReference,
-            scriptureText: contentToReturn.scriptureText,
-            reflectionQuestion: contentToReturn.reflectionPrompt,
-            somaticPrompt: contentToReturn.somaticPrompt || null,
-          },
+          dailyContent: responseContent,
         });
       } catch (error) {
         app.logger.error({ err: error }, 'Failed to fetch current weekly theme');
