@@ -587,33 +587,53 @@ export function registerCommunityRoutes(app: App) {
       );
 
       try {
-        // Check if reaction already exists
+        // Check if user already has ANY reaction on this post (not just the same type)
         const existingReaction = await app.db
           .select()
           .from(schema.postReactions)
           .where(
             and(
               eq(schema.postReactions.postId, postId as any),
-              eq(schema.postReactions.userId, userId),
-              eq(schema.postReactions.reactionType, reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace')
+              eq(schema.postReactions.userId, userId)
             )
           )
           .limit(1);
 
         if (existingReaction.length > 0) {
-          // Remove reaction
-          await app.db
-            .delete(schema.postReactions)
-            .where(
-              and(
-                eq(schema.postReactions.postId, postId as any),
-                eq(schema.postReactions.userId, userId),
-                eq(schema.postReactions.reactionType, reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace')
-              )
+          const currentReactionType = existingReaction[0].reactionType;
+
+          if (currentReactionType === reactionType) {
+            // User is clicking the same reaction type → remove it (toggle off)
+            await app.db
+              .delete(schema.postReactions)
+              .where(
+                and(
+                  eq(schema.postReactions.postId, postId as any),
+                  eq(schema.postReactions.userId, userId)
+                )
+              );
+            app.logger.info(
+              { postId, userId, reactionType },
+              'Reaction removed (toggled off)'
             );
-          app.logger.info({ postId, userId, reactionType }, 'Reaction removed');
+          } else {
+            // User is clicking a different reaction type → update to new type
+            await app.db
+              .update(schema.postReactions)
+              .set({ reactionType: reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace' })
+              .where(
+                and(
+                  eq(schema.postReactions.postId, postId as any),
+                  eq(schema.postReactions.userId, userId)
+                )
+              );
+            app.logger.info(
+              { postId, userId, oldReactionType: currentReactionType, newReactionType: reactionType },
+              'Reaction updated'
+            );
+          }
         } else {
-          // Add reaction
+          // No existing reaction → insert new one
           await app.db
             .insert(schema.postReactions)
             .values({
@@ -621,7 +641,10 @@ export function registerCommunityRoutes(app: App) {
               userId,
               reactionType: reactionType as any,
             });
-          app.logger.info({ postId, userId, reactionType }, 'Reaction added');
+          app.logger.info(
+            { postId, userId, reactionType },
+            'Reaction added'
+          );
         }
 
         // Get all reactions for this post
