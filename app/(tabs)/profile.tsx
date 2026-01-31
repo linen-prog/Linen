@@ -1643,11 +1643,18 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
   },
   cardTitle: {
     fontSize: typography.h3,
@@ -1833,11 +1840,18 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     width: '100%',
     maxWidth: 400,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.2)',
+      },
+      default: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+    }),
   },
   confirmModalTitle: {
     fontSize: typography.h2,
