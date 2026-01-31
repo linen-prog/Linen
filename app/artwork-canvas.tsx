@@ -21,6 +21,7 @@ import Animated, {
   interpolate,
   runOnJS
 } from 'react-native-reanimated';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
@@ -224,6 +225,119 @@ const DRAWING_PROMPTS = [
   "Express joy through color 🎨",
 ];
 
+// Interactive Sticker Component
+function InteractiveSticker({ 
+  sticker, 
+  isSelected, 
+  onSelect, 
+  onUpdate, 
+  onDelete 
+}: { 
+  sticker: Sticker; 
+  isSelected: boolean; 
+  onSelect: () => void;
+  onUpdate: (updates: Partial<Sticker>) => void;
+  onDelete: () => void;
+}) {
+  const translateX = useSharedValue(sticker.x);
+  const translateY = useSharedValue(sticker.y);
+  const scale = useSharedValue(sticker.size / 48);
+  const rotation = useSharedValue(sticker.rotation);
+  const savedTranslateX = useSharedValue(sticker.x);
+  const savedTranslateY = useSharedValue(sticker.y);
+  const savedScale = useSharedValue(sticker.size / 48);
+  const savedRotation = useSharedValue(sticker.rotation);
+
+  // Pan gesture for moving
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    })
+    .onUpdate((event) => {
+      translateX.value = savedTranslateX.value + event.translationX;
+      translateY.value = savedTranslateY.value + event.translationY;
+    })
+    .onEnd(() => {
+      runOnJS(onUpdate)({
+        x: translateX.value,
+        y: translateY.value,
+      });
+    });
+
+  // Pinch gesture for scaling
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      savedScale.value = scale.value;
+    })
+    .onUpdate((event) => {
+      scale.value = Math.max(0.5, Math.min(3, savedScale.value * event.scale));
+    })
+    .onEnd(() => {
+      runOnJS(onUpdate)({
+        size: scale.value * 48,
+      });
+    });
+
+  // Rotation gesture
+  const rotationGesture = Gesture.Rotation()
+    .onStart(() => {
+      savedRotation.value = rotation.value;
+    })
+    .onUpdate((event) => {
+      rotation.value = savedRotation.value + (event.rotation * 180) / Math.PI;
+    })
+    .onEnd(() => {
+      runOnJS(onUpdate)({
+        rotation: rotation.value,
+      });
+    });
+
+  // Combine all gestures
+  const composedGesture = Gesture.Simultaneous(
+    panGesture,
+    Gesture.Simultaneous(pinchGesture, rotationGesture)
+  );
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value - 24 },
+      { translateY: translateY.value - 24 },
+      { scale: scale.value },
+      { rotate: `${rotation.value}deg` },
+    ],
+  }));
+
+  return (
+    <GestureDetector gesture={composedGesture}>
+      <Animated.View
+        style={[
+          styles.interactiveSticker,
+          animatedStyle,
+          isSelected && styles.interactiveStickerSelected,
+        ]}
+      >
+        <TouchableOpacity
+          onPress={onSelect}
+          onLongPress={onDelete}
+          activeOpacity={0.8}
+          style={styles.stickerTouchable}
+        >
+          <IconSymbol 
+            ios_icon_name={sticker.icon}
+            android_material_icon_name={sticker.materialIcon}
+            size={48}
+            color={sticker.color}
+          />
+        </TouchableOpacity>
+        {isSelected && (
+          <View style={styles.stickerSelectionBorder} />
+        )}
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 export default function ArtworkCanvasScreen() {
   console.log('User viewing Artwork Canvas screen');
   const colorScheme = useColorScheme();
@@ -270,6 +384,7 @@ export default function ArtworkCanvasScreen() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [selectedPalette, setSelectedPalette] = useState<ColorPalette | null>(null);
 
   const canvasRef = useRef<View>(null);
@@ -540,9 +655,9 @@ export default function ArtworkCanvasScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
         console.log('[Canvas] onStartShouldSetPanResponder called');
-        return !isEditingPhoto;
+        return !isEditingPhoto && selectedStickerId === null;
       },
-      onMoveShouldSetPanResponder: () => !isEditingPhoto,
+      onMoveShouldSetPanResponder: () => !isEditingPhoto && selectedStickerId === null,
       onPanResponderGrant: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
         console.log('[Canvas] Touch started at:', locationX, locationY);
@@ -737,6 +852,7 @@ export default function ArtworkCanvasScreen() {
             setStrokeCount(0);
             setParticles([]);
             setStickers([]);
+            setSelectedStickerId(null);
             
             if (Platform.OS !== 'web') {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -883,6 +999,43 @@ export default function ArtworkCanvasScreen() {
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
+    
+    Alert.alert(
+      'Sticker Added! ✨',
+      'Tap to select, drag to move, pinch to resize, and rotate with two fingers. Long press to delete.',
+      [{ text: 'Got it!' }]
+    );
+  };
+
+  const handleUpdateSticker = (stickerId: string, updates: Partial<Sticker>) => {
+    console.log('[Canvas] Updating sticker:', stickerId, updates);
+    setStickers(prev => 
+      prev.map(s => s.id === stickerId ? { ...s, ...updates } : s)
+    );
+  };
+
+  const handleDeleteSticker = (stickerId: string) => {
+    console.log('[Canvas] User requesting to delete sticker:', stickerId);
+    Alert.alert(
+      'Delete Sticker',
+      'Remove this sticker from your artwork?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            console.log('[Canvas] User confirmed delete sticker');
+            setStickers(prev => prev.filter(s => s.id !== stickerId));
+            setSelectedStickerId(null);
+            
+            if (Platform.OS !== 'web') {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleApplyPalette = (palette: ColorPalette) => {
@@ -1367,929 +1520,867 @@ export default function ArtworkCanvasScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <Stack.Screen 
-        options={{
-          headerShown: false,
-        }}
-      />
-      
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="chevron.left"
-              android_material_icon_name="arrow-back"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
-          
-          <Text style={[styles.headerTitle, { color: textColor }]}>
-            {headerTitle}
-          </Text>
-          
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Drawing Prompt */}
-        {showPrompt && (
-          <Animated.View style={[styles.promptBanner, { backgroundColor: colors.primaryLight + '30' }, promptStyle]}>
-            <IconSymbol 
-              ios_icon_name="lightbulb.fill"
-              android_material_icon_name="lightbulb"
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={[styles.promptText, { color: colors.primary }]}>
-              {currentPrompt}
-            </Text>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
             <TouchableOpacity 
-              onPress={() => {
-                promptOpacity.value = withTiming(0, { duration: 300 });
-                setTimeout(() => setShowPrompt(false), 300);
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() => router.back()}
+              style={styles.backButton}
+              activeOpacity={0.7}
             >
               <IconSymbol 
-                ios_icon_name="xmark.circle.fill"
-                android_material_icon_name="cancel"
+                ios_icon_name="chevron.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              {headerTitle}
+            </Text>
+            
+            <View style={styles.headerSpacer} />
+          </View>
+
+          {/* Drawing Prompt */}
+          {showPrompt && (
+            <Animated.View style={[styles.promptBanner, { backgroundColor: colors.primaryLight + '30' }, promptStyle]}>
+              <IconSymbol 
+                ios_icon_name="lightbulb.fill"
+                android_material_icon_name="lightbulb"
                 size={20}
                 color={colors.primary}
               />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
-        {/* Brush Preview Indicator */}
-        <Animated.View style={[styles.brushPreview, brushPreviewStyle]}>
-          <View style={[styles.brushPreviewCircle, { 
-            backgroundColor: selectedColor,
-            width: Math.min(brushSize * 2 + 20, 60),
-            height: Math.min(brushSize * 2 + 20, 60),
-            borderRadius: Math.min(brushSize * 2 + 20, 60) / 2,
-          }]}>
-            <IconSymbol 
-              ios_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.icon || 'pencil'}
-              android_material_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.materialIcon || 'edit'}
-              size={20}
-              color={selectedColor === '#FFFFFF' || selectedColor === '#F5F5F5' ? '#000000' : '#FFFFFF'}
-            />
-          </View>
-          <Text style={[styles.brushPreviewLabel, { color: textColor }]}>
-            {selectedBrushLabel}
-          </Text>
-        </Animated.View>
-
-        {/* Progress Indicator */}
-        {strokeCount > 0 && (
-          <View style={[styles.progressIndicator, { backgroundColor: cardBg }]}>
-            <IconSymbol 
-              ios_icon_name="paintbrush.fill"
-              android_material_icon_name="brush"
-              size={16}
-              color={colors.primary}
-            />
-            <Text style={[styles.progressText, { color: textSecondaryColor }]}>
-              {strokeCount} {strokeCount === 1 ? 'stroke' : 'strokes'}
-            </Text>
-          </View>
-        )}
-
-        {/* Encouragement Message */}
-        {showEncouragement && (
-          <Animated.View 
-            style={[styles.encouragementBanner, { backgroundColor: colors.primary }]}
-            entering={undefined}
-            exiting={undefined}
-          >
-            <Text style={styles.encouragementText}>
-              {encouragementMessage}
-            </Text>
-          </Animated.View>
-        )}
-
-        {/* Achievement Notification */}
-        {showAchievement && currentAchievement && (
-          <Animated.View style={[styles.achievementBanner, { backgroundColor: colors.accent }, achievementStyle]}>
-            <IconSymbol 
-              ios_icon_name={currentAchievement.icon}
-              android_material_icon_name={currentAchievement.materialIcon}
-              size={32}
-              color="#FFFFFF"
-            />
-            <View style={styles.achievementTextContainer}>
-              <Text style={styles.achievementTitle}>
-                {currentAchievement.title}
+              <Text style={[styles.promptText, { color: colors.primary }]}>
+                {currentPrompt}
               </Text>
-              <Text style={styles.achievementMessage}>
-                {currentAchievement.message}
-              </Text>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Canvas Area */}
-        <View 
-          style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
-          ref={canvasRef}
-          onLayout={(event) => {
-            const { x, y, width, height } = event.nativeEvent.layout;
-            console.log('[Canvas] Layout updated:', { x, y, width, height });
-            setCanvasLayout({ x, y, width, height });
-          }}
-        >
-          <View 
-            style={styles.touchableCanvas}
-            {...(isEditingPhoto ? photoPanResponder.panHandlers : panResponder.panHandlers)}
-          >
-            {canvasLayout.width > 0 && canvasLayout.height > 0 && (
-              <Svg 
-                width={canvasLayout.width} 
-                height={canvasLayout.height}
-                style={styles.svgCanvas}
-              >
-                {renderBackgroundPattern()}
-                
-                {backgroundPattern !== 'none' && (
-                  <Rect
-                    x="0"
-                    y="0"
-                    width={canvasLayout.width}
-                    height={canvasLayout.height}
-                    fill={getPatternFill()}
-                  />
-                )}
-
-                {backgroundImage && (
-                  <SvgImage
-                    href={backgroundImage}
-                    x={photoPosition.x}
-                    y={photoPosition.y}
-                    width={canvasLayout.width * photoScale}
-                    height={canvasLayout.height * photoScale}
-                    preserveAspectRatio="xMidYMid slice"
-                  />
-                )}
-                
-                {allStrokes.map((stroke, index) => {
-                  const pathData = strokeToPath(stroke);
-                  if (!pathData) {
-                    return null;
-                  }
-                  const brushProps = getBrushProps(stroke);
-                  return (
-                    <Path
-                      key={`stroke-${index}`}
-                      d={pathData}
-                      {...brushProps}
-                    />
-                  );
-                })}
-
-                {/* Cursor preview */}
-                {cursorPosition && !isEditingPhoto && (
-                  <Circle
-                    cx={cursorPosition.x}
-                    cy={cursorPosition.y}
-                    r={brushSize / 2}
-                    fill={selectedColor}
-                    opacity={0.3}
-                    stroke={selectedColor}
-                    strokeWidth={1}
-                  />
-                )}
-              </Svg>
-            )}
-            
-            {/* Stickers overlay */}
-            {stickers.map((sticker) => (
-              <View
-                key={sticker.id}
-                style={[
-                  styles.stickerContainer,
-                  {
-                    left: sticker.x - sticker.size / 2,
-                    top: sticker.y - sticker.size / 2,
-                    width: sticker.size,
-                    height: sticker.size,
-                    transform: [{ rotate: `${sticker.rotation}deg` }],
-                  }
-                ]}
+              <TouchableOpacity 
+                onPress={() => {
+                  promptOpacity.value = withTiming(0, { duration: 300 });
+                  setTimeout(() => setShowPrompt(false), 300);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <IconSymbol 
-                  ios_icon_name={sticker.icon}
-                  android_material_icon_name={sticker.materialIcon}
-                  size={sticker.size}
-                  color={sticker.color}
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={20}
+                  color={colors.primary}
                 />
-              </View>
-            ))}
-            
-            {/* Particle effects */}
-            {particles.map(particle => (
-              <View
-                key={particle.id}
-                style={[
-                  styles.particle,
-                  {
-                    left: particle.x,
-                    top: particle.y,
-                    width: particle.size,
-                    height: particle.size,
-                    backgroundColor: particle.color,
-                    opacity: particle.life,
-                  }
-                ]}
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {/* Brush Preview Indicator */}
+          <Animated.View style={[styles.brushPreview, brushPreviewStyle]}>
+            <View style={[styles.brushPreviewCircle, { 
+              backgroundColor: selectedColor,
+              width: Math.min(brushSize * 2 + 20, 60),
+              height: Math.min(brushSize * 2 + 20, 60),
+              borderRadius: Math.min(brushSize * 2 + 20, 60) / 2,
+            }]}>
+              <IconSymbol 
+                ios_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.icon || 'pencil'}
+                android_material_icon_name={BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.materialIcon || 'edit'}
+                size={20}
+                color={selectedColor === '#FFFFFF' || selectedColor === '#F5F5F5' ? '#000000' : '#FFFFFF'}
               />
-            ))}
-            
-            {!backgroundImage && strokes.length === 0 && !currentStroke && backgroundPattern === 'none' && (
-              <View style={styles.canvasPlaceholder}>
-                <IconSymbol 
-                  ios_icon_name="hand.draw"
-                  android_material_icon_name="gesture"
-                  size={48}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.canvasPlaceholderText, { color: textSecondaryColor }]}>
-                  {canvasPlaceholderText}
-                </Text>
-              </View>
-            )}
-            
-            {isUploadingPhoto && (
-              <View style={styles.uploadingOverlay}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={[styles.uploadingText, { color: textColor }]}>
-                  {uploadingText}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Controls Bar */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.controlsBar}
-          contentContainerStyle={styles.controlsBarContent}
-        >
-          {/* Brush Selector */}
-          <TouchableOpacity 
-            style={[
-              styles.controlButton, 
-              { backgroundColor: cardBg },
-            ]}
-            onPress={() => {
-              console.log('[Canvas] User opening brush picker');
-              setShowBrushPicker(true);
-              if (Platform.OS !== 'web') {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="paintbrush"
-              android_material_icon_name="brush"
-              size={20}
-              color={textColor}
-            />
-            <Text style={[
-              styles.controlButtonLabel, 
-              { color: textSecondaryColor }
-            ]}>
+            </View>
+            <Text style={[styles.brushPreviewLabel, { color: textColor }]}>
               {selectedBrushLabel}
             </Text>
-          </TouchableOpacity>
-
-          {/* Color Palette Selector */}
-          <Animated.View style={paletteButtonStyle}>
-            <TouchableOpacity 
-              style={[
-                styles.controlButton, 
-                { backgroundColor: cardBg },
-                selectedPalette && styles.controlButtonActive
-              ]}
-              onPress={() => {
-                console.log('[Canvas] User opening palette picker');
-                setShowPaletteModal(true);
-                if (Platform.OS !== 'web') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <IconSymbol 
-                ios_icon_name="paintpalette"
-                android_material_icon_name="palette"
-                size={20}
-                color={selectedPalette ? colors.primary : textColor}
-              />
-              <Text style={[
-                styles.controlButtonLabel, 
-                { color: selectedPalette ? colors.primary : textSecondaryColor }
-              ]}>
-                {selectedPalette ? selectedPalette.name : 'Palette'}
-              </Text>
-            </TouchableOpacity>
           </Animated.View>
 
-          {/* Color Selector */}
-          <Animated.View style={colorPickerStyle}>
-            <TouchableOpacity 
-              style={[styles.controlButton, { backgroundColor: selectedColor, borderWidth: 2, borderColor: cardBg }]}
-              onPress={() => {
-                console.log('[Canvas] User opening color picker');
-                setShowColorPicker(true);
-                if (Platform.OS !== 'web') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.colorPreview} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Pattern Selector */}
-          <TouchableOpacity 
-            style={[
-              styles.controlButton, 
-              { backgroundColor: cardBg },
-              backgroundPattern !== 'none' && styles.controlButtonActive
-            ]}
-            onPress={() => {
-              console.log('[Canvas] User opening pattern picker');
-              setShowPatternModal(true);
-              if (Platform.OS !== 'web') {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="square.grid.2x2"
-              android_material_icon_name="grid-on"
-              size={20}
-              color={backgroundPattern !== 'none' ? colors.primary : textColor}
-            />
-          </TouchableOpacity>
-
-          {/* Sticker Button */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }]}
-            onPress={() => {
-              console.log('[Canvas] User opening sticker picker');
-              setShowStickerModal(true);
-              if (Platform.OS !== 'web') {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="star.fill"
-              android_material_icon_name="star"
-              size={20}
-              color={textColor}
-            />
-          </TouchableOpacity>
-
-          {/* Eraser Button */}
-          <TouchableOpacity 
-            style={[
-              styles.controlButton, 
-              { backgroundColor: cardBg },
-              isEraserMode && styles.controlButtonActive
-            ]}
-            onPress={handleEraser}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="eraser"
-              android_material_icon_name="auto-fix-off"
-              size={20}
-              color={isEraserMode ? colors.error : textColor}
-            />
-            <Text style={[
-              styles.controlButtonLabel, 
-              { color: isEraserMode ? colors.error : textSecondaryColor }
-            ]}>
-              Eraser
-            </Text>
-          </TouchableOpacity>
-
-          {/* Undo */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }, !canUndo && styles.controlButtonDisabled]}
-            onPress={handleUndo}
-            disabled={!canUndo}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.uturn.backward"
-              android_material_icon_name="undo"
-              size={20}
-              color={canUndo ? textColor : textSecondaryColor}
-            />
-          </TouchableOpacity>
-
-          {/* Redo */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }, !canRedo && styles.controlButtonDisabled]}
-            onPress={handleRedo}
-            disabled={!canRedo}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.uturn.forward"
-              android_material_icon_name="redo"
-              size={20}
-              color={canRedo ? textColor : textSecondaryColor}
-            />
-          </TouchableOpacity>
-
-          {/* Upload Photo */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }]}
-            onPress={handleUploadPhoto}
-            disabled={isUploadingPhoto}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="photo"
-              android_material_icon_name="image"
-              size={20}
-              color={textColor}
-            />
-          </TouchableOpacity>
-
-          {/* Edit Photo (only show if photo exists) */}
-          {backgroundImage && (
-            <TouchableOpacity 
-              style={[
-                styles.controlButton, 
-                { backgroundColor: cardBg },
-                isEditingPhoto && styles.controlButtonActive
-              ]}
-              onPress={() => {
-                console.log('[Canvas] User toggling photo edit mode');
-                setIsEditingPhoto(!isEditingPhoto);
-                if (Platform.OS !== 'web') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                }
-              }}
-              activeOpacity={0.7}
-            >
+          {/* Progress Indicator */}
+          {strokeCount > 0 && (
+            <View style={[styles.progressIndicator, { backgroundColor: cardBg }]}>
               <IconSymbol 
-                ios_icon_name="crop"
-                android_material_icon_name="crop"
-                size={20}
-                color={isEditingPhoto ? colors.primary : textColor}
-              />
-              <Text style={[
-                styles.controlButtonLabel, 
-                { color: isEditingPhoto ? colors.primary : textSecondaryColor }
-              ]}>
-                {isEditingPhoto ? 'Done' : 'Edit'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Clear */}
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: cardBg }]}
-            onPress={handleClear}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="trash"
-              android_material_icon_name="delete"
-              size={20}
-              color={colors.error}
-            />
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Brush Size Slider or Photo Scale Slider */}
-        {isEditingPhoto && backgroundImage ? (
-          <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
-            <View style={styles.sliderHeader}>
-              <Text style={[styles.sliderLabel, { color: textColor }]}>
-                Photo Scale
-              </Text>
-              <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
-                {Math.round(photoScale * 100)}%
-              </Text>
-            </View>
-            <Slider
-              style={styles.slider}
-              minimumValue={0.5}
-              maximumValue={3}
-              step={0.1}
-              value={photoScale}
-              onValueChange={(value) => {
-                console.log('[Canvas] Photo scale changed to:', value);
-                setPhotoScale(value);
-              }}
-              minimumTrackTintColor={colors.primary}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.primary}
-            />
-            <View style={styles.photoEditHint}>
-              <IconSymbol 
-                ios_icon_name="hand.draw"
-                android_material_icon_name="pan-tool"
-                size={16}
-                color={textSecondaryColor}
-              />
-              <Text style={[styles.photoEditHintText, { color: textSecondaryColor }]}>
-                Drag to move photo, use slider to zoom
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
-            <View style={styles.sliderHeader}>
-              <Text style={[styles.sliderLabel, { color: textColor }]}>
-                {brushSizeLabel}
-              </Text>
-              <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
-                {brushSize}
-              </Text>
-            </View>
-            <Slider
-              style={styles.slider}
-              minimumValue={1}
-              maximumValue={50}
-              step={1}
-              value={brushSize}
-              onValueChange={(value) => {
-                console.log('[Canvas] Brush size changed to:', value);
-                setBrushSize(value);
-              }}
-              minimumTrackTintColor={colors.primary}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.primary}
-            />
-          </View>
-        )}
-
-        {/* Save Button */}
-        <TouchableOpacity 
-          style={[styles.saveButton, (!canSave || isSaving || hasSaved) && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave || isSaving || hasSaved}
-          activeOpacity={0.8}
-        >
-          {hasSaved && (
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill"
-              android_material_icon_name="check-circle"
-              size={20}
-              color="#FFFFFF"
-            />
-          )}
-          <Text style={styles.saveButtonText}>
-            {saveButtonText}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Celebration Overlay */}
-      {showCelebration && (
-        <Animated.View style={[styles.celebrationOverlay, celebrationStyle]}>
-          <View style={styles.celebrationContent}>
-            <IconSymbol 
-              ios_icon_name="star.fill"
-              android_material_icon_name="star"
-              size={80}
-              color={colors.accent}
-            />
-            <Text style={styles.celebrationText}>
-              Artwork Saved! ✨
-            </Text>
-            <Text style={styles.celebrationSubtext}>
-              Beautiful work!
-            </Text>
-          </View>
-          {celebrationSparkles.map((sparkle) => (
-            <View
-              key={sparkle.id}
-              style={[
-                styles.celebrationSparkle,
-                {
-                  left: '50%',
-                  top: '50%',
-                  marginLeft: sparkle.x,
-                  marginTop: sparkle.y,
-                }
-              ]}
-            >
-              <IconSymbol 
-                ios_icon_name="sparkle"
-                android_material_icon_name="auto-awesome"
+                ios_icon_name="paintbrush.fill"
+                android_material_icon_name="brush"
                 size={16}
                 color={colors.primary}
               />
-            </View>
-          ))}
-        </Animated.View>
-      )}
-
-      {/* Color Palette Modal */}
-      <Modal
-        visible={showPaletteModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPaletteModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Scripture-Inspired Palettes
+              <Text style={[styles.progressText, { color: textSecondaryColor }]}>
+                {strokeCount} {strokeCount === 1 ? 'stroke' : 'strokes'}
               </Text>
-              <TouchableOpacity onPress={() => setShowPaletteModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
             </View>
+          )}
 
-            <ScrollView style={styles.modalScroll}>
-              {COLOR_PALETTES.map((palette) => {
-                const isSelected = selectedPalette?.id === palette.id;
-                return (
-                  <TouchableOpacity
-                    key={palette.id}
-                    style={[
-                      styles.paletteOption,
-                      { borderColor: colors.border },
-                      isSelected && styles.paletteOptionSelected
-                    ]}
-                    onPress={() => handleApplyPalette(palette)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.paletteHeader}>
-                      <IconSymbol 
-                        ios_icon_name={palette.icon}
-                        android_material_icon_name={palette.materialIcon}
-                        size={24}
-                        color={isSelected ? colors.primary : textColor}
+          {/* Encouragement Message */}
+          {showEncouragement && (
+            <Animated.View 
+              style={[styles.encouragementBanner, { backgroundColor: colors.primary }]}
+              entering={undefined}
+              exiting={undefined}
+            >
+              <Text style={styles.encouragementText}>
+                {encouragementMessage}
+              </Text>
+            </Animated.View>
+          )}
+
+          {/* Achievement Notification */}
+          {showAchievement && currentAchievement && (
+            <Animated.View style={[styles.achievementBanner, { backgroundColor: colors.accent }, achievementStyle]}>
+              <IconSymbol 
+                ios_icon_name={currentAchievement.icon}
+                android_material_icon_name={currentAchievement.materialIcon}
+                size={32}
+                color="#FFFFFF"
+              />
+              <View style={styles.achievementTextContainer}>
+                <Text style={styles.achievementTitle}>
+                  {currentAchievement.title}
+                </Text>
+                <Text style={styles.achievementMessage}>
+                  {currentAchievement.message}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Canvas Area */}
+          <View 
+            style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
+            ref={canvasRef}
+            onLayout={(event) => {
+              const { x, y, width, height } = event.nativeEvent.layout;
+              console.log('[Canvas] Layout updated:', { x, y, width, height });
+              setCanvasLayout({ x, y, width, height });
+            }}
+          >
+            <View 
+              style={styles.touchableCanvas}
+              {...(isEditingPhoto ? photoPanResponder.panHandlers : panResponder.panHandlers)}
+            >
+              {canvasLayout.width > 0 && canvasLayout.height > 0 && (
+                <Svg 
+                  width={canvasLayout.width} 
+                  height={canvasLayout.height}
+                  style={styles.svgCanvas}
+                >
+                  {renderBackgroundPattern()}
+                  
+                  {backgroundPattern !== 'none' && (
+                    <Rect
+                      x="0"
+                      y="0"
+                      width={canvasLayout.width}
+                      height={canvasLayout.height}
+                      fill={getPatternFill()}
+                    />
+                  )}
+
+                  {backgroundImage && (
+                    <SvgImage
+                      href={backgroundImage}
+                      x={photoPosition.x}
+                      y={photoPosition.y}
+                      width={canvasLayout.width * photoScale}
+                      height={canvasLayout.height * photoScale}
+                      preserveAspectRatio="xMidYMid slice"
+                    />
+                  )}
+                  
+                  {allStrokes.map((stroke, index) => {
+                    const pathData = strokeToPath(stroke);
+                    if (!pathData) {
+                      return null;
+                    }
+                    const brushProps = getBrushProps(stroke);
+                    return (
+                      <Path
+                        key={`stroke-${index}`}
+                        d={pathData}
+                        {...brushProps}
                       />
-                      <View style={styles.paletteInfo}>
+                    );
+                  })}
+
+                  {/* Cursor preview */}
+                  {cursorPosition && !isEditingPhoto && selectedStickerId === null && (
+                    <Circle
+                      cx={cursorPosition.x}
+                      cy={cursorPosition.y}
+                      r={brushSize / 2}
+                      fill={selectedColor}
+                      opacity={0.3}
+                      stroke={selectedColor}
+                      strokeWidth={1}
+                    />
+                  )}
+                </Svg>
+              )}
+              
+              {/* Interactive Stickers overlay */}
+              {stickers.map((sticker) => (
+                <InteractiveSticker
+                  key={sticker.id}
+                  sticker={sticker}
+                  isSelected={selectedStickerId === sticker.id}
+                  onSelect={() => {
+                    console.log('[Canvas] Sticker selected:', sticker.id);
+                    setSelectedStickerId(sticker.id);
+                  }}
+                  onUpdate={(updates) => handleUpdateSticker(sticker.id, updates)}
+                  onDelete={() => handleDeleteSticker(sticker.id)}
+                />
+              ))}
+              
+              {/* Particle effects */}
+              {particles.map(particle => (
+                <View
+                  key={particle.id}
+                  style={[
+                    styles.particle,
+                    {
+                      left: particle.x,
+                      top: particle.y,
+                      width: particle.size,
+                      height: particle.size,
+                      backgroundColor: particle.color,
+                      opacity: particle.life,
+                    }
+                  ]}
+                />
+              ))}
+              
+              {!backgroundImage && strokes.length === 0 && !currentStroke && backgroundPattern === 'none' && stickers.length === 0 && (
+                <View style={styles.canvasPlaceholder}>
+                  <IconSymbol 
+                    ios_icon_name="hand.draw"
+                    android_material_icon_name="gesture"
+                    size={48}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={[styles.canvasPlaceholderText, { color: textSecondaryColor }]}>
+                    {canvasPlaceholderText}
+                  </Text>
+                </View>
+              )}
+              
+              {isUploadingPhoto && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.uploadingText, { color: textColor }]}>
+                    {uploadingText}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Controls Bar */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.controlsBar}
+            contentContainerStyle={styles.controlsBarContent}
+          >
+            {/* Brush Selector */}
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: cardBg },
+              ]}
+              onPress={() => {
+                console.log('[Canvas] User opening brush picker');
+                setShowBrushPicker(true);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="paintbrush"
+                android_material_icon_name="brush"
+                size={20}
+                color={textColor}
+              />
+              <Text style={[
+                styles.controlButtonLabel, 
+                { color: textSecondaryColor }
+              ]}>
+                {selectedBrushLabel}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Color Palette Selector */}
+            <Animated.View style={paletteButtonStyle}>
+              <TouchableOpacity 
+                style={[
+                  styles.controlButton, 
+                  { backgroundColor: cardBg },
+                  selectedPalette && styles.controlButtonActive
+                ]}
+                onPress={() => {
+                  console.log('[Canvas] User opening palette picker');
+                  setShowPaletteModal(true);
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="paintpalette"
+                  android_material_icon_name="palette"
+                  size={20}
+                  color={selectedPalette ? colors.primary : textColor}
+                />
+                <Text style={[
+                  styles.controlButtonLabel, 
+                  { color: selectedPalette ? colors.primary : textSecondaryColor }
+                ]}>
+                  {selectedPalette ? selectedPalette.name : 'Palette'}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Color Selector */}
+            <Animated.View style={colorPickerStyle}>
+              <TouchableOpacity 
+                style={[styles.controlButton, { backgroundColor: selectedColor, borderWidth: 2, borderColor: cardBg }]}
+                onPress={() => {
+                  console.log('[Canvas] User opening color picker');
+                  setShowColorPicker(true);
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.colorPreview} />
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Pattern Selector */}
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: cardBg },
+                backgroundPattern !== 'none' && styles.controlButtonActive
+              ]}
+              onPress={() => {
+                console.log('[Canvas] User opening pattern picker');
+                setShowPatternModal(true);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="square.grid.2x2"
+                android_material_icon_name="grid-on"
+                size={20}
+                color={backgroundPattern !== 'none' ? colors.primary : textColor}
+              />
+            </TouchableOpacity>
+
+            {/* Sticker Button */}
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: cardBg }]}
+              onPress={() => {
+                console.log('[Canvas] User opening sticker picker');
+                setShowStickerModal(true);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="star.fill"
+                android_material_icon_name="star"
+                size={20}
+                color={textColor}
+              />
+            </TouchableOpacity>
+
+            {/* Eraser Button */}
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: cardBg },
+                isEraserMode && styles.controlButtonActive
+              ]}
+              onPress={handleEraser}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="eraser"
+                android_material_icon_name="auto-fix-off"
+                size={20}
+                color={isEraserMode ? colors.error : textColor}
+              />
+              <Text style={[
+                styles.controlButtonLabel, 
+                { color: isEraserMode ? colors.error : textSecondaryColor }
+              ]}>
+                Eraser
+              </Text>
+            </TouchableOpacity>
+
+            {/* Undo */}
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: cardBg }, !canUndo && styles.controlButtonDisabled]}
+              onPress={handleUndo}
+              disabled={!canUndo}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.uturn.backward"
+                android_material_icon_name="undo"
+                size={20}
+                color={canUndo ? textColor : textSecondaryColor}
+              />
+            </TouchableOpacity>
+
+            {/* Redo */}
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: cardBg }, !canRedo && styles.controlButtonDisabled]}
+              onPress={handleRedo}
+              disabled={!canRedo}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.uturn.forward"
+                android_material_icon_name="redo"
+                size={20}
+                color={canRedo ? textColor : textSecondaryColor}
+              />
+            </TouchableOpacity>
+
+            {/* Upload Photo */}
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: cardBg }]}
+              onPress={handleUploadPhoto}
+              disabled={isUploadingPhoto}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="photo"
+                android_material_icon_name="image"
+                size={20}
+                color={textColor}
+              />
+            </TouchableOpacity>
+
+            {/* Edit Photo (only show if photo exists) */}
+            {backgroundImage && (
+              <TouchableOpacity 
+                style={[
+                  styles.controlButton, 
+                  { backgroundColor: cardBg },
+                  isEditingPhoto && styles.controlButtonActive
+                ]}
+                onPress={() => {
+                  console.log('[Canvas] User toggling photo edit mode');
+                  setIsEditingPhoto(!isEditingPhoto);
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="crop"
+                  android_material_icon_name="crop"
+                  size={20}
+                  color={isEditingPhoto ? colors.primary : textColor}
+                />
+                <Text style={[
+                  styles.controlButtonLabel, 
+                  { color: isEditingPhoto ? colors.primary : textSecondaryColor }
+                ]}>
+                  {isEditingPhoto ? 'Done' : 'Edit'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Clear */}
+            <TouchableOpacity 
+              style={[styles.controlButton, { backgroundColor: cardBg }]}
+              onPress={handleClear}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="trash"
+                android_material_icon_name="delete"
+                size={20}
+                color={colors.error}
+              />
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* Brush Size Slider or Photo Scale Slider */}
+          {isEditingPhoto && backgroundImage ? (
+            <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.sliderLabel, { color: textColor }]}>
+                  Photo Scale
+                </Text>
+                <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
+                  {Math.round(photoScale * 100)}%
+                </Text>
+              </View>
+              <Slider
+                style={styles.slider}
+                minimumValue={0.5}
+                maximumValue={3}
+                step={0.1}
+                value={photoScale}
+                onValueChange={(value) => {
+                  console.log('[Canvas] Photo scale changed to:', value);
+                  setPhotoScale(value);
+                }}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.primary}
+              />
+              <View style={styles.photoEditHint}>
+                <IconSymbol 
+                  ios_icon_name="hand.draw"
+                  android_material_icon_name="pan-tool"
+                  size={16}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.photoEditHintText, { color: textSecondaryColor }]}>
+                  Drag to move photo, use slider to zoom
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.sliderContainer, { backgroundColor: cardBg }]}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.sliderLabel, { color: textColor }]}>
+                  {brushSizeLabel}
+                </Text>
+                <Text style={[styles.sliderValue, { color: textSecondaryColor }]}>
+                  {brushSize}
+                </Text>
+              </View>
+              <Slider
+                style={styles.slider}
+                minimumValue={1}
+                maximumValue={50}
+                step={1}
+                value={brushSize}
+                onValueChange={(value) => {
+                  console.log('[Canvas] Brush size changed to:', value);
+                  setBrushSize(value);
+                }}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.primary}
+              />
+            </View>
+          )}
+
+          {/* Save Button */}
+          <TouchableOpacity 
+            style={[styles.saveButton, (!canSave || isSaving || hasSaved) && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!canSave || isSaving || hasSaved}
+            activeOpacity={0.8}
+          >
+            {hasSaved && (
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color="#FFFFFF"
+              />
+            )}
+            <Text style={styles.saveButtonText}>
+              {saveButtonText}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Celebration Overlay */}
+        {showCelebration && (
+          <Animated.View style={[styles.celebrationOverlay, celebrationStyle]}>
+            <View style={styles.celebrationContent}>
+              <IconSymbol 
+                ios_icon_name="star.fill"
+                android_material_icon_name="star"
+                size={80}
+                color={colors.accent}
+              />
+              <Text style={styles.celebrationText}>
+                Artwork Saved! ✨
+              </Text>
+              <Text style={styles.celebrationSubtext}>
+                Beautiful work!
+              </Text>
+            </View>
+            {celebrationSparkles.map((sparkle) => (
+              <View
+                key={sparkle.id}
+                style={[
+                  styles.celebrationSparkle,
+                  {
+                    left: '50%',
+                    top: '50%',
+                    marginLeft: sparkle.x,
+                    marginTop: sparkle.y,
+                  }
+                ]}
+              >
+                <IconSymbol 
+                  ios_icon_name="sparkle"
+                  android_material_icon_name="auto-awesome"
+                  size={16}
+                  color={colors.primary}
+                />
+              </View>
+            ))}
+          </Animated.View>
+        )}
+
+        {/* Color Palette Modal */}
+        <Modal
+          visible={showPaletteModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowPaletteModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Scripture-Inspired Palettes
+                </Text>
+                <TouchableOpacity onPress={() => setShowPaletteModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll}>
+                {COLOR_PALETTES.map((palette) => {
+                  const isSelected = selectedPalette?.id === palette.id;
+                  return (
+                    <TouchableOpacity
+                      key={palette.id}
+                      style={[
+                        styles.paletteOption,
+                        { borderColor: colors.border },
+                        isSelected && styles.paletteOptionSelected
+                      ]}
+                      onPress={() => handleApplyPalette(palette)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.paletteHeader}>
+                        <IconSymbol 
+                          ios_icon_name={palette.icon}
+                          android_material_icon_name={palette.materialIcon}
+                          size={24}
+                          color={isSelected ? colors.primary : textColor}
+                        />
+                        <View style={styles.paletteInfo}>
+                          <Text style={[
+                            styles.paletteName,
+                            { color: isSelected ? colors.primary : textColor }
+                          ]}>
+                            {palette.name}
+                          </Text>
+                          <Text style={[styles.paletteDescription, { color: textSecondaryColor }]}>
+                            {palette.description}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.paletteColors}>
+                        {palette.colors.map((color, index) => (
+                          <View
+                            key={index}
+                            style={[
+                              styles.paletteColorSwatch,
+                              { backgroundColor: color }
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Sticker Modal */}
+        <Modal
+          visible={showStickerModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowStickerModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Add Sticker
+                </Text>
+                <TouchableOpacity onPress={() => setShowStickerModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll}>
+                <View style={styles.stickerGrid}>
+                  {STICKER_OPTIONS.map((sticker) => (
+                    <TouchableOpacity
+                      key={sticker.id}
+                      style={[
+                        styles.stickerOption,
+                        { borderColor: colors.border }
+                      ]}
+                      onPress={() => handleAddSticker(sticker.id)}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol 
+                        ios_icon_name={sticker.icon}
+                        android_material_icon_name={sticker.materialIcon}
+                        size={32}
+                        color={textColor}
+                      />
+                      <Text style={[styles.stickerLabel, { color: textColor }]}>
+                        {sticker.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Pattern Modal */}
+        <Modal
+          visible={showPatternModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowPatternModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Background Pattern
+                </Text>
+                <TouchableOpacity onPress={() => setShowPatternModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll}>
+                <View style={styles.patternGrid}>
+                  {(['none', 'dots', 'lines', 'grid', 'watercolor', 'gradient'] as BackgroundPattern[]).map((pattern) => {
+                    const isSelected = backgroundPattern === pattern;
+                    const patternLabel = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+                    return (
+                      <TouchableOpacity
+                        key={pattern}
+                        style={[
+                          styles.patternOption,
+                          { borderColor: colors.border },
+                          isSelected && styles.patternOptionSelected
+                        ]}
+                        onPress={() => handleApplyPattern(pattern)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={[
-                          styles.paletteName,
+                          styles.patternLabel,
                           { color: isSelected ? colors.primary : textColor }
                         ]}>
-                          {palette.name}
+                          {patternLabel}
                         </Text>
-                        <Text style={[styles.paletteDescription, { color: textSecondaryColor }]}>
-                          {palette.description}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.paletteColors}>
-                      {palette.colors.map((color, index) => (
-                        <View
-                          key={index}
-                          style={[
-                            styles.paletteColorSwatch,
-                            { backgroundColor: color }
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Sticker Modal */}
-      <Modal
-        visible={showStickerModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowStickerModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Add Sticker
-              </Text>
-              <TouchableOpacity onPress={() => setShowStickerModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <View style={styles.stickerGrid}>
-                {STICKER_OPTIONS.map((sticker) => (
-                  <TouchableOpacity
-                    key={sticker.id}
-                    style={[
-                      styles.stickerOption,
-                      { borderColor: colors.border }
-                    ]}
-                    onPress={() => handleAddSticker(sticker.id)}
-                    activeOpacity={0.7}
-                  >
-                    <IconSymbol 
-                      ios_icon_name={sticker.icon}
-                      android_material_icon_name={sticker.materialIcon}
-                      size={32}
-                      color={textColor}
-                    />
-                    <Text style={[styles.stickerLabel, { color: textColor }]}>
-                      {sticker.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Pattern Modal */}
-      <Modal
-        visible={showPatternModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPatternModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Background Pattern
-              </Text>
-              <TouchableOpacity onPress={() => setShowPatternModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <View style={styles.patternGrid}>
-                {(['none', 'dots', 'lines', 'grid', 'watercolor', 'gradient'] as BackgroundPattern[]).map((pattern) => {
-                  const isSelected = backgroundPattern === pattern;
-                  const patternLabel = pattern.charAt(0).toUpperCase() + pattern.slice(1);
-                  return (
-                    <TouchableOpacity
-                      key={pattern}
-                      style={[
-                        styles.patternOption,
-                        { borderColor: colors.border },
-                        isSelected && styles.patternOptionSelected
-                      ]}
-                      onPress={() => handleApplyPattern(pattern)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.patternLabel,
-                        { color: isSelected ? colors.primary : textColor }
-                      ]}>
-                        {patternLabel}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Brush Picker Modal */}
-      <Modal
-        visible={showBrushPicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowBrushPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {brushPickerTitle}
-              </Text>
-              <TouchableOpacity onPress={() => setShowBrushPicker(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <Text style={[styles.brushSectionTitle, { color: textColor }]}>
-                {freeBrushesLabel}
-              </Text>
-              <View style={styles.brushGrid}>
-                {freeBrushes.map((brush) => {
-                  const isSelected = selectedBrush === brush.id;
-                  return (
-                    <TouchableOpacity
-                      key={brush.id}
-                      style={[
-                        styles.brushOption,
-                        { borderColor: colors.border },
-                        isSelected && styles.brushOptionSelected
-                      ]}
-                      onPress={() => handleBrushSelect(brush.id)}
-                      activeOpacity={0.7}
-                    >
-                      <IconSymbol 
-                        ios_icon_name={brush.icon}
-                        android_material_icon_name={brush.materialIcon}
-                        size={24}
-                        color={isSelected ? colors.primary : textColor}
-                      />
-                      <Text style={[
-                        styles.brushOptionText,
-                        { color: isSelected ? colors.primary : textColor }
-                      ]}>
-                        {brush.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={styles.premiumSection}>
-                <View style={styles.premiumHeader}>
-                  <Text style={[styles.brushSectionTitle, { color: textColor }]}>
-                    {premiumBrushesLabel}
-                  </Text>
-                  <View style={styles.premiumBadge}>
-                    <Text style={styles.premiumBadgeText}>
-                      {premiumBadge}
-                    </Text>
-                  </View>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Brush Picker Modal */}
+        <Modal
+          visible={showBrushPicker}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowBrushPicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  {brushPickerTitle}
+                </Text>
+                <TouchableOpacity onPress={() => setShowBrushPicker(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll}>
+                <Text style={[styles.brushSectionTitle, { color: textColor }]}>
+                  {freeBrushesLabel}
+                </Text>
                 <View style={styles.brushGrid}>
-                  {premiumBrushes.map((brush) => {
+                  {freeBrushes.map((brush) => {
                     const isSelected = selectedBrush === brush.id;
-                    const isLocked = !isPremium;
                     return (
                       <TouchableOpacity
                         key={brush.id}
                         style={[
                           styles.brushOption,
                           { borderColor: colors.border },
-                          isSelected && styles.brushOptionSelected,
-                          isLocked && styles.brushOptionLocked
+                          isSelected && styles.brushOptionSelected
                         ]}
                         onPress={() => handleBrushSelect(brush.id)}
                         activeOpacity={0.7}
                       >
-                        {isLocked && (
-                          <View style={styles.lockIcon}>
-                            <IconSymbol 
-                              ios_icon_name="lock.fill"
-                              android_material_icon_name="lock"
-                              size={16}
-                              color={colors.textSecondary}
-                            />
-                          </View>
-                        )}
                         <IconSymbol 
                           ios_icon_name={brush.icon}
                           android_material_icon_name={brush.materialIcon}
                           size={24}
-                          color={isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor)}
+                          color={isSelected ? colors.primary : textColor}
                         />
                         <Text style={[
                           styles.brushOptionText,
-                          { color: isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor) }
+                          { color: isSelected ? colors.primary : textColor }
                         ]}>
                           {brush.label}
                         </Text>
@@ -2297,252 +2388,307 @@ export default function ArtworkCanvasScreen() {
                     );
                   })}
                 </View>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
-      {/* Color Picker Modal */}
-      <Modal
-        visible={showColorPicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowColorPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {colorPickerTitle}
-              </Text>
-              <TouchableOpacity onPress={() => setShowColorPicker(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              {selectedPalette && (
-                <View style={styles.paletteInfo}>
-                  <Text style={[styles.paletteDescription, { color: textSecondaryColor, marginBottom: spacing.md }]}>
-                    {selectedPalette.description}
-                  </Text>
+                <View style={styles.premiumSection}>
+                  <View style={styles.premiumHeader}>
+                    <Text style={[styles.brushSectionTitle, { color: textColor }]}>
+                      {premiumBrushesLabel}
+                    </Text>
+                    <View style={styles.premiumBadge}>
+                      <Text style={styles.premiumBadgeText}>
+                        {premiumBadge}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.brushGrid}>
+                    {premiumBrushes.map((brush) => {
+                      const isSelected = selectedBrush === brush.id;
+                      const isLocked = !isPremium;
+                      return (
+                        <TouchableOpacity
+                          key={brush.id}
+                          style={[
+                            styles.brushOption,
+                            { borderColor: colors.border },
+                            isSelected && styles.brushOptionSelected,
+                            isLocked && styles.brushOptionLocked
+                          ]}
+                          onPress={() => handleBrushSelect(brush.id)}
+                          activeOpacity={0.7}
+                        >
+                          {isLocked && (
+                            <View style={styles.lockIcon}>
+                              <IconSymbol 
+                                ios_icon_name="lock.fill"
+                                android_material_icon_name="lock"
+                                size={16}
+                                color={colors.textSecondary}
+                              />
+                            </View>
+                          )}
+                          <IconSymbol 
+                            ios_icon_name={brush.icon}
+                            android_material_icon_name={brush.materialIcon}
+                            size={24}
+                            color={isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor)}
+                          />
+                          <Text style={[
+                            styles.brushOptionText,
+                            { color: isSelected ? colors.primary : (isLocked ? textSecondaryColor : textColor) }
+                          ]}>
+                            {brush.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
-              )}
-              <View style={styles.colorGrid}>
-                {availableColors.map((color, index) => {
-                  const isSelected = selectedColor === color;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.colorOption,
-                        { backgroundColor: color },
-                        isSelected && styles.colorOptionSelected
-                      ]}
-                      onPress={() => handleColorSelect(color)}
-                      activeOpacity={0.7}
-                    >
-                      {isSelected && (
-                        <IconSymbol 
-                          ios_icon_name="checkmark"
-                          android_material_icon_name="check"
-                          size={20}
-                          color={color === '#FFFFFF' ? '#000000' : '#FFFFFF'}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Post-Save Options Modal */}
-      <Modal
-        visible={showPostSaveModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPostSaveModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Artwork Saved!
-              </Text>
-              <TouchableOpacity onPress={() => setShowPostSaveModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.shareContent}>
-              <View style={styles.successIcon}>
-                <IconSymbol 
-                  ios_icon_name="checkmark.circle.fill"
-                  android_material_icon_name="check-circle"
-                  size={64}
-                  color={colors.primary}
-                />
-              </View>
-
-              <Text style={[styles.successMessage, { color: textColor }]}>
-                Your artwork has been saved successfully!
-              </Text>
-
-              <TouchableOpacity
-                style={styles.postSaveButton}
-                onPress={() => {
-                  setShowPostSaveModal(false);
-                  setShowShareModal(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <IconSymbol 
-                  ios_icon_name="person.2"
-                  android_material_icon_name="group"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.postSaveButtonText}>
-                  Share with Community
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.postSaveButton, styles.postSaveButtonSecondary]}
-                onPress={handleDownload}
-                disabled={isDownloading}
-                activeOpacity={0.8}
-              >
-                <IconSymbol 
-                  ios_icon_name="arrow.down.circle"
-                  android_material_icon_name="download"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text style={[styles.postSaveButtonText, { color: colors.primary }]}>
-                  {isDownloading ? 'Downloading...' : 'Download'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowPostSaveModal(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.cancelButtonText, { color: textColor }]}>
-                  Done
-                </Text>
-              </TouchableOpacity>
+              </ScrollView>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Share to Community Modal */}
-      <Modal
-        visible={showShareModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowShareModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {shareModalTitle}
-              </Text>
-              <TouchableOpacity onPress={() => setShowShareModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.shareContent}>
-              <View style={styles.shareOption}>
-                <Text style={[styles.shareOptionLabel, { color: textColor }]}>
-                  {shareAnonymousLabel}
+        {/* Color Picker Modal */}
+        <Modal
+          visible={showColorPicker}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowColorPicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  {colorPickerTitle}
                 </Text>
-                <TouchableOpacity
-                  style={[styles.shareToggle, shareAnonymous && styles.shareToggleActive]}
-                  onPress={() => setShareAnonymous(!shareAnonymous)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.shareToggleThumb, shareAnonymous && styles.shareToggleThumbActive]} />
+                <TouchableOpacity onPress={() => setShowColorPicker(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.shareOptionLabel, { color: textColor, marginTop: spacing.lg }]}>
-                {shareCategoryLabel}
-              </Text>
-              <View style={styles.categoryGrid}>
-                {(['feed', 'wisdom', 'care', 'prayers'] as const).map((category) => {
-                  const isSelected = shareCategory === category;
-                  const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
-                  return (
-                    <TouchableOpacity
-                      key={category}
-                      style={[
-                        styles.categoryOption,
-                        { borderColor: colors.border },
-                        isSelected && styles.categoryOptionSelected
-                      ]}
-                      onPress={() => setShareCategory(category)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.categoryOptionText,
-                        { color: isSelected ? colors.primary : textColor }
-                      ]}>
-                        {categoryLabel}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity
-                style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
-                onPress={handleShareToCommunity}
-                disabled={isSharing}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.shareButtonText}>
-                  {shareButtonText}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowShareModal(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.cancelButtonText, { color: textColor }]}>
-                  {cancelButtonText}
-                </Text>
-              </TouchableOpacity>
+              <ScrollView style={styles.modalScroll}>
+                {selectedPalette && (
+                  <View style={styles.paletteInfo}>
+                    <Text style={[styles.paletteDescription, { color: textSecondaryColor, marginBottom: spacing.md }]}>
+                      {selectedPalette.description}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.colorGrid}>
+                  {availableColors.map((color, index) => {
+                    const isSelected = selectedColor === color;
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.colorOption,
+                          { backgroundColor: color },
+                          isSelected && styles.colorOptionSelected
+                        ]}
+                        onPress={() => handleColorSelect(color)}
+                        activeOpacity={0.7}
+                      >
+                        {isSelected && (
+                          <IconSymbol 
+                            ios_icon_name="checkmark"
+                            android_material_icon_name="check"
+                            size={20}
+                            color={color === '#FFFFFF' ? '#000000' : '#FFFFFF'}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
             </View>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+
+        {/* Post-Save Options Modal */}
+        <Modal
+          visible={showPostSaveModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowPostSaveModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Artwork Saved!
+                </Text>
+                <TouchableOpacity onPress={() => setShowPostSaveModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.shareContent}>
+                <View style={styles.successIcon}>
+                  <IconSymbol 
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={64}
+                    color={colors.primary}
+                  />
+                </View>
+
+                <Text style={[styles.successMessage, { color: textColor }]}>
+                  Your artwork has been saved successfully!
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.postSaveButton}
+                  onPress={() => {
+                    setShowPostSaveModal(false);
+                    setShowShareModal(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <IconSymbol 
+                    ios_icon_name="person.2"
+                    android_material_icon_name="group"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.postSaveButtonText}>
+                    Share with Community
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.postSaveButton, styles.postSaveButtonSecondary]}
+                  onPress={handleDownload}
+                  disabled={isDownloading}
+                  activeOpacity={0.8}
+                >
+                  <IconSymbol 
+                    ios_icon_name="arrow.down.circle"
+                    android_material_icon_name="download"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.postSaveButtonText, { color: colors.primary }]}>
+                    {isDownloading ? 'Downloading...' : 'Download'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowPostSaveModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.cancelButtonText, { color: textColor }]}>
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Share to Community Modal */}
+        <Modal
+          visible={showShareModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowShareModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  {shareModalTitle}
+                </Text>
+                <TouchableOpacity onPress={() => setShowShareModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={textColor}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.shareContent}>
+                <View style={styles.shareOption}>
+                  <Text style={[styles.shareOptionLabel, { color: textColor }]}>
+                    {shareAnonymousLabel}
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.shareToggle, shareAnonymous && styles.shareToggleActive]}
+                    onPress={() => setShareAnonymous(!shareAnonymous)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.shareToggleThumb, shareAnonymous && styles.shareToggleThumbActive]} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.shareOptionLabel, { color: textColor, marginTop: spacing.lg }]}>
+                  {shareCategoryLabel}
+                </Text>
+                <View style={styles.categoryGrid}>
+                  {(['feed', 'wisdom', 'care', 'prayers'] as const).map((category) => {
+                    const isSelected = shareCategory === category;
+                    const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+                    return (
+                      <TouchableOpacity
+                        key={category}
+                        style={[
+                          styles.categoryOption,
+                          { borderColor: colors.border },
+                          isSelected && styles.categoryOptionSelected
+                        ]}
+                        onPress={() => setShareCategory(category)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.categoryOptionText,
+                          { color: isSelected ? colors.primary : textColor }
+                        ]}>
+                          {categoryLabel}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
+                  onPress={handleShareToCommunity}
+                  disabled={isSharing}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.shareButtonText}>
+                    {shareButtonText}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowShareModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.cancelButtonText, { color: textColor }]}>
+                    {cancelButtonText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -2744,11 +2890,32 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     pointerEvents: 'none',
   },
-  stickerContainer: {
+  interactiveSticker: {
     position: 'absolute',
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    pointerEvents: 'none',
+  },
+  interactiveStickerSelected: {
+    zIndex: 1000,
+  },
+  stickerTouchable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stickerSelectionBorder: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    borderStyle: 'dashed',
   },
   canvasPlaceholder: {
     position: 'absolute',
