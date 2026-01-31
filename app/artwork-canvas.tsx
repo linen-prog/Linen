@@ -358,6 +358,7 @@ export default function ArtworkCanvasScreen() {
   const [showPaletteModal, setShowPaletteModal] = useState(false);
   const [showStickerModal, setShowStickerModal] = useState(false);
   const [showPatternModal, setShowPatternModal] = useState(false);
+  const [showShareSuccessModal, setShowShareSuccessModal] = useState(false);
   const [shareAnonymous, setShareAnonymous] = useState(false);
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
   const [isSaving, setIsSaving] = useState(false);
@@ -1174,20 +1175,8 @@ export default function ArtworkCanvasScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       
-      Alert.alert('Shared! 🎉', 'Your artwork has been shared with the community.', [
-        { 
-          text: 'View Community', 
-          onPress: () => {
-            router.back();
-            router.push('/(tabs)/community');
-          }
-        },
-        { 
-          text: 'Done', 
-          style: 'cancel',
-          onPress: () => router.back()
-        },
-      ]);
+      // Show celebratory success modal
+      setShowShareSuccessModal(true);
     } catch (error) {
       console.error('Failed to share artwork:', error);
       setIsSharing(false);
@@ -2687,6 +2676,58 @@ export default function ArtworkCanvasScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Share Success Modal */}
+        <Modal
+          visible={showShareSuccessModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => {
+            setShowShareSuccessModal(false);
+            router.back();
+          }}
+        >
+          <View style={styles.successModalOverlay}>
+            <View style={styles.successModalContent}>
+              <View style={styles.successIconCircle}>
+                <IconSymbol 
+                  ios_icon_name="person.2.fill"
+                  android_material_icon_name="group"
+                  size={48}
+                  color="#FFFFFF"
+                />
+              </View>
+
+              <Text style={styles.successModalTitle}>
+                Beautiful! 🎉
+              </Text>
+
+              <Text style={styles.successModalMessage}>
+                Your artwork has been shared with the community
+              </Text>
+
+              <View style={styles.successModalNote}>
+                <Text style={styles.successModalNoteText}>
+                  Your words or art may be exactly what someone else needs to see today. Thank you for your courage in sharing.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.successModalButton}
+                onPress={() => {
+                  setShowShareSuccessModal(false);
+                  router.back();
+                  router.push('/(tabs)/community');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.successModalButtonText}>
+                  Continue
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -3331,6 +3372,75 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   postSaveButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  successModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  successIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  successModalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  successModalMessage: {
+    fontSize: typography.body,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 24,
+  },
+  successModalNote: {
+    backgroundColor: colors.primaryLight + '20',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    width: '100%',
+  },
+  successModalNoteText: {
+    fontSize: typography.bodySmall,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  successModalButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.xxl,
+    width: '100%',
+    alignItems: 'center',
+  },
+  successModalButtonText: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
