@@ -403,6 +403,392 @@ const DAILY_SCRIPTURES: Record<string, Array<{ ref: string; text: string; prompt
     { ref: 'Hosea 4:1-3; 5:15-6:6', text: '"Return to the Lord your God, for he has dealt harshly with you because of your sins. Let us acknowledge the Lord; let us press on to acknowledge him."', prompt: 'What return to God is calling to you? What would wholehearted devotion look like?' },
     { ref: 'Luke 13:1-9', text: '"Unless you repent, you too will all perish... A man had a fig tree growing in his vineyard, and he went to look for fruit on it but did not find any. So he said to the man who took care of the vineyard, \'For three years now I\'ve been coming to look for fruit on this fig tree and haven\'t found any. Cut it down.\'"', prompt: 'What fruit is your life bearing? What would it mean to bear good fruit?' },
   ],
+
+  // HOLY WEEK / EASTER SEASON (Weeks 14-20)
+  'Holy Week-1': [
+    { ref: 'Psalm 113:1-9', text: 'Praise the Lord. Praise the Lord, you his servants, praise the name of the Lord. Blessed be the name of the Lord both now and forevermore.', prompt: 'What praise rises in you as you approach Holy Week?' },
+    { ref: 'Zechariah 9:9-10', text: 'Rejoice greatly, Daughter Zion! Shout, Daughter Jerusalem! See, your king comes to you, righteous and victorious.', prompt: 'What does it mean to welcome your king?' },
+    { ref: 'Matthew 21:1-11', text: 'Jesus sent two disciples, saying to them, "Go to the village ahead of you, and at once you will find a donkey tied there, with her colt by her."', prompt: 'How do you welcome Jesus into your life this week?' },
+    { ref: 'Isaiah 50:4-9a', text: 'The Sovereign Lord has given me a well-instructed tongue, to know the word that sustains the weary.', prompt: 'Where do you need sustenance?' },
+    { ref: 'Psalm 31:9-16', text: 'Be merciful to me, Lord, for I am in distress; my eyes grow weak with sorrow, my soul and body with anguish.', prompt: 'What distress are you carrying to the cross?' },
+    { ref: 'Philippians 2:5-11', text: 'Let the same mindset be in you as was in Christ Jesus... He humbled himself by becoming obedient to death—even death on a cross!', prompt: 'What does obedience to God look like in your life?' },
+    { ref: 'John 13:1-17', text: 'Jesus knew that the Father had put all things under his power, and that he had come from God and was returning to God; so he got up from the meal and began to wash his disciples\' feet.', prompt: 'How can you serve others as Jesus did?' },
+  ],
+
+  'Holy Week-2': [
+    { ref: 'Isaiah 52:13-53:12', text: 'But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him.', prompt: 'What does Christ\'s suffering mean for you?' },
+    { ref: 'Hebrews 10:16-25', text: 'Therefore, brothers and sisters, since we have confidence to enter the Most Holy Place by the blood of Jesus... let us hold unswervingly to the hope we profess.', prompt: 'Where is your hope anchored?' },
+    { ref: 'John 18:1-19:42', text: 'Jesus said, "It is finished." With that, he bowed his head and gave up his spirit.', prompt: 'What is being finished in you through Christ\'s death?' },
+    { ref: 'Psalm 22:1-31', text: 'My God, my God, why have you forsaken me? Why are you so far from saving me, so far from my cries of anguish?', prompt: 'Where have you felt abandoned? Where is God present?' },
+    { ref: 'Lamentations 3:22-33', text: 'Because of the Lord\'s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.', prompt: 'What new mercy do you need this day?' },
+    { ref: '1 Peter 1:3-9', text: 'Praise be to the God and Father of our Lord Jesus Christ! In his great mercy he has given us new birth into a living hope through the resurrection of Jesus Christ from the dead.', prompt: 'What hope does resurrection bring?' },
+    { ref: 'Psalm 31:1-4', text: 'In you, Lord, I have taken refuge; let me never be put to shame; deliver me in your righteousness.', prompt: 'Where do you find refuge?' },
+  ],
+
+  // EASTER (Weeks 21-24)
+  'Easter-1': [
+    { ref: 'Romans 6:3-11', text: 'We were therefore buried with him through baptism into death in order that, just as Christ was raised from the dead through the glory of the Father, we too may live a new life.', prompt: 'What new life is rising in you?' },
+    { ref: 'Psalm 118:14-24', text: 'The Lord is my strength and my defense; he has become my salvation. Shouts of joy and victory resound in the tents of the righteous.', prompt: 'What victory are you celebrating?' },
+    { ref: '1 Corinthians 15:1-11', text: 'For what I received I passed on to you as of first importance: that Christ died for our sins according to the Scriptures... and that he appeared to Cephas, and then to the Twelve.', prompt: 'What does resurrection mean to you?' },
+    { ref: 'John 20:19-31', text: 'Jesus came and stood among them and said, "Peace be with you!" Again Jesus said, "Peace be with you! As the Father has sent me, I am sending you."', prompt: 'What peace does the risen Christ offer?' },
+    { ref: 'Psalm 23:1-6', text: 'The Lord is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul.', prompt: 'What rest do you need?' },
+    { ref: 'Colossians 3:1-4', text: 'Since, then, you have been raised with Christ, set your hearts on things above, where Christ is, seated at the right hand of God.', prompt: 'Where are your affections focused?' },
+    { ref: 'Luke 24:36-48', text: '"Why are you troubled, and why do doubts rise in your minds? Look at my hands and my feet. It is I myself! Touch me and see; a ghost does not have a body, as you see I have."', prompt: 'What does it mean that Christ rose bodily?' },
+  ],
+
+  'Easter-2': [
+    { ref: 'John 10:11-18', text: 'I am the good shepherd. The good shepherd lays down his life for the sheep. I know my sheep and my sheep know me.', prompt: 'Do you know Christ as your shepherd?' },
+    { ref: 'Psalm 42:1-11', text: 'As the deer pants for streams of water, so my soul pants for you, my God. My soul thirsts for God, for the living God.', prompt: 'What is your soul thirsting for?' },
+    { ref: '1 John 3:1-7', text: 'How great is the love the Father has lavished on us, that we should be called children of God! And that is what we are!', prompt: 'Do you feel loved as God\'s child?' },
+    { ref: 'Revelation 1:4-8', text: '"I am the Alpha and the Omega," says the Lord God, "who is, and who was, and who is to come, the Almighty."', prompt: 'What does it mean that Christ is everything?' },
+    { ref: 'Psalm 148:1-14', text: 'Praise the Lord. Praise the Lord from the heavens; praise him in the heights above. Praise him, all his angels; praise him, all his heavenly host.', prompt: 'How do you join creation in praising God?' },
+    { ref: '1 Peter 2:4-10', text: 'As you come to him, the living Stone—rejected by humans but chosen by God and precious to him—you also, like living stones, are being built into a spiritual house.', prompt: 'Are you being built up in God\'s house?' },
+    { ref: 'Psalm 139:7-18', text: 'Where can I go from your Spirit? Where can I flee from your presence? If I go up to the heavens, you are there; if I make my bed in the depths, you are there.', prompt: 'Where do you experience God\'s presence?' },
+  ],
+
+  'Easter-3': [
+    { ref: 'Acts 4:32-35', text: 'All the believers were one in heart and mind. No one claimed that any of their possessions was their own, but they shared everything they had.', prompt: 'How does resurrection transform community?' },
+    { ref: 'Psalm 23:4-6', text: 'Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.', prompt: 'What comfort do you need?' },
+    { ref: 'John 21:1-19', text: 'When they landed, they saw a fire of burning coals there with fish on it, and some bread. Jesus said to them, "Come and have breakfast."', prompt: 'How does Christ nourish you?' },
+    { ref: '1 John 1:1-4', text: 'That which was from the beginning, which we have heard, which we have seen with our eyes, which we have looked at and our hands have touched—this we proclaim concerning the Word of life.', prompt: 'What have you encountered of God?' },
+    { ref: 'Psalm 148:1-14', text: 'Praise the Lord from the earth, you great sea creatures and all ocean depths, lightning and hail, snow and clouds, stormy winds that do his bidding.', prompt: 'How does all creation praise God?' },
+    { ref: '2 Corinthians 5:17', text: 'Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!', prompt: 'What is being made new in you?' },
+    { ref: 'John 3:31-36', text: 'The one who comes from above is above all; the one who is from the earth belongs to the earth, and speaks as one from the earth. The one who comes from heaven is above all.', prompt: 'Where are you looking?' },
+  ],
+
+  'Easter-4': [
+    { ref: 'Psalm 146:5-10', text: 'Blessed are those whose help is the God of Jacob, whose hope is in the Lord their God... The Lord sets prisoners free.', prompt: 'What freedom are you discovering?' },
+    { ref: 'Acts 17:22-31', text: 'From one man he made all the nations, that they should inhabit the whole earth; and he marked out their appointed times in history and the boundaries of their lands.', prompt: 'How does God guide history?' },
+    { ref: 'John 17:20-26', text: '"My prayer is not for them alone. I pray also for those who will believe in me through their message, that all of them may be one, Father, just as you are in me and I am in you."', prompt: 'What is Christ praying for you?' },
+    { ref: 'Psalm 8:1-9', text: 'O Lord, our Lord, how majestic is your name in all the earth! You have set your glory in the heavens. When I consider your heavens, the work of your fingers, the moon and the stars, which you have set in place, what is mankind that you are mindful of them?', prompt: 'Do you feel God\'s care despite your smallness?' },
+    { ref: '1 John 4:7-21', text: 'Dear friends, let us love one another, for love comes from God. Everyone who loves has been born of God and knows God.', prompt: 'How does love reveal God?' },
+    { ref: 'Proverbs 8:22-31', text: '"The Lord brought me forth as the first of his works, before his deeds of old... I was there when he set the heavens in place."', prompt: 'Was Wisdom present at creation?' },
+    { ref: 'Psalm 97:1-12', text: 'The Lord reigns, let the earth be glad; let the distant shores rejoice. Clouds and thick darkness surround him; righteousness and justice are the foundation of his throne.', prompt: 'Is God\'s kingdom just?' },
+  ],
+
+  // ASCENSION & PENTECOST (Weeks 25-26)
+  'Ascension-1': [
+    { ref: 'Acts 1:6-14', text: '"Lord, are you at this time going to restore the kingdom to Israel?" He said to them: "It is not for you to know the times or dates the Father has set by his own authority. But you will receive power when the Holy Spirit comes on you."', prompt: 'What power are you awaiting?' },
+    { ref: 'Psalm 68:1-10', text: 'May God arise, may his enemies be scattered; may his foes flee before him... Sing to God, sing in praise of his name, extol him who rides on the clouds.', prompt: 'How do you see God rising?' },
+    { ref: 'Ephesians 1:15-23', text: 'I pray that the eyes of your heart may be enlightened in order that you may know the hope to which he has called you, the riches of his glorious inheritance in his holy people.', prompt: 'What is your inheritance in Christ?' },
+    { ref: 'Luke 24:44-53', text: 'He told them, "This is what is written: The Messiah will suffer and rise from the dead on the third day, and repentance for the forgiveness of sins will be preached in his name to all nations."', prompt: 'How do you live out forgiveness?' },
+    { ref: 'Psalm 47:1-9', text: 'Clap your hands, all you nations; shout to God with cries of joy. For the Lord Most High is awesome, the great King over all the earth.', prompt: 'What causes you to rejoice?' },
+    { ref: 'Hebrews 9:24-28', text: 'For Christ did not enter a sanctuary made with human hands that was only a copy of the true one; he entered heaven itself, now to appear for us in God\'s presence.', prompt: 'What does it mean Christ intercedes for you?' },
+    { ref: 'John 17:1-11', text: '"Father, the hour has come. Glorify your Son, that your Son may glorify you... Now they know that everything you have given me comes from you."', prompt: 'What glory is Jesus seeking?' },
+  ],
+
+  'Pentecost-1': [
+    { ref: 'Acts 2:1-21', text: 'When the day of Pentecost came, all the believers were together in one place. Suddenly a sound like the blowing of a violent wind came from heaven and filled the whole house where they were sitting.', prompt: 'Where is the Spirit moving in your life?' },
+    { ref: 'Psalm 104:24-34', text: 'When you hide your face, they are terrified; when you take away their breath, they die and return to the dust. When you send your Spirit, they are created, and you renew the face of the ground.', prompt: 'How does the Spirit renew you?' },
+    { ref: '1 Corinthians 12:12-13', text: 'Just as a body, though one, has many parts... For we were all baptized by one Spirit so as to form one body.', prompt: 'Where is your place in the Body?' },
+    { ref: 'John 15:26-27', text: '"When the Advocate comes, whom I will send to you from the Father—the Spirit of truth who goes out from the Father—he will testify about me."', prompt: 'How does the Spirit testify to Christ in you?' },
+    { ref: 'Psalm 33:12-22', text: 'Blessed is the nation whose God is the Lord, the people he chose for his inheritance. From heaven the Lord looks down and sees all mankind.', prompt: 'Do you trust God\'s perspective?' },
+    { ref: 'Romans 8:1-11', text: 'Therefore, there is now no condemnation for those who are in Christ Jesus, because through Christ Jesus the law of the Spirit who gives life has set you free from the law of sin and death.', prompt: 'What freedom has the Spirit given?' },
+    { ref: 'Galatians 5:16-26', text: 'So I say, walk by the Spirit, and you will not gratify the desires of the flesh. For the flesh desires what is contrary to the Spirit, and the Spirit what is contrary to the flesh.', prompt: 'Which desires rule your life?' },
+  ],
+
+  // ORDINARY TIME (Weeks 27-50)
+  'Ordinary Time-14': [
+    { ref: 'Matthew 5:1-12', text: '"Blessed are the poor in spirit, for theirs is the kingdom of heaven. Blessed are those who mourn, for they will be comforted."', prompt: 'Which beatitude speaks to your heart?' },
+    { ref: 'Psalm 37:1-11', text: 'Do not fret because of those who are evil or be envious of those who do wrong; for like the grass they will soon wither, like green plants they will soon die away.', prompt: 'What worry can you release?' },
+    { ref: 'Philippians 3:7-14', text: 'But whatever were gains to me I now consider loss for the sake of Christ. What is more, I consider everything a loss because of the surpassing worth of knowing Christ Jesus my Lord.', prompt: 'What are you gaining in Christ?' },
+    { ref: 'Psalm 19:7-14', text: 'The precepts of the Lord are right, giving joy to the heart. The commands of the Lord are radiant, giving light to the eyes.', prompt: 'How do God\'s words give light?' },
+    { ref: 'Matthew 13:1-23', text: 'Then he told them many things in parables, saying: "A farmer went out to sow his seed. As he was scattering the seed, some fell along the path..."', prompt: 'What kind of soil is your heart?' },
+    { ref: 'Psalm 65:9-13', text: 'You care for the land and water it; you enrich it abundantly. The streams of God are filled with water to provide the people with grain.', prompt: 'How does God provide?' },
+    { ref: '1 Timothy 6:6-19', text: '"For the love of money is a root of all kinds of evil. Some people, eager for money, have wandered from the faith and pierced themselves with many griefs."', prompt: 'What role does money play in your spirituality?' },
+  ],
+
+  'Ordinary Time-15': [
+    { ref: 'Matthew 14:22-33', text: 'But Jesus immediately said to them: "Take courage! It is I. Don\'t be afraid." "Lord, if it\'s you," Peter replied, "tell me to come to you on the water." "Come," he said.', prompt: 'Where is Jesus calling you forward?' },
+    { ref: 'Psalm 85:8-13', text: 'I will listen to what God the Lord says; he promises peace to his people, his faithful servants—but let them not turn to folly.', prompt: 'Do you listen for peace?' },
+    { ref: 'Proverbs 9:1-12', text: 'Wisdom has built her house; she has set up its seven pillars. She has prepared her meat and mixed her wine; she has also set her table.', prompt: 'Are you feasting on wisdom?' },
+    { ref: 'Psalm 51:1-12', text: 'Create in me a pure heart, O God, and renew a steadfast spirit within me. Do not cast me from your presence or take your Holy Spirit from me.', prompt: 'What needs to be renewed in you?' },
+    { ref: 'Matthew 15:10-20', text: '"What comes out of your mouth is what defiles you. For out of the overflow of the heart the mouth speaks."', prompt: 'What does your speech reveal?' },
+    { ref: 'Psalm 62:5-12', text: 'Yes, my soul, find rest in God; my hope comes from him. Truly he is my rock and my salvation; he is my fortress, I will not be shaken.', prompt: 'Where do you find rest?' },
+    { ref: '2 Corinthians 11:24-12:10', text: 'But he said to me, "My grace is sufficient for you, for my power is made perfect in weakness." Therefore I will boast all the more gladly about my weaknesses.', prompt: 'How is God\'s grace sufficient?' },
+  ],
+
+  'Ordinary Time-16': [
+    { ref: 'Matthew 16:21-28', text: '"Whoever wants to be my disciple must deny themselves and take up their cross and follow me. For whoever wants to save their life will lose it, but whoever loses their life for me will find it."', prompt: 'What cross are you called to carry?' },
+    { ref: 'Psalm 138:1-8', text: 'I give you thanks, O Lord, with my whole heart; before the gods I sing your praise; I bow down toward your holy temple and give thanks to your name for your steadfast love and your faithfulness.', prompt: 'What are you thankful for?' },
+    { ref: 'Isaiah 56:1-8', text: '"Maintain justice and do what is right, for my salvation is close at hand and my righteousness will soon be revealed."', prompt: 'How does justice matter in your faith?' },
+    { ref: 'Psalm 119:129-136', text: 'Your statutes are wonderful; therefore I obey them. The unfolding of your words gives light; it gives understanding to the simple.', prompt: 'How do God\'s words unfold?' },
+    { ref: 'Matthew 18:15-20', text: '"If your brother or sister sins, go and point out their fault, just between the two of you. If they listen to you, you have won them over."', prompt: 'How do you address conflict?' },
+    { ref: 'Psalm 17:1-9', text: 'Hear me, righteous God, as I cry out; listen to my prayer. It springs not from deceitful lips. Let my vindication come from you; let your eyes see what is right.', prompt: 'What justice do you need?' },
+    { ref: 'Matthew 18:21-35', text: '"Lord, how many times shall I forgive my brother or sister who sins against me? Up to seven times?" Jesus answered, "I tell you, not seven times, but seventy-seven times."', prompt: 'How do you practice endless forgiveness?' },
+  ],
+
+  'Ordinary Time-17': [
+    { ref: 'Matthew 21:28-32', text: '"Which of the two did what his father wanted?" The son who said yes but did not go. Jesus said to them, "Truly I tell you, the tax collectors and the prostitutes are entering the kingdom of God ahead of you."', prompt: 'What does obedience mean to you?' },
+    { ref: 'Psalm 25:1-9', text: 'In you, Lord, I have taken refuge; let me never be put to shame; deliver me in your righteousness. Turn your ear to me, come quickly to my rescue.', prompt: 'What refuge do you need?' },
+    { ref: 'Philippians 1:21-30', text: '"For to me, to live is Christ and to die is gain. But if I am to go on living in the body, this will mean fruitful labor for me."', prompt: 'What does a Christ-centered life mean to you?' },
+    { ref: 'Psalm 95:1-11', text: 'Come, let us sing for joy to the Lord; let us shout aloud to the Rock of our salvation. Let us come before him with thanksgiving and extol him with music and song.', prompt: 'How do you worship?' },
+    { ref: 'Matthew 22:1-14', text: 'Jesus spoke to them again in parables, saying: "The kingdom of heaven is like a king who prepared a wedding banquet for his son."', prompt: 'Are you invited to the feast?' },
+    { ref: 'Psalm 33:12-22', text: 'From heaven the Lord looks down and sees all mankind; from his dwelling place he watches all who live on earth.', prompt: 'Does God\'s gaze comfort or challenge you?' },
+    { ref: 'Matthew 22:15-22', text: '"Show me the coin used for paying the tax." They brought him a denarius, and he asked them, "Whose image is this? And whose inscription?" "Caesar\'s," they replied. Then he said to them, "So give back to Caesar what is Caesar\'s, and to God what is God\'s."', prompt: 'What belongs to God?' },
+  ],
+
+  'Ordinary Time-18': [
+    { ref: 'Matthew 23:1-12', text: '"The greatest among you will be your servant. For those who exalt themselves will be humbled, and those who humble themselves will be exalted."', prompt: 'How do you practice humility?' },
+    { ref: 'Psalm 113:1-9', text: 'Praise the Lord. Praise the Lord, you his servants, praise the name of the Lord. Blessed be the name of the Lord both now and forevermore.', prompt: 'What deserves your praise?' },
+    { ref: 'Amos 5:18-24', text: '"But let justice roll on like a river, righteousness like a never-failing stream!"', prompt: 'How are you pursuing justice?' },
+    { ref: 'Psalm 70:1-5', text: 'Hasten, O God, to save me; come quickly, Lord, to help me. May those who want to take my life be put to shame and confusion.', prompt: 'What help do you need?' },
+    { ref: '1 Thessalonians 4:13-18', text: '"For the Lord himself will come down from heaven, with a loud command, with the voice of the archangel and with the trumpet call of God."', prompt: 'What does Christ\'s return mean to you?' },
+    { ref: 'Psalm 90:1-12', text: 'A prayer of Moses the man of God. Lord, you have been our dwelling place throughout all generations. Before the mountains were born or you brought forth the whole world, from everlasting to everlasting you are God.', prompt: 'What is eternal in your life?' },
+    { ref: 'Matthew 25:1-13', text: '"Keep watch, because you do not know on what day your Lord will come... Therefore keep watch, because you do not know on what day your Lord will come."', prompt: 'Are you prepared for Christ\'s return?' },
+  ],
+
+  'Ordinary Time-19': [
+    { ref: 'Matthew 25:31-46', text: '"Come, you who are blessed by my Father; take your inheritance, the kingdom prepared for you since the creation of the world. For I was hungry and you gave me something to eat, I was a stranger and you invited me in."', prompt: 'How do you see Christ in others?' },
+    { ref: 'Psalm 146:5-10', text: 'Blessed are those whose help is the God of Jacob, whose hope is in the Lord their God... The Lord sets prisoners free.', prompt: 'What freedom does God offer?' },
+    { ref: 'Zephaniah 1:7-2:3', text: '"Be silent before the Sovereign Lord, for the day of the Lord is near."', prompt: 'How do you prepare for God\'s judgment?' },
+    { ref: 'Psalm 123:1-4', text: 'I lift up my eyes to you, to you who sit enthroned in heaven. As the eyes of slaves look to the hand of their master, as the eyes of a female slave look to the hand of her mistress, so our eyes look to the Lord our God.', prompt: 'Do you look to God for guidance?' },
+    { ref: '1 Kings 3:5-12', text: '"Ask for whatever you want me to give you." Solomon answered, "Now, Lord my God, you have made your servant king in place of my father David. But I am only a little child and do not know how to carry out my duties."', prompt: 'What wisdom do you need?' },
+    { ref: 'Psalm 19:1-6', text: 'The heavens declare the glory of God; the skies proclaim the work of his hands. Day after day they pour forth speech; night after night they reveal knowledge.', prompt: 'What does creation tell you about God?' },
+    { ref: 'Matthew 6:25-34', text: '"Therefore do not worry about tomorrow, for tomorrow will worry about itself. Each day has enough trouble of its own."', prompt: 'What worries can you release?' },
+  ],
+
+  'Ordinary Time-20': [
+    { ref: 'James 1:17-27', text: '"Do not merely listen to the word, and so deceive yourselves. Do what it says. Anyone who listens to the word but does not do what it says is like someone who looks at his face in a mirror."', prompt: 'How do you put faith into action?' },
+    { ref: 'Psalm 1:1-6', text: 'Blessed is the one who does not walk in step with the wicked or stand in the way that sinners take or sit in the company of mockers, but whose delight is in the law of the Lord.', prompt: 'Where is your delight?' },
+    { ref: 'Proverbs 22:1-16', text: '"A good name is more desirable than great riches; to be esteemed is better than silver or gold."', prompt: 'What builds your character?' },
+    { ref: 'Psalm 139:1-18', text: 'You have searched me, Lord, and you know me. You know when I sit and when I rise; you perceive my thoughts from afar.', prompt: 'How does God\'s intimate knowledge comfort you?' },
+    { ref: 'Mark 7:1-23', text: '"For it is from within, out of a person\'s heart, that evil thoughts come—sexual immorality, theft, murder, adultery, greed, malice, deceit, lewdness, envy, slander, arrogance and folly."', prompt: 'What needs cleansing in your heart?' },
+    { ref: 'Psalm 15:1-5', text: 'Lord, who may dwell in your sacred tent? Who may live on your holy mountain? The one whose walk is blameless, who does what is righteous.', prompt: 'What righteousness are you pursuing?' },
+    { ref: '3 John 1-14', text: '"I have no greater joy than to hear that my children are walking in the truth."', prompt: 'How are you walking in truth?' },
+  ],
+
+  'Ordinary Time-21': [
+    { ref: 'Luke 4:16-30', text: '"He unrolled the scroll and found the place where it is written: The Spirit of the Lord is upon me, because he has anointed me to bring good news to the poor."', prompt: 'How does the Spirit anoint you?' },
+    { ref: 'Psalm 81:3-11', text: '"I am the Lord your God, who brought you up out of Egypt. Open wide your mouth and I will fill it... But my people would not listen to me."', prompt: 'Are you listening to God?' },
+    { ref: 'Proverbs 3:1-12', text: '"My son, do not forget my teaching, but keep my commands in your heart, for they will prolong your life many years and bring you peace."', prompt: 'What teachings guide you?' },
+    { ref: 'Psalm 107:1-9', text: 'Give thanks to the Lord, for he is good; his love endures forever. Let the redeemed of the Lord tell their story—those he redeemed from the hand of the foe.', prompt: 'What is your redemption story?' },
+    { ref: 'Hebrews 12:1-3', text: '"Therefore, since we are surrounded by a great cloud of witnesses, let us throw off everything that hinders and the sin that so easily entangles. And let us run with perseverance the race marked out for us."', prompt: 'What race are you running?' },
+    { ref: 'Psalm 37:23-40', text: 'The Lord establishes the steps of the one who delights in him; though he may stumble, he will not fall, for the Lord upholds him with his hand.', prompt: 'How is God establishing your steps?' },
+    { ref: 'Matthew 10:24-39', text: '"Anyone who loves their father or mother more than me is not worthy of me; anyone who loves their son or daughter more than me is not worthy of me."', prompt: 'Where does your loyalty lie?' },
+  ],
+
+  'Ordinary Time-22': [
+    { ref: 'Proverbs 1:20-33', text: '"How long will you who are simple love your simple ways? How long will mockers delight in mockery and fools hate knowledge?"', prompt: 'Are you seeking wisdom?' },
+    { ref: 'Psalm 29:1-11', text: 'Ascribe to the Lord, O mighty ones, ascribe to the Lord glory and strength. Ascribe to the Lord the glory due to his name.', prompt: 'What glory do you give to God?' },
+    { ref: 'Isaiah 35:4-7a', text: '"Say to those with fearful hearts, \'Be strong, do not fear; your God will come... to save you.\' Then will the eyes of the blind be opened and the ears of the deaf unstopped."', prompt: 'What blindness needs healing?' },
+    { ref: 'Psalm 116:1-9', text: 'I love the Lord, for he heard my voice; he heard my cry for mercy. Because he turned his ear to me, I will call on him as long as I live.', prompt: 'Does God hear your prayer?' },
+    { ref: 'James 2:1-10,14-17', text: '"Faith without deeds is dead... Show me your faith without deeds, and I will show you my faith by my deeds."', prompt: 'How are your deeds showing your faith?' },
+    { ref: 'Psalm 146:1-10', text: 'Praise the Lord, my soul. I will praise the Lord all my life; I will sing praise to my God as long as I live.', prompt: 'What moves you to praise?' },
+    { ref: 'Mark 8:22-26', text: 'Some people brought a blind man and begged Jesus to touch him. He took the blind man by the hand and led him outside the village. When he had spit on the man\'s eyes and put his hands on him, Jesus asked, "Do you see anything?"', prompt: 'How is Jesus healing your sight?' },
+  ],
+
+  'Ordinary Time-23': [
+    { ref: 'Proverbs 29:1-14', text: '"A man who hardens his neck after much reproof will suddenly be broken beyond healing... When the righteous thrive, the people rejoice; when the wicked rule, the people groan."', prompt: 'How do you respond to correction?' },
+    { ref: 'Psalm 52:1-9', text: 'Why do you boast of evil, you mighty man? Why do you boast all day long, you who are a disgrace in the eyes of God?', prompt: 'What pride needs humbling?' },
+    { ref: 'Deuteronomy 4:1-2,6-8', text: '"Now, Israel, hear the decrees and laws I am about to teach you. Follow them so that you may live and may go in and take possession of the land that the Lord, the God of your ancestors, is giving you."', prompt: 'How do you live out God\'s laws?' },
+    { ref: 'Psalm 15:1-5', text: 'Lord, who may dwell in your sacred tent? Who may live on your holy mountain? The one whose walk is blameless, who does what is righteous.', prompt: 'What holiness are you pursuing?' },
+    { ref: 'Philemon 1-25', text: '"I appeal to you for my son Onesimus, who became my son while I was imprisoned for the gospel. Formerly he was useless to you, but now he has become useful both to you and to me."', prompt: 'How do you welcome the changed?' },
+    { ref: 'Psalm 84:1-12', text: 'How lovely is your dwelling place, Lord Almighty! My soul yearns, even faints, for the courts of the Lord; my heart and my flesh cry out for the living God.', prompt: 'What are you longing for in God?' },
+    { ref: 'Luke 15:1-32', text: '"But the father said to his servants, \'Quick! Bring the best robe and put it on him. Put a ring on his finger and sandals on his feet. Bring the fattened calf and kill it. Let\'s have a feast and celebrate.\'"', prompt: 'How does God celebrate your return?' },
+  ],
+
+  'Ordinary Time-24': [
+    { ref: 'Exodus 32:1-14', text: 'When the people saw that Moses was so long in coming down from the mountain, they gathered around Aaron and said, "Come, make us gods who will go before us."', prompt: 'What false gods are you chasing?' },
+    { ref: 'Psalm 106:19-23', text: 'At Horeb they made a calf and worshiped an idol cast from metal... But Moses sought the favor of the Lord his God.', prompt: 'Who do you worship?' },
+    { ref: 'Isaiah 50:4-9', text: 'The Sovereign Lord has given me a well-instructed tongue, to know the word that sustains the weary. He wakens me morning by morning, wakens my ear to listen like one being instructed.', prompt: 'How does God sustain you?' },
+    { ref: 'Psalm 51:1-12', text: 'Have mercy on me, O God, according to your unfailing love; according to your great compassion blot out my transgressions.', prompt: 'What mercy do you need?' },
+    { ref: '1 Timothy 1:12-17', text: '"The grace of our Lord was poured out on me abundantly, along with the faith and love that are in Christ Jesus... Christ Jesus came into the world to save sinners."', prompt: 'How has grace transformed you?' },
+    { ref: 'Psalm 25:1-10', text: 'To you, Lord, I lift up my soul; in you I trust, my God. Do not let me be put to shame, nor let my enemies triumph over me.', prompt: 'What trust do you need?' },
+    { ref: 'Matthew 20:1-16', text: '"The kingdom of heaven is like a landowner who went out early in the morning to hire workers for his vineyard... When they received it, they began to grumble against the landowner."', prompt: 'How do you respond to God\'s generosity?' },
+  ],
+
+  'Ordinary Time-25': [
+    { ref: 'Jonah 3:10-4:11', text: '"I knew that you are a gracious and compassionate God, slow to anger and abounding in love, a God who relents from sending calamity... You have concern for the vine, but should I not have concern for the great city of Nineveh?"', prompt: 'What shows God\'s compassion?' },
+    { ref: 'Psalm 145:1-8', text: 'I will exalt you, my God the King; I will praise your name for ever and ever. Every day I will praise you and extol your name for ever and ever.', prompt: 'How do you praise God daily?' },
+    { ref: 'Philippians 1:21-30', text: '"I am torn between the two: I desire to depart and be with Christ, which is better by far; but it is more necessary for you that I remain in the body."', prompt: 'Where does your purpose lie?' },
+    { ref: 'Psalm 33:1-12', text: 'Sing joyfully to the Lord, you righteous; it is fitting for the upright to praise him. Praise the Lord with the harp; make music to him on the ten-stringed lyre.', prompt: 'How do you sing to the Lord?' },
+    { ref: 'Matthew 21:28-32', text: '"Which of the two did what his father wanted?" "The first," they answered. Jesus said to them, "Truly I tell you, the tax collectors and the prostitutes are entering the kingdom of God ahead of you."', prompt: 'How do you obey the Father?' },
+    { ref: 'Psalm 99:1-9', text: 'The Lord reigns, let the nations tremble; he is enthroned between the cherubim, let the earth shake. Great is the Lord in Zion; he is exalted over all the nations.', prompt: 'What exaltation does God deserve?' },
+    { ref: 'Habakkuk 1:1-4,2:1-4', text: '"How long, Lord, must I call for help, but you do not listen? Or cry out to you, \"Violence!\" but you do not save?"', prompt: 'How do you cope with unanswered prayers?' },
+  ],
+
+  'Ordinary Time-26': [
+    { ref: 'Deuteronomy 5:4-6,16-21', text: '"The Lord spoke to you face to face on the mountain from out of the fire... Your Father and your mother, so that you may live long in the land the Lord your God is giving you."', prompt: 'How do you honor your family?' },
+    { ref: 'Psalm 113:1-9', text: 'Praise the Lord. Praise the Lord, you his servants, praise the name of the Lord. Blessed be the name of the Lord both now and forevermore.', prompt: 'What deserves praise?' },
+    { ref: 'Matthew 15:1-20', text: '"It is not what enters the mouth that defiles a person, but what comes out of the mouth; this defiles a person."', prompt: 'What comes from your mouth?' },
+    { ref: 'Psalm 19:7-14', text: 'The precepts of the Lord are right, giving joy to the heart. The commands of the Lord are radiant, giving light to the eyes.', prompt: 'How do God\'s commands give light?' },
+    { ref: 'Romans 13:8-14', text: '"The commandments... are summed up in this one rule: \'Love your neighbor as yourself.\' Love does no harm to a neighbor. Therefore love is the fulfillment of the law."', prompt: 'How do you love your neighbor?' },
+    { ref: 'Psalm 146:5-10', text: 'Blessed are those whose help is the God of Jacob, whose hope is in the Lord their God... The Lord sets prisoners free.', prompt: 'What freedom do you seek?' },
+    { ref: 'Isaiah 35:1-7', text: 'The desert and the parched land will be glad; the wilderness will rejoice and blossom. Like the crocus, it will burst into bloom; it will rejoice greatly and shout for joy.', prompt: 'What is blooming in your wilderness?' },
+  ],
+
+  'Ordinary Time-27': [
+    { ref: 'Ecclesiastes 1:2-11', text: '"Meaningless! Meaningless!" says the Teacher. "Utterly meaningless! Everything is meaningless... What has been will be again, what has been done will be done again; there is nothing new under the sun."', prompt: 'Where do you find meaning?' },
+    { ref: 'Psalm 90:12-17', text: 'Teach us to number our days, that we may gain a heart of wisdom... May the favor of the Lord our God rest on us; establish the work of our hands for us.', prompt: 'How are you using your days wisely?' },
+    { ref: 'Amos 6:1-7', text: '"Woe to you who are complacent in Zion... You lie on beds adorned with ivory and lounge on your couches... But you do not grieve over the ruin of Joseph."', prompt: 'Are you complacent about injustice?' },
+    { ref: 'Psalm 146:1-10', text: 'Praise the Lord, my soul. I will praise the Lord all my life; I will sing praise to my God as long as I live.', prompt: 'What lifts your soul in praise?' },
+    { ref: '1 Timothy 6:6-19', text: '"For the love of money is a root of all kinds of evil... But you, man of God, flee from all this, and pursue righteousness, godliness, faith, love, endurance and gentleness."', prompt: 'What are you pursuing?' },
+    { ref: 'Psalm 119:1-8', text: 'Blessed are those whose ways are blameless, who walk according to the law of the Lord. Blessed are those who keep his statutes and seek him with all their heart.', prompt: 'How wholehearted is your seeking?' },
+    { ref: 'Luke 16:19-31', text: '"There was a rich man who was dressed in purple and fine linen and lived in luxury every day. At his gate was laid a beggar named Lazarus... The rich man also died and was buried."', prompt: 'How do you respond to poverty?' },
+  ],
+
+  'Ordinary Time-28': [
+    { ref: 'Habakkuk 2:1-4', text: 'I will stand at my watch and station myself on the ramparts; I will look to see what he will say to me, and what answer I should give to this complaint. Then the Lord replied: "Write down the revelation and make it plain on tablets so that a herald may run with it."', prompt: 'What is God revealing to you?' },
+    { ref: 'Psalm 119:137-144', text: 'You are righteous, Lord, and your laws are right... Your statutes are forever right; give me understanding that I may live.', prompt: 'How do you understand God\'s righteousness?' },
+    { ref: '2 Timothy 1:1-14', text: '"For the Spirit God gave us does not make us timid, but gives us power, love and a sound mind... Guard the good deposit that was entrusted to you—guard it with the help of the Holy Spirit who lives in us."', prompt: 'What power has the Spirit given you?' },
+    { ref: 'Psalm 43:3-4', text: 'Send me your light and your faithful care, let them lead me; let them bring me to your holy mountain, to the place where you live. Then I will go to the altar of God, to God, my joy and my delight.', prompt: 'Where is your joy in God?' },
+    { ref: 'Luke 17:1-10', text: '"If your brother or sister sins against you, rebuke them; and if they repent, forgive them. Even if they sin against you seven times in a day and seven times come back to you saying \'I repent,\' you must forgive them."', prompt: 'How do you practice forgiveness?' },
+    { ref: 'Psalm 37:1-7', text: 'Do not fret because of those who are evil or be envious of those who do wrong; for like the grass they will soon wither, like green plants they will soon die away. Trust in the Lord and do good.', prompt: 'What worry can you release to God?' },
+    { ref: 'Ezekiel 18:1-4,25-32', text: '"Do I take any pleasure in the death of the wicked? Rather, am I not pleased when they turn from their ways and live?"', prompt: 'How does God want you to turn?' },
+  ],
+
+  'Ordinary Time-29': [
+    { ref: 'Isaiah 1:10-20', text: '"Wash and make yourselves clean. Take your evil deeds out of my sight; stop doing wrong. Learn to do right; seek justice."', prompt: 'How are you making yourself clean?' },
+    { ref: 'Psalm 50:1-23', text: '"I do not rebuke you for your sacrifices or your burnt offerings, which are ever before me. I have no need of a bull from your stall or of goats from your pens."', prompt: 'What does God really want from you?' },
+    { ref: 'Hebrews 12:4-13', text: '"Endure hardship as discipline; God is treating you as his children. For what children are not disciplined by their father?"', prompt: 'How do you accept God\'s discipline?' },
+    { ref: 'Psalm 119:165-176', text: 'Great peace have those who love your law, and nothing can make them stumble. I wait for your salvation, Lord, and I follow your commands.', prompt: 'What peace does obedience bring?' },
+    { ref: 'Luke 18:9-14', text: '"The Pharisee stood by himself and prayed about himself: \'God, I thank you that I am not like other people.\' But the tax collector stood at a distance... and would not even look up to heaven."', prompt: 'How do you approach God with humility?' },
+    { ref: 'Psalm 121:1-8', text: 'I lift up my eyes to the mountains—where does my help come from? My help comes from the Lord, the Maker of heaven and earth.', prompt: 'Where is your help coming from?' },
+    { ref: 'Joel 2:23-32', text: '"Be glad, people of Zion, rejoice in the Lord your God, for he has given you the autumn rains because he is faithful."', prompt: 'How has God been faithful to you?' },
+  ],
+
+  'Ordinary Time-30': [
+    { ref: 'Amos 7:7-15', text: 'This is what he showed me: The Lord was standing by a wall that had been built true to plumb, with a plumb line in his hand. And the Lord asked me, "Amos, what do you see?" "A plumb line," I replied.', prompt: 'Where is God measuring your life?' },
+    { ref: 'Psalm 26:1-8', text: 'Vindicate me, Lord, for I have walked in my integrity. I have trusted in the Lord and have not wavered.', prompt: 'How are you walking with integrity?' },
+    { ref: '2 Timothy 4:6-8,16-18', text: '"I have fought the good fight, I have finished the race, I have kept the faith. Now there is in store for me the crown of righteousness, which the Lord, the righteous Judge, will award to me on that day."', prompt: 'What race are you fighting?' },
+    { ref: 'Psalm 119:25-32', text: 'My soul clings to the dust; preserve my life according to your word... Lead me in your truth and teach me.', prompt: 'How are you clinging to God\'s word?' },
+    { ref: 'Luke 18:15-30', text: '"Let the little children come to me, and do not hinder them, for the kingdom of God belongs to such as these... Truly I tell you, anyone who will not receive the kingdom of God like a little child will never enter it."', prompt: 'What childlikeness does faith require?' },
+    { ref: 'Psalm 82:1-8', text: 'God presides in the great assembly; he renders judgment among the gods: "How long will you defend the unjust and show partiality to the wicked?"', prompt: 'Where do you see injustice?' },
+    { ref: 'Micah 7:18-20', text: 'Who is a God like you, who pardons sin and forgives the transgression of the remnant of his inheritance? You do not stay angry forever but delight to show mercy.', prompt: 'How does God\'s mercy comfort you?' },
+  ],
+
+  'Ordinary Time-31': [
+    { ref: 'Habakkuk 1:2-3,2:2-4', text: 'How long, Lord, must I call for help, but you do not listen? Or cry out to you, "Violence!" but you do not save? Why do you tolerate the wicked?', prompt: 'How do you wait for God\'s justice?' },
+    { ref: 'Psalm 121:1-8', text: 'I lift up my eyes to the mountains—where does my help come from? My help comes from the Lord, the Maker of heaven and earth. He will not let your foot slip—he who watches over you will not slumber.', prompt: 'What protection does God offer?' },
+    { ref: '2 Thessalonians 1:1-12', text: '"We ought always to thank God for you, brothers and sisters, and rightly so, because your faith is growing more and more, and the love all of you have for one another is increasing."', prompt: 'What grows in your faith?' },
+    { ref: 'Psalm 65:1-13', text: 'Praise awaits you, our God, in Zion; to you our vows will be fulfilled. You who answer prayer, to you all people will come.', prompt: 'What answers to prayer have you witnessed?' },
+    { ref: 'Luke 19:1-10', text: '"Zacchaeus, come down immediately. I must stay at your house today." So he came down at once and welcomed him gladly... Jesus said to him, "Today salvation has come to this house."', prompt: 'Where has salvation come into your life?' },
+    { ref: 'Psalm 34:1-8', text: 'I will extol the Lord at all times; his praise will always be on my lips. I will glory in the Lord; let the afflicted hear and rejoice.', prompt: 'How are you glorifying the Lord?' },
+    { ref: 'Deuteronomy 10:12-22', text: '"And now, Israel, what does the Lord your God ask of you but to fear the Lord your God, to walk in obedience to him, to love him, to serve the Lord your God with all your heart and with all your soul."', prompt: 'What does obedience require of you?' },
+  ],
+
+  'Ordinary Time-32': [
+    { ref: 'Zephaniah 3:14-20', text: '"Sing, Daughter Zion; shout aloud, Israel! Be glad and rejoice with all your heart, Daughter Jerusalem!"', prompt: 'What causes you to sing?' },
+    { ref: 'Psalm 9:1-10', text: 'I will give thanks to you, Lord, with all my heart; I will tell of all your wonderful deeds. I will be glad and rejoice in you; I will sing the praises of your name, O Most High.', prompt: 'What wonderful deeds has God done?' },
+    { ref: '1 Thessalonians 5:1-11', text: '"Let us be alert and self-controlled... For God did not appoint us to suffer wrath but to receive salvation through our Lord Jesus Christ."', prompt: 'How are you alert to God\'s presence?' },
+    { ref: 'Psalm 123:1-4', text: 'I lift up my eyes to you, to you who sit enthroned in heaven. As the eyes of slaves look to the hand of their master, as the eyes of a female slave look to the hand of her mistress, so our eyes look to the Lord our God.', prompt: 'Where are your eyes focused?' },
+    { ref: 'Matthew 25:14-30', text: '"To one he gave five bags of gold, to another two bags, and to another one bag, each according to his ability. Then he went on his journey."', prompt: 'How are you using your talents?' },
+    { ref: 'Psalm 100:1-5', text: 'Shout for joy to the Lord, all the earth. Worship the Lord with gladness; come before him with joyful songs.', prompt: 'How do you worship with joy?' },
+    { ref: 'Isaiah 43:16-21', text: '"Forget the former things; do not dwell on the past. See, I am doing a new thing! Now it springs up; do you not perceive it?"', prompt: 'What new thing is God doing?' },
+  ],
+
+  'Ordinary Time-33': [
+    { ref: 'Malachi 3:13-4:2a', text: '"You have said harsh things against me," says the Lord. "Yet you ask, \'What have we said against you?\' You have said, \'It is futile to serve God.\'"', prompt: 'Do you doubt the value of faith?' },
+    { ref: 'Psalm 98:5-9', text: 'Make music to the Lord with the harp, with the harp and the sound of singing, with trumpets and the blast of the ram\'s horn.', prompt: 'How do you make music for God?' },
+    { ref: '2 Thessalonians 3:7-12', text: '"For even when we were with you, we gave you this rule: \'The one who is unwilling to work shall not eat.\'"', prompt: 'How do you work with purpose?' },
+    { ref: 'Psalm 16:5-11', text: 'Lord, you alone are my portion and my cup; you make my lot secure. The boundary lines have fallen for me in pleasant places; surely I have a delightful inheritance.', prompt: 'What inheritance do you have in God?' },
+    { ref: 'Luke 21:5-19', text: '"They will seize you and persecute you... But not a hair of your head will perish. Stand firm, and you will win life."', prompt: 'How does faith sustain you?' },
+    { ref: 'Psalm 84:1-12', text: 'How lovely is your dwelling place, Lord Almighty! My soul yearns, even faints, for the courts of the Lord; my heart and my flesh cry out for the living God.', prompt: 'What dwelling do you long for?' },
+    { ref: 'Daniel 12:5-13', text: '"Go your way, Daniel, for these words are concealed and sealed up until the time of the end... But you, go your way to the end."', prompt: 'How do you walk faithfully toward the end?' },
+  ],
+
+  // THANKSGIVING & ADVENT PREPARATION (Weeks 34-52)
+  'Thanksgiving-1': [
+    { ref: 'Philippians 4:4-9', text: 'Rejoice in the Lord always. I will say it again: Rejoice! Let your gentleness be evident to all. The Lord is near.', prompt: 'What causes you to rejoice?' },
+    { ref: 'Psalm 100:1-5', text: 'Shout for joy to the Lord, all the earth. Worship the Lord with gladness; come before him with joyful songs. Know that the Lord is God. It is he who made us, and we are his.', prompt: 'How are you joyfully worshiping?' },
+    { ref: 'Colossians 3:12-17', text: 'Therefore, as God\'s chosen people, holy and dearly loved, clothe yourselves with compassion, kindness, humility, gentleness and patience. And let the peace of Christ rule in your hearts, to which as members of one body you were called.', prompt: 'What clothing of Christ are you wearing?' },
+    { ref: 'Psalm 113:1-9', text: 'Praise the Lord. Praise the Lord, you his servants, praise the name of the Lord. Blessed be the name of the Lord both now and forevermore.', prompt: 'What blessing do you see?' },
+    { ref: '1 Thessalonians 5:16-18', text: '"Rejoice always, pray continually, give thanks in all circumstances; for this is God\'s will for you in Christ Jesus."', prompt: 'What are you grateful for?' },
+    { ref: 'Psalm 30:1-12', text: 'I will exalt you, Lord, for you lifted me out of the depths and did not let my enemies gloat over me.', prompt: 'How has God lifted you?' },
+    { ref: 'Luke 17:11-19', text: '"Were not all ten cleansed? Where are the other nine? Has no one returned to give praise to God except this foreigner?"', prompt: 'How often do you return thanks?' },
+  ],
+
+  'Thanksgiving-2': [
+    { ref: 'Deuteronomy 8:1-10', text: '"Remember the Lord your God, for it is he who gives you the ability to produce wealth... Be careful that you do not forget the Lord your God."', prompt: 'What abundance has God given?' },
+    { ref: 'Psalm 65:9-13', text: 'You care for the land and water it; you enrich it abundantly. The streams of God are filled with water to provide the people with grain, for so you have ordained it.', prompt: 'What provision are you grateful for?' },
+    { ref: '2 Corinthians 9:6-15', text: '"Whoever sows generously will reap generously... God loves a cheerful giver."', prompt: 'How do you give cheerfully?' },
+    { ref: 'Psalm 107:1-9', text: 'Give thanks to the Lord, for he is good; his love endures forever. Let the redeemed of the Lord tell their story—those he redeemed from the hand of the foe.', prompt: 'What is your redemption story?' },
+    { ref: 'Leviticus 23:4-8', text: '"These are the Lord\'s appointed festivals... On the first day hold a sacred assembly and do no regular work."', prompt: 'How do you honor sacred time?' },
+    { ref: 'Psalm 126:1-6', text: 'When the Lord restored the fortunes of Zion, we were like those who dreamed. Our mouths were filled with laughter, our tongues with songs of joy.', prompt: 'What joy fills you?' },
+    { ref: 'Psalm 117:1-2', text: 'Praise the Lord, all you nations; extol him, all you peoples. For great is his love toward us, and the faithfulness of the Lord endures forever.', prompt: 'How has God\'s love been shown?' },
+  ],
+
+  'Thanksgiving-3': [
+    { ref: 'Proverbs 17:17,22', text: '"A friend loves at all times... A cheerful heart is good medicine, but a crushed spirit dries up the bones."', prompt: 'Who are you grateful for?' },
+    { ref: 'Psalm 150:1-6', text: 'Praise the Lord. Praise God in his sanctuary; praise him in his mighty heavens. Praise him for his acts of power; praise him for his surpassing greatness.', prompt: 'What greatness deserves praise?' },
+    { ref: '1 Timothy 4:4-5', text: '"For everything God created is good, and nothing is to be rejected if it is received with thanksgiving, because it is consecrated by the word of God and prayer."', prompt: 'How do you bless your daily food?' },
+    { ref: 'Psalm 95:1-7', text: 'Come, let us sing for joy to the Lord; let us shout aloud to the Rock of our salvation. Let us come before him with thanksgiving and extol him with music and song.', prompt: 'How do you sing thanksgiving?' },
+    { ref: 'Genesis 1:27-31', text: '"So God created mankind in his own image, in the image of God he created them; male and female he created them... God saw all that he had made, and it was very good."', prompt: 'How do you see yourself in God\'s image?' },
+    { ref: 'Psalm 146:1-10', text: 'Praise the Lord, my soul. I will praise the Lord all my life; I will sing praise to my God as long as I live.', prompt: 'What lifts your soul?' },
+    { ref: 'Colossians 1:3-12', text: '"We always thank God, the Father of our Lord Jesus Christ, when we pray for you... And we pray this in order that you may live a life worthy of the Lord and may please him in every way."', prompt: 'How do you live worthily?' },
+  ],
+
+  'Thanksgiving-4': [
+    { ref: 'Nehemiah 8:10', text: '"The joy of the Lord is your strength... Do not grieve, for the joy of the Lord is your strength."', prompt: 'Where is your strength coming from?' },
+    { ref: 'Psalm 84:10-12', text: 'Better is one day in your courts than a thousand elsewhere; I would rather be a doorkeeper in the house of my God than dwell in the tents of the wicked.', prompt: 'What is better to you than wealth?' },
+    { ref: 'Revelation 7:9-17', text: 'After this I looked, and there before me was a great multitude that no one could count, from every nation, tribe, people and language, standing before the throne and before the Lamb.', prompt: 'What multitude of saints are you part of?' },
+    { ref: 'Psalm 92:1-8', text: 'It is good to praise the Lord and make music to your name, O Most High, proclaiming your love in the morning and your faithfulness at night.', prompt: 'How do you praise morning and night?' },
+    { ref: 'Proverbs 31:10-31', text: '"A wife of noble character who can find? She is worth far more than rubies... She is clothed with strength and dignity; she can laugh at the days to come."', prompt: 'What strength do you possess?' },
+    { ref: 'Psalm 23:1-6', text: 'The Lord is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul.', prompt: 'What rest do you need?' },
+    { ref: 'Psalm 139:14-18', text: 'I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well... How precious to me are your thoughts, God! How vast is the sum of them!', prompt: 'How do you value yourself?' },
+  ],
+
+  // ADVENT SEASON (Weeks 45-52)
+  'Advent-5': [
+    { ref: 'Isaiah 2:1-5', text: 'In the last days the mountain of the Lord\'s temple will be established as the highest of the mountains; it will be exalted above the hills, and all nations will stream to it.', prompt: 'What are you waiting for?' },
+    { ref: 'Psalm 122:1-9', text: 'I rejoiced with those who said to me, "Let us go to the house of the Lord." Our feet are standing in your gates, Jerusalem.', prompt: 'Where are you being called?' },
+    { ref: 'Romans 13:11-14', text: '"The night is nearly over; the day is almost here... Rather, clothe yourselves with the Lord Jesus Christ, and do not think about how to gratify the desires of the flesh."', prompt: 'What are you waiting for?' },
+    { ref: 'Psalm 80:1-7', text: 'Hear us, Shepherd of Israel, you who lead Joseph like a flock. Shine forth before Ephraim, Benjamin and Manasseh. Awaken your might; come and save us.', prompt: 'What shepherding do you need?' },
+    { ref: 'Mark 13:33-37', text: '"Be on guard! Be alert! You do not know when that time will come... Therefore keep watch... And what I say to you, I say to everyone: \'Watch!\'"', prompt: 'How are you watching and waiting?' },
+    { ref: 'Psalm 25:1-10', text: 'In you, Lord, I have taken refuge; let me never be put to shame; deliver me in your righteousness. Turn your ear to me, come quickly to my rescue.', prompt: 'What trust are you asking for?' },
+    { ref: 'Philippians 4:4-7', text: '"Rejoice in the Lord always. I will say it again: Rejoice! Let your gentleness be evident to all... Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God."', prompt: 'What are you asking God for?' },
+  ],
+
+  'Advent-6': [
+    { ref: 'Luke 1:26-38', text: '"Greetings, you who are highly favored! The Lord is with you... Mary asked the angel, \'How will this be, since I am a virgin?\' The angel answered, \'The Holy Spirit will come upon you.\'\'', prompt: 'What is God asking you to surrender?' },
+    { ref: 'Psalm 98:1-9', text: 'Sing to the Lord a new song, for he has done marvelous things; his right hand and his holy arm have worked salvation for him.', prompt: 'What new song do you sing?' },
+    { ref: 'Matthew 1:18-25', text: '"Joseph, son of David, do not be afraid to take Mary home as your wife, because what is conceived in her is from the Holy Spirit."', prompt: 'What fear is God asking you to release?' },
+    { ref: 'Psalm 89:1-4,19-26', text: 'I will sing of the Lord\'s great love forever; with my mouth I will make your faithfulness known through all generations.', prompt: 'What faithfulness will you testify to?' },
+    { ref: 'Proverbs 9:1-6', text: '"Wisdom has built her house; she has hewn out its seven pillars... Come, eat my food and drink the wine I have mixed. Leave your simple ways and you will live."', prompt: 'Are you receiving wisdom\'s invitation?' },
+    { ref: 'Psalm 146:5-10', text: 'Blessed are those whose help is the God of Jacob, whose hope is in the Lord their God... The Lord sets prisoners free.', prompt: 'What freedom does advent promise?' },
+    { ref: 'Isaiah 7:10-16', text: '"The Lord himself will give you a sign: The virgin will conceive and give birth to a son, and will call him Immanuel."', prompt: 'What signs do you see of God\'s presence?' },
+  ],
+
+  'Advent-7': [
+    { ref: 'John 1:1-14', text: '"In the beginning was the Word, and the Word was with God, and the Word was God... The Word became flesh and made his dwelling among us."', prompt: 'What does incarnation mean for you?' },
+    { ref: 'Psalm 97:1-12', text: 'The Lord reigns, let the earth be glad; let the distant shores rejoice... Light shines on the righteous and joy on the upright in heart.', prompt: 'What light is dawning in you?' },
+    { ref: 'Titus 2:11-14', text: '"For the grace of God has appeared that offers salvation to all people... It teaches us to say \"No\" to ungodliness and worldly passions, and to live self-controlled, upright and godly lives in this present age."', prompt: 'How is grace appearing in your life?' },
+    { ref: 'Psalm 72:1-7,18-19', text: 'Endow the king with your justice, O God, the royal son with your righteousness. He will defend the afflicted among the people and save the children of the needy.', prompt: 'What justice are you waiting for?' },
+    { ref: 'Hebrews 1:1-12', text: '"In the past God spoke to our ancestors through the prophets at many times and in various ways, but in these last days he has spoken to us by his Son."', prompt: 'How is God speaking to you?' },
+    { ref: 'Psalm 45:1-9', text: 'My heart is stirred by a noble theme as I recite my verses for the king; my tongue is the pen of a skillful writer.', prompt: 'What stirs your heart?' },
+    { ref: 'Luke 2:1-14', text: '"She gave birth to her firstborn, a son. She wrapped him in cloths and placed him in a manger, because there was no guest room available for them."', prompt: 'Where will you make room for Christ?' },
+  ],
+
+  'Advent-8': [
+    { ref: 'Psalm 113:1-9', text: 'Praise the Lord. Praise the Lord, you his servants, praise the name of the Lord. Blessed be the name of the Lord both now and forevermore.', prompt: 'What blessing awaits?' },
+    { ref: 'Malachi 3:1-4', text: '"I will send my messenger, who will prepare the way before me. Then suddenly the Lord you are seeking will come to his temple."', prompt: 'How are you preparing for Christ?' },
+    { ref: 'Luke 1:46-55', text: '"My soul glorifies the Lord and my spirit rejoices in God my Savior, for he has been mindful of the humble state of his servant."', prompt: 'How has God noticed you?' },
+    { ref: 'Psalm 33:20-22', text: 'We wait in hope for the Lord; he is our help and our shield. In him our hearts rejoice, for we trust in his holy name.', prompt: 'What hope do you carry?' },
+    { ref: 'Baruch 5:1-9', text: '"Take off your robe of mourning and affliction, and put on the beauty of glory from God forever... God will lead Israel with joy in the light of his glory."', prompt: 'What beauty will you put on?' },
+    { ref: 'Psalm 126:1-6', text: 'When the Lord restored the fortunes of Zion, we were like those who dreamed. Our mouths were filled with laughter, our tongues with songs of joy.', prompt: 'What joy restores you?' },
+    { ref: 'Philippians 4:8-9', text: '"Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure, whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things."', prompt: 'What are you thinking about?' },
+  ],
+
+  'Advent-9': [
+    { ref: 'Psalm 25:1-10', text: 'To you, Lord, I lift up my soul; in you I trust, my God. Do not let me be put to shame, nor let my enemies triumph over me.', prompt: 'What shame are you releasing?' },
+    { ref: 'Isaiah 35:1-10', text: '"The desert and the parched land will be glad; the wilderness will rejoice and blossom... They will enter Zion with singing; everlasting joy will crown their heads."', prompt: 'What blooming are you witnessing?' },
+    { ref: 'James 5:7-11', text: '"Be patient, then, brothers and sisters, until the Lord\'s coming... See how the farmer waits for the land to yield its valuable crop, being patient for the autumn and spring rains."', prompt: 'What are you patiently waiting for?' },
+    { ref: 'Psalm 21:1-7', text: 'The king rejoices in your strength, Lord. How great is his joy in the victories you give!', prompt: 'What victory are you celebrating?' },
+    { ref: 'Luke 21:25-36', text: '"There will be signs in the sun, moon and stars... people will faint from terror... But when these things begin to take place, stand up and lift up your heads, because your redemption is drawing near."', prompt: 'Are you standing firm?' },
+    { ref: 'Psalm 72:8-14', text: '"He will rule from sea to sea and from the River to the ends of the earth... All kings will bow down to him and all nations will serve him."', prompt: 'What kingdom are you awaiting?' },
+    { ref: 'Jude 1:20-25', text: '"But you, dear friends, by building yourselves up in your most holy faith and praying in the Holy Spirit, keep yourselves in God\'s love as you wait for the mercy of our Lord Jesus Christ to bring you to eternal life."', prompt: 'How are you building yourself up in faith?' },
+  ],
+
+  'Advent-10': [
+    { ref: 'Isaiah 64:1-9', text: '"Oh, that you would rend the heavens and come down... But when you hide your face, we are dismayed."', prompt: 'How are you longing for God?' },
+    { ref: 'Psalm 80:1-7,17-19', text: 'Hear us, Shepherd of Israel, you who lead Joseph like a flock... Restore us, O God; make your face shine on us, that we may be saved.', prompt: 'What restoration do you seek?' },
+    { ref: '1 Corinthians 1:3-9', text: '"Grace and peace to you from God our Father and the Lord Jesus Christ... He will also keep you firm to the end, so that you will be blameless on the day of our Lord Jesus Christ."', prompt: 'What strength does grace provide?' },
+    { ref: 'Psalm 85:1-13', text: 'You showed favor to your land, Lord; you restored the fortunes of Jacob... Surely his salvation is near those who fear him.', prompt: 'What favor are you waiting for?' },
+    { ref: 'Mark 13:24-37', text: '"At that time people will see the Son of Man coming in clouds with great power and glory... What I say to you, I say to everyone: \'Watch!\'"', prompt: 'How are you watching?' },
+    { ref: 'Psalm 16:5-11', text: 'Lord, you alone are my portion and my cup; you make my lot secure... You have made known to me the path of life; you will fill me with joy in your presence.', prompt: 'What joy awaits in God\'s presence?' },
+    { ref: 'Revelation 22:12-20', text: '"Behold, I am coming soon!... The Spirit and the bride say, \"Come!\" And let the one who hears say, \"Come!\" ... He who testifies to these things says, \"Yes, I am coming soon.\" Amen. Come, Lord Jesus."', prompt: 'What does Christ\'s coming mean to you?' },
+  ],
 };
 
 /**
