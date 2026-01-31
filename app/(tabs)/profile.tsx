@@ -312,6 +312,13 @@ export default function ProfileScreen() {
         });
       }
       setShowDisplayNameModal(false);
+      
+      // Show success message
+      Alert.alert(
+        'Name Updated',
+        'Your display name has been updated across all your community posts.',
+        [{ text: 'OK' }]
+      );
     } catch (error) {
       console.error('ProfileScreen: Save display name failed -', error);
       Alert.alert('Error', 'Failed to update display name. Please try again.');
