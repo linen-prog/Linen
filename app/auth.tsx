@@ -45,30 +45,70 @@ export default function AuthScreen() {
     setIsLoading(true);
     
     try {
-      console.log('Attempting to sign up/sign in user with Better Auth...');
+      console.log('Attempting to authenticate user with Better Auth...');
       
-      // Use Better Auth email sign-up (which also handles existing users)
-      // Better Auth will create a user if they don't exist, or sign them in if they do
-      const signUpData = await authClient.signUp.email({
-        email: email.trim(),
-        password: email.trim(), // Use email as password for passwordless-like flow
-        name: firstName.trim() || email.split('@')[0],
-      });
-
-      console.log('Better Auth sign-up response:', signUpData);
+      const trimmedEmail = email.trim();
+      const password = trimmedEmail; // Use email as password for passwordless-like flow
+      const displayName = firstName.trim() || email.split('@')[0];
+      
+      // Try to sign in first (most users will be returning)
+      console.log('Attempting sign in...');
+      let signInResult;
+      try {
+        signInResult = await authClient.signIn.email({
+          email: trimmedEmail,
+          password: password,
+        });
+        console.log('Sign in successful:', signInResult);
+      } catch (signInError: any) {
+        console.log('Sign in failed, checking if user needs to be created:', signInError);
+        
+        // If sign in fails, try to sign up (new user)
+        if (signInError?.error?.code === 'INVALID_EMAIL_OR_PASSWORD' || 
+            signInError?.message?.includes('Invalid') ||
+            signInError?.message?.includes('not found')) {
+          console.log('User not found, attempting sign up...');
+          
+          try {
+            const signUpResult = await authClient.signUp.email({
+              email: trimmedEmail,
+              password: password,
+              name: displayName,
+            });
+            console.log('Sign up successful:', signUpResult);
+          } catch (signUpError: any) {
+            console.error('Sign up failed:', signUpError);
+            
+            // If sign up fails because user exists, try sign in again
+            if (signUpError?.error?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL') {
+              console.log('User exists after all, retrying sign in...');
+              await authClient.signIn.email({
+                email: trimmedEmail,
+                password: password,
+              });
+            } else {
+              throw signUpError;
+            }
+          }
+        } else {
+          throw signInError;
+        }
+      }
 
       // Get the session data from Better Auth
+      console.log('Fetching session...');
       const session = await authClient.getSession();
       console.log('Better Auth session:', session);
 
-      if (session?.user) {
-        console.log('[Auth] User authenticated successfully:', session.user);
+      if (session?.data?.user) {
+        const userData = session.data.user;
+        console.log('[Auth] User authenticated successfully:', userData);
         
         // Store user data for persistence
-        await storeUserData(session.user);
+        await storeUserData(userData);
 
         // Update auth context directly
-        setUserDirectly(session.user);
+        setUserDirectly(userData);
 
         console.log('Navigating to home screen...');
         
@@ -77,13 +117,15 @@ export default function AuthScreen() {
         
         router.replace('/(tabs)');
       } else {
+        console.error('No session data found:', session);
         throw new Error('Authentication succeeded but no session found');
       }
     } catch (error) {
       console.error('Auth failed:', error);
       const errorObj = error as any;
-      const errorMessage = errorObj?.message || 'Unknown error';
-      console.error('Error details:', errorMessage);
+      const errorMessage = errorObj?.message || errorObj?.error?.message || 'Unknown error';
+      const errorCode = errorObj?.error?.code || '';
+      console.error('Error details:', { errorMessage, errorCode, fullError: errorObj });
       
       let userMessage = 'We are having trouble connecting right now. Please try again in a moment.';
       
@@ -93,27 +135,8 @@ export default function AuthScreen() {
         userMessage = 'Unable to connect to the server. Please check your internet connection.';
       } else if (errorMessage.includes('timeout')) {
         userMessage = 'Connection timed out. Please try again.';
-      } else if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
-        // User already exists, try to sign in instead
-        console.log('User already exists, attempting sign in...');
-        try {
-          await authClient.signIn.email({
-            email: email.trim(),
-            password: email.trim(),
-          });
-          
-          const session = await authClient.getSession();
-          if (session?.user) {
-            await storeUserData(session.user);
-            setUserDirectly(session.user);
-            await new Promise(resolve => setTimeout(resolve, 100));
-            router.replace('/(tabs)');
-            return; // Success, exit the function
-          }
-        } catch (signInError) {
-          console.error('Sign in after duplicate error failed:', signInError);
-          userMessage = 'Account exists. Please try again.';
-        }
+      } else if (errorCode === 'INVALID_EMAIL_OR_PASSWORD') {
+        userMessage = 'Unable to sign in. Please check your email and try again.';
       }
       
       setErrorMessage(userMessage);

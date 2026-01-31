@@ -106,23 +106,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       console.log('[AuthContext] Fetching user session...');
       
-      // First check if we have a bearer token stored
-      const token = await getBearerToken();
-      console.log('[AuthContext] Bearer token exists:', !!token);
+      // Try to get session from Better Auth
+      const session = await authClient.getSession();
+      console.log('[AuthContext] Better Auth session:', session);
       
-      if (!token) {
-        console.log('[AuthContext] No token found - user needs to log in');
-        setUser(null);
+      if (session?.data?.user) {
+        console.log('[AuthContext] User found in session:', session.data.user.email);
+        const userData = session.data.user;
+        await storeUserData(userData);
+        setUser(userData);
         return;
       }
-
-      // We have a token, try to restore user from storage
+      
+      // If no session from Better Auth, check if we have stored user data
       const storedUser = await getUserData();
       if (storedUser) {
         console.log('[AuthContext] Restored user from storage:', storedUser.email);
         setUser(storedUser);
       } else {
-        console.log('[AuthContext] Token exists but no user data found');
+        console.log('[AuthContext] No session or stored user found - user needs to log in');
         setUser(null);
       }
     } catch (error) {
@@ -141,8 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = async (email: string, password: string) => {
     try {
       console.log('[AuthContext] Signing in with email...');
-      await authClient.signIn.email({ email, password });
-      await fetchUser();
+      const result = await authClient.signIn.email({ email, password });
+      console.log('[AuthContext] Sign in result:', result);
+      
+      // Get session after sign in
+      const session = await authClient.getSession();
+      if (session?.data?.user) {
+        await storeUserData(session.data.user);
+        setUser(session.data.user);
+      } else {
+        await fetchUser();
+      }
     } catch (error) {
       console.error("[AuthContext] Email sign in failed:", error);
       throw error;
@@ -152,12 +163,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
       console.log('[AuthContext] Signing up with email...');
-      await authClient.signUp.email({
+      const result = await authClient.signUp.email({
         email,
         password,
         name,
       });
-      await fetchUser();
+      console.log('[AuthContext] Sign up result:', result);
+      
+      // Get session after sign up
+      const session = await authClient.getSession();
+      if (session?.data?.user) {
+        await storeUserData(session.data.user);
+        setUser(session.data.user);
+      } else {
+        await fetchUser();
+      }
     } catch (error) {
       console.error("[AuthContext] Email sign up failed:", error);
       throw error;
