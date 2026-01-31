@@ -5,6 +5,13 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
+interface PersonalizationData {
+  companionTagline: string | null;
+  recentActivity: string | null;
+  streakMessage: string | null;
+  conversationContext: string | null;
+}
+
 export default function HomeScreen() {
   console.log('🏠 [Home iOS] Screen rendering');
   const router = useRouter();
@@ -12,6 +19,7 @@ export default function HomeScreen() {
   const [checkInStreak, setCheckInStreak] = useState(0);
   const [reflectionStreak, setReflectionStreak] = useState(0);
   const [firstName, setFirstName] = useState('');
+  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -32,6 +40,16 @@ export default function HomeScreen() {
         console.log('🏠 [Home iOS] Streaks loaded:', streaksResponse);
         setCheckInStreak(streaksResponse.checkInStreak);
         setReflectionStreak(streaksResponse.reflectionStreak);
+
+        // Fetch personalization data for AI companion
+        try {
+          const personalizationResponse = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
+          console.log('🏠 [Home iOS] Personalization data loaded:', personalizationResponse);
+          setPersonalization(personalizationResponse);
+        } catch (error) {
+          console.error('🏠 [Home iOS] Failed to load personalization data:', error);
+          // Personalization is optional, continue without it
+        }
       } catch (error) {
         console.error('🏠 [Home iOS] Failed to load user data:', error);
         // Use defaults on error
@@ -150,8 +168,27 @@ export default function HomeScreen() {
                 Check-In
               </Text>
               <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
-                What&apos;s on your mind?
+                {personalization?.companionTagline || "What's on your heart?"}
               </Text>
+              {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
+                <View style={styles.personalizationContainer}>
+                  {personalization.recentActivity && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.recentActivity}
+                    </Text>
+                  )}
+                  {personalization.streakMessage && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.streakMessage}
+                    </Text>
+                  )}
+                  {personalization.conversationContext && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.conversationContext}
+                    </Text>
+                  )}
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -308,6 +345,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  personalizationContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border + '40',
+    width: '100%',
+    gap: spacing.xs,
+  },
+  personalizationText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   secondaryActions: {
     gap: spacing.md,
