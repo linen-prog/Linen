@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Image as SvgImage, Circle } from 'react-native-svg';
+import Svg, { Path, Image as SvgImage, Circle, Rect, Defs, LinearGradient, Stop, Pattern } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import Slider from '@react-native-community/slider';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -23,6 +23,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
+
+type BackgroundPattern = 'none' | 'dots' | 'lines' | 'grid' | 'watercolor' | 'gradient';
 
 interface BrushOption {
   id: BrushType;
@@ -67,6 +69,27 @@ interface Achievement {
   threshold: number;
 }
 
+interface Sticker {
+  id: string;
+  icon: string;
+  materialIcon: string;
+  label: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+  color: string;
+}
+
+interface ColorPalette {
+  id: string;
+  name: string;
+  description: string;
+  colors: string[];
+  icon: string;
+  materialIcon: string;
+}
+
 const BRUSH_OPTIONS: BrushOption[] = [
   { id: 'pencil', label: 'Pencil', icon: 'pencil', materialIcon: 'edit', isPremium: false },
   { id: 'marker', label: 'Marker', icon: 'highlighter', materialIcon: 'create', isPremium: false },
@@ -92,6 +115,76 @@ const PREMIUM_COLORS = [
   '#8B0000', '#DC143C', '#FF0000', '#FF4500', '#FF6347', '#FF8C00', '#FFA500', '#FFD700', '#FFFF00', '#F0E68C', '#8B4513', '#D2691E',
   '#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#000080', '#0000FF', '#4169E1', '#87CEEB', '#4B0082', '#800080', '#9370DB',
   '#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFDAB9', '#F0E68C', '#E0FFFF', '#B0E0E6', '#DDA0DD', '#EE82EE', '#F5DEB3', '#D2B48C', '#BC8F8F',
+];
+
+const COLOR_PALETTES: ColorPalette[] = [
+  {
+    id: 'peace',
+    name: 'Peace',
+    description: 'Calm blues and soft greens',
+    colors: ['#87CEEB', '#B0E0E6', '#98D8C8', '#E0F2F1', '#FFFFFF'],
+    icon: 'leaf',
+    materialIcon: 'eco',
+  },
+  {
+    id: 'hope',
+    name: 'Hope',
+    description: 'Warm sunrise colors',
+    colors: ['#FFD700', '#FFA500', '#FF8C00', '#FFE4B5', '#FFF8DC'],
+    icon: 'sunrise',
+    materialIcon: 'wb-sunny',
+  },
+  {
+    id: 'love',
+    name: 'Love',
+    description: 'Gentle pinks and reds',
+    colors: ['#FFB6C1', '#FFC0CB', '#FF69B4', '#FFE4E1', '#FFF0F5'],
+    icon: 'heart.fill',
+    materialIcon: 'favorite',
+  },
+  {
+    id: 'faith',
+    name: 'Faith',
+    description: 'Deep purples and golds',
+    colors: ['#800080', '#9370DB', '#DDA0DD', '#FFD700', '#F0E68C'],
+    icon: 'star.fill',
+    materialIcon: 'star',
+  },
+  {
+    id: 'joy',
+    name: 'Joy',
+    description: 'Bright and cheerful',
+    colors: ['#FFFF00', '#FFD700', '#FFA500', '#FF69B4', '#87CEEB'],
+    icon: 'sun.max.fill',
+    materialIcon: 'wb-sunny',
+  },
+  {
+    id: 'grace',
+    name: 'Grace',
+    description: 'Soft pastels',
+    colors: ['#E6E6FA', '#FFE4E1', '#F0FFF0', '#FFF8DC', '#F5F5DC'],
+    icon: 'sparkles',
+    materialIcon: 'auto-awesome',
+  },
+  {
+    id: 'earth',
+    name: 'Earth',
+    description: 'Natural browns and greens',
+    colors: ['#8B4513', '#D2691E', '#228B22', '#556B2F', '#F5DEB3'],
+    icon: 'globe',
+    materialIcon: 'public',
+  },
+];
+
+const STICKER_OPTIONS = [
+  { id: 'cross', icon: 'plus', materialIcon: 'add', label: 'Cross' },
+  { id: 'heart', icon: 'heart.fill', materialIcon: 'favorite', label: 'Heart' },
+  { id: 'star', icon: 'star.fill', materialIcon: 'star', label: 'Star' },
+  { id: 'circle', icon: 'circle.fill', materialIcon: 'circle', label: 'Circle' },
+  { id: 'flower', icon: 'leaf.fill', materialIcon: 'local-florist', label: 'Flower' },
+  { id: 'sun', icon: 'sun.max.fill', materialIcon: 'wb-sunny', label: 'Sun' },
+  { id: 'moon', icon: 'moon.fill', materialIcon: 'brightness-3', label: 'Moon' },
+  { id: 'dove', icon: 'bird', materialIcon: 'flight', label: 'Dove' },
 ];
 
 const ENCOURAGING_MESSAGES = [
@@ -144,9 +237,13 @@ export default function ArtworkCanvasScreen() {
   const [currentStroke, setCurrentStroke] = useState<DrawingStroke | null>(null);
   const [undoneStrokes, setUndoneStrokes] = useState<DrawingStroke[]>([]);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [backgroundPattern, setBackgroundPattern] = useState<BackgroundPattern>('none');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBrushPicker, setShowBrushPicker] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPaletteModal, setShowPaletteModal] = useState(false);
+  const [showStickerModal, setShowStickerModal] = useState(false);
+  const [showPatternModal, setShowPatternModal] = useState(false);
   const [shareAnonymous, setShareAnonymous] = useState(false);
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
   const [isSaving, setIsSaving] = useState(false);
@@ -172,6 +269,8 @@ export default function ArtworkCanvasScreen() {
   const [showPrompt, setShowPrompt] = useState(true);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [selectedPalette, setSelectedPalette] = useState<ColorPalette | null>(null);
 
   const canvasRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
@@ -196,6 +295,7 @@ export default function ArtworkCanvasScreen() {
   const achievementOpacity = useSharedValue(0);
   const promptOpacity = useSharedValue(1);
   const cursorScale = useSharedValue(0);
+  const paletteButtonScale = useSharedValue(1);
 
   // Select random prompt on mount
   useEffect(() => {
@@ -335,6 +435,14 @@ export default function ArtworkCanvasScreen() {
             if (parsed.photoScale) {
               console.log('[Canvas] Restoring photo scale:', parsed.photoScale);
               setPhotoScale(parsed.photoScale);
+            }
+            if (parsed.stickers && Array.isArray(parsed.stickers)) {
+              console.log('[Canvas] Restoring stickers:', parsed.stickers);
+              setStickers(parsed.stickers);
+            }
+            if (parsed.backgroundPattern) {
+              console.log('[Canvas] Restoring background pattern:', parsed.backgroundPattern);
+              setBackgroundPattern(parsed.backgroundPattern);
             }
           } catch (e) {
             console.error('[Canvas] Failed to parse artwork data:', e);
@@ -621,12 +729,14 @@ export default function ArtworkCanvasScreen() {
             currentStrokeRef.current = null;
             setUndoneStrokes([]);
             setBackgroundImage(null);
+            setBackgroundPattern('none');
             setPhotoPosition({ x: 0, y: 0 });
             setPhotoScale(1);
             setIsEditingPhoto(false);
             photoPositionRef.current = { x: 0, y: 0 };
             setStrokeCount(0);
             setParticles([]);
+            setStickers([]);
             
             if (Platform.OS !== 'web') {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -745,24 +855,88 @@ export default function ArtworkCanvasScreen() {
     }
   };
 
+  const handleAddSticker = (stickerId: string) => {
+    console.log('[Canvas] User adding sticker:', stickerId);
+    const stickerOption = STICKER_OPTIONS.find(s => s.id === stickerId);
+    if (!stickerOption) {
+      return;
+    }
+
+    const centerX = canvasLayout.width / 2;
+    const centerY = canvasLayout.height / 2;
+    
+    const newSticker: Sticker = {
+      id: `${stickerId}-${Date.now()}`,
+      icon: stickerOption.icon,
+      materialIcon: stickerOption.materialIcon,
+      label: stickerOption.label,
+      x: centerX,
+      y: centerY,
+      size: 48,
+      rotation: 0,
+      color: selectedColor,
+    };
+    
+    setStickers([...stickers, newSticker]);
+    setShowStickerModal(false);
+    
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleApplyPalette = (palette: ColorPalette) => {
+    console.log('[Canvas] User applying color palette:', palette.name);
+    setSelectedPalette(palette);
+    setSelectedColor(palette.colors[0]);
+    setShowPaletteModal(false);
+    
+    // Animate palette button
+    paletteButtonScale.value = withSequence(
+      withSpring(1.3, { damping: 8 }),
+      withSpring(1, { damping: 10 })
+    );
+    
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    
+    Alert.alert(
+      `${palette.name} Palette Applied! 🎨`,
+      `${palette.description}\n\nTap the color picker to see all colors in this palette.`
+    );
+  };
+
+  const handleApplyPattern = (pattern: BackgroundPattern) => {
+    console.log('[Canvas] User applying background pattern:', pattern);
+    setBackgroundPattern(pattern);
+    setShowPatternModal(false);
+    
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  };
+
   const handleSave = async () => {
-    if (strokes.length === 0 && !backgroundImage) {
+    if (strokes.length === 0 && !backgroundImage && stickers.length === 0) {
       Alert.alert('Empty Canvas', 'Please add some content before saving.');
       return;
     }
 
-    console.log('[Canvas] User saving artwork', { strokeCount: strokes.length, hasBackground: !!backgroundImage });
+    console.log('[Canvas] User saving artwork', { strokeCount: strokes.length, hasBackground: !!backgroundImage, stickerCount: stickers.length });
     setIsSaving(true);
 
     try {
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
+        backgroundPattern,
         photoPosition,
         photoScale,
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
+        stickers,
         savedAt: new Date().toISOString(),
       });
       
@@ -810,11 +984,13 @@ export default function ArtworkCanvasScreen() {
       const artworkData = JSON.stringify({ 
         strokes, 
         backgroundImage,
+        backgroundPattern,
         photoPosition,
         photoScale,
         brushType: selectedBrush,
         brushSize,
         color: selectedColor,
+        stickers,
         savedAt: new Date().toISOString(),
       });
       
@@ -1028,7 +1204,80 @@ export default function ArtworkCanvasScreen() {
     }
   };
 
-  const availableColors = isPremium ? PREMIUM_COLORS : FREE_COLORS;
+  const renderBackgroundPattern = () => {
+    if (backgroundPattern === 'none' || !canvasLayout.width) {
+      return null;
+    }
+
+    const patternSize = 20;
+    
+    switch (backgroundPattern) {
+      case 'dots':
+        return (
+          <Defs>
+            <Pattern id="dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <Circle cx={patternSize / 2} cy={patternSize / 2} r="2" fill="#E0E0E0" opacity="0.3" />
+            </Pattern>
+          </Defs>
+        );
+      case 'lines':
+        return (
+          <Defs>
+            <Pattern id="lines" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <Path d={`M 0 ${patternSize / 2} L ${patternSize} ${patternSize / 2}`} stroke="#E0E0E0" strokeWidth="1" opacity="0.3" />
+            </Pattern>
+          </Defs>
+        );
+      case 'grid':
+        return (
+          <Defs>
+            <Pattern id="grid" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <Path d={`M ${patternSize} 0 L 0 0 0 ${patternSize}`} fill="none" stroke="#E0E0E0" strokeWidth="1" opacity="0.2" />
+            </Pattern>
+          </Defs>
+        );
+      case 'watercolor':
+        return (
+          <Defs>
+            <LinearGradient id="watercolor" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor="#E3F2FD" stopOpacity="0.3" />
+              <Stop offset="50%" stopColor="#BBDEFB" stopOpacity="0.2" />
+              <Stop offset="100%" stopColor="#E3F2FD" stopOpacity="0.3" />
+            </LinearGradient>
+          </Defs>
+        );
+      case 'gradient':
+        return (
+          <Defs>
+            <LinearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <Stop offset="0%" stopColor="#FFF9E6" stopOpacity="0.5" />
+              <Stop offset="100%" stopColor="#FFE6F0" stopOpacity="0.5" />
+            </LinearGradient>
+          </Defs>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getPatternFill = () => {
+    switch (backgroundPattern) {
+      case 'dots':
+        return 'url(#dots)';
+      case 'lines':
+        return 'url(#lines)';
+      case 'grid':
+        return 'url(#grid)';
+      case 'watercolor':
+        return 'url(#watercolor)';
+      case 'gradient':
+        return 'url(#gradient)';
+      default:
+        return 'none';
+    }
+  };
+
+  const availableColors = selectedPalette ? selectedPalette.colors : (isPremium ? PREMIUM_COLORS : FREE_COLORS);
   const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
 
@@ -1037,7 +1286,7 @@ export default function ArtworkCanvasScreen() {
   const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
   const brushSizeLabel = 'Brush Size';
   const brushPickerTitle = 'Select Brush';
-  const colorPickerTitle = 'Select Color';
+  const colorPickerTitle = selectedPalette ? `${selectedPalette.name} Palette` : 'Select Color';
   const freeBrushesLabel = 'Free Brushes';
   const premiumBrushesLabel = 'Premium Brushes';
   const premiumBadge = 'PREMIUM';
@@ -1050,7 +1299,7 @@ export default function ArtworkCanvasScreen() {
 
   const canUndo = strokes.length > 0;
   const canRedo = undoneStrokes.length > 0;
-  const canSave = strokes.length > 0 || backgroundImage !== null;
+  const canSave = strokes.length > 0 || backgroundImage !== null || stickers.length > 0;
 
   const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
   const isEraserMode = selectedColor === '#FFFFFF';
@@ -1085,6 +1334,10 @@ export default function ArtworkCanvasScreen() {
 
   const cursorStyle = useAnimatedStyle(() => ({
     transform: [{ scale: cursorScale.value }],
+  }));
+
+  const paletteButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: paletteButtonScale.value }],
   }));
 
   // Generate sparkles for celebration
@@ -1261,6 +1514,18 @@ export default function ArtworkCanvasScreen() {
                 height={canvasLayout.height}
                 style={styles.svgCanvas}
               >
+                {renderBackgroundPattern()}
+                
+                {backgroundPattern !== 'none' && (
+                  <Rect
+                    x="0"
+                    y="0"
+                    width={canvasLayout.width}
+                    height={canvasLayout.height}
+                    fill={getPatternFill()}
+                  />
+                )}
+
                 {backgroundImage && (
                   <SvgImage
                     href={backgroundImage}
@@ -1302,6 +1567,30 @@ export default function ArtworkCanvasScreen() {
               </Svg>
             )}
             
+            {/* Stickers overlay */}
+            {stickers.map((sticker) => (
+              <View
+                key={sticker.id}
+                style={[
+                  styles.stickerContainer,
+                  {
+                    left: sticker.x - sticker.size / 2,
+                    top: sticker.y - sticker.size / 2,
+                    width: sticker.size,
+                    height: sticker.size,
+                    transform: [{ rotate: `${sticker.rotation}deg` }],
+                  }
+                ]}
+              >
+                <IconSymbol 
+                  ios_icon_name={sticker.icon}
+                  android_material_icon_name={sticker.materialIcon}
+                  size={sticker.size}
+                  color={sticker.color}
+                />
+              </View>
+            ))}
+            
             {/* Particle effects */}
             {particles.map(particle => (
               <View
@@ -1320,7 +1609,7 @@ export default function ArtworkCanvasScreen() {
               />
             ))}
             
-            {!backgroundImage && strokes.length === 0 && !currentStroke && (
+            {!backgroundImage && strokes.length === 0 && !currentStroke && backgroundPattern === 'none' && (
               <View style={styles.canvasPlaceholder}>
                 <IconSymbol 
                   ios_icon_name="hand.draw"
@@ -1381,6 +1670,38 @@ export default function ArtworkCanvasScreen() {
             </Text>
           </TouchableOpacity>
 
+          {/* Color Palette Selector */}
+          <Animated.View style={paletteButtonStyle}>
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                { backgroundColor: cardBg },
+                selectedPalette && styles.controlButtonActive
+              ]}
+              onPress={() => {
+                console.log('[Canvas] User opening palette picker');
+                setShowPaletteModal(true);
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="paintpalette"
+                android_material_icon_name="palette"
+                size={20}
+                color={selectedPalette ? colors.primary : textColor}
+              />
+              <Text style={[
+                styles.controlButtonLabel, 
+                { color: selectedPalette ? colors.primary : textSecondaryColor }
+              ]}>
+                {selectedPalette ? selectedPalette.name : 'Palette'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
           {/* Color Selector */}
           <Animated.View style={colorPickerStyle}>
             <TouchableOpacity 
@@ -1397,6 +1718,50 @@ export default function ArtworkCanvasScreen() {
               <View style={styles.colorPreview} />
             </TouchableOpacity>
           </Animated.View>
+
+          {/* Pattern Selector */}
+          <TouchableOpacity 
+            style={[
+              styles.controlButton, 
+              { backgroundColor: cardBg },
+              backgroundPattern !== 'none' && styles.controlButtonActive
+            ]}
+            onPress={() => {
+              console.log('[Canvas] User opening pattern picker');
+              setShowPatternModal(true);
+              if (Platform.OS !== 'web') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="square.grid.2x2"
+              android_material_icon_name="grid-on"
+              size={20}
+              color={backgroundPattern !== 'none' ? colors.primary : textColor}
+            />
+          </TouchableOpacity>
+
+          {/* Sticker Button */}
+          <TouchableOpacity 
+            style={[styles.controlButton, { backgroundColor: cardBg }]}
+            onPress={() => {
+              console.log('[Canvas] User opening sticker picker');
+              setShowStickerModal(true);
+              if (Platform.OS !== 'web') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={20}
+              color={textColor}
+            />
+          </TouchableOpacity>
 
           {/* Eraser Button */}
           <TouchableOpacity 
@@ -1640,6 +2005,187 @@ export default function ArtworkCanvasScreen() {
         </Animated.View>
       )}
 
+      {/* Color Palette Modal */}
+      <Modal
+        visible={showPaletteModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPaletteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Scripture-Inspired Palettes
+              </Text>
+              <TouchableOpacity onPress={() => setShowPaletteModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {COLOR_PALETTES.map((palette) => {
+                const isSelected = selectedPalette?.id === palette.id;
+                return (
+                  <TouchableOpacity
+                    key={palette.id}
+                    style={[
+                      styles.paletteOption,
+                      { borderColor: colors.border },
+                      isSelected && styles.paletteOptionSelected
+                    ]}
+                    onPress={() => handleApplyPalette(palette)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.paletteHeader}>
+                      <IconSymbol 
+                        ios_icon_name={palette.icon}
+                        android_material_icon_name={palette.materialIcon}
+                        size={24}
+                        color={isSelected ? colors.primary : textColor}
+                      />
+                      <View style={styles.paletteInfo}>
+                        <Text style={[
+                          styles.paletteName,
+                          { color: isSelected ? colors.primary : textColor }
+                        ]}>
+                          {palette.name}
+                        </Text>
+                        <Text style={[styles.paletteDescription, { color: textSecondaryColor }]}>
+                          {palette.description}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.paletteColors}>
+                      {palette.colors.map((color, index) => (
+                        <View
+                          key={index}
+                          style={[
+                            styles.paletteColorSwatch,
+                            { backgroundColor: color }
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Sticker Modal */}
+      <Modal
+        visible={showStickerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowStickerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Add Sticker
+              </Text>
+              <TouchableOpacity onPress={() => setShowStickerModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.stickerGrid}>
+                {STICKER_OPTIONS.map((sticker) => (
+                  <TouchableOpacity
+                    key={sticker.id}
+                    style={[
+                      styles.stickerOption,
+                      { borderColor: colors.border }
+                    ]}
+                    onPress={() => handleAddSticker(sticker.id)}
+                    activeOpacity={0.7}
+                  >
+                    <IconSymbol 
+                      ios_icon_name={sticker.icon}
+                      android_material_icon_name={sticker.materialIcon}
+                      size={32}
+                      color={textColor}
+                    />
+                    <Text style={[styles.stickerLabel, { color: textColor }]}>
+                      {sticker.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Pattern Modal */}
+      <Modal
+        visible={showPatternModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPatternModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                Background Pattern
+              </Text>
+              <TouchableOpacity onPress={() => setShowPatternModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.patternGrid}>
+                {(['none', 'dots', 'lines', 'grid', 'watercolor', 'gradient'] as BackgroundPattern[]).map((pattern) => {
+                  const isSelected = backgroundPattern === pattern;
+                  const patternLabel = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+                  return (
+                    <TouchableOpacity
+                      key={pattern}
+                      style={[
+                        styles.patternOption,
+                        { borderColor: colors.border },
+                        isSelected && styles.patternOptionSelected
+                      ]}
+                      onPress={() => handleApplyPattern(pattern)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.patternLabel,
+                        { color: isSelected ? colors.primary : textColor }
+                      ]}>
+                        {patternLabel}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Brush Picker Modal */}
       <Modal
         visible={showBrushPicker}
@@ -1781,6 +2327,13 @@ export default function ArtworkCanvasScreen() {
             </View>
 
             <ScrollView style={styles.modalScroll}>
+              {selectedPalette && (
+                <View style={styles.paletteInfo}>
+                  <Text style={[styles.paletteDescription, { color: textSecondaryColor, marginBottom: spacing.md }]}>
+                    {selectedPalette.description}
+                  </Text>
+                </View>
+              )}
               <View style={styles.colorGrid}>
                 {availableColors.map((color, index) => {
                   const isSelected = selectedColor === color;
@@ -2191,6 +2744,12 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     pointerEvents: 'none',
   },
+  stickerContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
   canvasPlaceholder: {
     position: 'absolute',
     top: 0,
@@ -2247,7 +2806,7 @@ const styles = StyleSheet.create({
   },
   controlButtonActive: {
     borderWidth: 2,
-    borderColor: colors.error,
+    borderColor: colors.primary,
   },
   controlButtonDisabled: {
     opacity: 0.4,
@@ -2423,6 +2982,84 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderWidth: 3,
     borderColor: colors.primary,
+  },
+  paletteOption: {
+    borderWidth: 2,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  paletteOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '10',
+  },
+  paletteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  paletteInfo: {
+    flex: 1,
+  },
+  paletteName: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.xs / 2,
+  },
+  paletteDescription: {
+    fontSize: typography.bodySmall,
+  },
+  paletteColors: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  paletteColorSwatch: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  stickerOption: {
+    width: '30%',
+    aspectRatio: 1,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  stickerLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+    textAlign: 'center',
+  },
+  patternGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  patternOption: {
+    width: '45%',
+    aspectRatio: 1.5,
+    borderRadius: borderRadius.md,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  patternOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  patternLabel: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
   },
   shareContent: {
     padding: spacing.lg,
