@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lt } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
@@ -1127,6 +1127,194 @@ Write only the prayer, nothing else.`;
           { err: error, userId: session.user.id, messageId },
           'Failed to share check-in message to community'
         );
+        throw error;
+      }
+    }
+  );
+
+  // Get personalization data for check-in (companion name, activity messages, streaks)
+  app.fastify.get(
+    '/api/check-in/personalization',
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const userId = session.user.id;
+
+      app.logger.info({ userId }, 'Fetching check-in personalization data');
+
+      try {
+        // Get user profile for companion name and streak
+        const profile = await app.db
+          .select()
+          .from(schema.userProfiles)
+          .where(eq(schema.userProfiles.userId, userId))
+          .limit(1);
+
+        let companionName: string | null = null;
+        let checkInStreak = 0;
+
+        if (profile.length > 0) {
+          companionName = profile[0].companionName;
+          checkInStreak = profile[0].checkInStreak;
+        }
+
+        // Companion tagline
+        const companionTagline = companionName
+          ? `${companionName} is here for you`
+          : "What's on your heart?";
+
+        // Check for recent activity in last 12 hours
+        const now = new Date();
+        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        const yesterdayStart = new Date(now);
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        yesterdayStart.setHours(0, 0, 0, 0);
+        const yesterdayEnd = new Date(yesterdayStart);
+        yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
+
+        let recentActivity: string | null = null;
+
+        // Check for reflections in last 12 hours
+        const recentReflections = await app.db
+          .select()
+          .from(schema.userReflections)
+          .where(
+            and(
+              eq(schema.userReflections.userId, userId),
+              gte(schema.userReflections.createdAt, twelveHoursAgo)
+            )
+          )
+          .limit(1);
+
+        if (recentReflections.length > 0) {
+          recentActivity = 'You reflected on scripture this morning—want to explore it deeper?';
+        } else {
+          // Check for somatic completions today
+          const todayStart = new Date(now);
+          todayStart.setHours(0, 0, 0, 0);
+          const todayEnd = new Date(now);
+          todayEnd.setHours(23, 59, 59, 999);
+
+          const todayCompletions = await app.db
+            .select()
+            .from(schema.somaticCompletions)
+            .where(
+              and(
+                eq(schema.somaticCompletions.userId, userId),
+                gte(schema.somaticCompletions.completedAt, todayStart),
+                lt(schema.somaticCompletions.completedAt, todayEnd)
+              )
+            )
+            .limit(1);
+
+          if (todayCompletions.length > 0) {
+            recentActivity = 'You completed a somatic practice today. How did it feel?';
+          } else {
+            // Check for somatic completions yesterday
+            const yesterdayCompletions = await app.db
+              .select()
+              .from(schema.somaticCompletions)
+              .where(
+                and(
+                  eq(schema.somaticCompletions.userId, userId),
+                  gte(schema.somaticCompletions.completedAt, yesterdayStart),
+                  lt(schema.somaticCompletions.completedAt, yesterdayEnd)
+                )
+              )
+              .limit(1);
+
+            if (yesterdayCompletions.length > 0) {
+              recentActivity = "You completed a somatic practice yesterday. How's your body today?";
+            }
+          }
+        }
+
+        // Streak recognition message
+        let streakMessage: string | null = null;
+
+        if (checkInStreak >= 3) {
+          streakMessage = `You've checked in ${checkInStreak} days in a row—beautiful consistency`;
+        } else {
+          // Get last check-in conversation to calculate days since last check-in
+          const lastConversation = await app.db
+            .select()
+            .from(schema.checkInConversations)
+            .where(eq(schema.checkInConversations.userId, userId))
+            .orderBy(desc(schema.checkInConversations.createdAt))
+            .limit(1);
+
+          if (lastConversation.length > 0) {
+            const lastCheckInTime = new Date(lastConversation[0].createdAt);
+            const daysSinceLastCheckIn = Math.floor(
+              (now.getTime() - lastCheckInTime.getTime()) / (24 * 60 * 60 * 1000)
+            );
+
+            if (daysSinceLastCheckIn >= 2) {
+              streakMessage = `It's been ${daysSinceLastCheckIn} days since we talked. How have you been?`;
+            } else if (daysSinceLastCheckIn === 1) {
+              streakMessage = 'Welcome back. Ready to continue where we left off?';
+            }
+          }
+        }
+
+        // Conversation context from last check-in message
+        let conversationContext: string | null = null;
+
+        const lastConversation = await app.db
+          .select()
+          .from(schema.checkInConversations)
+          .where(eq(schema.checkInConversations.userId, userId))
+          .orderBy(desc(schema.checkInConversations.createdAt))
+          .limit(1);
+
+        if (lastConversation.length > 0) {
+          const lastMessage = await app.db
+            .select()
+            .from(schema.checkInMessages)
+            .where(
+              and(
+                eq(schema.checkInMessages.conversationId, lastConversation[0].id),
+                eq(schema.checkInMessages.role, 'user')
+              )
+            )
+            .orderBy(desc(schema.checkInMessages.createdAt))
+            .limit(1);
+
+          if (lastMessage.length > 0) {
+            const lastMessageTime = new Date(lastMessage[0].createdAt);
+            const hourssinceLastMessage = (now.getTime() - lastMessageTime.getTime()) / (60 * 60 * 1000);
+
+            if (hourssinceLastMessage < 24) {
+              const snippet = lastMessage[0].content.substring(0, 60);
+              conversationContext = snippet.length < lastMessage[0].content.length
+                ? `${snippet}...`
+                : snippet;
+            } else {
+              conversationContext = 'Ready for a new conversation?';
+            }
+          }
+        }
+
+        app.logger.info(
+          {
+            userId,
+            companionTagline,
+            hasRecentActivity: !!recentActivity,
+            hasStreakMessage: !!streakMessage,
+            hasConversationContext: !!conversationContext,
+          },
+          'Check-in personalization data retrieved'
+        );
+
+        return reply.send({
+          companionTagline,
+          recentActivity,
+          streakMessage,
+          conversationContext,
+        });
+      } catch (error) {
+        app.logger.error({ err: error, userId }, 'Failed to fetch personalization data');
         throw error;
       }
     }
