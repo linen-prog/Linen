@@ -31,7 +31,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -48,6 +48,25 @@ interface Post {
   contentType?: 'companion' | 'daily-gift' | 'somatic' | 'manual';
   scriptureReference?: string;
   isFlagged?: boolean;
+  userId?: string;
+  reactions?: {
+    praying: number;
+    holding: number;
+    light: number;
+    amen: number;
+    growing: number;
+    peace: number;
+  };
+  userReaction?: string | null;
+}
+
+interface CareMessage {
+  id: string;
+  message: string;
+  senderName: string | null;
+  isAnonymous: boolean;
+  postContent: string;
+  createdAt: Date;
 }
 
 interface CommunityStats {
@@ -62,9 +81,16 @@ export default function CommunityScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showCareModal, setShowCareModal] = useState<string | null>(null);
+  const [careMessages, setCareMessages] = useState<CareMessage[]>([]);
+  const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
 
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
+    if (selectedTab === 'care') {
+      loadCareMessages();
+    }
     loadPosts(selectedTab);
     loadStats();
   }, [selectedTab]);
@@ -114,10 +140,32 @@ export default function CommunityScreen() {
         createdAt: p.createdAt
       })));
       
-      setPosts(response.map(post => ({
-        ...post,
-        createdAt: new Date(post.createdAt),
-      })));
+      // Fetch reactions for each post
+      const postsWithReactions = await Promise.all(
+        response.map(async (post) => {
+          try {
+            const reactionsData = await authenticatedGet<{ reactions: any; userReaction: string | null }>(
+              `/api/community/reactions/${post.id}`
+            );
+            return {
+              ...post,
+              createdAt: new Date(post.createdAt),
+              reactions: reactionsData.reactions,
+              userReaction: reactionsData.userReaction,
+            };
+          } catch (error) {
+            console.error('[Community] Failed to load reactions for post:', post.id, error);
+            return {
+              ...post,
+              createdAt: new Date(post.createdAt),
+              reactions: { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 },
+              userReaction: null,
+            };
+          }
+        })
+      );
+      
+      setPosts(postsWithReactions);
     } catch (error) {
       console.error('[Community] ❌ Failed to load posts:', error);
       setPosts([]);
@@ -178,6 +226,80 @@ export default function CommunityScreen() {
         },
       ]
     );
+  };
+
+  const handleReact = async (postId: string, reactionType: string) => {
+    console.log('[Community] User reacting to post:', postId, 'with:', reactionType);
+    
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      const response = await authenticatedPost<{ reactions: any; userReaction: string | null }>(
+        `/api/community/react/${postId}`,
+        { reactionType }
+      );
+      
+      console.log('[Community] Reaction toggled:', response);
+      
+      setPosts(prev => prev.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            reactions: response.reactions,
+            userReaction: response.userReaction,
+          };
+        }
+        return post;
+      }));
+      
+      setShowReactionPicker(null);
+    } catch (error) {
+      console.error('[Community] Failed to toggle reaction:', error);
+    }
+  };
+
+  const loadCareMessages = async () => {
+    console.log('[Community] Loading care messages');
+    setIsLoadingCareMessages(true);
+    
+    try {
+      const { authenticatedGet } = await import('@/utils/api');
+      const response = await authenticatedGet<CareMessage[]>('/api/community/care-messages');
+      console.log('[Community] Care messages loaded:', response.length);
+      
+      setCareMessages(response.map(msg => ({
+        ...msg,
+        createdAt: new Date(msg.createdAt),
+      })));
+    } catch (error) {
+      console.error('[Community] Failed to load care messages:', error);
+      setCareMessages([]);
+    } finally {
+      setIsLoadingCareMessages(false);
+    }
+  };
+
+  const handleSendCare = async (postId: string, message: string, isAnonymous: boolean) => {
+    console.log('[Community] Sending care message to post:', postId);
+    
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost(`/api/community/send-care/${postId}`, {
+        message,
+        isAnonymous,
+      });
+      
+      console.log('[Community] Care message sent successfully');
+      setShowCareModal(null);
+      
+      Alert.alert(
+        '💚 Care Sent',
+        'Your message of care has been sent gently to the recipient.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('[Community] Failed to send care message:', error);
+      Alert.alert('Error', 'Failed to send care message. Please try again.');
+    }
   };
 
   const bgColor = colors.background;
@@ -329,6 +451,67 @@ export default function CommunityScreen() {
           </Text>
         </View>
 
+        {/* Care Messages Section (only in Care tab) */}
+        {selectedTab === 'care' && (
+          <View style={styles.careMessagesSection}>
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              Messages You've Received
+            </Text>
+            {isLoadingCareMessages ? (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+                  Loading messages...
+                </Text>
+              </View>
+            ) : careMessages.length === 0 ? (
+              <View style={styles.emptyState}>
+                <IconSymbol
+                  ios_icon_name="heart"
+                  android_material_icon_name="favorite-border"
+                  size={32}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
+                  No care messages yet
+                </Text>
+                <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
+                  When someone sends you care, it will appear here
+                </Text>
+              </View>
+            ) : (
+              careMessages.map(msg => {
+                const senderDisplay = msg.isAnonymous ? 'Anonymous' : msg.senderName;
+                const timeAgo = formatTimeAgo(msg.createdAt);
+                
+                return (
+                  <View key={msg.id} style={[styles.careMessageCard, { backgroundColor: cardBg }]}>
+                    <View style={styles.careMessageHeader}>
+                      <IconSymbol
+                        ios_icon_name="heart.fill"
+                        android_material_icon_name="favorite"
+                        size={20}
+                        color={colors.primary}
+                      />
+                      <Text style={[styles.careMessageSender, { color: textColor }]}>
+                        {senderDisplay}
+                      </Text>
+                      <Text style={[styles.careMessageTime, { color: textSecondaryColor }]}>
+                        {timeAgo}
+                      </Text>
+                    </View>
+                    <Text style={[styles.careMessageText, { color: textColor }]}>
+                      {msg.message}
+                    </Text>
+                    <Text style={[styles.careMessageContext, { color: textSecondaryColor }]}>
+                      In response to: {msg.postContent.substring(0, 60)}...
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        )}
+
         {/* Posts Section */}
         <View style={styles.postsSection}>
           {isLoading ? (
@@ -430,14 +613,328 @@ export default function CommunityScreen() {
                       </View>
                     </TouchableOpacity>
                   </View>
+
+                  {/* Reaction Section */}
+                  <View style={styles.reactionSection}>
+                    <TouchableOpacity
+                      style={styles.reactButton}
+                      onPress={() => setShowReactionPicker(post.id)}
+                    >
+                      <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
+                        + React
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Show reactions if any */}
+                    {post.reactions && (
+                      <View style={styles.reactionsDisplay}>
+                        {post.reactions.praying > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>🙏</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.praying}
+                            </Text>
+                          </View>
+                        )}
+                        {post.reactions.holding > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>💙</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.holding}
+                            </Text>
+                          </View>
+                        )}
+                        {post.reactions.light > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>🕯️</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.light}
+                            </Text>
+                          </View>
+                        )}
+                        {post.reactions.amen > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>✨</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.amen}
+                            </Text>
+                          </View>
+                        )}
+                        {post.reactions.growing > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>🌱</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.growing}
+                            </Text>
+                          </View>
+                        )}
+                        {post.reactions.peace > 0 && (
+                          <View style={styles.reactionBadge}>
+                            <Text style={styles.reactionEmoji}>🕊️</Text>
+                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
+                              {post.reactions.peace}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Send Care Button (only for care category posts) */}
+                  {post.category === 'care' && (
+                    <TouchableOpacity
+                      style={[styles.sendCareButton, { backgroundColor: colors.primaryLight || '#FFF9E6' }]}
+                      onPress={() => setShowCareModal(post.id)}
+                    >
+                      <IconSymbol
+                        ios_icon_name="heart.fill"
+                        android_material_icon_name="favorite"
+                        size={18}
+                        color={colors.primary}
+                      />
+                      <Text style={[styles.sendCareButtonText, { color: colors.primary }]}>
+                        Send Care
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })
           )}
         </View>
       </ScrollView>
+
+      {/* Reaction Picker Modal */}
+      <Modal
+        visible={showReactionPicker !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReactionPicker(null)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowReactionPicker(null)}
+        >
+          <View style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}>
+            <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
+              Choose a reaction
+            </Text>
+            <View style={styles.reactionGrid}>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'praying')}
+              >
+                <Text style={styles.reactionOptionEmoji}>🙏</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Praying
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'holding')}
+              >
+                <Text style={styles.reactionOptionEmoji}>💙</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Holding you
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'light')}
+              >
+                <Text style={styles.reactionOptionEmoji}>🕯️</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Light with you
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'amen')}
+              >
+                <Text style={styles.reactionOptionEmoji}>✨</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Amen
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'growing')}
+              >
+                <Text style={styles.reactionOptionEmoji}>🌱</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Growing together
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reactionOption}
+                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'peace')}
+              >
+                <Text style={styles.reactionOptionEmoji}>🕊️</Text>
+                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
+                  Peace
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Send Care Modal */}
+      <Modal
+        visible={showCareModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCareModal(null)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowCareModal(null)}
+        >
+          <Pressable 
+            style={[styles.careModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.careModalHeader}>
+              <Text style={[styles.careModalTitle, { color: textColor }]}>
+                Send Care
+              </Text>
+              <TouchableOpacity onPress={() => setShowCareModal(null)}>
+                <IconSymbol
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textSecondaryColor}
+                />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.careModalSubtitle, { color: textSecondaryColor }]}>
+              Choose a gentle message to send
+            </Text>
+
+            <ScrollView style={styles.careMessagesList}>
+              <CareMessageOption
+                message="Holding you gently in this moment"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Holding you gently in this moment", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="You are not walking this path alone"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "You are not walking this path alone", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="May you feel surrounded by care today"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "May you feel surrounded by care today", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="Sending gentle strength your way"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Sending gentle strength your way", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="Your courage in sharing is beautiful"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Your courage in sharing is beautiful", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="May you sense the warmth of community around you"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "May you sense the warmth of community around you", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="Breathing alongside you with compassion"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "Breathing alongside you with compassion", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+              <CareMessageOption
+                message="You are worthy of all the care you need"
+                onPress={(isAnon) => showCareModal && handleSendCare(showCareModal, "You are worthy of all the care you need", isAnon)}
+                textColor={textColor}
+                bgColor={bgColor}
+              />
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
+}
+
+// Helper component for care message options
+function CareMessageOption({ 
+  message, 
+  onPress, 
+  textColor, 
+  bgColor 
+}: { 
+  message: string; 
+  onPress: (isAnonymous: boolean) => void;
+  textColor: string;
+  bgColor: string;
+}) {
+  const [isAnonymous, setIsAnonymous] = React.useState(false);
+
+  return (
+    <View style={styles.careMessageOption}>
+      <TouchableOpacity
+        style={[styles.careMessageButton, { backgroundColor: bgColor }]}
+        onPress={() => onPress(isAnonymous)}
+      >
+        <Text style={[styles.careMessageButtonText, { color: textColor }]}>
+          {message}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.anonymousToggle}
+        onPress={() => setIsAnonymous(!isAnonymous)}
+      >
+        <View style={[styles.checkbox, isAnonymous && styles.checkboxChecked]}>
+          {isAnonymous && (
+            <IconSymbol
+              ios_icon_name="checkmark"
+              android_material_icon_name="check"
+              size={14}
+              color="#FFFFFF"
+            />
+          )}
+        </View>
+        <Text style={[styles.anonymousToggleText, { color: textColor }]}>
+          Send anonymously
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Helper function to format time ago
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+  return date.toLocaleDateString();
 }
 
 const styles = StyleSheet.create({
@@ -632,5 +1129,205 @@ const styles = StyleSheet.create({
   },
   prayLabel: {
     fontSize: typography.caption,
+  },
+  reactionSection: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  reactButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.border || '#E0E0E0',
+  },
+  reactButtonText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+  },
+  reactionsDisplay: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  reactionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight || '#F5F5F5',
+  },
+  reactionEmoji: {
+    fontSize: 16,
+  },
+  reactionCount: {
+    fontSize: typography.caption,
+    fontWeight: typography.medium,
+  },
+  sendCareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+  },
+  sendCareButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reactionPickerModal: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  reactionPickerTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  reactionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    justifyContent: 'center',
+  },
+  reactionOption: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    width: '30%',
+    paddingVertical: spacing.md,
+  },
+  reactionOptionEmoji: {
+    fontSize: 32,
+  },
+  reactionOptionLabel: {
+    fontSize: typography.caption,
+    textAlign: 'center',
+    fontWeight: typography.medium,
+  },
+  careModal: {
+    width: '90%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  careModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  careModalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+  },
+  careModalSubtitle: {
+    fontSize: typography.body,
+    marginBottom: spacing.lg,
+  },
+  careMessagesList: {
+    maxHeight: 400,
+  },
+  careMessageOption: {
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  careMessageButton: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border || '#E0E0E0',
+  },
+  careMessageButtonText: {
+    fontSize: typography.body,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  anonymousToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingLeft: spacing.sm,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+  },
+  anonymousToggleText: {
+    fontSize: typography.bodySmall,
+  },
+  careMessagesSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
+    marginBottom: spacing.sm,
+  },
+  careMessageCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: spacing.sm,
+  },
+  careMessageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  careMessageSender: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    flex: 1,
+  },
+  careMessageTime: {
+    fontSize: typography.caption,
+  },
+  careMessageText: {
+    fontSize: typography.body,
+    fontStyle: 'italic',
+    lineHeight: 24,
+  },
+  careMessageContext: {
+    fontSize: typography.caption,
+    fontStyle: 'italic',
   },
 });
