@@ -556,6 +556,22 @@ export default function DailyGiftScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity 
+            onPress={() => {
+              console.log('[DailyGift] User tapped verification icon');
+              router.push('/scripture-verification');
+            }}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="checkmark.seal"
+              android_material_icon_name="verified"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
             onPress={handleCommunityPress}
             style={styles.headerButton}
             activeOpacity={0.7}
