@@ -26,7 +26,7 @@ import { colors } from "@/styles/commonStyles";
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "index", // Start at landing page
+  initialRouteName: "index", // Start at landing page - users can skip auth
 };
 
 function RootLayoutContent() {

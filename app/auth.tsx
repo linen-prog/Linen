@@ -5,9 +5,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { authClient, storeUserData } from '@/lib/auth';
+import { storeUserData, storeBearerToken } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { BACKEND_URL } from '@/utils/api';
 
+/**
+ * AuthScreen - Simplified email-only authentication
+ * 
+ * This screen provides a gentle, non-intrusive sign-in/sign-up flow:
+ * - Users enter their email address
+ * - Optionally provide a first name (defaults to email prefix)
+ * - Backend automatically creates account or signs in existing users
+ * - No password required - uses email as identifier
+ * 
+ * Test Credentials:
+ * - Email: test@linen.app (or any email)
+ * - First Name: (optional)
+ * 
+ * The backend will auto-create the user on first sign-in.
+ */
 export default function AuthScreen() {
   console.log('User viewing Auth screen');
   const router = useRouter();
@@ -19,6 +35,7 @@ export default function AuthScreen() {
   const [firstName, setFirstName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
   const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
@@ -30,6 +47,7 @@ export default function AuthScreen() {
   const handleContinue = async () => {
     console.log('User tapped Continue on auth screen', { email, firstName });
     setErrorMessage('');
+    setStatusMessage('');
     
     if (!email.trim()) {
       setErrorMessage('Please enter your email address');
@@ -43,103 +61,86 @@ export default function AuthScreen() {
     }
 
     setIsLoading(true);
+    setStatusMessage('Connecting to Linen...');
     
     try {
-      console.log('Attempting to authenticate user with Better Auth...');
+      console.log('[Auth] Registering/signing in user with custom backend endpoint...');
       
       const trimmedEmail = email.trim();
-      const password = trimmedEmail; // Use email as password for passwordless-like flow
       const displayName = firstName.trim() || email.split('@')[0];
       
-      // Try to sign in first (most users will be returning)
-      console.log('Attempting sign in...');
-      let signInResult;
-      try {
-        signInResult = await authClient.signIn.email({
+      // Call the custom /api/auth/register endpoint
+      // This endpoint auto-creates users or returns existing users with session
+      setStatusMessage('Setting up your account...');
+      
+      const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: trimmedEmail,
-          password: password,
-        });
-        console.log('Sign in successful:', signInResult);
-      } catch (signInError: any) {
-        console.log('Sign in failed, checking if user needs to be created:', signInError);
-        
-        // If sign in fails, try to sign up (new user)
-        if (signInError?.error?.code === 'INVALID_EMAIL_OR_PASSWORD' || 
-            signInError?.message?.includes('Invalid') ||
-            signInError?.message?.includes('not found')) {
-          console.log('User not found, attempting sign up...');
-          
-          try {
-            const signUpResult = await authClient.signUp.email({
-              email: trimmedEmail,
-              password: password,
-              name: displayName,
-            });
-            console.log('Sign up successful:', signUpResult);
-          } catch (signUpError: any) {
-            console.error('Sign up failed:', signUpError);
-            
-            // If sign up fails because user exists, try sign in again
-            if (signUpError?.error?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL') {
-              console.log('User exists after all, retrying sign in...');
-              await authClient.signIn.email({
-                email: trimmedEmail,
-                password: password,
-              });
-            } else {
-              throw signUpError;
-            }
-          }
-        } else {
-          throw signInError;
-        }
+          firstName: displayName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[Auth] Registration failed:', errorData);
+        throw new Error(errorData.error || `Registration failed: ${response.statusText}`);
       }
 
-      // Get the session data from Better Auth
-      console.log('Fetching session...');
-      const session = await authClient.getSession();
-      console.log('Better Auth session:', session);
+      const data = await response.json();
+      console.log('[Auth] Registration response:', data);
 
-      if (session?.data?.user) {
-        const userData = session.data.user;
-        console.log('[Auth] User authenticated successfully:', userData);
-        
-        // Store user data for persistence
-        await storeUserData(userData);
-
-        // Update auth context directly
-        setUserDirectly(userData);
-
-        console.log('Navigating to home screen...');
-        
-        // Small delay to ensure storage completes
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        router.replace('/(tabs)');
-      } else {
-        console.error('No session data found:', session);
-        throw new Error('Authentication succeeded but no session found');
+      if (!data.success || !data.user || !data.session?.token) {
+        throw new Error('Invalid response from server - missing user or session data');
       }
+
+      // Store the session token
+      const sessionToken = data.session.token;
+      await storeBearerToken(sessionToken);
+      console.log('[Auth] Session token stored successfully');
+
+      // Store user data for persistence
+      const userData = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+      };
+      await storeUserData(userData);
+      console.log('[Auth] User data stored:', userData);
+
+      // Update auth context directly
+      setUserDirectly(userData);
+
+      setStatusMessage('Welcome to Linen!');
+      console.log('[Auth] Navigating to home screen...');
+      
+      // Small delay to ensure storage completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      router.replace('/(tabs)');
     } catch (error) {
-      console.error('Auth failed:', error);
+      console.error('[Auth] Authentication failed:', error);
       const errorObj = error as any;
-      const errorMessage = errorObj?.message || errorObj?.error?.message || 'Unknown error';
-      const errorCode = errorObj?.error?.code || '';
-      console.error('Error details:', { errorMessage, errorCode, fullError: errorObj });
+      const errorMessage = errorObj?.message || 'Unknown error';
+      console.error('[Auth] Error details:', { errorMessage, fullError: errorObj });
       
       let userMessage = 'We are having trouble connecting right now. Please try again in a moment.';
       
       if (errorMessage.includes('500') || errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
         userMessage = 'The server is being set up. Please wait 30 seconds and try again.';
-      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        userMessage = 'Unable to connect to the server. Please check your internet connection.';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
       } else if (errorMessage.includes('timeout')) {
         userMessage = 'Connection timed out. Please try again.';
-      } else if (errorCode === 'INVALID_EMAIL_OR_PASSWORD') {
-        userMessage = 'Unable to sign in. Please check your email and try again.';
+      } else if (errorMessage.includes('Invalid email')) {
+        userMessage = 'Please enter a valid email address.';
       }
       
       setErrorMessage(userMessage);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -169,6 +170,15 @@ export default function AuthScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: cardBg }]}>
+            {statusMessage && !errorMessage ? (
+              <View style={styles.statusContainer}>
+                <ActivityIndicator color={colors.primary} size="small" />
+                <Text style={[styles.statusText, { color: textColor }]}>
+                  {statusMessage}
+                </Text>
+              </View>
+            ) : null}
+            
             {errorMessage ? (
               <View style={styles.errorContainer}>
                 <IconSymbol 
@@ -287,6 +297,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '15',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  statusText: {
+    flex: 1,
+    fontSize: typography.bodySmall,
+    lineHeight: 18,
   },
   errorContainer: {
     flexDirection: 'row',
