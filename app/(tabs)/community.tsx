@@ -116,32 +116,53 @@ export default function CommunityScreen() {
     try {
       const { authenticatedGet } = await import('@/utils/api');
       
-      let endpoint = '';
+      let allPosts: Post[] = [];
+      
       if (category === 'my-shared') {
-        endpoint = '/api/community/my-posts';
+        const endpoint = '/api/community/my-posts';
         console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
+        allPosts = await authenticatedGet<Post[]>(endpoint);
+      } else if (category === 'feed') {
+        // For feed tab, fetch posts from ALL categories (feed, wisdom, care, prayers)
+        console.log('[Community] 🔵 Fetching posts from ALL categories for feed');
+        const categories = ['feed', 'wisdom', 'care', 'prayers'];
+        const categoryPromises = categories.map(cat => 
+          authenticatedGet<Post[]>(`/api/community/posts?category=${cat}`)
+        );
+        const categoryResults = await Promise.all(categoryPromises);
+        
+        // Combine all posts from all categories
+        allPosts = categoryResults.flat();
+        
+        // Sort by createdAt (newest first)
+        allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        console.log('[Community] ✅ Combined posts from all categories:', allPosts.length, 'posts');
       } else {
-        endpoint = `/api/community/posts?category=${category}`;
+        // For specific category tabs (wisdom, care, prayers), only show that category
+        const endpoint = `/api/community/posts?category=${category}`;
         console.log('[Community] 🔵 Fetching posts from:', endpoint);
+        allPosts = await authenticatedGet<Post[]>(endpoint);
       }
       
-      const response = await authenticatedGet<Post[]>(endpoint);
-      console.log('[Community] ✅ Posts loaded for', category, ':', response.length, 'posts');
+      console.log('[Community] ✅ Posts loaded for', category, ':', allPosts.length, 'posts');
       
-      console.log('[Community] 📊 Post details:', response.map(p => ({
+      console.log('[Community] 📊 Post details:', allPosts.map(p => ({
         id: p.id,
         category: p.category,
         contentType: p.contentType,
         authorName: p.authorName,
         isAnonymous: p.isAnonymous,
         prayerCount: p.prayerCount,
-        contentPreview: p.content.substring(0, 50) + '...',
+        hasArtwork: !!p.artworkUrl,
+        artworkUrl: p.artworkUrl,
+        contentPreview: p.content ? p.content.substring(0, 50) + '...' : '[No text content]',
         createdAt: p.createdAt
       })));
       
       // Fetch reactions for each post
       const postsWithReactions = await Promise.all(
-        response.map(async (post) => {
+        allPosts.map(async (post) => {
           try {
             const reactionsData = await authenticatedGet<{ reactions: any; userReaction: string | null }>(
               `/api/community/reactions/${post.id}`
@@ -490,6 +511,8 @@ export default function CommunityScreen() {
           <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
             {selectedTab === 'my-shared' 
               ? 'Your shared reflections and prayers ✨'
+              : selectedTab === 'feed'
+              ? 'All shared reflections, wisdom, care, and prayers from the community ✨'
               : 'Each reflection below is held with care and prayer ✨'
             }
           </Text>
@@ -608,7 +631,7 @@ export default function CommunityScreen() {
                       <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
                         {authorDisplay}
                       </Text>
-                      {selectedTab === 'my-shared' && (
+                      {(selectedTab === 'my-shared' || selectedTab === 'feed') && post.category !== 'feed' && (
                         <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '20' }]}>
                           <Text style={[styles.categoryBadgeText, { color: categoryColor }]}>
                             {categoryLabel}
@@ -635,12 +658,18 @@ export default function CommunityScreen() {
                     </Text>
                   )}
 
-                  {post.artworkUrl && (
+                  {post.artworkUrl && post.artworkUrl.trim().length > 0 && (
                     <View style={styles.artworkImageContainer}>
                       <Image 
                         source={{ uri: post.artworkUrl }}
                         style={styles.artworkImage}
                         resizeMode="cover"
+                        onError={(error) => {
+                          console.error('[Community] Failed to load artwork image:', post.artworkUrl, error.nativeEvent.error);
+                        }}
+                        onLoad={() => {
+                          console.log('[Community] ✅ Artwork image loaded successfully:', post.artworkUrl);
+                        }}
                       />
                     </View>
                   )}
