@@ -102,6 +102,9 @@ export default function DailyGiftScreen() {
 
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
+  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
@@ -117,7 +120,9 @@ export default function DailyGiftScreen() {
   const loadDailyGift = useCallback(async () => {
     try {
       const loadTimestamp = new Date().toISOString();
-      console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current...`);
+      const now = new Date();
+      const currentHour = now.getHours();
+      console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current... (Hour: ${currentHour})`);
       setIsLoadingGift(true);
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
@@ -126,12 +131,12 @@ export default function DailyGiftScreen() {
         throw new Error('Invalid response from server - missing weekly theme data');
       }
       
-      const now = new Date();
       const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
       
       console.log(`[DailyGift] ${loadTimestamp} - Daily gift loaded successfully:`, {
         timestamp: loadTimestamp,
         currentDate: now.toLocaleDateString(),
+        currentHour,
         clientDayOfYear: dayOfYear,
         serverDayOfYear: response.dailyContent?.dayOfYear,
         dayOfYearMatch: response.dailyContent?.dayOfYear === dayOfYear,
@@ -151,6 +156,7 @@ export default function DailyGiftScreen() {
       if (response.dailyContent) {
         console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE VERIFICATION:`, {
           date: now.toLocaleDateString(),
+          currentHour,
           clientDayOfYear: dayOfYear,
           serverDayOfYear: response.dailyContent.dayOfYear,
           dayOfYearMatch: response.dailyContent.dayOfYear === dayOfYear,
@@ -195,8 +201,21 @@ export default function DailyGiftScreen() {
       const focusTimestamp = new Date().toISOString();
       console.log(`[DailyGift] ${focusTimestamp} - Screen focused - reloading daily gift data`);
       loadDailyGift();
+      setLastRefreshTime(new Date());
     }, [loadDailyGift])
   );
+
+  // Auto-refresh every 5 minutes to catch scripture changes
+  useEffect(() => {
+    const autoRefreshInterval = setInterval(() => {
+      const now = new Date();
+      console.log(`[DailyGift] Auto-refresh triggered at ${now.toLocaleTimeString()}`);
+      loadDailyGift();
+      setLastRefreshTime(now);
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(autoRefreshInterval);
+  }, [loadDailyGift]);
 
   const checkReflectionStatus = async (dailyContentId: string) => {
     try {
@@ -353,6 +372,26 @@ export default function DailyGiftScreen() {
   const handleCommunityPress = () => {
     console.log('[DailyGift] User tapped Community icon');
     router.push('/(tabs)/community');
+  };
+
+  const handleRefresh = async () => {
+    if (isRefreshing) {
+      console.log('[DailyGift] Already refreshing, ignoring tap');
+      return;
+    }
+
+    console.log('[DailyGift] User manually refreshing scripture');
+    setIsRefreshing(true);
+    
+    try {
+      await loadDailyGift();
+      setLastRefreshTime(new Date());
+      console.log('[DailyGift] Manual refresh completed successfully');
+    } catch (error) {
+      console.error('[DailyGift] Manual refresh failed:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (isLoadingGift) {
@@ -517,6 +556,20 @@ export default function DailyGiftScreen() {
         </TouchableOpacity>
 
         <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={handleRefresh}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+            disabled={isRefreshing}
+          >
+            <IconSymbol 
+              ios_icon_name={isRefreshing ? "arrow.clockwise" : "arrow.clockwise"}
+              android_material_icon_name="refresh"
+              size={24}
+              color={isRefreshing ? colors.textSecondary : textColor}
+            />
+          </TouchableOpacity>
+          
           <TouchableOpacity 
             onPress={handleCommunityPress}
             style={styles.headerButton}
@@ -712,6 +765,18 @@ export default function DailyGiftScreen() {
                 />
                 <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
                   Day {dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear} of 365 • Unique daily scripture
+                </Text>
+              </View>
+              
+              <View style={styles.refreshIndicator}>
+                <IconSymbol 
+                  ios_icon_name="clock"
+                  android_material_icon_name="access-time"
+                  size={11}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.refreshIndicatorText, { color: textSecondaryColor }]}>
+                  Updated {lastRefreshTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Tap refresh to see new scripture
                 </Text>
               </View>
             </View>
@@ -1312,6 +1377,18 @@ const styles = StyleSheet.create({
   dailyIndicatorText: {
     fontSize: 11,
     fontWeight: '400',
+  },
+  refreshIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  refreshIndicatorText: {
+    fontSize: 10,
+    fontWeight: '300',
+    fontStyle: 'italic',
   },
 
   reflectionCard: {
