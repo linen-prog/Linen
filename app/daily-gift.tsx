@@ -104,7 +104,6 @@ export default function DailyGiftScreen() {
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
   
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
@@ -122,7 +121,7 @@ export default function DailyGiftScreen() {
       const loadTimestamp = new Date().toISOString();
       const now = new Date();
       const currentHour = now.getHours();
-      console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current... (Hour: ${currentHour})`);
+      console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current...`);
       setIsLoadingGift(true);
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
@@ -136,7 +135,6 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${loadTimestamp} - Daily gift loaded successfully:`, {
         timestamp: loadTimestamp,
         currentDate: now.toLocaleDateString(),
-        currentHour,
         clientDayOfYear: dayOfYear,
         serverDayOfYear: response.dailyContent?.dayOfYear,
         dayOfYearMatch: response.dailyContent?.dayOfYear === dayOfYear,
@@ -156,7 +154,6 @@ export default function DailyGiftScreen() {
       if (response.dailyContent) {
         console.log(`[DailyGift] ${loadTimestamp} - 📖 SCRIPTURE VERIFICATION:`, {
           date: now.toLocaleDateString(),
-          currentHour,
           clientDayOfYear: dayOfYear,
           serverDayOfYear: response.dailyContent.dayOfYear,
           dayOfYearMatch: response.dailyContent.dayOfYear === dayOfYear,
@@ -201,21 +198,10 @@ export default function DailyGiftScreen() {
       const focusTimestamp = new Date().toISOString();
       console.log(`[DailyGift] ${focusTimestamp} - Screen focused - reloading daily gift data`);
       loadDailyGift();
-      setLastRefreshTime(new Date());
     }, [loadDailyGift])
   );
 
-  // Auto-refresh every 5 minutes to catch scripture changes
-  useEffect(() => {
-    const autoRefreshInterval = setInterval(() => {
-      const now = new Date();
-      console.log(`[DailyGift] Auto-refresh triggered at ${now.toLocaleTimeString()}`);
-      loadDailyGift();
-      setLastRefreshTime(now);
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(autoRefreshInterval);
-  }, [loadDailyGift]);
+  // Auto-refresh removed - scriptures change daily, not hourly
 
   const checkReflectionStatus = async (dailyContentId: string) => {
     try {
@@ -380,12 +366,11 @@ export default function DailyGiftScreen() {
       return;
     }
 
-    console.log('[DailyGift] User manually refreshing scripture');
+    console.log('[DailyGift] User manually refreshing daily gift');
     setIsRefreshing(true);
     
     try {
       await loadDailyGift();
-      setLastRefreshTime(new Date());
       console.log('[DailyGift] Manual refresh completed successfully');
     } catch (error) {
       console.error('[DailyGift] Manual refresh failed:', error);
@@ -764,19 +749,7 @@ export default function DailyGiftScreen() {
                   color={textSecondaryColor}
                 />
                 <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
-                  Day {dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear} of 365 • Unique daily scripture
-                </Text>
-              </View>
-              
-              <View style={styles.refreshIndicator}>
-                <IconSymbol 
-                  ios_icon_name="clock"
-                  android_material_icon_name="access-time"
-                  size={11}
-                  color={textSecondaryColor}
-                />
-                <Text style={[styles.refreshIndicatorText, { color: textSecondaryColor }]}>
-                  Updated {lastRefreshTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Tap refresh to see new scripture
+                  Day {dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear + 1 : dayOfYear + 1} of 365 • Changes daily at midnight
                 </Text>
               </View>
             </View>
@@ -1377,18 +1350,6 @@ const styles = StyleSheet.create({
   dailyIndicatorText: {
     fontSize: 11,
     fontWeight: '400',
-  },
-  refreshIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  refreshIndicatorText: {
-    fontSize: 10,
-    fontWeight: '300',
-    fontStyle: 'italic',
   },
 
   reflectionCard: {
