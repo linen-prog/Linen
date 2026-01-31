@@ -49,12 +49,12 @@ interface UserStats {
 }
 
 const AVATAR_ICONS = [
-  { id: 'dove', label: 'Dove', description: 'Peace & Spirit' },
-  { id: 'candle', label: 'Candle', description: 'Light & Hope' },
-  { id: 'heart', label: 'Heart', description: 'Love & Compassion' },
-  { id: 'cross', label: 'Cross', description: 'Faith & Grace' },
-  { id: 'leaf', label: 'Leaf', description: 'Growth & Renewal' },
-  { id: 'star', label: 'Star', description: 'Guidance & Wonder' },
+  { id: 'dove', label: 'Dove', description: 'Peace & Spirit', emoji: '🕊️' },
+  { id: 'candle', label: 'Candle', description: 'Light & Hope', emoji: '🕯️' },
+  { id: 'heart', label: 'Heart', description: 'Love & Compassion', emoji: '❤️' },
+  { id: 'cross', label: 'Cross', description: 'Faith & Grace', emoji: '✝️' },
+  { id: 'leaf', label: 'Leaf', description: 'Growth & Renewal', emoji: '🌿' },
+  { id: 'star', label: 'Star', description: 'Guidance & Wonder', emoji: '⭐' },
 ];
 
 const PRESENCE_MODES = [
@@ -476,10 +476,10 @@ export default function ProfileScreen() {
     
     if (profile.avatarType === 'icon' && profile.avatarIcon) {
       const iconData = AVATAR_ICONS.find(i => i.id === profile.avatarIcon);
-      const iconLabel = iconData?.label || profile.avatarIcon;
+      const iconEmoji = iconData?.emoji || '👤';
       return (
-        <Text style={[styles.avatarIconText, { color: colors.primary }]}>
-          {iconLabel}
+        <Text style={styles.avatarIconEmoji}>
+          {iconEmoji}
         </Text>
       );
     }
@@ -1128,12 +1128,17 @@ export default function ProfileScreen() {
                   disabled={saving}
                 >
                   <View style={styles.iconOptionLeft}>
-                    <Text style={styles.iconOptionLabel}>
-                      {icon.label}
+                    <Text style={styles.iconOptionEmoji}>
+                      {icon.emoji}
                     </Text>
-                    <Text style={[styles.iconOptionDescription, { color: colors.textSecondary }]}>
-                      {icon.description}
-                    </Text>
+                    <View style={styles.iconOptionTextContainer}>
+                      <Text style={[styles.iconOptionLabel, { color: colors.text }]}>
+                        {icon.label}
+                      </Text>
+                      <Text style={[styles.iconOptionDescription, { color: colors.textSecondary }]}>
+                        {icon.description}
+                      </Text>
+                    </View>
                   </View>
                   {profile?.avatarIcon === icon.id && (
                     <IconSymbol 
@@ -1690,9 +1695,8 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
   },
-  avatarIconText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
+  avatarIconEmoji: {
+    fontSize: 40,
   },
   profileInfo: {
     flex: 1,
@@ -1949,13 +1953,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  iconOptionEmoji: {
+    fontSize: 32,
+  },
+  iconOptionTextContainer: {
     flex: 1,
     gap: spacing.xs,
   },
   iconOptionLabel: {
     fontSize: typography.body,
     fontWeight: typography.medium,
-    color: colors.text,
   },
   iconOptionDescription: {
     fontSize: typography.bodySmall,
