@@ -20,6 +20,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { BACKEND_URL } from "@/utils/api";
 import { colors } from "@/styles/commonStyles";
+import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
 // Note: Error logging is auto-initialized via index.ts import
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -32,15 +33,32 @@ export const unstable_settings = {
 function RootLayoutContent() {
   const networkState = useNetworkState();
   const { isDark } = useTheme();
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  // Initialize notification handler early in app lifecycle
+  useEffect(() => {
+    console.log('🚀 App starting - initializing notification handler');
+    initializeNotificationHandler();
+  }, []);
 
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    if (error) {
+      console.error('❌ Font loading error:', error);
+      Alert.alert(
+        "Application Error",
+        "An unexpected error occurred while loading fonts. Please restart the app.",
+        [{ text: "OK" }]
+      );
+    }
+  }, [error]);
 
   useEffect(() => {
     console.log('🔗 Backend URL:', BACKEND_URL);

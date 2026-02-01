@@ -3,14 +3,17 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 
-// Initialize notification handler safely
+// Initialize notification handler safely - MUST be called early in app lifecycle
 let isHandlerInitialized = false;
 
-function initializeNotificationHandler() {
-  if (isHandlerInitialized) return;
+export function initializeNotificationHandler() {
+  if (isHandlerInitialized) {
+    console.log('Notification handler already initialized');
+    return;
+  }
   
   try {
-    // If app is open, still show the notification
+    // Set up how notifications should be handled when app is in foreground
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -19,9 +22,9 @@ function initializeNotificationHandler() {
       }),
     });
     isHandlerInitialized = true;
-    console.log('Notification handler initialized successfully');
+    console.log('✅ Notification handler initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize notification handler:', error);
+    console.error('❌ Failed to initialize notification handler:', error);
   }
 }
 
@@ -32,9 +35,6 @@ export async function ensureNotificationPermissionAsync(): Promise<boolean> {
   }
 
   try {
-    // Initialize handler before requesting permissions
-    initializeNotificationHandler();
-
     const perms = await Notifications.getPermissionsAsync();
     let status = perms.status;
 
@@ -55,10 +55,10 @@ export async function ensureNotificationPermissionAsync(): Promise<boolean> {
       });
     }
 
-    console.log('Notification permissions granted');
+    console.log('✅ Notification permissions granted');
     return true;
   } catch (error) {
-    console.error('Error ensuring notification permissions:', error);
+    console.error('❌ Error ensuring notification permissions:', error);
     return false;
   }
 }
@@ -68,13 +68,16 @@ export async function scheduleDailyGiftReminderAsync(
   minute: number
 ): Promise<string | null> {
   try {
+    // Ensure handler is initialized before scheduling
+    initializeNotificationHandler();
+
     const ok = await ensureNotificationPermissionAsync();
     if (!ok) {
       console.log('Cannot schedule notification - permissions not granted');
       return null;
     }
 
-    // MVP approach: cancel any previously scheduled notifications so you don't duplicate
+    // Cancel any previously scheduled notifications to avoid duplicates
     await Notifications.cancelAllScheduledNotificationsAsync();
     console.log('Cancelled previous notifications');
 
@@ -87,10 +90,10 @@ export async function scheduleDailyGiftReminderAsync(
       trigger: { hour, minute, repeats: true },
     });
 
-    console.log('Daily gift reminder scheduled with ID:', id);
+    console.log('✅ Daily gift reminder scheduled with ID:', id, 'for', hour, ':', minute);
     return id;
   } catch (error) {
-    console.error('Error scheduling daily gift reminder:', error);
+    console.error('❌ Error scheduling daily gift reminder:', error);
     return null;
   }
 }
@@ -98,8 +101,8 @@ export async function scheduleDailyGiftReminderAsync(
 export async function cancelDailyGiftReminderAsync(): Promise<void> {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('Daily gift reminder cancelled');
+    console.log('✅ Daily gift reminder cancelled');
   } catch (error) {
-    console.error('Error cancelling daily gift reminder:', error);
+    console.error('❌ Error cancelling daily gift reminder:', error);
   }
 }
