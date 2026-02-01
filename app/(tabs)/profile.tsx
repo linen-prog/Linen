@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking, KeyboardAvoidingView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,21 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  scheduleDailyGiftReminderAsync,
+  cancelDailyGiftReminderAsync,
+} from '@/lib/dailyGiftReminder';
+
+const STORAGE_KEY = 'daily_gift_reminder_settings';
+
+type ReminderSettings = {
+  enabled: boolean;
+  hour: number;
+  minute: number;
+};
+
+const REMINDER_DEFAULTS: ReminderSettings = { enabled: false, hour: 9, minute: 0 };
 
 // Helper to resolve image sources
 function resolveImageSource(source: string | number | undefined): { uri: string } | number {
@@ -66,6 +81,33 @@ const PRESENCE_MODES = [
   { id: 'private', icon: '🔒', label: 'Private', description: 'Personal practice' },
 ];
 
+function Preset({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.background,
+      }}
+    >
+      <Text style={{ color: colors.text }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function formatTime(hour: number, minute: number) {
+  const h12 = ((hour + 11) % 12) + 1;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const mm = String(minute).padStart(2, '0');
+  return `${h12}:${mm} ${ampm}`;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -75,6 +117,10 @@ export default function ProfileScreen() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Reminder settings
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(REMINDER_DEFAULTS);
+  const [reminderLoading, setReminderLoading] = useState(true);
   
   // Modal states
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -107,8 +153,74 @@ export default function ProfileScreen() {
     console.log('ProfileScreen: Loading profile data');
     loadProfile();
     loadStats();
+    loadReminderSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadReminderSettings = async () => {
+    try {
+      console.log('ProfileScreen: Loading reminder settings from AsyncStorage');
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const settings = JSON.parse(raw);
+        console.log('ProfileScreen: Reminder settings loaded:', settings);
+        setReminderSettings(settings);
+      }
+    } catch (error) {
+      console.error('ProfileScreen: Failed to load reminder settings -', error);
+    } finally {
+      setReminderLoading(false);
+    }
+  };
+
+  const saveReminderSettings = async (next: ReminderSettings) => {
+    console.log('ProfileScreen: Saving reminder settings:', next);
+    setReminderSettings(next);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const handleReminderToggle = async (value: boolean) => {
+    console.log('ProfileScreen: Reminder toggle changed to:', value);
+    const next = { ...reminderSettings, enabled: value };
+    await saveReminderSettings(next);
+
+    if (value) {
+      const id = await scheduleDailyGiftReminderAsync(next.hour, next.minute);
+      if (!id) {
+        console.log('ProfileScreen: User denied permissions or on simulator');
+        await saveReminderSettings({ ...next, enabled: false });
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive daily gift reminders.'
+        );
+      } else {
+        console.log('ProfileScreen: Daily gift reminder scheduled with ID:', id);
+      }
+    } else {
+      await cancelDailyGiftReminderAsync();
+      console.log('ProfileScreen: Daily gift reminder cancelled');
+    }
+  };
+
+  const handleReminderTimeChange = async (hour: number, minute: number) => {
+    console.log('ProfileScreen: Reminder time changed to:', hour, minute);
+    const next = { ...reminderSettings, hour, minute };
+    await saveReminderSettings(next);
+
+    if (next.enabled) {
+      const id = await scheduleDailyGiftReminderAsync(hour, minute);
+      if (!id) {
+        console.log('ProfileScreen: Failed to reschedule reminder');
+        await saveReminderSettings({ ...next, enabled: false });
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive daily gift reminders.'
+        );
+      } else {
+        console.log('ProfileScreen: Daily gift reminder rescheduled with ID:', id);
+      }
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -549,6 +661,7 @@ export default function ProfileScreen() {
   const userEmail = user?.email || '';
   const presenceMode = getPresenceModeDisplay();
   const memberSinceText = stats?.memberSince ? formatDate(stats.memberSince) : 'Recently';
+  const currentTimeText = formatTime(reminderSettings.hour, reminderSettings.minute);
 
   return (
     <SafeAreaView 
@@ -1533,7 +1646,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Notifications Modal */}
+      {/* Notifications Modal with Daily Gift Reminder */}
       <Modal
         visible={showNotificationsModal}
         animationType="slide"
@@ -1560,41 +1673,85 @@ export default function ProfileScreen() {
               Choose what serves you. You can change these anytime.
             </Text>
 
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleItemLeft}>
-                <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
-                  Community Notifications
-                </Text>
-                <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  Prayers and replies to your posts
-                </Text>
+            <ScrollView style={styles.modalScroll}>
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                    Community Notifications
+                  </Text>
+                  <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    Prayers and replies to your posts
+                  </Text>
+                </View>
+                <Switch
+                  value={tempNotifications.notificationsEnabled}
+                  onValueChange={(value) => setTempNotifications({ ...tempNotifications, notificationsEnabled: value })}
+                  trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
+                  thumbColor={tempNotifications.notificationsEnabled ? colors.primary : colors.textLight}
+                />
               </View>
-              <Switch
-                value={tempNotifications.notificationsEnabled}
-                onValueChange={(value) => setTempNotifications({ ...tempNotifications, notificationsEnabled: value })}
-                trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
-                thumbColor={tempNotifications.notificationsEnabled ? colors.primary : colors.textLight}
-              />
-            </View>
 
-            <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
+              <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
 
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleItemLeft}>
-                <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
-                  Gentle Reminders
-                </Text>
-                <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  Daily gift and check-in reminders
-                </Text>
+              <View style={styles.toggleItem}>
+                <View style={styles.toggleItemLeft}>
+                  <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                    Gentle Reminders
+                  </Text>
+                  <Text style={[styles.toggleItemDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    Daily gift and check-in reminders
+                  </Text>
+                </View>
+                <Switch
+                  value={tempNotifications.reminderNotifications}
+                  onValueChange={(value) => setTempNotifications({ ...tempNotifications, reminderNotifications: value })}
+                  trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
+                  thumbColor={tempNotifications.reminderNotifications ? colors.primary : colors.textLight}
+                />
               </View>
-              <Switch
-                value={tempNotifications.reminderNotifications}
-                onValueChange={(value) => setTempNotifications({ ...tempNotifications, reminderNotifications: value })}
-                trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
-                thumbColor={tempNotifications.reminderNotifications ? colors.primary : colors.textLight}
-              />
-            </View>
+
+              <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
+
+              {/* Daily Gift Reminder Section */}
+              <View style={{ paddingVertical: spacing.md }}>
+                <Text style={[styles.reminderSectionTitle, { color: isDark ? colors.textDark : colors.text }]}>
+                  Daily Gift Reminder
+                </Text>
+                <Text style={[styles.reminderSectionDescription, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                  Get a daily reminder to open your gift.
+                </Text>
+
+                <View style={[styles.toggleItem, { marginTop: spacing.sm }]}>
+                  <Text style={[styles.toggleItemLabel, { color: isDark ? colors.textDark : colors.text }]}>
+                    Enable
+                  </Text>
+                  <Switch
+                    value={reminderSettings.enabled}
+                    onValueChange={handleReminderToggle}
+                    trackColor={{ false: isDark ? colors.borderDark : colors.border, true: colors.primaryLight }}
+                    thumbColor={reminderSettings.enabled ? colors.primary : colors.textLight}
+                  />
+                </View>
+
+                {!reminderLoading && (
+                  <>
+                    <Text style={[styles.reminderTimeTitle, { color: isDark ? colors.textDark : colors.text }]}>
+                      Reminder time
+                    </Text>
+
+                    <View style={styles.presetContainer}>
+                      <Preset label="9:00 AM" onPress={() => handleReminderTimeChange(9, 0)} />
+                      <Preset label="12:00 PM" onPress={() => handleReminderTimeChange(12, 0)} />
+                      <Preset label="6:00 PM" onPress={() => handleReminderTimeChange(18, 0)} />
+                    </View>
+
+                    <Text style={[styles.currentTimeText, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                      Current: {currentTimeText}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </ScrollView>
 
             <TouchableOpacity 
               style={[styles.modalButton, { backgroundColor: colors.primary, marginTop: spacing.lg }]}
@@ -2193,5 +2350,29 @@ const styles = StyleSheet.create({
   },
   themeOptionDescription: {
     fontSize: typography.bodySmall,
+  },
+  reminderSectionTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.xs,
+  },
+  reminderSectionDescription: {
+    fontSize: typography.bodySmall,
+    marginBottom: spacing.sm,
+  },
+  reminderTimeTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  presetContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: spacing.sm,
+  },
+  currentTimeText: {
+    fontSize: typography.bodySmall,
+    marginTop: spacing.xs,
   },
 });
