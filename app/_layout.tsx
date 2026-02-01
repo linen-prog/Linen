@@ -6,7 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DefaultTheme,
@@ -45,6 +45,7 @@ function RootLayoutContent() {
   useEffect(() => {
     console.log('🔗 Backend URL:', BACKEND_URL);
     console.log('🎨 Theme mode:', isDark ? 'dark' : 'light');
+    console.log('📱 Platform:', Platform.OS);
   }, [isDark]);
 
   React.useEffect(() => {
@@ -121,6 +122,8 @@ function RootLayoutContent() {
                   <Stack.Screen name="weekly-recap-detail" options={{ headerShown: false }} />
                   <Stack.Screen name="weekly-recap-history" options={{ headerShown: false }} />
                   <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
+                  {/* Scripture Verification (dev tool) */}
+                  <Stack.Screen name="scripture-verification" options={{ headerShown: false }} />
                   {/* Main app with tabs */}
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 </Stack>
