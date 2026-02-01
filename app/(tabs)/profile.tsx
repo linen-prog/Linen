@@ -159,24 +159,65 @@ export default function ProfileScreen() {
 
   const loadReminderSettings = async () => {
     try {
-      console.log('ProfileScreen: Loading reminder settings from AsyncStorage');
+      console.log('[ProfileScreen] Loading reminder settings from AsyncStorage');
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const settings = JSON.parse(raw);
-        console.log('ProfileScreen: Reminder settings loaded:', settings);
-        setReminderSettings(settings);
+        try {
+          const settings = JSON.parse(raw);
+          // Validate settings structure
+          if (
+            typeof settings === 'object' &&
+            typeof settings.enabled === 'boolean' &&
+            typeof settings.hour === 'number' &&
+            typeof settings.minute === 'number' &&
+            settings.hour >= 0 && settings.hour <= 23 &&
+            settings.minute >= 0 && settings.minute <= 59
+          ) {
+            console.log('[ProfileScreen] Reminder settings loaded:', settings);
+            setReminderSettings(settings);
+          } else {
+            console.warn('[ProfileScreen] Invalid reminder settings format, using defaults');
+            setReminderSettings(REMINDER_DEFAULTS);
+          }
+        } catch (parseError) {
+          console.error('[ProfileScreen] Failed to parse reminder settings:', parseError);
+          setReminderSettings(REMINDER_DEFAULTS);
+        }
+      } else {
+        console.log('[ProfileScreen] No saved reminder settings, using defaults');
+        setReminderSettings(REMINDER_DEFAULTS);
       }
     } catch (error) {
-      console.error('ProfileScreen: Failed to load reminder settings -', error);
+      console.error('[ProfileScreen] Failed to load reminder settings:', error);
+      setReminderSettings(REMINDER_DEFAULTS);
     } finally {
       setReminderLoading(false);
     }
   };
 
   const saveReminderSettings = async (next: ReminderSettings) => {
-    console.log('ProfileScreen: Saving reminder settings:', next);
-    setReminderSettings(next);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    try {
+      console.log('[ProfileScreen] Saving reminder settings:', next);
+      
+      // Validate settings before saving
+      if (
+        typeof next.enabled !== 'boolean' ||
+        typeof next.hour !== 'number' ||
+        typeof next.minute !== 'number' ||
+        next.hour < 0 || next.hour > 23 ||
+        next.minute < 0 || next.minute > 59
+      ) {
+        console.error('[ProfileScreen] Invalid reminder settings, not saving:', next);
+        return;
+      }
+      
+      setReminderSettings(next);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      console.log('[ProfileScreen] ✅ Reminder settings saved successfully');
+    } catch (error) {
+      console.error('[ProfileScreen] ❌ Failed to save reminder settings:', error);
+      Alert.alert('Error', 'Failed to save reminder settings. Please try again.');
+    }
   };
 
   const handleReminderToggle = async (value: boolean) => {

@@ -118,6 +118,8 @@ export default function DailyGiftScreen() {
   }));
 
   const loadDailyGift = useCallback(async () => {
+    let isMounted = true;
+    
     try {
       const loadTimestamp = new Date().toISOString();
       const now = new Date();
@@ -126,6 +128,11 @@ export default function DailyGiftScreen() {
       setIsLoadingGift(true);
       
       const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
+      
+      if (!isMounted) {
+        console.log('[DailyGift] Component unmounted, skipping state updates');
+        return;
+      }
       
       if (!response || !response.weeklyTheme) {
         throw new Error('Invalid response from server - missing weekly theme data');
@@ -176,22 +183,31 @@ export default function DailyGiftScreen() {
         });
       }
       
-      setDailyGiftResponse(response);
-      setIsLoadingGift(false);
+      if (isMounted) {
+        setDailyGiftResponse(response);
+        setIsLoadingGift(false);
 
-      if (response.dailyContent) {
-        await checkReflectionStatus(response.dailyContent.id);
-      }
+        if (response.dailyContent) {
+          await checkReflectionStatus(response.dailyContent.id);
+        }
 
-      if (response.weeklyTheme.somaticExercise) {
-        await checkWeeklyPracticeStatus();
+        if (response.weeklyTheme.somaticExercise) {
+          await checkWeeklyPracticeStatus();
+        }
       }
     } catch (error) {
       const errorTimestamp = new Date().toISOString();
       console.error(`[DailyGift] ${errorTimestamp} - Failed to load daily gift:`, error);
       console.error(`[DailyGift] ${errorTimestamp} - Error details:`, error);
-      setIsLoadingGift(false);
+      if (isMounted) {
+        setIsLoadingGift(false);
+      }
     }
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useFocusEffect(

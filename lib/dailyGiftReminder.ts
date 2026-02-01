@@ -4,28 +4,48 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 // Initialize notification handler safely - MUST be called early in app lifecycle
+// CRITICAL: This prevents iOS cold start crashes by ensuring handler is set only once
 let isHandlerInitialized = false;
+let initializationPromise: Promise<void> | null = null;
 
-export function initializeNotificationHandler() {
+export function initializeNotificationHandler(): Promise<void> {
+  // If already initialized, return immediately
   if (isHandlerInitialized) {
-    console.log('Notification handler already initialized');
-    return;
+    console.log('[DailyGiftReminder] Notification handler already initialized');
+    return Promise.resolve();
   }
   
-  try {
-    // Set up how notifications should be handled when app is in foreground
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
-    isHandlerInitialized = true;
-    console.log('✅ Notification handler initialized successfully');
-  } catch (error) {
-    console.error('❌ Failed to initialize notification handler:', error);
+  // If initialization is in progress, return the existing promise
+  if (initializationPromise) {
+    console.log('[DailyGiftReminder] Notification handler initialization in progress');
+    return initializationPromise;
   }
+  
+  // Start initialization
+  initializationPromise = (async () => {
+    try {
+      console.log('[DailyGiftReminder] Initializing notification handler...');
+      
+      // Set up how notifications should be handled when app is in foreground
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+      
+      isHandlerInitialized = true;
+      console.log('[DailyGiftReminder] ✅ Notification handler initialized successfully');
+    } catch (error) {
+      console.error('[DailyGiftReminder] ❌ Failed to initialize notification handler:', error);
+      // Reset promise so we can retry
+      initializationPromise = null;
+      throw error;
+    }
+  })();
+  
+  return initializationPromise;
 }
 
 export async function ensureNotificationPermissionAsync(): Promise<boolean> {
@@ -68,18 +88,26 @@ export async function scheduleDailyGiftReminderAsync(
   minute: number
 ): Promise<string | null> {
   try {
-    // Ensure handler is initialized before scheduling
-    initializeNotificationHandler();
+    console.log('[DailyGiftReminder] Scheduling daily gift reminder for', hour, ':', minute);
+    
+    // Ensure handler is initialized before scheduling (await to ensure it completes)
+    await initializeNotificationHandler();
 
     const ok = await ensureNotificationPermissionAsync();
     if (!ok) {
-      console.log('Cannot schedule notification - permissions not granted');
+      console.log('[DailyGiftReminder] Cannot schedule notification - permissions not granted');
       return null;
     }
 
     // Cancel any previously scheduled notifications to avoid duplicates
     await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('Cancelled previous notifications');
+    console.log('[DailyGiftReminder] Cancelled previous notifications');
+
+    // Validate hour and minute
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      console.error('[DailyGiftReminder] Invalid time:', hour, minute);
+      return null;
+    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content: {
@@ -90,10 +118,10 @@ export async function scheduleDailyGiftReminderAsync(
       trigger: { hour, minute, repeats: true },
     });
 
-    console.log('✅ Daily gift reminder scheduled with ID:', id, 'for', hour, ':', minute);
+    console.log('[DailyGiftReminder] ✅ Daily gift reminder scheduled with ID:', id, 'for', hour, ':', minute);
     return id;
   } catch (error) {
-    console.error('❌ Error scheduling daily gift reminder:', error);
+    console.error('[DailyGiftReminder] ❌ Error scheduling daily gift reminder:', error);
     return null;
   }
 }

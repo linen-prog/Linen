@@ -25,12 +25,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const loadThemePreference = async () => {
     try {
+      console.log('[ThemeContext] Loading theme preference from AsyncStorage');
       const savedTheme = await AsyncStorage.getItem('themeMode');
       if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+        console.log('[ThemeContext] Loaded theme:', savedTheme);
         setThemeModeState(savedTheme);
+      } else if (savedTheme) {
+        console.warn('[ThemeContext] Invalid theme value, using default:', savedTheme);
+        setThemeModeState('auto');
+      } else {
+        console.log('[ThemeContext] No saved theme, using default: auto');
+        setThemeModeState('auto');
       }
     } catch (error) {
-      console.error('Failed to load theme preference:', error);
+      console.error('[ThemeContext] Failed to load theme preference:', error);
+      // Use default theme on error
+      setThemeModeState('auto');
     } finally {
       setIsLoading(false);
     }
@@ -38,11 +48,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setThemeMode = async (mode: ThemeMode) => {
     try {
+      console.log('[ThemeContext] Setting theme mode:', mode);
+      
+      // Validate mode
+      if (mode !== 'light' && mode !== 'dark' && mode !== 'auto') {
+        console.error('[ThemeContext] Invalid theme mode:', mode);
+        return;
+      }
+      
       setThemeModeState(mode);
       await AsyncStorage.setItem('themeMode', mode);
-      console.log('Theme mode saved:', mode);
+      console.log('[ThemeContext] ✅ Theme mode saved:', mode);
     } catch (error) {
-      console.error('Failed to save theme preference:', error);
+      console.error('[ThemeContext] ❌ Failed to save theme preference:', error);
+      // Still update state even if save fails
+      setThemeModeState(mode);
     }
   };
 

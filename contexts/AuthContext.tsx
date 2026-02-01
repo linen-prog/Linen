@@ -94,8 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const initializeAuthSession = async () => {
+    let isMounted = true;
+    
     try {
-      setLoading(true);
+      if (isMounted) {
+        setLoading(true);
+      }
       console.log('[AuthContext] Checking for existing session...');
       
       // Check if we have a stored token
@@ -103,51 +107,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (!token) {
         console.log('[AuthContext] No token found - user needs to log in');
-        setUser(null);
-        setLoading(false);
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
+        }
         return;
       }
 
       // Verify the token with the backend
       console.log('[AuthContext] Verifying session with backend...');
-      const response = await fetch(`${Constants.expoConfig?.extra?.backendUrl}/api/auth/session-status`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch(`${Constants.expoConfig?.extra?.backendUrl}/api/auth/session-status`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authenticated && data.user) {
-          console.log('[AuthContext] Session verified, user:', data.user.email);
-          await storeUserData(data.user);
-          setUser(data.user);
+        if (!isMounted) {
+          console.log('[AuthContext] Component unmounted, skipping state updates');
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            console.log('[AuthContext] Session verified, user:', data.user.email);
+            await storeUserData(data.user);
+            if (isMounted) {
+              setUser(data.user);
+            }
+          } else {
+            console.log('[AuthContext] Session not authenticated');
+            await clearAuthTokens();
+            if (isMounted) {
+              setUser(null);
+            }
+          }
         } else {
-          console.log('[AuthContext] Session not authenticated');
+          console.log('[AuthContext] Session verification failed:', response.status);
+          // Token is invalid, clear it
           await clearAuthTokens();
+          if (isMounted) {
+            setUser(null);
+          }
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('[AuthContext] Session verification timed out');
+        } else {
+          console.error('[AuthContext] Session verification network error:', fetchError);
+        }
+        
+        // On network error, try to use stored user data as fallback
+        const storedUser = await getUserData();
+        if (storedUser && isMounted) {
+          console.log('[AuthContext] Using stored user data as fallback:', storedUser.email);
+          setUser(storedUser);
+        } else if (isMounted) {
           setUser(null);
         }
-      } else {
-        console.log('[AuthContext] Session verification failed:', response.status);
-        // Token is invalid, clear it
-        await clearAuthTokens();
-        setUser(null);
       }
     } catch (error) {
       console.error("[AuthContext] Failed to initialize auth session:", error);
       // On error, try to use stored user data as fallback
-      const storedUser = await getUserData();
-      if (storedUser) {
-        console.log('[AuthContext] Using stored user data as fallback:', storedUser.email);
-        setUser(storedUser);
-      } else {
-        setUser(null);
+      try {
+        const storedUser = await getUserData();
+        if (storedUser && isMounted) {
+          console.log('[AuthContext] Using stored user data as fallback:', storedUser.email);
+          setUser(storedUser);
+        } else if (isMounted) {
+          setUser(null);
+        }
+      } catch (fallbackError) {
+        console.error('[AuthContext] Failed to load stored user data:', fallbackError);
+        if (isMounted) {
+          setUser(null);
+        }
       }
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   };
 
   const fetchUser = async () => {

@@ -1,12 +1,12 @@
 
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, Component, ReactNode } from "react";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Alert, Platform } from "react-native";
+import { Alert, Platform, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DefaultTheme,
@@ -19,9 +19,114 @@ import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { BACKEND_URL } from "@/utils/api";
-import { colors } from "@/styles/commonStyles";
+import { colors, spacing, typography, borderRadius } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
 // Note: Error logging is auto-initialized via index.ts import
+
+// Error Boundary to catch React component crashes
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('[ErrorBoundary] Caught error:', error);
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ErrorBoundary] Error details:', error, errorInfo);
+  }
+
+  handleReset = () => {
+    console.log('[ErrorBoundary] User requested app reset');
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={errorStyles.container}>
+          <View style={errorStyles.content}>
+            <Text style={errorStyles.title}>Something went wrong</Text>
+            <Text style={errorStyles.message}>
+              The app encountered an unexpected error. Please try restarting.
+            </Text>
+            {this.state.error && (
+              <Text style={errorStyles.errorDetails}>
+                {this.state.error.message}
+              </Text>
+            )}
+            <TouchableOpacity 
+              style={errorStyles.button}
+              onPress={this.handleReset}
+            >
+              <Text style={errorStyles.buttonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  content: {
+    alignItems: 'center',
+    maxWidth: 400,
+  },
+  title: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorDetails: {
+    fontSize: typography.small,
+    color: colors.error,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  button: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.full,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+});
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -38,9 +143,28 @@ function RootLayoutContent() {
   });
 
   // Initialize notification handler early in app lifecycle
+  // CRITICAL: This must run once and complete before any notification operations
   useEffect(() => {
-    console.log('🚀 App starting - initializing notification handler');
-    initializeNotificationHandler();
+    let isMounted = true;
+    
+    const initNotifications = async () => {
+      try {
+        console.log('[RootLayout] 🚀 App starting - initializing notification handler');
+        await initializeNotificationHandler();
+        if (isMounted) {
+          console.log('[RootLayout] ✅ Notification handler ready');
+        }
+      } catch (error) {
+        console.error('[RootLayout] ❌ Failed to initialize notifications:', error);
+      }
+    };
+    
+    initNotifications();
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -156,8 +280,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <RootLayoutContent />
-    </ThemeProvider>
+    <AppErrorBoundary>
+      <ThemeProvider>
+        <RootLayoutContent />
+      </ThemeProvider>
+    </AppErrorBoundary>
   );
 }

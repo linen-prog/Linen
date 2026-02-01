@@ -64,6 +64,8 @@ export default function CheckInScreen() {
   const [isSharingMessage, setIsSharingMessage] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const startConversation = async () => {
       try {
         console.log('[CheckIn] Starting check-in conversation...');
@@ -72,8 +74,10 @@ export default function CheckInScreen() {
         // Fetch companion name from profile
         try {
           const profile = await authenticatedGet<{ companionName: string | null }>('/api/profile');
-          console.log('[CheckIn] Companion name loaded:', profile.companionName);
-          setCompanionName(profile.companionName);
+          if (isMounted) {
+            console.log('[CheckIn] Companion name loaded:', profile.companionName);
+            setCompanionName(profile.companionName);
+          }
         } catch (error) {
           console.error('[CheckIn] Failed to load companion name:', error);
         }
@@ -83,6 +87,12 @@ export default function CheckInScreen() {
           messages: { id: string; role: string; content: string; createdAt: string }[];
           isNewConversation: boolean;
         }>('/api/check-in/start', {});
+        
+        if (!isMounted) {
+          console.log('[CheckIn] Component unmounted, skipping state updates');
+          return;
+        }
+        
         console.log('[CheckIn] Conversation started successfully:', response);
         console.log('[CheckIn] Message IDs from backend:', response.messages.map(m => ({ id: m.id, role: m.role })));
         setConversationId(response.conversationId);
@@ -109,12 +119,20 @@ export default function CheckInScreen() {
         }
       } catch (error) {
         console.error('[CheckIn] Failed to start conversation - will retry on first message:', error);
-        // Don't set a temp ID - let the backend create one when the first message is sent
-        setConversationId(null);
+        if (isMounted) {
+          // Don't set a temp ID - let the backend create one when the first message is sent
+          setConversationId(null);
+        }
       }
     };
 
     startConversation();
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+      console.log('[CheckIn] Component unmounting, cleaning up');
+    };
   }, []);
 
   const bgColor = colors.background;
