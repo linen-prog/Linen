@@ -68,13 +68,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hide the (home) folder from tabs */}
-      <Tabs.Screen
-        name="(home)"
-        options={{
-          href: null, // This hides it from the tab bar
-        }}
-      />
     </Tabs>
   );
 }

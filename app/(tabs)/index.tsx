@@ -5,6 +5,13 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
+interface PersonalizationData {
+  companionTagline: string | null;
+  recentActivity: string | null;
+  streakMessage: string | null;
+  conversationContext: string | null;
+}
+
 export default function HomeScreen() {
   console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
@@ -12,35 +19,76 @@ export default function HomeScreen() {
   const [checkInStreak, setCheckInStreak] = useState(0);
   const [reflectionStreak, setReflectionStreak] = useState(0);
   const [firstName, setFirstName] = useState('');
+  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadUserData = async () => {
       try {
-        // Fetch user info
-        const { authenticatedGet } = await import('@/utils/api');
-        const userResponse = await authenticatedGet<{ user: { id: string; email: string; name?: string } }>('/api/auth/me');
-        console.log('🏠 [Home] User data loaded:', userResponse);
+        console.log('🏠 [Home] Loading user data...');
+        
+        // Fetch user info from auth context
+        const { getUserData } = await import('@/lib/auth');
+        const userData = await getUserData();
+        console.log('🏠 [Home] User data loaded from storage:', userData);
+        
+        if (!isMounted) {
+          console.log('🏠 [Home] Component unmounted, skipping state updates');
+          return;
+        }
         
         // Extract first name from the user's name field
-        const userName = userResponse.user?.name || '';
+        const userName = userData?.name || '';
         const extractedFirstName = userName.split(' ')[0] || 'Friend';
         setFirstName(extractedFirstName);
 
         // Fetch streaks
+        const { authenticatedGet } = await import('@/utils/api');
         const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
         console.log('🏠 [Home] Streaks loaded:', streaksResponse);
+        
+        if (!isMounted) {
+          console.log('🏠 [Home] Component unmounted, skipping state updates');
+          return;
+        }
+        
         setCheckInStreak(streaksResponse.checkInStreak);
         setReflectionStreak(streaksResponse.reflectionStreak);
+
+        // Fetch personalization data for AI companion
+        try {
+          const personalizationResponse = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
+          console.log('🏠 [Home] Personalization data loaded:', personalizationResponse);
+          
+          if (isMounted) {
+            setPersonalization(personalizationResponse);
+          }
+        } catch (error) {
+          console.error('🏠 [Home] Failed to load personalization data:', error);
+          // Personalization is optional, continue without it
+        }
       } catch (error) {
         console.error('🏠 [Home] Failed to load user data:', error);
         // Use defaults on error
-        setFirstName('Friend');
-        setCheckInStreak(0);
-        setReflectionStreak(0);
+        if (isMounted) {
+          setFirstName('Friend');
+          setCheckInStreak(0);
+          setReflectionStreak(0);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Always use light theme colors
@@ -57,8 +105,9 @@ export default function HomeScreen() {
 
   const handleDailyGift = () => {
     console.log('🏠 [Home] User tapped Daily Gift card');
-    console.log('🏠 [Home] Navigating to: /daily-gift');
-    router.push('/daily-gift');
+    console.log('🏠 [Home] Navigating to: /open-gift');
+    router.push('/open-gift');
+    console.log('🏠 [Home] router.push() called for /open-gift');
   };
 
   const handleCommunity = () => {
@@ -98,7 +147,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Streak cards */}
           <View style={styles.streakContainer}>
             <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
@@ -129,7 +177,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Primary Actions - Check-In and Open Your Gift */}
           <View style={styles.primaryActions}>
             <TouchableOpacity 
               style={[styles.primaryCard, { backgroundColor: cardBg }]}
@@ -148,8 +195,27 @@ export default function HomeScreen() {
                 Check-In
               </Text>
               <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
-                What&apos;s on your mind?
+                {personalization?.companionTagline || "What's on your mind?"}
               </Text>
+              {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
+                <View style={styles.personalizationContainer}>
+                  {personalization.recentActivity && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.recentActivity}
+                    </Text>
+                  )}
+                  {personalization.streakMessage && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.streakMessage}
+                    </Text>
+                  )}
+                  {personalization.conversationContext && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.conversationContext}
+                    </Text>
+                  )}
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -174,7 +240,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Secondary Actions - Community and Weekly Recap */}
           <View style={styles.secondaryActions}>
             <TouchableOpacity 
               style={[styles.secondaryCard, { backgroundColor: cardBg }]}
@@ -312,6 +377,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  personalizationContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border + '40',
+    width: '100%',
+    gap: spacing.xs,
+  },
+  personalizationText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   secondaryActions: {
     gap: spacing.md,
