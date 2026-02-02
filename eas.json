@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -11,7 +12,7 @@
       }
     },
     "preview": {
-      "distribution": "store",
+      "distribution": "internal",
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"
@@ -19,7 +20,7 @@
     },
     "production": {
       "ios": {
-        "distribution": "store",
+        "distribution": "app-store",
         "buildConfiguration": "Release"
       },
       "android": {
