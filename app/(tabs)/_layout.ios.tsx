@@ -17,7 +17,6 @@ export default function TabLayout() {
         <Icon sf="person.circle.fill" />
         <Label>Profile</Label>
       </NativeTabs.Trigger>
-      {/* The (home) folder is hidden from tabs */}
     </NativeTabs>
   );
 }
