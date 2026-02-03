@@ -515,7 +515,7 @@ export default function DailyGiftScreen() {
   const giftSubtitleText = 'A word for your heart today';
   const tapText = 'Tap to open';
 
-  const invitationLabel = 'WEEKLY SOMATIC INVITATION';
+  const invitationLabel = 'SOMATIC INVITATION';
   const invitationText = 'You are invited to practice';
 
   const somaticPromptDisplay = dailyContent.somaticPrompt || '';
@@ -726,9 +726,27 @@ export default function DailyGiftScreen() {
 
           {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
             <View style={[styles.somaticPromptCard, { backgroundColor: cardBg }]}>
+              <View style={styles.somaticPromptHeader}>
+                <Text style={[styles.somaticPromptLabel, { color: colors.primary }]}>
+                  TODAY&apos;S SOMATIC INVITATION
+                </Text>
+              </View>
+              
               <Text style={[styles.somaticPromptText, { color: textColor }]}>
                 {somaticPromptDisplay}
               </Text>
+
+              <View style={styles.dailyIndicator}>
+                <IconSymbol 
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={12}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.dailyIndicatorText, { color: textSecondaryColor }]}>
+                  Changes daily at midnight
+                </Text>
+              </View>
 
               <View style={styles.somaticPromptActions}>
                 <TouchableOpacity 
@@ -1348,6 +1366,26 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
     alignItems: 'center',
+  },
+  somaticPromptHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  somaticPromptLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  somaticPromptHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  somaticPromptLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   somaticPromptText: {
     fontSize: 15,
