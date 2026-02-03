@@ -1,14 +1,15 @@
+
 {
   "expo": {
     "name": "Linen",
     "slug": "Linen",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/images/final_quest_240x240.png",
+    "icon": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/final_quest_240x240.png",
+      "image": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5F1E8"
     },
@@ -26,7 +27,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/final_quest_240x240.png",
+        "foregroundImage": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
         "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
@@ -39,7 +40,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
       "bundler": "metro"
     },
     "plugins": [
