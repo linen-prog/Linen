@@ -578,7 +578,7 @@ export default function ArtworkCanvasScreen() {
     loadExistingArtwork();
   }, []);
 
-  // Check for achievements
+  // Check for achievements - INCREASED DISPLAY TIME TO 6 SECONDS
   useEffect(() => {
     if (strokeCount > 0) {
       const achievement = ACHIEVEMENTS.find(
@@ -593,11 +593,11 @@ export default function ArtworkCanvasScreen() {
         
         achievementScale.value = withSequence(
           withSpring(1, { damping: 8 }),
-          withTiming(0, { duration: 300, delay: 3000 })
+          withTiming(0, { duration: 300, delay: 6000 })
         );
         achievementOpacity.value = withSequence(
           withTiming(1, { duration: 200 }),
-          withTiming(0, { duration: 300, delay: 3000 })
+          withTiming(0, { duration: 300, delay: 6000 })
         );
         
         if (Platform.OS !== 'web') {
@@ -606,12 +606,12 @@ export default function ArtworkCanvasScreen() {
         
         setTimeout(() => {
           setShowAchievement(false);
-        }, 3300);
+        }, 6300);
       }
     }
   }, [strokeCount]);
 
-  // Show encouraging messages periodically
+  // Show encouraging messages periodically - INCREASED DISPLAY TIME TO 4 SECONDS
   useEffect(() => {
     if (strokeCount > 0 && strokeCount % 5 === 0 && strokeCount !== lastEncouragementRef.current) {
       lastEncouragementRef.current = strokeCount;
@@ -626,7 +626,7 @@ export default function ArtworkCanvasScreen() {
       
       setTimeout(() => {
         setShowEncouragement(false);
-      }, 2500);
+      }, 4000);
     }
   }, [strokeCount]);
 
@@ -897,6 +897,25 @@ export default function ArtworkCanvasScreen() {
         setIsUploadingPhoto(true);
 
         try {
+          const { BACKEND_URL } = await import('@/utils/api');
+          const { getBearerToken } = await import('@/lib/auth');
+          
+          console.log('[Canvas] Getting authentication token...');
+          const token = await getBearerToken();
+          
+          if (!token) {
+            console.error('[Canvas] No authentication token available');
+            setIsUploadingPhoto(false);
+            Alert.alert(
+              'Authentication Required',
+              'You need to be signed in to upload photos. Please sign in and try again.',
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+
+          console.log('[Canvas] Authentication token obtained successfully');
+
           const formData = new FormData();
           
           const fileUri = result.assets[0].uri;
@@ -915,14 +934,6 @@ export default function ArtworkCanvasScreen() {
               type: fileType,
               name: fileName,
             } as any);
-          }
-
-          const { BACKEND_URL } = await import('@/utils/api');
-          const { getBearerToken } = await import('@/lib/auth');
-          const token = await getBearerToken();
-          
-          if (!token) {
-            throw new Error('Authentication required to upload photos');
           }
 
           console.log('[Canvas] Uploading photo to backend...');
