@@ -1131,7 +1131,8 @@ export default function ArtworkCanvasScreen() {
   };
 
   const handleShareToCommunity = async () => {
-    console.log('[Canvas] User sharing artwork to community', { category: shareCategory, anonymous: shareAnonymous });
+    console.log('[Canvas] 🚀 User sharing artwork to community', { category: shareCategory, anonymous: shareAnonymous });
+    console.log('[Canvas] 🚀 Current backgroundImage state:', backgroundImage);
     setIsSharing(true);
 
     try {
@@ -1148,13 +1149,17 @@ export default function ArtworkCanvasScreen() {
         savedAt: new Date().toISOString(),
       });
       
+      console.log('[Canvas] 📦 Saving artwork with photoUrls:', backgroundImage ? [backgroundImage] : []);
+      
       // Save the artwork first
       const savedArtwork = await authenticatedPost<{ id: string; photoUrls: string[] }>('/api/artwork/save', {
         artworkData,
         photoUrls: backgroundImage ? [backgroundImage] : [],
       });
 
-      console.log('[Canvas] Artwork saved before sharing:', savedArtwork);
+      console.log('[Canvas] ✅ Artwork saved before sharing:', savedArtwork);
+      console.log('[Canvas] 📸 savedArtwork.photoUrls:', savedArtwork.photoUrls);
+      console.log('[Canvas] 📸 savedArtwork.photoUrls length:', savedArtwork.photoUrls ? savedArtwork.photoUrls.length : 0);
 
       // Determine the artwork URL to share
       // Priority: 1. photoUrls from saved artwork, 2. backgroundImage state
@@ -1162,9 +1167,19 @@ export default function ArtworkCanvasScreen() {
         ? savedArtwork.photoUrls[0] 
         : backgroundImage;
       
-      console.log('[Canvas] 🎨 Sharing artwork with URL:', artworkUrlToShare);
+      console.log('[Canvas] 🎨 FINAL artworkUrlToShare:', artworkUrlToShare);
+      console.log('[Canvas] 🎨 artworkUrlToShare type:', typeof artworkUrlToShare);
+      console.log('[Canvas] 🎨 artworkUrlToShare length:', artworkUrlToShare ? artworkUrlToShare.length : 0);
 
       // Share to community with ONLY the artwork URL, no text content
+      console.log('[Canvas] 📤 Posting to community with payload:', {
+        content: '',
+        category: shareCategory,
+        isAnonymous: shareAnonymous,
+        contentType: 'somatic',
+        artworkUrl: artworkUrlToShare,
+      });
+      
       await authenticatedPost('/api/community/post', {
         content: '', // Empty string - no text, just artwork
         category: shareCategory,

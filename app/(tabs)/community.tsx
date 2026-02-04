@@ -153,7 +153,7 @@ export default function CommunityScreen() {
       
       console.log('[Community] ✅ Posts loaded for', category, ':', allPosts.length, 'posts');
       
-      console.log('[Community] 📊 Post details:', allPosts.map(p => ({
+      console.log('[Community] 📊 DETAILED Post details:', allPosts.map(p => ({
         id: p.id,
         category: p.category,
         contentType: p.contentType,
@@ -162,9 +162,19 @@ export default function CommunityScreen() {
         prayerCount: p.prayerCount,
         hasArtwork: !!p.artworkUrl,
         artworkUrl: p.artworkUrl,
+        artworkUrlType: typeof p.artworkUrl,
+        artworkUrlLength: p.artworkUrl ? p.artworkUrl.length : 0,
+        artworkUrlTrimmed: p.artworkUrl ? p.artworkUrl.trim() : '',
         contentPreview: p.content ? p.content.substring(0, 50) + '...' : '[No text content]',
         createdAt: p.createdAt
       })));
+      
+      // Log specific artwork URLs
+      const postsWithArtwork = allPosts.filter(p => p.artworkUrl);
+      console.log('[Community] 🎨 Posts with artwork URLs:', postsWithArtwork.length);
+      postsWithArtwork.forEach(p => {
+        console.log('[Community] 🎨 Post', p.id, 'artworkUrl:', p.artworkUrl);
+      });
       
       // Fetch reactions for each post
       const postsWithReactions = await Promise.all(
@@ -726,15 +736,19 @@ export default function CommunityScreen() {
 
                   {post.artworkUrl && post.artworkUrl.trim().length > 0 && (
                     <View style={styles.artworkImageContainer}>
+                      {console.log('[Community] 🖼️ Rendering artwork image for post:', post.id, 'URL:', post.artworkUrl)}
                       <Image 
                         source={{ uri: post.artworkUrl }}
                         style={styles.artworkImage}
                         resizeMode="cover"
                         onError={(error) => {
-                          console.error('[Community] Failed to load artwork image:', post.artworkUrl, error.nativeEvent.error);
+                          console.error('[Community] ❌ Failed to load artwork image for post:', post.id);
+                          console.error('[Community] ❌ Artwork URL:', post.artworkUrl);
+                          console.error('[Community] ❌ Error:', error.nativeEvent.error);
                         }}
                         onLoad={() => {
-                          console.log('[Community] ✅ Artwork image loaded successfully:', post.artworkUrl);
+                          console.log('[Community] ✅ Artwork image loaded successfully for post:', post.id);
+                          console.log('[Community] ✅ Artwork URL:', post.artworkUrl);
                         }}
                       />
                     </View>
