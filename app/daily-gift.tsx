@@ -679,7 +679,7 @@ export default function DailyGiftScreen() {
             </Text>
           </View>
 
-          {hasSomaticExercise && (
+          {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
             <View style={[styles.invitationCard, { backgroundColor: cardBg }]}>
               <Text style={styles.plantEmoji}>
                 🌱
@@ -694,45 +694,6 @@ export default function DailyGiftScreen() {
               </Text>
 
               <Text style={[styles.practiceTitle, { color: textColor }]}>
-                {exerciseTitleDisplay}
-              </Text>
-              
-              <Text style={[styles.practiceDescription, { color: textSecondaryColor }]}>
-                {exerciseDescriptionDisplay}
-              </Text>
-
-              <View style={styles.invitationActions}>
-                <TouchableOpacity 
-                  style={styles.beginPracticeButton}
-                  onPress={handleBeginPractice}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.beginPracticeText}>
-                    {beginButtonText}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  onPress={handleSkipPractice}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.skipPracticeText, { color: textSecondaryColor }]}>
-                    {skipButtonText}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
-            <View style={[styles.somaticPromptCard, { backgroundColor: cardBg }]}>
-              <View style={styles.somaticPromptHeader}>
-                <Text style={[styles.somaticPromptLabel, { color: colors.primary }]}>
-                  TODAY&apos;S SOMATIC INVITATION
-                </Text>
-              </View>
-              
-              <Text style={[styles.somaticPromptText, { color: textColor }]}>
                 {somaticPromptDisplay}
               </Text>
 
@@ -748,13 +709,13 @@ export default function DailyGiftScreen() {
                 </Text>
               </View>
 
-              <View style={styles.somaticPromptActions}>
+              <View style={styles.invitationActions}>
                 <TouchableOpacity 
-                  style={styles.tryButton}
+                  style={styles.beginPracticeButton}
                   onPress={handleTrySomaticPrompt}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.tryButtonText}>
+                  <Text style={styles.beginPracticeText}>
                     {tryButtonText}
                   </Text>
                 </TouchableOpacity>
@@ -1354,62 +1315,6 @@ const styles = StyleSheet.create({
   skipPracticeText: {
     fontSize: 13,
     fontWeight: '400',
-  },
-
-  somaticPromptCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 1,
-    alignItems: 'center',
-  },
-  somaticPromptHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  somaticPromptLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  somaticPromptHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  somaticPromptLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  somaticPromptText: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    fontStyle: 'italic',
-    fontWeight: '400',
-  },
-  somaticPromptActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  tryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.lg,
-  },
-  tryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 
   dailyScriptureSection: {
