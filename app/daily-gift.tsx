@@ -95,6 +95,7 @@ export default function DailyGiftScreen() {
   const [hasSkippedPractice, setHasSkippedPractice] = useState(false);
 
   const [hasSkippedSomaticPrompt, setHasSkippedSomaticPrompt] = useState(false);
+  const [showSomaticModal, setShowSomaticModal] = useState(false);
 
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
@@ -349,12 +350,18 @@ export default function DailyGiftScreen() {
   };
 
   const handleTrySomaticPrompt = () => {
-    console.log('[DailyGift] User tapped Try for somatic prompt');
-    setHasSkippedSomaticPrompt(true);
+    console.log('[DailyGift] User tapped Try for somatic prompt - opening modal');
+    setShowSomaticModal(true);
   };
 
   const handleSkipSomaticPrompt = () => {
     console.log('[DailyGift] User skipped somatic prompt');
+    setHasSkippedSomaticPrompt(true);
+  };
+
+  const handleCloseSomaticModal = () => {
+    console.log('[DailyGift] User closed somatic modal');
+    setShowSomaticModal(false);
     setHasSkippedSomaticPrompt(true);
   };
 
@@ -988,6 +995,73 @@ export default function DailyGiftScreen() {
         </ScrollView>
       )}
 
+      {/* Somatic Practice Modal */}
+      <Modal
+        visible={showSomaticModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseSomaticModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.plantEmoji}>
+                🌱
+              </Text>
+              <TouchableOpacity 
+                onPress={handleCloseSomaticModal}
+                style={styles.modalCloseButton}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalTitle, { color: textColor }]}>
+              {somaticPromptDisplay}
+            </Text>
+
+            <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
+              Take a moment to notice your body. There&apos;s no right or wrong way to do this.
+            </Text>
+
+            <View style={[styles.modalSteps, { backgroundColor: colors.background }]}>
+              <Text style={[styles.modalStepText, { color: textColor }]}>
+                • Find a comfortable position
+              </Text>
+              <Text style={[styles.modalStepText, { color: textColor }]}>
+                • Take a few gentle breaths
+              </Text>
+              <Text style={[styles.modalStepText, { color: textColor }]}>
+                • Notice what you notice
+              </Text>
+              <Text style={[styles.modalStepText, { color: textColor }]}>
+                • No need to change anything
+              </Text>
+            </View>
+
+            <Text style={[styles.modalNote, { color: textSecondaryColor }]}>
+              When you&apos;re ready, you can return to your reflection.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleCloseSomaticModal}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonText}>
+                Continue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Share Success Modal */}
       <Modal
         visible={showShareSuccessModal}
@@ -1513,6 +1587,78 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+
+  // Somatic Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  modalTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 28,
+  },
+  modalInstructions: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  modalSteps: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  modalStepText: {
+    fontSize: typography.body,
+    lineHeight: 24,
+  },
+  modalNote: {
+    fontSize: typography.bodySmall,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    fontStyle: 'italic',
+  },
+  modalButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+
+  // Share Success Modal Styles
   successModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
