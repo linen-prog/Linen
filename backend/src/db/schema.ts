@@ -195,6 +195,7 @@ export const weeklyThemes = pgTable(
 // Daily content table
 export const dailyContent = pgTable('daily_content', {
   id: uuid('id').primaryKey().defaultRandom(),
+  dayOfYear: integer('day_of_year').notNull().unique(),
   weeklyThemeId: uuid('weekly_theme_id')
     .notNull()
     .references(() => weeklyThemes.id, { onDelete: 'cascade' }),
@@ -204,7 +205,7 @@ export const dailyContent = pgTable('daily_content', {
   scriptureReference: text('scripture_reference').notNull(),
   reflectionPrompt: text('reflection_prompt').notNull(),
   somaticPrompt: text('somatic_prompt'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // User artworks table

@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
 // Utility function to get current Monday (week start) in Pacific Time
@@ -1279,29 +1279,57 @@ export function registerWeeklyThemeRoutes(app: App) {
           throw new Error(`Daily somatic prompt not found for day ${dayOfYear}`);
         }
 
-        // Create daily content object from 365-day scripture cycle
-        const dailyContent = {
-          id: null,
-          dayOfWeek: currentDayOfWeek,
-          dayTitle: dayName,
-          scriptureReference: dailyScripture.ref,
-          scriptureText: dailyScripture.text,
-          reflectionPrompt: dailyScripture.prompt,
-          somaticPrompt: dailySomaticPrompt,
-          dayOfYear, // Include dayOfYear in content
-        };
-
         app.logger.info(
           {
-            themeId: theme.id,
             dayOfYear,
-            dayOfWeek: currentDayOfWeek,
             scriptureRef: dailyScripture.ref,
             scriptureText: dailyScripture.text.substring(0, 100),
             somaticPrompt: dailySomaticPrompt.substring(0, 50),
           },
-          'Daily content generated from 365-day scripture cycle'
+          'Generated daily content from 365-day scripture cycle'
         );
+
+        // Check if daily content already exists for this dayOfYear
+        let dailyContent: any = null;
+        const existingContent = await app.db
+          .select()
+          .from(schema.dailyContent)
+          .where(eq(schema.dailyContent.dayOfYear, dayOfYear))
+          .limit(1);
+
+        if (existingContent.length > 0) {
+          // Use existing record
+          dailyContent = existingContent[0];
+          app.logger.info(
+            { dayOfYear, contentId: dailyContent.id },
+            'Using existing daily content from database'
+          );
+        } else {
+          // Create new daily content record in database
+          const [newContent] = await app.db
+            .insert(schema.dailyContent)
+            .values({
+              dayOfYear,
+              weeklyThemeId: theme.id,
+              dayOfWeek: currentDayOfWeek,
+              dayTitle: dayName,
+              scriptureReference: dailyScripture.ref,
+              scriptureText: dailyScripture.text,
+              reflectionPrompt: dailyScripture.prompt,
+              somaticPrompt: dailySomaticPrompt,
+            })
+            .returning();
+
+          dailyContent = newContent;
+          app.logger.info(
+            {
+              dayOfYear,
+              contentId: dailyContent.id,
+              scriptureRef: dailyScripture.ref,
+            },
+            'Daily content persisted to database'
+          );
+        }
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
