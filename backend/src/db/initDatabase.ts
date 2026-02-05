@@ -245,8 +245,24 @@ export async function initializeDatabase(db: any, app?: App) {
     // Add new columns to daily_content if they don't exist
     await db.execute(sql`
       ALTER TABLE IF EXISTS "daily_content"
+      ADD COLUMN IF NOT EXISTS "day_of_year" integer,
       ADD COLUMN IF NOT EXISTS "day_title" text,
       ADD COLUMN IF NOT EXISTS "somatic_prompt" text
+    `);
+
+    // Add unique constraint on day_of_year if it doesn't exist
+    try {
+      await db.execute(sql`
+        ALTER TABLE "daily_content"
+        ADD CONSTRAINT "daily_content_day_of_year_unique" UNIQUE ("day_of_year")
+      `);
+    } catch (error) {
+      // Constraint might already exist, this is safe to ignore
+    }
+
+    // Create index on day_of_year for faster queries
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "daily_content_day_of_year" ON "daily_content"("day_of_year")
     `);
 
     // Alter user_artworks table to ensure weekly_theme_id is nullable
