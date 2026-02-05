@@ -96,6 +96,9 @@ export default function DailyGiftScreen() {
 
   const [hasSkippedSomaticPrompt, setHasSkippedSomaticPrompt] = useState(false);
   const [showSomaticModal, setShowSomaticModal] = useState(false);
+  const [somaticTimerActive, setSomaticTimerActive] = useState(false);
+  const [somaticTimeRemaining, setSomaticTimeRemaining] = useState(60);
+  const [showSomaticCelebration, setShowSomaticCelebration] = useState(false);
 
   const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
 
@@ -119,6 +122,32 @@ export default function DailyGiftScreen() {
     delay: Math.random() * 100,
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
+
+  // Timer effect for somatic invitation
+  useEffect(() => {
+    let timerInterval: ReturnType<typeof setInterval> | null = null;
+    
+    if (somaticTimerActive && somaticTimeRemaining > 0) {
+      timerInterval = setInterval(() => {
+        setSomaticTimeRemaining((prevTime) => {
+          if (prevTime <= 1) {
+            setSomaticTimerActive(false);
+            console.log('[DailyGift] Somatic timer completed');
+            setShowSomaticModal(false);
+            setShowSomaticCelebration(true);
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [somaticTimerActive, somaticTimeRemaining]);
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -396,8 +425,10 @@ export default function DailyGiftScreen() {
   };
 
   const handleTrySomaticPrompt = () => {
-    console.log('[DailyGift] User tapped Try for somatic prompt - opening modal');
+    console.log('[DailyGift] User tapped Try for somatic prompt - opening modal with timer');
     setShowSomaticModal(true);
+    setSomaticTimerActive(true);
+    setSomaticTimeRemaining(60); // 60 seconds timer
   };
 
   const handleSkipSomaticPrompt = () => {
@@ -408,6 +439,13 @@ export default function DailyGiftScreen() {
   const handleCloseSomaticModal = () => {
     console.log('[DailyGift] User closed somatic modal');
     setShowSomaticModal(false);
+    setSomaticTimerActive(false);
+    setHasSkippedSomaticPrompt(true);
+  };
+
+  const handleCloseSomaticCelebration = () => {
+    console.log('[DailyGift] User closed somatic celebration');
+    setShowSomaticCelebration(false);
     setHasSkippedSomaticPrompt(true);
   };
 
@@ -589,6 +627,11 @@ export default function DailyGiftScreen() {
   const now = new Date();
   const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
   const todayDateDisplay = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  // Format timer display
+  const timerMinutes = Math.floor(somaticTimeRemaining / 60);
+  const timerSeconds = somaticTimeRemaining % 60;
+  const timerDisplay = `${timerMinutes}:${timerSeconds.toString().padStart(2, '0')}`;
 
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
@@ -1053,7 +1096,7 @@ export default function DailyGiftScreen() {
         </ScrollView>
       )}
 
-      {/* Somatic Practice Modal */}
+      {/* Somatic Practice Modal with Timer */}
       <Modal
         visible={showSomaticModal}
         animationType="fade"
@@ -1084,6 +1127,16 @@ export default function DailyGiftScreen() {
               {somaticPromptDisplay}
             </Text>
 
+            {/* Timer Display */}
+            <View style={styles.modalTimerContainer}>
+              <Text style={[styles.modalTimerLabel, { color: textSecondaryColor }]}>
+                Time Remaining
+              </Text>
+              <Text style={[styles.modalTimerDisplay, { color: colors.primary }]}>
+                {timerDisplay}
+              </Text>
+            </View>
+
             <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
               Take a moment to notice your body. There&apos;s no right or wrong way to do this.
             </Text>
@@ -1113,6 +1166,51 @@ export default function DailyGiftScreen() {
               activeOpacity={0.8}
             >
               <Text style={styles.modalButtonText}>
+                Continue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Somatic Celebration Modal */}
+      <Modal
+        visible={showSomaticCelebration}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseSomaticCelebration}
+      >
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalContent}>
+            <View style={styles.successIconCircle}>
+              <IconSymbol 
+                ios_icon_name="star.fill"
+                android_material_icon_name="star"
+                size={48}
+                color="#FFFFFF"
+              />
+            </View>
+
+            <Text style={styles.successModalTitle}>
+              Congratulations! 🎉
+            </Text>
+
+            <Text style={styles.successModalMessage}>
+              You completed your somatic invitation
+            </Text>
+
+            <View style={styles.successModalNote}>
+              <Text style={styles.successModalNoteText}>
+                You took time to be present with yourself. That&apos;s a beautiful gift you&apos;ve given yourself today.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.successModalButton}
+              onPress={handleCloseSomaticCelebration}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.successModalButtonText}>
                 Continue
               </Text>
             </TouchableOpacity>
@@ -1717,6 +1815,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
     lineHeight: 28,
+  },
+  modalTimerContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primaryLight + '15',
+  },
+  modalTimerLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  modalTimerDisplay: {
+    fontSize: 48,
+    fontWeight: typography.bold,
   },
   modalInstructions: {
     fontSize: typography.body,
