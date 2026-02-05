@@ -150,12 +150,24 @@ export function registerDailyGiftRoutes(app: App) {
       const { dailyGiftId, reflectionText, shareToComm, category, isAnonymous } = request.body;
 
       app.logger.info(
-        { userId: session.user.id, dailyGiftId, shareToComm, category },
-        'Creating reflection'
+        {
+          userId: session.user.id,
+          dailyGiftId,
+          reflectionLength: reflectionText?.length || 0,
+          shareToComm,
+          category,
+          isAnonymous,
+        },
+        'POST /api/daily-gift/reflect endpoint called'
       );
 
       try {
         // Verify daily content exists (from 365-day scripture cycle)
+        app.logger.debug(
+          { dailyGiftId },
+          'Querying daily_content table for daily content ID'
+        );
+
         const dailyContent = await app.db
           .select()
           .from(schema.dailyContent)
@@ -163,25 +175,55 @@ export function registerDailyGiftRoutes(app: App) {
           .limit(1);
 
         if (!dailyContent.length) {
-          app.logger.warn({ dailyGiftId }, 'Daily content not found');
+          app.logger.warn(
+            { dailyGiftId, queriedTable: 'daily_content' },
+            'Daily content not found in database - cannot save reflection'
+          );
           return reply.status(404).send({ error: 'Daily content not found' });
         }
 
+        app.logger.debug(
+          {
+            dailyGiftId,
+            contentId: dailyContent[0].id,
+            scriptureRef: dailyContent[0].scriptureReference,
+            dayOfYear: dailyContent[0].dayOfYear,
+          },
+          'Daily content found successfully'
+        );
+
         // Check if user already has a reflection for this gift
+        app.logger.debug(
+          { userId: session.user.id, dailyGiftId, contentFound: dailyContent.length > 0 },
+          'Checking for existing reflection'
+        );
+
         const existingReflection = await app.db
           .select()
           .from(schema.userReflections)
           .where(
-            eq(schema.userReflections.userId, session.user.id) &&
-            eq(schema.userReflections.dailyGiftId, dailyGiftId as any)
+            and(
+              eq(schema.userReflections.userId, session.user.id),
+              eq(schema.userReflections.dailyGiftId, dailyGiftId as any)
+            )
           )
           .limit(1);
+
+        app.logger.debug(
+          { userId: session.user.id, dailyGiftId, existingReflectionFound: existingReflection.length > 0 },
+          'Existing reflection query completed'
+        );
 
         let reflection;
         let postId: string | undefined;
 
         if (existingReflection.length > 0) {
           // Update existing reflection
+          app.logger.info(
+            { reflectionId: existingReflection[0].id, userId: session.user.id },
+            'Updating existing reflection'
+          );
+
           [reflection] = await app.db
             .update(schema.userReflections)
             .set({
@@ -192,8 +234,18 @@ export function registerDailyGiftRoutes(app: App) {
             })
             .where(eq(schema.userReflections.id, existingReflection[0].id))
             .returning();
+
+          app.logger.info(
+            { reflectionId: reflection.id, userId: session.user.id },
+            'Reflection updated successfully'
+          );
         } else {
           // Create new reflection
+          app.logger.info(
+            { userId: session.user.id, dailyGiftId, reflectionLength: reflectionText.length },
+            'Creating new reflection'
+          );
+
           [reflection] = await app.db
             .insert(schema.userReflections)
             .values({
@@ -205,10 +257,20 @@ export function registerDailyGiftRoutes(app: App) {
               isAnonymous: isAnonymous || false,
             })
             .returning();
+
+          app.logger.info(
+            { reflectionId: reflection.id, userId: session.user.id, dailyGiftId },
+            'Reflection created successfully'
+          );
         }
 
         // If sharing to community and category is provided, create community post
         if (shareToComm && category) {
+          app.logger.info(
+            { userId: session.user.id, category, isAnonymous, scriptureRef: dailyContent[0].scriptureReference },
+            'Sharing reflection to community'
+          );
+
           // Ensure guest user exists if using guest token
           if (session.user.id === 'guest-user') {
             await ensureGuestUserExists(app);
@@ -218,6 +280,11 @@ export function registerDailyGiftRoutes(app: App) {
           const userName = session.user.name || null;
 
           // Create community post
+          app.logger.debug(
+            { userId: session.user.id, userName, isAnonymous },
+            'Creating community post with author info'
+          );
+
           const [post] = await app.db
             .insert(schema.communityPosts)
             .values({
@@ -234,8 +301,13 @@ export function registerDailyGiftRoutes(app: App) {
           postId = post.id;
 
           app.logger.info(
-            { reflectionId: reflection.id, postId: post.id, userId: session.user.id, category },
-            'Reflection shared to community'
+            { reflectionId: reflection.id, postId: post.id, userId: session.user.id, category, scriptureRef: dailyContent[0].scriptureReference },
+            'Reflection shared to community successfully'
+          );
+        } else if (shareToComm || category) {
+          app.logger.warn(
+            { userId: session.user.id, shareToComm, category },
+            'Share to community incomplete - both shareToComm and category required'
           );
         }
 
@@ -244,14 +316,31 @@ export function registerDailyGiftRoutes(app: App) {
           'Reflection created/updated'
         );
 
+        app.logger.info(
+          {
+            reflectionId: reflection.id,
+            postId,
+            userId: session.user.id,
+            dailyGiftId,
+          },
+          'Reflection endpoint completed successfully'
+        );
+
         return reply.send({
           reflectionId: reflection.id,
           postId,
         });
       } catch (error) {
         app.logger.error(
-          { err: error, userId: session.user.id, dailyGiftId },
-          'Failed to create reflection'
+          {
+            err: error,
+            userId: session.user.id,
+            dailyGiftId,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+            endpoint: '/api/daily-gift/reflect',
+          },
+          'Failed to create/update reflection'
         );
         throw error;
       }
