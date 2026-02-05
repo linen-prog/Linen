@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, or } from 'drizzle-orm';
+import { eq, and, or, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
 // Utility function to get current Monday (week start) in Pacific Time
@@ -1290,6 +1290,11 @@ export function registerWeeklyThemeRoutes(app: App) {
         );
 
         // Check if daily content already exists for this dayOfYear
+        app.logger.debug(
+          { dayOfYear },
+          'Checking for existing daily content with dayOfYear'
+        );
+
         let dailyContent: any = null;
         const existingContent = await app.db
           .select()
@@ -1301,35 +1306,105 @@ export function registerWeeklyThemeRoutes(app: App) {
           // Use existing record
           dailyContent = existingContent[0];
           app.logger.info(
-            { dayOfYear, contentId: dailyContent.id },
+            {
+              dayOfYear,
+              contentId: dailyContent.id,
+              weeklyThemeId: dailyContent.weeklyThemeId,
+            },
             'Using existing daily content from database'
           );
         } else {
           // Create new daily content record in database
-          const [newContent] = await app.db
-            .insert(schema.dailyContent)
-            .values({
-              dayOfYear,
-              weeklyThemeId: theme.id,
-              dayOfWeek: currentDayOfWeek,
-              dayTitle: dayName,
-              scriptureReference: dailyScripture.ref,
-              scriptureText: dailyScripture.text,
-              reflectionPrompt: dailyScripture.prompt,
-              somaticPrompt: dailySomaticPrompt,
-            })
-            .returning();
-
-          dailyContent = newContent;
           app.logger.info(
             {
               dayOfYear,
-              contentId: dailyContent.id,
+              weeklyThemeId: theme.id,
               scriptureRef: dailyScripture.ref,
             },
-            'Daily content persisted to database'
+            'No existing daily content found - inserting new record'
           );
+
+          try {
+            const [newContent] = await app.db
+              .insert(schema.dailyContent)
+              .values({
+                dayOfYear,
+                weeklyThemeId: theme.id,
+                dayOfWeek: currentDayOfWeek,
+                dayTitle: dayName,
+                scriptureReference: dailyScripture.ref,
+                scriptureText: dailyScripture.text,
+                reflectionPrompt: dailyScripture.prompt,
+                somaticPrompt: dailySomaticPrompt,
+              })
+              .returning();
+
+            dailyContent = newContent;
+            app.logger.info(
+              {
+                dayOfYear,
+                contentId: dailyContent.id,
+                weeklyThemeId: dailyContent.weeklyThemeId,
+                scriptureRef: dailyScripture.ref,
+              },
+              'Daily content successfully persisted to database'
+            );
+          } catch (insertError) {
+            app.logger.error(
+              {
+                err: insertError,
+                dayOfYear,
+                themeId: theme.id,
+                errorMessage: insertError instanceof Error ? insertError.message : String(insertError),
+              },
+              'Failed to insert daily content - attempting fallback query'
+            );
+
+            // Fallback: try to fetch again in case another process inserted it
+            const fallbackContent = await app.db
+              .select()
+              .from(schema.dailyContent)
+              .where(eq(schema.dailyContent.dayOfYear, dayOfYear))
+              .limit(1);
+
+            if (fallbackContent.length > 0) {
+              dailyContent = fallbackContent[0];
+              app.logger.info(
+                {
+                  dayOfYear,
+                  contentId: dailyContent.id,
+                  source: 'fallback_query',
+                },
+                'Daily content found via fallback query'
+              );
+            } else {
+              app.logger.error(
+                { dayOfYear },
+                'Critical: Daily content not found even after fallback query'
+              );
+              throw new Error(`Failed to get or create daily content for dayOfYear ${dayOfYear}`);
+            }
+          }
         }
+
+        // Verify dailyContent has a valid ID before proceeding
+        if (!dailyContent || !dailyContent.id) {
+          app.logger.error(
+            { dailyContent, dayOfYear },
+            'Critical: Daily content exists but has no valid ID'
+          );
+          throw new Error(`Daily content record missing ID for dayOfYear ${dayOfYear}`);
+        }
+
+        app.logger.debug(
+          {
+            dayOfYear: dailyContent.dayOfYear,
+            contentId: dailyContent.id,
+            weeklyThemeId: dailyContent.weeklyThemeId,
+            scriptureRef: dailyContent.scriptureReference,
+          },
+          'Daily content validation passed - ready to return'
+        );
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
@@ -1364,9 +1439,11 @@ export function registerWeeklyThemeRoutes(app: App) {
         app.logger.info(
           {
             dayOfYear: responseContent.dayOfYear,
+            contentId: responseContent.id,
             scriptureRef: responseContent.scriptureReference,
+            themeId: theme.id,
           },
-          'Returning weekly theme with daily content'
+          'Returning weekly theme with persisted daily content'
         );
 
         return reply.send({
@@ -1383,7 +1460,15 @@ export function registerWeeklyThemeRoutes(app: App) {
           dailyContent: responseContent,
         });
       } catch (error) {
-        app.logger.error({ err: error }, 'Failed to fetch current weekly theme');
+        app.logger.error(
+          {
+            err: error,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+            endpoint: '/api/weekly-theme/current',
+          },
+          'Failed to fetch current weekly theme'
+        );
         throw error;
       }
     }
