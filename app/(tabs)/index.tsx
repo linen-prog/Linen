@@ -105,9 +105,9 @@ export default function HomeScreen() {
 
   const handleDailyGift = () => {
     console.log('🏠 [Home] User tapped Daily Gift card');
-    console.log('🏠 [Home] Navigating to: /open-gift');
-    router.push('/open-gift');
-    console.log('🏠 [Home] router.push() called for /open-gift');
+    console.log('🏠 [Home] Navigating directly to: /daily-gift');
+    router.push('/daily-gift');
+    console.log('🏠 [Home] router.push() called for /daily-gift');
   };
 
   const handleCommunity = () => {
