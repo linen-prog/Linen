@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -123,31 +123,57 @@ export default function DailyGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  // Timer effect for somatic invitation
+  // Use ref to track timer interval
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Timer effect for somatic invitation - FIXED
   useEffect(() => {
-    let timerInterval: ReturnType<typeof setInterval> | null = null;
-    
+    console.log('[DailyGift] Timer effect triggered:', { 
+      somaticTimerActive, 
+      somaticTimeRemaining 
+    });
+
     if (somaticTimerActive && somaticTimeRemaining > 0) {
-      timerInterval = setInterval(() => {
+      console.log('[DailyGift] Starting timer interval');
+      
+      timerIntervalRef.current = setInterval(() => {
         setSomaticTimeRemaining((prevTime) => {
+          console.log('[DailyGift] Timer tick:', prevTime);
+          
           if (prevTime <= 1) {
+            console.log('[DailyGift] Timer completed! Showing celebration');
             setSomaticTimerActive(false);
-            console.log('[DailyGift] Somatic timer completed');
             setShowSomaticModal(false);
             setShowSomaticCelebration(true);
+            
+            // Clear interval when timer completes
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
+            }
+            
             return 0;
           }
+          
           return prevTime - 1;
         });
       }, 1000);
+    } else if (!somaticTimerActive && timerIntervalRef.current) {
+      // Clear interval if timer is stopped
+      console.log('[DailyGift] Clearing timer interval (timer stopped)');
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
     }
     
+    // Cleanup function
     return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
+      if (timerIntervalRef.current) {
+        console.log('[DailyGift] Cleanup: clearing timer interval');
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
     };
-  }, [somaticTimerActive, somaticTimeRemaining]);
+  }, [somaticTimerActive]); // Only depend on somaticTimerActive, not somaticTimeRemaining
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -428,8 +454,8 @@ export default function DailyGiftScreen() {
   const handleTrySomaticPrompt = () => {
     console.log('[DailyGift] User tapped Try for somatic prompt - opening modal with timer');
     setShowSomaticModal(true);
-    setSomaticTimerActive(true);
-    setSomaticTimeRemaining(60); // 60 seconds timer
+    setSomaticTimeRemaining(60); // Reset to 60 seconds
+    setSomaticTimerActive(true); // Start timer
   };
 
   const handleSkipSomaticPrompt = () => {
@@ -439,8 +465,8 @@ export default function DailyGiftScreen() {
 
   const handleCloseSomaticModal = () => {
     console.log('[DailyGift] User closed somatic modal');
+    setSomaticTimerActive(false); // Stop timer first
     setShowSomaticModal(false);
-    setSomaticTimerActive(false);
     setHasSkippedSomaticPrompt(true);
   };
 
