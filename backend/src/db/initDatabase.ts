@@ -139,6 +139,31 @@ export async function initializeDatabase(db: any, app?: App) {
       ADD COLUMN IF NOT EXISTS "is_anonymous" boolean DEFAULT false
     `);
 
+    // Fix foreign key constraint to reference daily_content instead of daily_gifts
+    try {
+      await db.execute(sql`
+        ALTER TABLE IF EXISTS "user_reflections"
+        DROP CONSTRAINT IF EXISTS "user_reflections_daily_gift_id_fkey"
+      `);
+      console.log('Dropped old daily_gift_id foreign key constraint from user_reflections');
+    } catch (error) {
+      // Constraint might not exist, this is safe to ignore
+      console.log('Could not drop daily_gift_id foreign key (may not exist):', error);
+    }
+
+    // Add new foreign key constraint to daily_content
+    try {
+      await db.execute(sql`
+        ALTER TABLE IF EXISTS "user_reflections"
+        ADD CONSTRAINT "user_reflections_daily_gift_id_fkey"
+        FOREIGN KEY ("daily_gift_id") REFERENCES "daily_content"("id") ON DELETE CASCADE
+      `);
+      console.log('Added new daily_gift_id foreign key constraint referencing daily_content');
+    } catch (error) {
+      // Constraint might already exist, this is safe to ignore
+      console.log('Could not add daily_gift_id foreign key (may already exist):', error);
+    }
+
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "community_posts" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),

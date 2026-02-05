@@ -63,24 +63,6 @@ export const dailyGifts = pgTable(
   (table) => [uniqueIndex('daily_gifts_date_unique').on(table.date)]
 );
 
-// User reflections table
-export const userReflections = pgTable('user_reflections', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => {
-    return { id: true } as any;
-  }, { onDelete: 'cascade' }),
-  dailyGiftId: uuid('daily_gift_id')
-    .notNull()
-    .references(() => dailyGifts.id, { onDelete: 'cascade' }),
-  reflectionText: text('reflection_text').notNull(),
-  shareToComm: boolean('share_to_comm').default(false).notNull(),
-  category: text('category', {
-    enum: ['feed', 'wisdom', 'care', 'prayers'],
-  }),
-  isAnonymous: boolean('is_anonymous').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
 // Community posts table
 export const communityPosts = pgTable('community_posts', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -206,6 +188,24 @@ export const dailyContent = pgTable('daily_content', {
   reflectionPrompt: text('reflection_prompt').notNull(),
   somaticPrompt: text('somatic_prompt'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// User reflections table
+export const userReflections = pgTable('user_reflections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => {
+    return { id: true } as any;
+  }, { onDelete: 'cascade' }),
+  dailyGiftId: uuid('daily_gift_id')
+    .notNull()
+    .references(() => dailyContent.id, { onDelete: 'cascade' }),
+  reflectionText: text('reflection_text').notNull(),
+  shareToComm: boolean('share_to_comm').default(false).notNull(),
+  category: text('category', {
+    enum: ['feed', 'wisdom', 'care', 'prayers'],
+  }),
+  isAnonymous: boolean('is_anonymous').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // User artworks table
