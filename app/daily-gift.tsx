@@ -290,7 +290,8 @@ export default function DailyGiftScreen() {
       shareAnonymously,
       responseMode,
       selectedMoods,
-      selectedSensations 
+      selectedSensations,
+      dailyContentId: dailyGiftResponse.dailyContent.id
     });
     setIsLoading(true);
 
@@ -311,10 +312,17 @@ export default function DailyGiftScreen() {
       if (shareToComm) {
         setShowShareSuccessModal(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DailyGift] Failed to save reflection:', error);
+      console.error('[DailyGift] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        dailyContentId: dailyGiftResponse.dailyContent.id
+      });
       setIsLoading(false);
-      alert('Failed to save reflection. Please try again.');
+      
+      const errorMessage = error?.message || 'Failed to save reflection. Please try again.';
+      alert(errorMessage);
     }
   };
 
