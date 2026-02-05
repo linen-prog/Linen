@@ -155,16 +155,16 @@ export function registerDailyGiftRoutes(app: App) {
       );
 
       try {
-        // Verify daily gift exists
-        const gift = await app.db
+        // Verify daily content exists (from 365-day scripture cycle)
+        const dailyContent = await app.db
           .select()
-          .from(schema.dailyGifts)
-          .where(eq(schema.dailyGifts.id, dailyGiftId as any))
+          .from(schema.dailyContent)
+          .where(eq(schema.dailyContent.id, dailyGiftId as any))
           .limit(1);
 
-        if (!gift.length) {
-          app.logger.warn({ dailyGiftId }, 'Daily gift not found');
-          return reply.status(404).send({ error: 'Daily gift not found' });
+        if (!dailyContent.length) {
+          app.logger.warn({ dailyGiftId }, 'Daily content not found');
+          return reply.status(404).send({ error: 'Daily content not found' });
         }
 
         // Check if user already has a reflection for this gift
@@ -227,7 +227,7 @@ export function registerDailyGiftRoutes(app: App) {
               category: category as any, // Use the category from request
               content: reflectionText,
               contentType: 'daily-gift',
-              scriptureReference: gift[0].scriptureReference,
+              scriptureReference: dailyContent[0].scriptureReference,
             })
             .returning();
 
