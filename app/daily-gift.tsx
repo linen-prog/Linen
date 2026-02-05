@@ -280,49 +280,90 @@ export default function DailyGiftScreen() {
   };
 
   const handleSaveReflection = async () => {
-    if (!reflectionText.trim() || !dailyGiftResponse || !dailyGiftResponse.dailyContent) {
-      console.log('[DailyGift] Cannot save reflection - missing data');
+    const saveTimestamp = new Date().toISOString();
+    console.log(`[DailyGift] ${saveTimestamp} - handleSaveReflection called`);
+    
+    if (!reflectionText.trim()) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: reflection text is empty`);
+      return;
+    }
+    
+    if (!dailyGiftResponse) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: dailyGiftResponse is null`);
+      return;
+    }
+    
+    if (!dailyGiftResponse.dailyContent) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: dailyContent is null`);
+      return;
+    }
+    
+    if (!dailyGiftResponse.dailyContent.id) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: dailyContent.id is null or undefined`);
       return;
     }
 
-    console.log('[DailyGift] User saving reflection', { 
-      reflectionText, 
+    const requestData = {
+      dailyGiftId: dailyGiftResponse.dailyContent.id,
+      reflectionText: reflectionText.trim(),
+      shareToComm,
+      category: shareCategory,
+      isAnonymous: shareAnonymously,
+    };
+
+    console.log(`[DailyGift] ${saveTimestamp} - Preparing to save reflection:`, { 
+      reflectionTextLength: reflectionText.trim().length,
       shareToComm,
       shareAnonymously,
       responseMode,
       selectedMoods,
       selectedSensations,
-      dailyContentId: dailyGiftResponse.dailyContent.id
+      dailyContentId: dailyGiftResponse.dailyContent.id,
+      requestData
     });
+    
     setIsLoading(true);
 
     try {
-      const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', {
-        dailyGiftId: dailyGiftResponse.dailyContent.id,
-        reflectionText: reflectionText.trim(),
-        shareToComm,
-        category: shareCategory,
-        isAnonymous: shareAnonymously,
-      });
+      console.log(`[DailyGift] ${saveTimestamp} - Calling authenticatedPost to /api/daily-gift/reflect...`);
       
-      console.log('[DailyGift] Reflection saved successfully:', response);
+      const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', requestData);
+      
+      console.log(`[DailyGift] ${saveTimestamp} - Reflection saved successfully:`, response);
       setIsLoading(false);
       setHasReflected(true);
       
       // Show success modal if shared to community
       if (shareToComm) {
+        console.log(`[DailyGift] ${saveTimestamp} - Showing share success modal`);
         setShowShareSuccessModal(true);
       }
     } catch (error: any) {
-      console.error('[DailyGift] Failed to save reflection:', error);
-      console.error('[DailyGift] Error details:', {
-        message: error?.message,
-        status: error?.status,
-        dailyContentId: dailyGiftResponse.dailyContent.id
-      });
+      const errorTimestamp = new Date().toISOString();
+      console.error(`[DailyGift] ${errorTimestamp} - Failed to save reflection:`, error);
+      console.error(`[DailyGift] ${errorTimestamp} - Error type:`, typeof error);
+      console.error(`[DailyGift] ${errorTimestamp} - Error name:`, error?.name);
+      console.error(`[DailyGift] ${errorTimestamp} - Error message:`, error?.message);
+      console.error(`[DailyGift] ${errorTimestamp} - Error stack:`, error?.stack);
+      console.error(`[DailyGift] ${errorTimestamp} - Full error object:`, JSON.stringify(error, null, 2));
+      console.error(`[DailyGift] ${errorTimestamp} - Request data that failed:`, requestData);
       setIsLoading(false);
       
-      const errorMessage = error?.message || 'Failed to save reflection. Please try again.';
+      // Create a detailed error message for the user
+      let errorMessage = 'Failed to save reflection. ';
+      
+      if (error?.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      // Add technical details for debugging
+      if (error?.status) {
+        errorMessage += ` (Status: ${error.status})`;
+      }
+      
+      console.error(`[DailyGift] ${errorTimestamp} - Showing error to user:`, errorMessage);
       alert(errorMessage);
     }
   };
@@ -905,7 +946,19 @@ export default function DailyGiftScreen() {
 
               <TouchableOpacity 
                 style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
-                onPress={handleSaveReflection}
+                onPress={() => {
+                  const buttonPressTimestamp = new Date().toISOString();
+                  console.log(`[DailyGift] ${buttonPressTimestamp} - Save button pressed`);
+                  console.log(`[DailyGift] ${buttonPressTimestamp} - Button state:`, {
+                    hasReflectionText: !!reflectionText.trim(),
+                    reflectionTextLength: reflectionText.trim().length,
+                    isLoading,
+                    isDisabled: !reflectionText.trim() || isLoading,
+                    hasDailyContent: !!dailyGiftResponse?.dailyContent,
+                    dailyContentId: dailyGiftResponse?.dailyContent?.id
+                  });
+                  handleSaveReflection();
+                }}
                 disabled={!reflectionText.trim() || isLoading}
                 activeOpacity={0.8}
               >

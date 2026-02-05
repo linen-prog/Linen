@@ -69,29 +69,46 @@ async function makeAuthenticatedRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const authToken = await getAuthToken();
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authToken}`,
-    ...options.headers,
-  };
+  try {
+    const authToken = await getAuthToken();
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+      ...options.headers,
+    };
 
-  console.log(`[API] ${options.method || 'GET'} ${endpoint}`);
+    const url = `${BACKEND_URL}${endpoint}`;
+    console.log(`[API] ${options.method || 'GET'} ${endpoint}`);
+    console.log(`[API] Full URL: ${url}`);
+    console.log(`[API] Headers:`, headers);
+    console.log(`[API] Body:`, options.body);
 
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    ...options,
-    headers,
-    credentials: 'include', // Include cookies for Better Auth session
-  });
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include', // Include cookies for Better Auth session
+    });
 
-  if (!response.ok) {
-    console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
-    const errorText = await response.text();
-    console.error('[API] Error response:', errorText);
+    console.log(`[API] Response received: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('[API] Error response:', errorText);
+    }
+
+    return response;
+  } catch (error: any) {
+    console.error(`[API] Network error in makeAuthenticatedRequest:`, error);
+    console.error(`[API] Error details:`, {
+      name: error?.name,
+      message: error?.message,
+      endpoint,
+      method: options.method || 'GET'
+    });
+    throw error;
   }
-
-  return response;
 }
 
 // Authenticated GET request
@@ -112,16 +129,35 @@ export async function authenticatedPost<T = any>(
   endpoint: string,
   data?: any
 ): Promise<T> {
-  const response = await makeAuthenticatedRequest(endpoint, {
-    method: 'POST',
-    body: data ? JSON.stringify(data) : JSON.stringify({}),
-  });
+  try {
+    console.log(`[API] authenticatedPost called for ${endpoint}`);
+    console.log(`[API] Request data:`, JSON.stringify(data, null, 2));
+    
+    const response = await makeAuthenticatedRequest(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : JSON.stringify({}),
+    });
 
-  if (!response.ok) {
-    throw new Error(`POST ${endpoint} failed: ${response.statusText}`);
+    console.log(`[API] Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API] Error response body:`, errorText);
+      throw new Error(`POST ${endpoint} failed: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log(`[API] Response data:`, responseData);
+    return responseData;
+  } catch (error: any) {
+    console.error(`[API] authenticatedPost exception:`, error);
+    console.error(`[API] Exception details:`, {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+    throw error;
   }
-
-  return response.json();
 }
 
 // Authenticated PUT request
