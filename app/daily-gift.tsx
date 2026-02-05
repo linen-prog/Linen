@@ -106,6 +106,8 @@ export default function DailyGiftScreen() {
   
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showShareSuccessModal, setShowShareSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
@@ -349,22 +351,25 @@ export default function DailyGiftScreen() {
       console.error(`[DailyGift] ${errorTimestamp} - Request data that failed:`, requestData);
       setIsLoading(false);
       
-      // Create a detailed error message for the user
-      let errorMessage = 'Failed to save reflection. ';
+      // Create a user-friendly error message
+      let userMessage = 'We\'re having trouble saving your reflection right now. ';
       
-      if (error?.message) {
-        errorMessage += error.message;
+      // Check if it's the foreign key constraint error
+      if (error?.message && error.message.includes('foreign key constraint')) {
+        userMessage = 'The daily gift is still being prepared. Please wait a moment and try again.';
+      } else if (error?.message && error.message.includes('body stream already read')) {
+        userMessage = 'There was a connection issue. Please try saving your reflection again.';
+      } else if (error?.status === 500) {
+        userMessage = 'The server is processing your request. Please try again in a moment.';
+      } else if (error?.message) {
+        userMessage += error.message;
       } else {
-        errorMessage += 'Please try again.';
+        userMessage += 'Please try again.';
       }
       
-      // Add technical details for debugging
-      if (error?.status) {
-        errorMessage += ` (Status: ${error.status})`;
-      }
-      
-      console.error(`[DailyGift] ${errorTimestamp} - Showing error to user:`, errorMessage);
-      alert(errorMessage);
+      console.error(`[DailyGift] ${errorTimestamp} - Showing error to user:`, userMessage);
+      setErrorMessage(userMessage);
+      setShowErrorModal(true);
     }
   };
 
@@ -1115,6 +1120,43 @@ export default function DailyGiftScreen() {
         </View>
       </Modal>
 
+      {/* Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={styles.errorModalContent}>
+            <IconSymbol 
+              ios_icon_name="exclamationmark.triangle.fill"
+              android_material_icon_name="warning"
+              size={48}
+              color={colors.accent}
+            />
+
+            <Text style={styles.errorModalTitle}>
+              Unable to Save
+            </Text>
+
+            <Text style={styles.errorModalMessage}>
+              {errorMessage}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.errorModalButton}
+              onPress={() => setShowErrorModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.errorModalButtonText}>
+                OK
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Share Success Modal */}
       <Modal
         visible={showShareSuccessModal}
@@ -1706,6 +1748,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+
+  // Error Modal Styles
+  errorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  errorModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  errorModalTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  errorModalMessage: {
+    fontSize: typography.body,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  errorModalButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.xxl,
+    width: '100%',
+    alignItems: 'center',
+  },
+  errorModalButtonText: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
