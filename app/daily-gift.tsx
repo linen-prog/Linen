@@ -229,8 +229,8 @@ export default function DailyGiftScreen() {
       }
     } catch (error) {
       const errorTimestamp = new Date().toISOString();
-      console.error(`[DailyGift] ${errorTimestamp} - Failed to load daily gift:`, error);
-      console.error(`[DailyGift] ${errorTimestamp} - Error details:`, error);
+      // Use console.log instead of console.error to avoid triggering error overlay for recoverable errors
+      console.log(`[DailyGift] ${errorTimestamp} - Failed to load daily gift (will show retry UI):`, error);
       if (isMounted) {
         setIsLoadingGift(false);
       }
@@ -269,7 +269,7 @@ export default function DailyGiftScreen() {
       });
       setHasReflected(!!todayReflection);
     } catch (error) {
-      console.error('[DailyGift] Failed to check reflection status:', error);
+      console.log('[DailyGift] Failed to check reflection status (non-critical):', error);
       setHasReflected(false);
     }
   };
@@ -283,7 +283,7 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${practiceTimestamp} - Weekly practice status:`, response);
       setHasCompletedPractice(response.hasCompleted);
     } catch (error) {
-      console.error('[DailyGift] Failed to check weekly practice status:', error);
+      console.log('[DailyGift] Failed to check weekly practice status (non-critical):', error);
     }
   };
 
@@ -371,13 +371,14 @@ export default function DailyGiftScreen() {
       }
     } catch (error: any) {
       const errorTimestamp = new Date().toISOString();
-      console.error(`[DailyGift] ${errorTimestamp} - Failed to save reflection:`, error);
-      console.error(`[DailyGift] ${errorTimestamp} - Error type:`, typeof error);
-      console.error(`[DailyGift] ${errorTimestamp} - Error name:`, error?.name);
-      console.error(`[DailyGift] ${errorTimestamp} - Error message:`, error?.message);
-      console.error(`[DailyGift] ${errorTimestamp} - Error stack:`, error?.stack);
-      console.error(`[DailyGift] ${errorTimestamp} - Full error object:`, JSON.stringify(error, null, 2));
-      console.error(`[DailyGift] ${errorTimestamp} - Request data that failed:`, requestData);
+      // Use console.log for user-facing errors to avoid error overlay
+      console.log(`[DailyGift] ${errorTimestamp} - Failed to save reflection:`, error);
+      console.log(`[DailyGift] ${errorTimestamp} - Error details:`, {
+        type: typeof error,
+        name: error?.name,
+        message: error?.message,
+        requestData
+      });
       setIsLoading(false);
       
       // Create a user-friendly error message
@@ -396,7 +397,7 @@ export default function DailyGiftScreen() {
         userMessage += 'Please try again.';
       }
       
-      console.error(`[DailyGift] ${errorTimestamp} - Showing error to user:`, userMessage);
+      console.log(`[DailyGift] ${errorTimestamp} - Showing error to user:`, userMessage);
       setErrorMessage(userMessage);
       setShowErrorModal(true);
     }
@@ -494,7 +495,7 @@ export default function DailyGiftScreen() {
       await loadDailyGift();
       console.log('[DailyGift] Manual refresh completed successfully');
     } catch (error) {
-      console.error('[DailyGift] Manual refresh failed:', error);
+      console.log('[DailyGift] Manual refresh failed (non-critical):', error);
     } finally {
       setIsRefreshing(false);
     }
