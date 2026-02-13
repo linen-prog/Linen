@@ -210,7 +210,7 @@ Respond with a JSON object with these exact keys:
 }`;
 
   const { text } = await generateText({
-    model: gateway('gpt-5-nano-2025-08-07'),
+    model: gateway('openai/gpt-5-nano-2025-08-07'),
     system: systemPrompt,
     prompt: `Here is this week's practice data:\n\n${dataContext}`,
   });
