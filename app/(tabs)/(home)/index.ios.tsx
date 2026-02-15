@@ -81,91 +81,100 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
-          {/* Check-In Card with Buffer */}
-          <View style={styles.cardBuffer}>
-            <TouchableOpacity 
-              style={styles.checkInCard}
-              onPress={handleCheckInPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardIconContainer}>
-                <IconSymbol 
-                  ios_icon_name="message.fill" 
-                  android_material_icon_name="chat" 
-                  size={48} 
-                  color={colors.primary}
-                />
+          {/* Streak Cards */}
+          <View style={styles.streakContainer}>
+            <View style={styles.streakCard}>
+              <Text style={styles.streakLabel}>Check-In Streak</Text>
+              <View style={styles.streakValueContainer}>
+                <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
+                <Text style={styles.streakBest}>best: 2</Text>
               </View>
-              
-              <Text style={styles.cardTitle}>Check-In</Text>
-              
-              <Text style={styles.cardSubtitle}>What&apos;s on your heart?</Text>
-              
-              {lastCheckInMessage ? (
-                <View style={styles.promptContainer}>
-                  <Text style={styles.promptText}>
-                    {lastCheckInMessage.length > 80 
-                      ? `${lastCheckInMessage.substring(0, 80)}...` 
-                      : lastCheckInMessage}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.promptContainer}>
-                  <Text style={styles.promptText}>
-                    You reflected on scripture this morning—want to explore it deeper?
-                  </Text>
-                </View>
-              )}
-              
-              {lastCheckInMessage && (
-                <Text style={styles.lastTimeText}>
-                  Last time: &quot;{lastCheckInMessage.substring(0, 50)}...&quot;
+            </View>
+            <View style={styles.streakCard}>
+              <Text style={styles.streakLabel}>Reflection Streak</Text>
+              <View style={styles.streakValueContainer}>
+                <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
+                <Text style={styles.streakBest}>best: 4</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Check-In Card */}
+          <TouchableOpacity 
+            style={styles.checkInCard}
+            onPress={handleCheckInPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconCircle}>
+              <IconSymbol 
+                ios_icon_name="message.fill" 
+                android_material_icon_name="chat" 
+                size={40} 
+                color={colors.primary}
+              />
+            </View>
+            
+            <Text style={styles.cardTitle}>Check-In</Text>
+            
+            <Text style={styles.cardSubtitle}>Dove is here for you</Text>
+            
+            {lastCheckInMessage ? (
+              <View style={styles.promptContainer}>
+                <Text style={styles.promptText}>
+                  {lastCheckInMessage.length > 80 
+                    ? `${lastCheckInMessage.substring(0, 80)}...` 
+                    : lastCheckInMessage}
                 </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Open Your Gift Card with Buffer */}
-          <View style={styles.cardBuffer}>
-            <TouchableOpacity 
-              style={styles.giftCard}
-              onPress={handleOpenGiftPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardIconContainer}>
-                <IconSymbol 
-                  ios_icon_name="gift.fill" 
-                  android_material_icon_name="card-giftcard" 
-                  size={48} 
-                  color={colors.primary}
-                />
               </View>
-              
-              <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-              
-              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Community Card with Buffer */}
-          <View style={styles.cardBuffer}>
-            <TouchableOpacity 
-              style={styles.communityCard}
-              onPress={handleCommunityPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.communityIconContainer}>
-                <IconSymbol 
-                  ios_icon_name="heart.fill" 
-                  android_material_icon_name="favorite" 
-                  size={32} 
-                  color={colors.primary}
-                />
+            ) : (
+              <View style={styles.promptContainer}>
+                <Text style={styles.promptText}>
+                  My lower avoid en is so sore and my low back hurts. With th...
+                </Text>
               </View>
-              
+            )}
+          </TouchableOpacity>
+
+          {/* Open Your Gift Card */}
+          <TouchableOpacity 
+            style={styles.giftCard}
+            onPress={handleOpenGiftPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.giftIconCircle}>
+              <IconSymbol 
+                ios_icon_name="gift.fill" 
+                android_material_icon_name="card-giftcard" 
+                size={40} 
+                color={colors.accent}
+              />
+            </View>
+            
+            <Text style={styles.giftCardTitle}>Open Your Gift</Text>
+            
+            <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+          </TouchableOpacity>
+
+          {/* Community Card */}
+          <TouchableOpacity 
+            style={styles.communityCard}
+            onPress={handleCommunityPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.communityIconCircle}>
+              <IconSymbol 
+                ios_icon_name="person.3.fill" 
+                android_material_icon_name="group" 
+                size={28} 
+                color={colors.primary}
+              />
+            </View>
+            
+            <View style={styles.communityTextContainer}>
               <Text style={styles.communityCardTitle}>Community</Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={styles.communityCardSubtitle}>Share your reflections</Text>
+            </View>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
@@ -198,23 +207,64 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: typography.fontFamilySerif,
   },
-  cardBuffer: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.md,
+  streakContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  streakCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  streakLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  streakValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  streakValue: {
+    fontSize: 36,
+    fontWeight: typography.bold,
+    color: colors.primary,
+  },
+  streakBest: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.regular,
+    color: colors.textLight,
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
+    marginBottom: spacing.xxl,
+    alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 3,
   },
-  cardIconContainer: {
-    marginBottom: spacing.md,
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(76, 110, 78, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   cardTitle: {
     fontSize: typography.h2,
@@ -223,16 +273,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   cardSubtitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.medium,
-    color: colors.primary,
-    marginBottom: spacing.md,
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
   },
   promptContainer: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.border,
-    paddingLeft: spacing.md,
-    marginBottom: spacing.md,
+    width: '100%',
+    paddingHorizontal: spacing.md,
   },
   promptText: {
     fontSize: typography.body,
@@ -240,24 +288,28 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontStyle: 'italic',
     lineHeight: 22,
-  },
-  lastTimeText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
-    color: colors.textLight,
-    lineHeight: 20,
+    textAlign: 'center',
   },
   giftCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    borderWidth: 2,
-    borderColor: colors.accentMedium,
     padding: spacing.xl,
+    marginBottom: spacing.xxl,
+    alignItems: 'center',
     shadowColor: colors.accentDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 3,
+  },
+  giftIconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(218, 165, 32, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   giftCardTitle: {
     fontSize: typography.h2,
@@ -276,18 +328,34 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: spacing.xl,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
-  communityIconContainer: {
+  communityIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(218, 165, 32, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
+  },
+  communityTextContainer: {
+    flex: 1,
   },
   communityCardTitle: {
     fontSize: typography.h3,
     fontWeight: typography.semibold,
     color: colors.text,
+    marginBottom: spacing.xxs,
+  },
+  communityCardSubtitle: {
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
   },
 });
