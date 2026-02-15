@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { GradientBackground } from '@/components/GradientBackground';
 
 export default function LandingScreen() {
   console.log('User viewing Landing/Orientation screen');
@@ -76,257 +77,258 @@ export default function LandingScreen() {
   const quoteText = '"While other faith apps focus on your mind, Linen invites your whole body into the conversation with God. Through gentle somatic awareness, creative reflection, and contemplative practice, discover a faith that breathes, moves, and feels."';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>{titleText}</Text>
-          <Text style={styles.tagline}>{taglineText}</Text>
-        </View>
-
-        <View style={styles.introSection}>
-          <Text style={styles.introText}>{introText}</Text>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.beginButton}
-          onPress={handleContinue}
-          activeOpacity={0.8}
+    <GradientBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.beginButtonText}>{buttonText}</Text>
-        </TouchableOpacity>
+          <View style={styles.header}>
+            <Text style={styles.title}>{titleText}</Text>
+            <Text style={styles.tagline}>{taglineText}</Text>
+          </View>
 
-        <View style={styles.sectionHeader}>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-          <Text style={styles.sectionTitle}>{whatIsSomaticTitle}</Text>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-        </View>
+          <View style={styles.introSection}>
+            <Text style={styles.introText}>{introText}</Text>
+          </View>
 
-        <View style={styles.somaticSection}>
-          <View style={styles.somaticQuoteContainer}>
-            <Text style={styles.somaticQuoteText}>
-              <Text style={styles.somaticQuoteNormal}>{somaticQuoteIntro}</Text>
-              <Text style={styles.somaticQuoteItalic}>{somaticQuoteWord}</Text>
-              <Text style={styles.somaticQuoteNormal}>{somaticQuoteEnd}</Text>
+          <TouchableOpacity 
+            style={styles.beginButton}
+            onPress={handleContinue}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.beginButtonText}>{buttonText}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.sectionHeader}>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+            <Text style={styles.sectionTitle}>{whatIsSomaticTitle}</Text>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+          </View>
+
+          <View style={styles.somaticSection}>
+            <View style={styles.somaticQuoteContainer}>
+              <Text style={styles.somaticQuoteText}>
+                <Text style={styles.somaticQuoteNormal}>{somaticQuoteIntro}</Text>
+                <Text style={styles.somaticQuoteItalic}>{somaticQuoteWord}</Text>
+                <Text style={styles.somaticQuoteNormal}>{somaticQuoteEnd}</Text>
+              </Text>
+            </View>
+
+            <Text style={styles.somaticParagraph}>
+              <Text style={styles.somaticParagraphNormal}>{somaticParagraph1}</Text>
+              <Text style={styles.somaticParagraphItalic}>{somaticParagraph1Italic}</Text>
+              <Text style={styles.somaticParagraphNormal}>{somaticParagraph1End}</Text>
             </Text>
-          </View>
 
-          <Text style={styles.somaticParagraph}>
-            <Text style={styles.somaticParagraphNormal}>{somaticParagraph1}</Text>
-            <Text style={styles.somaticParagraphItalic}>{somaticParagraph1Italic}</Text>
-            <Text style={styles.somaticParagraphNormal}>{somaticParagraph1End}</Text>
-          </Text>
+            <Text style={styles.somaticParagraph}>{somaticParagraph2}</Text>
 
-          <Text style={styles.somaticParagraph}>{somaticParagraph2}</Text>
-
-          <View style={styles.scriptureBox}>
-            <Text style={styles.scriptureQuote}>{scriptureQuote}</Text>
-            <Text style={styles.scriptureReference}>{scriptureReference}</Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-          <Text style={styles.sectionTitle}>{whatMakesLinenDifferentTitle}</Text>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-        </View>
-
-        <View style={styles.featuresGrid}>
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="heart.fill" 
-                android_material_icon_name="favorite" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+            <View style={styles.scriptureBox}>
+              <Text style={styles.scriptureQuote}>{scriptureQuote}</Text>
+              <Text style={styles.scriptureReference}>{scriptureReference}</Text>
             </View>
-            <Text style={styles.featureTitle}>{scriptureCompanionTitle}</Text>
-            <Text style={styles.featureText}>{scriptureCompanionText}</Text>
           </View>
 
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="paintbrush.fill" 
-                android_material_icon_name="palette" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+          <View style={styles.sectionHeader}>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+            <Text style={styles.sectionTitle}>{whatMakesLinenDifferentTitle}</Text>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+          </View>
+
+          <View style={styles.featuresGrid}>
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="heart.fill" 
+                  android_material_icon_name="favorite" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{scriptureCompanionTitle}</Text>
+              <Text style={styles.featureText}>{scriptureCompanionText}</Text>
             </View>
-            <Text style={styles.featureTitle}>{creativeExpressionTitle}</Text>
-            <Text style={styles.featureText}>{creativeExpressionText}</Text>
-          </View>
 
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="wind" 
-                android_material_icon_name="air" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="paintbrush.fill" 
+                  android_material_icon_name="palette" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{creativeExpressionTitle}</Text>
+              <Text style={styles.featureText}>{creativeExpressionText}</Text>
             </View>
-            <Text style={styles.featureTitle}>{somaticPracticesTitle}</Text>
-            <Text style={styles.featureText}>{somaticPracticesText}</Text>
-          </View>
 
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="book.fill" 
-                android_material_icon_name="menu-book" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="wind" 
+                  android_material_icon_name="air" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{somaticPracticesTitle}</Text>
+              <Text style={styles.featureText}>{somaticPracticesText}</Text>
             </View>
-            <Text style={styles.featureTitle}>{liturgicalGroundingTitle}</Text>
-            <Text style={styles.featureText}>{liturgicalGroundingText}</Text>
-          </View>
 
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="person.2.fill" 
-                android_material_icon_name="group" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="book.fill" 
+                  android_material_icon_name="menu-book" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{liturgicalGroundingTitle}</Text>
+              <Text style={styles.featureText}>{liturgicalGroundingText}</Text>
             </View>
-            <Text style={styles.featureTitle}>{compassionateCareTitle}</Text>
-            <Text style={styles.featureText}>{compassionateCareText}</Text>
-          </View>
 
-          <View style={styles.featureCard}>
-            <View style={styles.featureIconContainer}>
-              <IconSymbol 
-                ios_icon_name="star.fill" 
-                android_material_icon_name="star" 
-                size={28} 
-                color="#FFFFFF" 
-              />
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="person.2.fill" 
+                  android_material_icon_name="group" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{compassionateCareTitle}</Text>
+              <Text style={styles.featureText}>{compassionateCareText}</Text>
             </View>
-            <Text style={styles.featureTitle}>{crisisAwareCareTitle}</Text>
-            <Text style={styles.featureText}>{crisisAwareCareText}</Text>
-          </View>
-        </View>
 
-        <View style={styles.sectionHeader}>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-          <Text style={styles.sectionTitle}>{yourDailyPracticeTitle}</Text>
-          <IconSymbol 
-            ios_icon_name="sparkles" 
-            android_material_icon_name="auto-awesome" 
-            size={24} 
-            color={colors.primary} 
-          />
-        </View>
-
-        <View style={styles.practiceCard}>
-          <View style={styles.practiceHeader}>
-            <View style={styles.practiceIconContainer}>
-              <IconSymbol 
-                ios_icon_name="message.fill" 
-                android_material_icon_name="chat" 
-                size={32} 
-                color={colors.primary} 
-              />
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="star.fill" 
+                  android_material_icon_name="star" 
+                  size={28} 
+                  color="#FFFFFF" 
+                />
+              </View>
+              <Text style={styles.featureTitle}>{crisisAwareCareTitle}</Text>
+              <Text style={styles.featureText}>{crisisAwareCareText}</Text>
             </View>
-            <Text style={styles.practiceTitle}>{checkInTitle}</Text>
           </View>
-          <Text style={styles.practiceText}>{checkInText}</Text>
-          <Text style={styles.practiceItalicText}>{checkInItalicText}</Text>
-        </View>
 
-        <View style={styles.practiceCard}>
-          <View style={styles.practiceHeader}>
-            <View style={styles.practiceIconContainer}>
-              <IconSymbol 
-                ios_icon_name="gift.fill" 
-                android_material_icon_name="card-giftcard" 
-                size={32} 
-                color={colors.primary} 
-              />
+          <View style={styles.sectionHeader}>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+            <Text style={styles.sectionTitle}>{yourDailyPracticeTitle}</Text>
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto-awesome" 
+              size={24} 
+              color={colors.primary} 
+            />
+          </View>
+
+          <View style={styles.practiceCard}>
+            <View style={styles.practiceHeader}>
+              <View style={styles.practiceIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="message.fill" 
+                  android_material_icon_name="chat" 
+                  size={32} 
+                  color={colors.primary} 
+                />
+              </View>
+              <Text style={styles.practiceTitle}>{checkInTitle}</Text>
             </View>
-            <Text style={styles.practiceTitle}>{dailyGiftTitle}</Text>
+            <Text style={styles.practiceText}>{checkInText}</Text>
+            <Text style={styles.practiceItalicText}>{checkInItalicText}</Text>
           </View>
-          <Text style={styles.practiceText}>{dailyGiftText}</Text>
-        </View>
 
-        <View style={styles.whoIsForSection}>
-          <Text style={styles.whoIsForTitle}>{whoLinenIsForTitle}</Text>
-          <View style={styles.bulletContainer}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.bulletText}>{whoLinenIsForBullet1}</Text>
+          <View style={styles.practiceCard}>
+            <View style={styles.practiceHeader}>
+              <View style={styles.practiceIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="gift.fill" 
+                  android_material_icon_name="card-giftcard" 
+                  size={32} 
+                  color={colors.primary} 
+                />
+              </View>
+              <Text style={styles.practiceTitle}>{dailyGiftTitle}</Text>
+            </View>
+            <Text style={styles.practiceText}>{dailyGiftText}</Text>
           </View>
-          <View style={styles.bulletContainer}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.bulletText}>{whoLinenIsForBullet2}</Text>
-          </View>
-          <View style={styles.bulletContainer}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.bulletText}>{whoLinenIsForBullet3}</Text>
-          </View>
-          <View style={styles.bulletContainer}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.bulletText}>{whoLinenIsForBullet4}</Text>
-          </View>
-          <View style={styles.bulletContainer}>
-            <View style={styles.bulletPoint} />
-            <Text style={styles.bulletText}>{whoLinenIsForBullet5}</Text>
-          </View>
-          <Text style={styles.closingText}>{closingText}</Text>
-        </View>
 
-        <View style={styles.quoteSection}>
-          <Text style={styles.quoteText}>{quoteText}</Text>
-        </View>
+          <View style={styles.whoIsForSection}>
+            <Text style={styles.whoIsForTitle}>{whoLinenIsForTitle}</Text>
+            <View style={styles.bulletContainer}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletText}>{whoLinenIsForBullet1}</Text>
+            </View>
+            <View style={styles.bulletContainer}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletText}>{whoLinenIsForBullet2}</Text>
+            </View>
+            <View style={styles.bulletContainer}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletText}>{whoLinenIsForBullet3}</Text>
+            </View>
+            <View style={styles.bulletContainer}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletText}>{whoLinenIsForBullet4}</Text>
+            </View>
+            <View style={styles.bulletContainer}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletText}>{whoLinenIsForBullet5}</Text>
+            </View>
+            <Text style={styles.closingText}>{closingText}</Text>
+          </View>
 
-        <TouchableOpacity 
-          style={styles.beginButton}
-          onPress={handleContinue}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.beginButtonText}>{buttonText}</Text>
-        </TouchableOpacity>
+          <View style={styles.quoteSection}>
+            <Text style={styles.quoteText}>{quoteText}</Text>
+          </View>
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-    </SafeAreaView>
+          <TouchableOpacity 
+            style={styles.beginButton}
+            onPress={handleContinue}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.beginButtonText}>{buttonText}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
