@@ -343,17 +343,17 @@ export default function DailyGiftScreen() {
 
   const startRecording = async () => {
     try {
-      console.log('[DailyGift] Requesting audio permissions...');
+      console.log('[DailyGift] Requesting microphone permissions...');
       const permission = await Audio.requestPermissionsAsync();
       
       if (permission.status !== 'granted') {
-        console.log('[DailyGift] Audio permission denied');
-        setErrorMessage('Microphone permission is required to record audio reflections.');
+        console.log('[DailyGift] Microphone permission denied. Status:', permission.status);
+        setErrorMessage('Microphone permission is required to record audio reflections. Please enable microphone access in your device settings.');
         setShowErrorModal(true);
         return;
       }
 
-      console.log('[DailyGift] Setting audio mode...');
+      console.log('[DailyGift] Microphone permission granted. Setting audio mode...');
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -376,7 +376,7 @@ export default function DailyGiftScreen() {
       console.log('[DailyGift] Recording started successfully');
     } catch (error) {
       console.log('[DailyGift] Failed to start recording:', error);
-      setErrorMessage('Unable to start recording. Please try again.');
+      setErrorMessage('Unable to start recording. Please make sure microphone access is enabled in your device settings and try again.');
       setShowErrorModal(true);
     }
   };
@@ -1527,7 +1527,7 @@ export default function DailyGiftScreen() {
             />
 
             <Text style={styles.errorModalTitle}>
-              Unable to Save
+              Permission Required
             </Text>
 
             <Text style={styles.errorModalMessage}>
