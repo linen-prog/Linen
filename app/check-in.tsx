@@ -492,7 +492,11 @@ export default function CheckInScreen() {
 
   const renderEmptyState = () => {
     return (
-      <View style={styles.emptyStateContainer}>
+      <ScrollView 
+        style={styles.emptyStateScrollView}
+        contentContainerStyle={styles.emptyStateContainer}
+        showsVerticalScrollIndicator={true}
+      >
         <View style={styles.emptyStateContent}>
           <View style={styles.iconContainer}>
             <IconSymbol 
@@ -535,7 +539,7 @@ export default function CheckInScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -1376,11 +1380,15 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  emptyStateContainer: {
+  emptyStateScrollView: {
     flex: 1,
+  },
+  emptyStateContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
   },
   emptyStateContent: {
     alignItems: 'center',
