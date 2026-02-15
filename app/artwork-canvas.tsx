@@ -611,9 +611,9 @@ export default function ArtworkCanvasScreen() {
     }
   }, [strokeCount]);
 
-  // Show encouraging messages periodically - INCREASED DISPLAY TIME TO 4 SECONDS
+  // Show encouraging messages periodically - CHANGED TO EVERY 20 STROKES
   useEffect(() => {
-    if (strokeCount > 0 && strokeCount % 5 === 0 && strokeCount !== lastEncouragementRef.current) {
+    if (strokeCount > 0 && strokeCount % 20 === 0 && strokeCount !== lastEncouragementRef.current) {
       lastEncouragementRef.current = strokeCount;
       const randomMessage = ENCOURAGING_MESSAGES[Math.floor(Math.random() * ENCOURAGING_MESSAGES.length)];
       setEncouragementMessage(randomMessage);
@@ -890,6 +890,7 @@ export default function ArtworkCanvasScreen() {
         allowsEditing: true,
         quality: 0.8,
         allowsMultipleSelection: false,
+        aspect: [1, 1],
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -961,6 +962,7 @@ export default function ArtworkCanvasScreen() {
           setPhotoScale(1);
           photoPositionRef.current = { x: 0, y: 0 };
           setIsUploadingPhoto(false);
+          setIsEditingPhoto(true);
           
           console.log('[Canvas] Background image set to:', imageUrl);
           
@@ -968,7 +970,7 @@ export default function ArtworkCanvasScreen() {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           }
           
-          Alert.alert('Photo Added! 🎨', 'Your photo has been added to the canvas. Tap "Edit" to move and resize it, then draw on top!');
+          Alert.alert('Photo Added! 🎨', 'Your photo has been added to the canvas. Use the slider to zoom and drag to position it, then tap "Done" to start drawing!');
         } catch (error) {
           console.error('[Canvas] Failed to upload photo:', error);
           setIsUploadingPhoto(false);
@@ -1112,7 +1114,9 @@ export default function ArtworkCanvasScreen() {
       
       console.log('Artwork saved successfully:', result);
       setIsSaving(false);
-      setHasSaved(true);
+      
+      // Don't set hasSaved to true anymore - allow multiple saves
+      // setHasSaved(true);
       
       // Celebration animation
       setShowCelebration(true);
@@ -1456,7 +1460,7 @@ export default function ArtworkCanvasScreen() {
   const freeBrushes = BRUSH_OPTIONS.filter(b => !b.isPremium);
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
 
-  const saveButtonText = isSaving ? 'Saving...' : (hasSaved ? 'Saved ✓' : 'Save Artwork');
+  const saveButtonText = isSaving ? 'Saving...' : 'Save Artwork';
   const headerTitle = 'Create Artwork';
   const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
   const brushSizeLabel = 'Brush Size';
@@ -2112,19 +2116,11 @@ export default function ArtworkCanvasScreen() {
 
           {/* Save Button */}
           <TouchableOpacity 
-            style={[styles.saveButton, (!canSave || isSaving || hasSaved) && styles.saveButtonDisabled]}
+            style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
             onPress={handleSave}
-            disabled={!canSave || isSaving || hasSaved}
+            disabled={!canSave || isSaving}
             activeOpacity={0.8}
           >
-            {hasSaved && (
-              <IconSymbol 
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color="#FFFFFF"
-              />
-            )}
             <Text style={styles.saveButtonText}>
               {saveButtonText}
             </Text>
