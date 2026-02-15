@@ -81,85 +81,91 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
-          {/* Check-In Card */}
-          <TouchableOpacity 
-            style={styles.checkInCard}
-            onPress={handleCheckInPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.cardIconContainer}>
-              <IconSymbol 
-                ios_icon_name="message.fill" 
-                android_material_icon_name="chat" 
-                size={48} 
-                color={colors.primary}
-              />
-            </View>
-            
-            <Text style={styles.cardTitle}>Check-In</Text>
-            
-            <Text style={styles.cardSubtitle}>What&apos;s on your heart?</Text>
-            
-            {lastCheckInMessage ? (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  {lastCheckInMessage.length > 80 
-                    ? `${lastCheckInMessage.substring(0, 80)}...` 
-                    : lastCheckInMessage}
-                </Text>
+          {/* Check-In Card with Buffer */}
+          <View style={styles.cardBuffer}>
+            <TouchableOpacity 
+              style={styles.checkInCard}
+              onPress={handleCheckInPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="message.fill" 
+                  android_material_icon_name="chat" 
+                  size={48} 
+                  color={colors.primary}
+                />
               </View>
-            ) : (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  You reflected on scripture this morning—want to explore it deeper?
+              
+              <Text style={styles.cardTitle}>Check-In</Text>
+              
+              <Text style={styles.cardSubtitle}>What&apos;s on your heart?</Text>
+              
+              {lastCheckInMessage ? (
+                <View style={styles.promptContainer}>
+                  <Text style={styles.promptText}>
+                    {lastCheckInMessage.length > 80 
+                      ? `${lastCheckInMessage.substring(0, 80)}...` 
+                      : lastCheckInMessage}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.promptContainer}>
+                  <Text style={styles.promptText}>
+                    You reflected on scripture this morning—want to explore it deeper?
+                  </Text>
+                </View>
+              )}
+              
+              {lastCheckInMessage && (
+                <Text style={styles.lastTimeText}>
+                  Last time: &quot;{lastCheckInMessage.substring(0, 50)}...&quot;
                 </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Open Your Gift Card with Buffer */}
+          <View style={styles.cardBuffer}>
+            <TouchableOpacity 
+              style={styles.giftCard}
+              onPress={handleOpenGiftPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="gift.fill" 
+                  android_material_icon_name="card-giftcard" 
+                  size={48} 
+                  color={colors.primary}
+                />
               </View>
-            )}
-            
-            {lastCheckInMessage && (
-              <Text style={styles.lastTimeText}>
-                Last time: &quot;{lastCheckInMessage.substring(0, 50)}...&quot;
-              </Text>
-            )}
-          </TouchableOpacity>
+              
+              <Text style={styles.giftCardTitle}>Open Your Gift</Text>
+              
+              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Open Your Gift Card */}
-          <TouchableOpacity 
-            style={styles.giftCard}
-            onPress={handleOpenGiftPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.cardIconContainer}>
-              <IconSymbol 
-                ios_icon_name="gift.fill" 
-                android_material_icon_name="card-giftcard" 
-                size={48} 
-                color={colors.primary}
-              />
-            </View>
-            
-            <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-            
-            <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
-          </TouchableOpacity>
-
-          {/* Community Card */}
-          <TouchableOpacity 
-            style={styles.communityCard}
-            onPress={handleCommunityPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.communityIconContainer}>
-              <IconSymbol 
-                ios_icon_name="heart.fill" 
-                android_material_icon_name="favorite" 
-                size={32} 
-                color={colors.primary}
-              />
-            </View>
-            
-            <Text style={styles.communityCardTitle}>Community</Text>
-          </TouchableOpacity>
+          {/* Community Card with Buffer */}
+          <View style={styles.cardBuffer}>
+            <TouchableOpacity 
+              style={styles.communityCard}
+              onPress={handleCommunityPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.communityIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="heart.fill" 
+                  android_material_icon_name="favorite" 
+                  size={32} 
+                  color={colors.primary}
+                />
+              </View>
+              
+              <Text style={styles.communityCardTitle}>Community</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
@@ -192,11 +198,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: typography.fontFamilySerif,
   },
+  cardBuffer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.md,
+  },
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
-    marginBottom: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -243,7 +253,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.accentMedium,
     padding: spacing.xl,
-    marginBottom: spacing.lg,
     shadowColor: colors.accentDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
