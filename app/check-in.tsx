@@ -447,7 +447,7 @@ export default function CheckInScreen() {
       <View style={[styles.messageContainer, isUser && styles.messageContainerUser]}>
         <View style={[
           styles.messageBubble,
-          isUser ? styles.messageBubbleUser : [styles.messageBubbleAssistant, { backgroundColor: cardBg }]
+          isUser ? styles.messageBubbleUser : [styles.messageBubbleAssistant, { backgroundColor: bgColor }]
         ]}>
           {isUser ? (
             <Text style={[styles.messageText, styles.messageTextUser]}>
@@ -455,9 +455,11 @@ export default function CheckInScreen() {
             </Text>
           ) : (
             <React.Fragment>
-              <StreamdownRN theme="light">
-                {messageContent}
-              </StreamdownRN>
+              <View style={styles.aiMessageContent}>
+                <Text style={[styles.aiMessageText, { color: textColor }]}>
+                  {messageContent}
+                </Text>
+              </View>
               {companionName && (
                 <Text style={[styles.companionSignature, { color: textSecondaryColor }]}>
                   — {companionName}
@@ -1446,16 +1448,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '85%',
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   messageBubbleAssistant: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 1,
+    borderWidth: 0,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   messageBubbleUser: {
     backgroundColor: colors.primary,
@@ -1467,11 +1470,19 @@ const styles = StyleSheet.create({
   messageTextUser: {
     color: '#FFFFFF',
   },
+  aiMessageContent: {
+    width: '100%',
+  },
+  aiMessageText: {
+    fontSize: 16,
+    lineHeight: 28,
+    letterSpacing: 0.2,
+  },
   companionSignature: {
     fontSize: typography.small,
     fontStyle: 'italic',
-    marginTop: spacing.sm,
-    textAlign: 'right',
+    marginTop: spacing.md,
+    textAlign: 'left',
   },
   inputContainer: {
     flexDirection: 'row',
