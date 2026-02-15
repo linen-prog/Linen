@@ -7,11 +7,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { Audio } from 'expo-audio';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
   withTiming, 
   withSequence,
+  withRepeat,
   Easing 
 } from 'react-native-reanimated';
 
@@ -112,6 +114,14 @@ export default function DailyGiftScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Voice recording states
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
 
@@ -125,6 +135,7 @@ export default function DailyGiftScreen() {
 
   // Use ref to track timer interval
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timer effect for somatic invitation - FIXED
   useEffect(() => {
@@ -174,6 +185,23 @@ export default function DailyGiftScreen() {
       }
     };
   }, [somaticTimerActive]); // Only depend on somaticTimerActive, not somaticTimeRemaining
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        console.log('[DailyGift] Cleanup: unloading sound');
+        sound.unloadAsync();
+      }
+      if (recording) {
+        console.log('[DailyGift] Cleanup: stopping recording');
+        recording.stopAndUnloadAsync();
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, [sound, recording]);
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -313,6 +341,143 @@ export default function DailyGiftScreen() {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      console.log('[DailyGift] Requesting audio permissions...');
+      const permission = await Audio.requestPermissionsAsync();
+      
+      if (permission.status !== 'granted') {
+        console.log('[DailyGift] Audio permission denied');
+        setErrorMessage('Microphone permission is required to record audio reflections.');
+        setShowErrorModal(true);
+        return;
+      }
+
+      console.log('[DailyGift] Setting audio mode...');
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      console.log('[DailyGift] Starting recording...');
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      
+      setRecording(newRecording);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      // Start duration timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+      
+      console.log('[DailyGift] Recording started successfully');
+    } catch (error) {
+      console.log('[DailyGift] Failed to start recording:', error);
+      setErrorMessage('Unable to start recording. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      console.log('[DailyGift] Stopping recording...');
+      
+      if (!recording) {
+        console.log('[DailyGift] No recording to stop');
+        return;
+      }
+
+      // Clear timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      
+      const uri = recording.getURI();
+      console.log('[DailyGift] Recording stopped. URI:', uri);
+      
+      setAudioUri(uri);
+      setRecording(null);
+      
+      // Set reflection text to indicate audio recording
+      const durationMinutes = Math.floor(recordingDuration / 60);
+      const durationSeconds = recordingDuration % 60;
+      const durationText = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+      setReflectionText(`[Voice Recording - ${durationText}]`);
+      
+    } catch (error) {
+      console.log('[DailyGift] Failed to stop recording:', error);
+      setErrorMessage('Unable to stop recording. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const playRecording = async () => {
+    try {
+      if (!audioUri) {
+        console.log('[DailyGift] No audio to play');
+        return;
+      }
+
+      console.log('[DailyGift] Playing recording from:', audioUri);
+      
+      // Unload previous sound if exists
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: audioUri },
+        { shouldPlay: true }
+      );
+      
+      setSound(newSound);
+      setIsPlayingAudio(true);
+      
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          console.log('[DailyGift] Playback finished');
+          setIsPlayingAudio(false);
+        }
+      });
+      
+      console.log('[DailyGift] Playing audio...');
+    } catch (error) {
+      console.log('[DailyGift] Failed to play recording:', error);
+      setErrorMessage('Unable to play recording. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const stopPlayback = async () => {
+    try {
+      if (sound) {
+        console.log('[DailyGift] Stopping playback...');
+        await sound.stopAsync();
+        setIsPlayingAudio(false);
+      }
+    } catch (error) {
+      console.log('[DailyGift] Failed to stop playback:', error);
+    }
+  };
+
+  const deleteRecording = () => {
+    console.log('[DailyGift] Deleting recording');
+    setAudioUri(null);
+    setRecordingDuration(0);
+    setReflectionText('');
+    if (sound) {
+      sound.unloadAsync();
+      setSound(null);
+    }
+  };
+
   const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
@@ -340,8 +505,8 @@ export default function DailyGiftScreen() {
     const saveTimestamp = new Date().toISOString();
     console.log(`[DailyGift] ${saveTimestamp} - handleSaveReflection called`);
     
-    if (!reflectionText.trim()) {
-      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: reflection text is empty`);
+    if (!reflectionText.trim() && !audioUri) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: no reflection text or audio`);
       return;
     }
     
@@ -370,6 +535,7 @@ export default function DailyGiftScreen() {
 
     console.log(`[DailyGift] ${saveTimestamp} - Preparing to save reflection:`, { 
       reflectionTextLength: reflectionText.trim().length,
+      hasAudio: !!audioUri,
       shareToComm,
       shareAnonymously,
       responseMode,
@@ -498,9 +664,7 @@ export default function DailyGiftScreen() {
       router.push('/artwork-canvas');
     }
     
-    if (mode === 'voice') {
-      console.log('[DailyGift] Voice recording not yet implemented');
-    }
+    // Voice mode is now handled inline
   };
 
   const handleCommunityPress = () => {
@@ -659,6 +823,11 @@ export default function DailyGiftScreen() {
   const timerMinutes = Math.floor(somaticTimeRemaining / 60);
   const timerSeconds = somaticTimeRemaining % 60;
   const timerDisplay = `${timerMinutes}:${timerSeconds.toString().padStart(2, '0')}`;
+
+  // Format recording duration
+  const recordingMinutes = Math.floor(recordingDuration / 60);
+  const recordingSeconds = recordingDuration % 60;
+  const recordingDurationDisplay = `${recordingMinutes}:${recordingSeconds.toString().padStart(2, '0')}`;
 
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
@@ -1000,6 +1169,101 @@ export default function DailyGiftScreen() {
                 />
               )}
 
+              {responseMode === 'voice' && (
+                <View style={styles.voiceRecordingContainer}>
+                  {!audioUri ? (
+                    <>
+                      {!isRecording ? (
+                        <TouchableOpacity
+                          style={styles.recordButton}
+                          onPress={startRecording}
+                          activeOpacity={0.8}
+                        >
+                          <IconSymbol 
+                            ios_icon_name="mic.circle.fill"
+                            android_material_icon_name="mic"
+                            size={64}
+                            color={colors.primary}
+                          />
+                          <Text style={[styles.recordButtonText, { color: textColor }]}>
+                            Tap to Record
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.recordingActiveContainer}>
+                          <View style={styles.recordingIndicator}>
+                            <View style={styles.recordingDot} />
+                            <Text style={[styles.recordingText, { color: colors.error }]}>
+                              Recording...
+                            </Text>
+                          </View>
+                          <Text style={[styles.recordingDuration, { color: textColor }]}>
+                            {recordingDurationDisplay}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.stopRecordButton}
+                            onPress={stopRecording}
+                            activeOpacity={0.8}
+                          >
+                            <IconSymbol 
+                              ios_icon_name="stop.circle.fill"
+                              android_material_icon_name="stop-circle"
+                              size={64}
+                              color={colors.error}
+                            />
+                            <Text style={[styles.stopRecordButtonText, { color: textColor }]}>
+                              Stop Recording
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  ) : (
+                    <View style={styles.audioPlaybackContainer}>
+                      <View style={styles.audioInfoRow}>
+                        <IconSymbol 
+                          ios_icon_name="waveform"
+                          android_material_icon_name="graphic-eq"
+                          size={24}
+                          color={colors.primary}
+                        />
+                        <Text style={[styles.audioInfoText, { color: textColor }]}>
+                          Voice Recording ({recordingDurationDisplay})
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.audioControls}>
+                        <TouchableOpacity
+                          style={styles.audioControlButton}
+                          onPress={isPlayingAudio ? stopPlayback : playRecording}
+                          activeOpacity={0.8}
+                        >
+                          <IconSymbol 
+                            ios_icon_name={isPlayingAudio ? "pause.circle.fill" : "play.circle.fill"}
+                            android_material_icon_name={isPlayingAudio ? "pause-circle" : "play-circle"}
+                            size={48}
+                            color={colors.primary}
+                          />
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          style={styles.audioControlButton}
+                          onPress={deleteRecording}
+                          activeOpacity={0.8}
+                        >
+                          <IconSymbol 
+                            ios_icon_name="trash.circle.fill"
+                            android_material_icon_name="delete"
+                            size={48}
+                            color={colors.error}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+
               <TouchableOpacity 
                 style={styles.shareToggle}
                 onPress={() => {
@@ -1020,21 +1284,22 @@ export default function DailyGiftScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
+                style={[styles.saveButton, ((!reflectionText.trim() && !audioUri) || isLoading) && styles.saveButtonDisabled]}
                 onPress={() => {
                   const buttonPressTimestamp = new Date().toISOString();
                   console.log(`[DailyGift] ${buttonPressTimestamp} - Save button pressed`);
                   console.log(`[DailyGift] ${buttonPressTimestamp} - Button state:`, {
                     hasReflectionText: !!reflectionText.trim(),
+                    hasAudio: !!audioUri,
                     reflectionTextLength: reflectionText.trim().length,
                     isLoading,
-                    isDisabled: !reflectionText.trim() || isLoading,
+                    isDisabled: (!reflectionText.trim() && !audioUri) || isLoading,
                     hasDailyContent: !!dailyGiftResponse?.dailyContent,
                     dailyContentId: dailyGiftResponse?.dailyContent?.id
                   });
                   handleSaveReflection();
                 }}
-                disabled={!reflectionText.trim() || isLoading}
+                disabled={(!reflectionText.trim() && !audioUri) || isLoading}
                 activeOpacity={0.8}
               >
                 <Text style={styles.saveButtonText}>
@@ -1763,6 +2028,79 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.md,
   },
+  
+  voiceRecordingContainer: {
+    borderRadius: borderRadius.md,
+    padding: spacing.xl,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+  },
+  recordButton: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  recordButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  recordingActiveContainer: {
+    alignItems: 'center',
+    gap: spacing.lg,
+    width: '100%',
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  recordingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.error,
+  },
+  recordingText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  recordingDuration: {
+    fontSize: 32,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  stopRecordButton: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  stopRecordButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  audioPlaybackContainer: {
+    width: '100%',
+    gap: spacing.lg,
+  },
+  audioInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    justifyContent: 'center',
+  },
+  audioInfoText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  audioControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+  },
+  audioControlButton: {
+    padding: spacing.sm,
+  },
+  
   shareToggle: {
     flexDirection: 'row',
     alignItems: 'center',
