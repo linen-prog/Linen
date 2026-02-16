@@ -585,6 +585,32 @@ export function registerCheckInRoutes(app: App) {
             preferenceOverrides.push(`Additional user preferences: ${profile.companionCustomPreferences}`);
           }
 
+          // Special handling for clear_direct + brief combination
+          if (profile.companionDirectness === 'clear_direct' && profile.companionResponseLength === 'brief') {
+            preferenceOverrides.push(
+              '## ULTRA-CONCISE MODE (Clear Direct + Brief)\n\n' +
+              'You are in ultra-concise mode. Use 30% fewer words than normal. Eliminate all flowery or poetic language. ' +
+              'Get straight to the point with clear, simple statements.\n\n' +
+              'Instead of: "It sounds like you might be experiencing some anxiety around this situation, which is completely understandable."\n' +
+              'Say: "That\'s anxiety."\n\n' +
+              'Instead of: "Have you considered that perhaps there might be a pattern here?"\n' +
+              'Say: "There\'s a pattern."\n\n' +
+              'Skip softening language. Use direct declarations. One or two sentences maximum. ' +
+              'Name what you observe plainly. Prioritize clarity and directness over gentle preambles. ' +
+              'Your words should feel like a clear reflection, not an explanation.'
+            );
+
+            app.logger.debug(
+              {
+                userId: session.user.id,
+                mode: 'ultra-concise',
+                directness: 'clear_direct',
+                length: 'brief',
+              },
+              'Applied ultra-concise mode (clear_direct + brief combination)'
+            );
+          }
+
           if (preferenceOverrides.length > 0) {
             systemPrompt = LINEN_SYSTEM_PROMPT + '\n\n## USER PREFERENCE OVERRIDES\n\n' + preferenceOverrides.join('\n\n');
 
@@ -596,6 +622,7 @@ export function registerCheckInRoutes(app: App) {
                 spiritual: profile.companionSpiritualIntegration,
                 length: profile.companionResponseLength,
                 customPreferences: !!profile.companionCustomPreferences,
+                ultraConcise: profile.companionDirectness === 'clear_direct' && profile.companionResponseLength === 'brief',
               },
               'Applied user companion preferences to system prompt'
             );
