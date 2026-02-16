@@ -20,6 +20,7 @@ const TONE_OPTIONS = [
   { id: 'wise_elder', label: 'Wise Elder', description: 'Gentle wisdom from lived experience', icon: '🌳' },
   { id: 'peer_friend', label: 'Peer Friend', description: 'Warm, relatable, walking alongside you', icon: '🤝' },
   { id: 'gentle_friend', label: 'Gentle Friend', description: 'Soft, nurturing, deeply compassionate', icon: '🕊️' },
+  { id: 'pastor', label: 'Pastor - Spiritual Guidance', description: 'Scriptural grounding, compassionate care', icon: '📖' },
 ];
 
 const DIRECTNESS_OPTIONS = [
