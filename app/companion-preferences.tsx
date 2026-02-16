@@ -16,16 +16,16 @@ interface CompanionPreferences {
 }
 
 const TONE_OPTIONS = [
-  { id: 'professional-therapist', label: 'Professional Therapist', description: 'Clinical, structured, evidence-based approach', icon: '🩺' },
-  { id: 'wise-elder', label: 'Wise Elder', description: 'Gentle wisdom from lived experience', icon: '🌳' },
-  { id: 'peer-friend', label: 'Peer Friend', description: 'Warm, relatable, walking alongside you', icon: '🤝' },
-  { id: 'gentle-friend', label: 'Gentle Friend', description: 'Soft, nurturing, deeply compassionate', icon: '🕊️' },
+  { id: 'professional_therapist', label: 'Professional Therapist', description: 'Clinical, structured, evidence-based approach', icon: '🩺' },
+  { id: 'wise_elder', label: 'Wise Elder', description: 'Gentle wisdom from lived experience', icon: '🌳' },
+  { id: 'peer_friend', label: 'Peer Friend', description: 'Warm, relatable, walking alongside you', icon: '🤝' },
+  { id: 'gentle_friend', label: 'Gentle Friend', description: 'Soft, nurturing, deeply compassionate', icon: '🕊️' },
 ];
 
 const DIRECTNESS_OPTIONS = [
-  { id: 'gentle-exploratory', label: 'Gentle & Exploratory', description: 'Asks questions, invites reflection', icon: '🌱' },
+  { id: 'gentle_exploratory', label: 'Gentle & Exploratory', description: 'Asks questions, invites reflection', icon: '🌱' },
   { id: 'balanced', label: 'Balanced', description: 'Mix of questions and observations', icon: '⚖️' },
-  { id: 'clear-direct', label: 'Clear & Direct', description: 'Names patterns, offers insights', icon: '🎯' },
+  { id: 'clear_direct', label: 'Clear & Direct', description: 'Names patterns, offers insights', icon: '🎯' },
 ];
 
 const SPIRITUAL_OPTIONS = [
