@@ -332,6 +332,23 @@ export const userProfiles = pgTable(
     totalReflections: integer('total_reflections').default(0).notNull(),
     daysInCommunity: integer('days_in_community').default(0).notNull(),
     memberSince: timestamp('member_since'),
+    companionTone: text('companion_tone', {
+      enum: ['professional_therapist', 'wise_elder', 'peer_friend', 'gentle_friend', 'balanced'],
+    })
+      .default('balanced'),
+    companionDirectness: text('companion_directness', {
+      enum: ['gentle_exploratory', 'balanced', 'clear_direct'],
+    })
+      .default('balanced'),
+    companionSpiritualIntegration: text('companion_spiritual_integration', {
+      enum: ['frequent', 'balanced', 'minimal'],
+    })
+      .default('balanced'),
+    companionResponseLength: text('companion_response_length', {
+      enum: ['brief', 'balanced', 'detailed'],
+    })
+      .default('balanced'),
+    companionCustomPreferences: text('companion_custom_preferences'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
   },
