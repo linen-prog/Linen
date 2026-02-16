@@ -874,6 +874,41 @@ export default function ProfileScreen() {
               color={colors.textLight} 
             />
           </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              console.log('ProfileScreen: Navigating to companion preferences');
+              router.push('/companion-preferences');
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="slider.horizontal.3" 
+                  android_material_icon_name="tune" 
+                  size={20} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.menuItemTextContainer}>
+                <Text style={[styles.menuItemText, { color: colors.text }]}>
+                  Companion Preferences
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
+                  Customize tone, directness, and more
+                </Text>
+              </View>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textLight} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Presence Mode */}
