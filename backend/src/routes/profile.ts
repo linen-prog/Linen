@@ -68,6 +68,11 @@ export function registerProfileRoutes(app: App) {
           totalReflections: p.totalReflections,
           daysInCommunity: p.daysInCommunity,
           memberSince: p.memberSince,
+          companionTone: p.companionTone,
+          companionDirectness: p.companionDirectness,
+          companionSpiritualIntegration: p.companionSpiritualIntegration,
+          companionResponseLength: p.companionResponseLength,
+          companionCustomPreferences: p.companionCustomPreferences,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         });
@@ -96,6 +101,11 @@ export function registerProfileRoutes(app: App) {
           comfortNoTags?: boolean;
           notificationsEnabled?: boolean;
           reminderNotifications?: boolean;
+          companionTone?: string;
+          companionDirectness?: string;
+          companionSpiritualIntegration?: string;
+          companionResponseLength?: string;
+          companionCustomPreferences?: string;
         };
       }>,
       reply: FastifyReply
@@ -116,11 +126,35 @@ export function registerProfileRoutes(app: App) {
         comfortNoTags,
         notificationsEnabled,
         reminderNotifications,
+        companionTone,
+        companionDirectness,
+        companionSpiritualIntegration,
+        companionResponseLength,
+        companionCustomPreferences,
       } = request.body;
 
       app.logger.info({ userId: session.user.id }, 'Updating user profile');
 
       try {
+        // Validate companion preference values
+        const validTones = ['professional_therapist', 'wise_elder', 'peer_friend', 'gentle_friend', 'balanced'];
+        const validDirectness = ['gentle_exploratory', 'balanced', 'clear_direct'];
+        const validSpiritualIntegration = ['frequent', 'balanced', 'minimal'];
+        const validResponseLength = ['brief', 'balanced', 'detailed'];
+
+        if (companionTone !== undefined && !validTones.includes(companionTone)) {
+          return reply.status(400).send({ error: 'Invalid companionTone value' });
+        }
+        if (companionDirectness !== undefined && !validDirectness.includes(companionDirectness)) {
+          return reply.status(400).send({ error: 'Invalid companionDirectness value' });
+        }
+        if (companionSpiritualIntegration !== undefined && !validSpiritualIntegration.includes(companionSpiritualIntegration)) {
+          return reply.status(400).send({ error: 'Invalid companionSpiritualIntegration value' });
+        }
+        if (companionResponseLength !== undefined && !validResponseLength.includes(companionResponseLength)) {
+          return reply.status(400).send({ error: 'Invalid companionResponseLength value' });
+        }
+
         // Build update object
         const updateData: any = {};
         if (displayName !== undefined) updateData.displayName = displayName;
@@ -135,6 +169,11 @@ export function registerProfileRoutes(app: App) {
         if (comfortNoTags !== undefined) updateData.comfortNoTags = comfortNoTags;
         if (notificationsEnabled !== undefined) updateData.notificationsEnabled = notificationsEnabled;
         if (reminderNotifications !== undefined) updateData.reminderNotifications = reminderNotifications;
+        if (companionTone !== undefined) updateData.companionTone = companionTone;
+        if (companionDirectness !== undefined) updateData.companionDirectness = companionDirectness;
+        if (companionSpiritualIntegration !== undefined) updateData.companionSpiritualIntegration = companionSpiritualIntegration;
+        if (companionResponseLength !== undefined) updateData.companionResponseLength = companionResponseLength;
+        if (companionCustomPreferences !== undefined) updateData.companionCustomPreferences = companionCustomPreferences;
 
         // Ensure profile exists
         let profile = await app.db
@@ -215,6 +254,11 @@ export function registerProfileRoutes(app: App) {
           totalReflections: p.totalReflections,
           daysInCommunity: p.daysInCommunity,
           memberSince: p.memberSince,
+          companionTone: p.companionTone,
+          companionDirectness: p.companionDirectness,
+          companionSpiritualIntegration: p.companionSpiritualIntegration,
+          companionResponseLength: p.companionResponseLength,
+          companionCustomPreferences: p.companionCustomPreferences,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         });

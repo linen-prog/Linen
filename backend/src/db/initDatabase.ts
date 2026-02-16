@@ -403,7 +403,12 @@ export async function initializeDatabase(db: any, app?: App) {
     // Add columns to user_profiles if they don't exist
     await db.execute(sql`
       ALTER TABLE IF EXISTS "user_profiles"
-      ADD COLUMN IF NOT EXISTS "companion_name" text
+      ADD COLUMN IF NOT EXISTS "companion_name" text,
+      ADD COLUMN IF NOT EXISTS "companion_tone" text DEFAULT 'balanced',
+      ADD COLUMN IF NOT EXISTS "companion_directness" text DEFAULT 'balanced',
+      ADD COLUMN IF NOT EXISTS "companion_spiritual_integration" text DEFAULT 'balanced',
+      ADD COLUMN IF NOT EXISTS "companion_response_length" text DEFAULT 'balanced',
+      ADD COLUMN IF NOT EXISTS "companion_custom_preferences" text
     `);
 
     // Create indexes for user_profiles

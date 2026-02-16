@@ -438,6 +438,112 @@ export function registerCheckInRoutes(app: App) {
           .filter((m) => m.id !== userMsg.id) // Exclude the current user message we just saved
           .slice(-29); // Get last 29 messages (will add current user message, making 30 total)
 
+        // Fetch user's companion preferences
+        const userProfile = await app.db
+          .select()
+          .from(schema.userProfiles)
+          .where(eq(schema.userProfiles.userId, session.user.id))
+          .limit(1);
+
+        let systemPrompt = LINEN_SYSTEM_PROMPT;
+
+        if (userProfile.length > 0) {
+          const profile = userProfile[0];
+
+          // Build preference overrides
+          const preferenceOverrides: string[] = [];
+
+          if (profile.companionTone && profile.companionTone !== 'balanced') {
+            switch (profile.companionTone) {
+              case 'professional_therapist':
+                preferenceOverrides.push(
+                  'Adopt a professional, therapeutic tone with clinical warmth and expertise. You ground your responses in therapeutic wisdom while maintaining your pastoral presence.'
+                );
+                break;
+              case 'wise_elder':
+                preferenceOverrides.push(
+                  'Speak as a wise elder with gentle authority, drawing on deep life experience and spiritual wisdom. Your presence carries the weight of understanding gained through years of walking with others.'
+                );
+                break;
+              case 'peer_friend':
+                preferenceOverrides.push(
+                  'Speak as a peer and friend, with warmth, relatability, and shared humanity. You walk alongside them as an equal, drawing on your own experience of struggle and resilience.'
+                );
+                break;
+              case 'gentle_friend':
+                preferenceOverrides.push(
+                  'Speak as a gentle, compassionate friend with tender care and soft presence. Your words are chosen with care, your pace is unhurried, your presence is soothing.'
+                );
+                break;
+            }
+          }
+
+          if (profile.companionDirectness && profile.companionDirectness !== 'balanced') {
+            switch (profile.companionDirectness) {
+              case 'gentle_exploratory':
+                preferenceOverrides.push(
+                  'Use gentle, exploratory questions. Invite curiosity without pushing. Let insights emerge slowly and naturally. Honor the person\'s own pace of discovery.'
+                );
+                break;
+              case 'clear_direct':
+                preferenceOverrides.push(
+                  'Be clear and direct in your observations. Offer straightforward reflections while maintaining gentleness. Name what you see with clarity, helping them recognize patterns they might miss.'
+                );
+                break;
+            }
+          }
+
+          if (profile.companionSpiritualIntegration && profile.companionSpiritualIntegration !== 'balanced') {
+            switch (profile.companionSpiritualIntegration) {
+              case 'frequent':
+                preferenceOverrides.push(
+                  'Weave scripture and prayer throughout your responses. Reference biblical wisdom frequently and naturally. Let God\'s presence and word be woven throughout the conversation.'
+                );
+                break;
+              case 'minimal':
+                preferenceOverrides.push(
+                  'Use scripture sparingly. Focus more on presence and reflection, bringing in biblical wisdom only when particularly relevant or when the person explicitly seeks spiritual grounding.'
+                );
+                break;
+            }
+          }
+
+          if (profile.companionResponseLength && profile.companionResponseLength !== 'balanced') {
+            switch (profile.companionResponseLength) {
+              case 'brief':
+                preferenceOverrides.push(
+                  'Keep responses concise and focused. Offer one or two key reflections per message. Leave space for the person to fill.'
+                );
+                break;
+              case 'detailed':
+                preferenceOverrides.push(
+                  'Offer fuller, more detailed responses. Take time to explore multiple dimensions of what\'s shared. Help them see the landscape of their experience from different angles.'
+                );
+                break;
+            }
+          }
+
+          if (profile.companionCustomPreferences && profile.companionCustomPreferences.trim().length > 0) {
+            preferenceOverrides.push(`Additional user preferences: ${profile.companionCustomPreferences}`);
+          }
+
+          if (preferenceOverrides.length > 0) {
+            systemPrompt = LINEN_SYSTEM_PROMPT + '\n\n## USER PREFERENCE OVERRIDES\n\n' + preferenceOverrides.join('\n\n');
+
+            app.logger.debug(
+              {
+                userId: session.user.id,
+                tone: profile.companionTone,
+                directness: profile.companionDirectness,
+                spiritual: profile.companionSpiritualIntegration,
+                length: profile.companionResponseLength,
+                customPreferences: !!profile.companionCustomPreferences,
+              },
+              'Applied user companion preferences to system prompt'
+            );
+          }
+        }
+
         // Convert to AI format and add current user message
         const aiMessages = contextMessages
           .map((m) => ({
@@ -446,7 +552,7 @@ export function registerCheckInRoutes(app: App) {
           }))
           .concat([{ role: 'user' as const, content: message }]);
 
-        // Generate response using GPT-5.2 via the gateway
+        // Generate response using GPT-4o via the gateway
         app.logger.debug(
           {
             messageCount: aiMessages.length,
@@ -457,7 +563,7 @@ export function registerCheckInRoutes(app: App) {
 
         const { text: responseText } = await generateText({
           model: gateway('openai/gpt-4o'),
-          system: LINEN_SYSTEM_PROMPT,
+          system: systemPrompt,
           messages: aiMessages,
         });
 
