@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import { StreamdownRN } from 'streamdown-rn';
 import Animated, { 
   useSharedValue, 
@@ -561,6 +562,12 @@ export default function CheckInScreen() {
   
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
+  const tabs = [
+    { name: 'home', route: '/(tabs)' as const, icon: 'home' as const, label: 'Home' },
+    { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
+    { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
@@ -634,7 +641,7 @@ export default function CheckInScreen() {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={item => item.id}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={[styles.messagesList, { paddingBottom: 100 }]}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           />
@@ -671,6 +678,9 @@ export default function CheckInScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Floating Tab Bar */}
+      <FloatingTabBar tabs={tabs} />
 
       {/* Crisis Resources Modal */}
       <Modal
@@ -1411,6 +1421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
+    paddingBottom: 120, // Space for floating tab bar
   },
   emptyStateContent: {
     alignItems: 'center',
@@ -1521,6 +1532,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     gap: spacing.sm,
+    marginBottom: 80, // Space for floating tab bar
   },
   input: {
     flex: 1,

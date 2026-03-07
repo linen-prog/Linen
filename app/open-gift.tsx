@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -215,6 +216,12 @@ export default function OpenGiftScreen() {
 
   console.log('🎁 [OpenGift] Rendering screen content');
 
+  const tabs = [
+    { name: 'home', route: '/(tabs)' as const, icon: 'home' as const, label: 'Home' },
+    { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
+    { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
       <Stack.Screen 
@@ -326,6 +333,9 @@ export default function OpenGiftScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Floating Tab Bar */}
+      <FloatingTabBar tabs={tabs} />
     </SafeAreaView>
   );
 }
@@ -399,6 +409,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 100, // Space for floating tab bar
   },
   ambientSoundBox: {
     marginHorizontal: spacing.lg,
