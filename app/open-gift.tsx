@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -12,6 +12,7 @@ import Animated, {
   withSequence,
   Easing 
 } from 'react-native-reanimated';
+import { Audio } from 'expo-audio';
 
 interface GlitterParticle {
   id: number;
@@ -21,13 +22,86 @@ interface GlitterParticle {
   color: string;
 }
 
+interface AmbientSound {
+  id: string;
+  name: string;
+  icon: string;
+  materialIcon: string;
+  url: string;
+}
+
+const AMBIENT_SOUNDS: AmbientSound[] = [
+  {
+    id: 'birds',
+    name: 'Birds',
+    icon: 'bird',
+    materialIcon: 'flutter-dash',
+    url: 'https://assets.mixkit.co/active_storage/sfx/17/17.wav',
+  },
+  {
+    id: 'rain',
+    name: 'Rain',
+    icon: 'cloud.rain.fill',
+    materialIcon: 'water-drop',
+    url: 'https://assets.mixkit.co/active_storage/sfx/2394/2394.wav',
+  },
+  {
+    id: 'wind',
+    name: 'Wind',
+    icon: 'wind',
+    materialIcon: 'air',
+    url: 'https://assets.mixkit.co/active_storage/sfx/2500/2500.wav',
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean Waves',
+    icon: 'water.waves',
+    materialIcon: 'waves',
+    url: 'https://assets.mixkit.co/active_storage/sfx/1208/1208.wav',
+  },
+  {
+    id: 'bells',
+    name: 'Church Bells',
+    icon: 'bell.fill',
+    materialIcon: 'notifications',
+    url: 'https://assets.mixkit.co/active_storage/sfx/628/628.wav',
+  },
+];
+
 export default function OpenGiftScreen() {
   console.log('🎁 [OpenGift] Screen mounted and rendering');
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
+  const [selectedSound, setSelectedSound] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   useEffect(() => {
     console.log('🎁 [OpenGift] useEffect - Screen is now visible to user');
+    
+    // Configure audio mode
+    const configureAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+        console.log('🔊 [OpenGift] Audio mode configured');
+      } catch (error) {
+        console.error('🔊 [OpenGift] Error configuring audio:', error);
+      }
+    };
+    
+    configureAudio();
+    
+    // Cleanup on unmount
+    return () => {
+      if (sound) {
+        console.log('🔊 [OpenGift] Unloading sound on unmount');
+        sound.unloadAsync();
+      }
+    };
   }, []);
   
   // Create glitter particles
@@ -42,6 +116,72 @@ export default function OpenGiftScreen() {
   const bgColor = colors.backgroundTop; // Warm cream color
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
+
+  const handleSoundSelect = async (soundId: string) => {
+    console.log('🔊 [OpenGift] User selected sound:', soundId);
+    
+    try {
+      // If same sound is selected, toggle play/pause
+      if (selectedSound === soundId && sound) {
+        if (isPlaying) {
+          console.log('🔊 [OpenGift] Pausing sound');
+          await sound.pauseAsync();
+          setIsPlaying(false);
+        } else {
+          console.log('🔊 [OpenGift] Resuming sound');
+          await sound.playAsync();
+          setIsPlaying(true);
+        }
+        return;
+      }
+      
+      // Stop and unload previous sound
+      if (sound) {
+        console.log('🔊 [OpenGift] Unloading previous sound');
+        await sound.unloadAsync();
+        setSound(null);
+      }
+      
+      // Load and play new sound
+      const selectedAmbient = AMBIENT_SOUNDS.find(s => s.id === soundId);
+      if (!selectedAmbient) {
+        console.error('🔊 [OpenGift] Sound not found:', soundId);
+        return;
+      }
+      
+      console.log('🔊 [OpenGift] Loading sound from:', selectedAmbient.url);
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: selectedAmbient.url },
+        { shouldPlay: true, isLooping: true, volume: 0.5 },
+        (status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish && !status.isLooping) {
+              console.log('🔊 [OpenGift] Sound finished playing');
+              setIsPlaying(false);
+            }
+          }
+        }
+      );
+      
+      console.log('🔊 [OpenGift] Sound loaded and playing');
+      setSound(newSound);
+      setSelectedSound(soundId);
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('🔊 [OpenGift] Error playing sound:', error);
+    }
+  };
+
+  const handleStopSound = async () => {
+    console.log('🔊 [OpenGift] User stopped sound');
+    if (sound) {
+      await sound.stopAsync();
+      await sound.unloadAsync();
+      setSound(null);
+      setSelectedSound(null);
+      setIsPlaying(false);
+    }
+  };
 
   const handleOpenGift = () => {
     if (isOpening) {
@@ -71,6 +211,7 @@ export default function OpenGiftScreen() {
   const titleText = 'Your Daily Gift';
   const subtitleText = 'A word for your heart today';
   const tapText = 'Tap to open';
+  const ambientSoundTitle = 'Ambient Sound';
 
   console.log('🎁 [OpenGift] Rendering screen content');
 
@@ -88,46 +229,103 @@ export default function OpenGiftScreen() {
         }}
       />
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: textColor }]}>
-          {titleText}
-        </Text>
-        
-        <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-          {subtitleText}
-        </Text>
-
-        <View style={styles.giftContainer}>
-          <TouchableOpacity 
-            style={[styles.giftBox, { backgroundColor: colors.primary }]}
-            onPress={handleOpenGift}
-            activeOpacity={0.8}
-            disabled={isOpening}
-          >
-            <IconSymbol 
-              ios_icon_name="gift.fill"
-              android_material_icon_name="card-giftcard"
-              size={80}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-
-          {/* Glitter particles */}
-          {isOpening && glitterParticles.map((particle) => (
-            <GlitterParticle
-              key={particle.id}
-              angle={particle.angle}
-              distance={particle.distance}
-              delay={particle.delay}
-              color={particle.color}
-            />
-          ))}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Ambient Sound Box */}
+        <View style={[styles.ambientSoundBox, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
+            {ambientSoundTitle}
+          </Text>
+          
+          <View style={styles.soundButtons}>
+            {AMBIENT_SOUNDS.map((ambientSound) => {
+              const isSelected = selectedSound === ambientSound.id;
+              const buttonBgColor = isSelected && isPlaying ? colors.primary : colors.backgroundTop;
+              const buttonTextColor = isSelected && isPlaying ? '#FFFFFF' : textColor;
+              
+              return (
+                <TouchableOpacity
+                  key={ambientSound.id}
+                  style={[styles.soundButton, { backgroundColor: buttonBgColor }]}
+                  onPress={() => handleSoundSelect(ambientSound.id)}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    ios_icon_name={ambientSound.icon}
+                    android_material_icon_name={ambientSound.materialIcon}
+                    size={24}
+                    color={buttonTextColor}
+                  />
+                  <Text style={[styles.soundButtonText, { color: buttonTextColor }]}>
+                    {ambientSound.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          
+          {selectedSound && isPlaying && (
+            <TouchableOpacity
+              style={[styles.stopButton, { backgroundColor: colors.error }]}
+              onPress={handleStopSound}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="stop.fill"
+                android_material_icon_name="stop"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.stopButtonText}>Stop Sound</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <Text style={[styles.tapText, { color: textSecondaryColor }]}>
-          {tapText}
-        </Text>
-      </View>
+        {/* Gift Content */}
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: textColor }]}>
+            {titleText}
+          </Text>
+          
+          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
+            {subtitleText}
+          </Text>
+
+          <View style={styles.giftContainer}>
+            <TouchableOpacity 
+              style={[styles.giftBox, { backgroundColor: colors.primary }]}
+              onPress={handleOpenGift}
+              activeOpacity={0.8}
+              disabled={isOpening}
+            >
+              <IconSymbol 
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={80}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            {/* Glitter particles */}
+            {isOpening && glitterParticles.map((particle) => (
+              <GlitterParticle
+                key={particle.id}
+                angle={particle.angle}
+                distance={particle.distance}
+                delay={particle.delay}
+                color={particle.color}
+              />
+            ))}
+          </View>
+
+          <Text style={[styles.tapText, { color: textSecondaryColor }]}>
+            {tapText}
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -196,11 +394,75 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  ambientSoundBox: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  ambientSoundTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  soundButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  soundButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  soundButtonText: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    alignSelf: 'center',
+  },
+  stopButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   title: {
     fontSize: 32,
