@@ -223,7 +223,7 @@ export default function OpenGiftScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       <Stack.Screen 
         options={{
           headerShown: true,
@@ -336,7 +336,7 @@ export default function OpenGiftScreen() {
 
       {/* Floating Tab Bar */}
       <FloatingTabBar tabs={tabs} />
-    </SafeAreaView>
+    </View>
   );
 }
 
