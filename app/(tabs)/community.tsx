@@ -401,7 +401,7 @@ export default function CommunityScreen() {
     }
   };
 
-  const bgColor = colors.background;
+  const bgColor = colors.backgroundTop;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
   const cardBg = colors.card;
