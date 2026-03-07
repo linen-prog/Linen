@@ -690,7 +690,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.backgroundTop }]} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -706,7 +706,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} 
+      style={[styles.safeArea, { backgroundColor: colors.backgroundTop }]} 
       edges={['top']}
     >
       <ScrollView
@@ -1217,6 +1217,7 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
+      {/* All modals remain the same - omitted for brevity but they're all included in the actual file */}
       {/* Sign Out Confirmation Modal */}
       <Modal
         visible={showSignOutModal}
