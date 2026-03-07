@@ -142,6 +142,11 @@ export default function CheckInScreen() {
   const inputBg = colors.card;
   const inputBorder = colors.border;
 
+  const handleExit = () => {
+    console.log('[CheckIn] User tapped exit button, navigating back to home');
+    router.back();
+  };
+
   const checkForCrisis = async (message: string): Promise<boolean> => {
     try {
       const { authenticatedPost } = await import('@/utils/api');
@@ -567,6 +572,19 @@ export default function CheckInScreen() {
             backgroundColor: bgColor,
           },
           headerTintColor: colors.primary,
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={handleExit}
+              style={styles.exitButton}
+            >
+              <IconSymbol 
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={24}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity 
@@ -1379,6 +1397,10 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  exitButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   emptyStateScrollView: {
     flex: 1,
