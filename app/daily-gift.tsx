@@ -478,7 +478,7 @@ export default function DailyGiftScreen() {
     }
   };
 
-  const bgColor = colors.background;
+  const bgColor = colors.backgroundTop; // Warm cream color
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
   const cardBg = colors.card;

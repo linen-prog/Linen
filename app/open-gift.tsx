@@ -39,7 +39,7 @@ export default function OpenGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  const bgColor = colors.background;
+  const bgColor = colors.backgroundTop; // Warm cream color
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
 
