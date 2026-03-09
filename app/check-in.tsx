@@ -48,10 +48,22 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   headerActionButton: {
-    padding: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  iconWithLabel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconLabel: {
+    fontSize: 10,
+    color: colors.primary,
+    marginTop: 2,
+    fontFamily: typography.fontFamily,
   },
   welcomeContainer: {
     flex: 1,
@@ -557,6 +569,9 @@ export default function CheckInScreen() {
     );
   };
 
+  const prayerLabel = 'Prayer';
+  const careLabel = 'Care';
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -576,21 +591,27 @@ export default function CheckInScreen() {
         
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={handlePrayerPress} style={styles.headerActionButton}>
-            <IconSymbol 
-              ios_icon_name="hands.sparkles" 
-              android_material_icon_name="self-improvement" 
-              size={24} 
-              color={colors.primary} 
-            />
+            <View style={styles.iconWithLabel}>
+              <IconSymbol 
+                ios_icon_name="hands.sparkles" 
+                android_material_icon_name="self-improvement" 
+                size={24} 
+                color={colors.primary} 
+              />
+              <Text style={styles.iconLabel}>{prayerLabel}</Text>
+            </View>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={handleCarePress} style={styles.headerActionButton}>
-            <IconSymbol 
-              ios_icon_name="heart" 
-              android_material_icon_name="favorite" 
-              size={24} 
-              color={colors.primary} 
-            />
+            <View style={styles.iconWithLabel}>
+              <IconSymbol 
+                ios_icon_name="heart" 
+                android_material_icon_name="favorite" 
+                size={24} 
+                color={colors.primary} 
+              />
+              <Text style={styles.iconLabel}>{careLabel}</Text>
+            </View>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={handleCommunityPress} style={styles.headerActionButton}>
@@ -618,7 +639,7 @@ export default function CheckInScreen() {
           <Text style={styles.welcomeTitle}>A gentle space for reflection</Text>
           
           <Text style={styles.welcomeDescription}>
-            I'm here to listen with compassion and gentle presence. Share what's on your heart—your joys, struggles, questions, or simply what you're noticing in this moment.
+            I&apos;m here to listen with compassion and gentle presence. Share what&apos;s on your heart—your joys, struggles, questions, or simply what you&apos;re noticing in this moment.
           </Text>
           
           <View style={styles.expectationsSection}>
@@ -627,14 +648,14 @@ export default function CheckInScreen() {
             <View style={styles.expectationItem}>
               <Text style={styles.bulletPoint}>•</Text>
               <Text style={styles.expectationText}>
-                I'll help you notice what's happening in your body
+                I&apos;ll help you notice what&apos;s happening in your body
               </Text>
             </View>
             
             <View style={styles.expectationItem}>
               <Text style={styles.bulletPoint}>•</Text>
               <Text style={styles.expectationText}>
-                We'll explore sensations, emotions, and patterns together
+                We&apos;ll explore sensations, emotions, and patterns together
               </Text>
             </View>
             
@@ -648,7 +669,7 @@ export default function CheckInScreen() {
             <View style={styles.expectationItem}>
               <Text style={styles.bulletPoint}>•</Text>
               <Text style={styles.expectationText}>
-                I'm not here to fix or advise, but to witness and companion
+                I&apos;m not here to fix or advise, but to witness and companion
               </Text>
             </View>
           </View>
@@ -775,7 +796,7 @@ export default function CheckInScreen() {
             <View style={styles.crisisCard}>
               <Text style={styles.crisisTitle}>You Are Not Alone</Text>
               <Text style={styles.crisisText}>
-                If you're in crisis or need immediate support, please reach out to trained professionals who can help.
+                If you&apos;re in crisis or need immediate support, please reach out to trained professionals who can help.
               </Text>
               <View style={styles.crisisButtons}>
                 <TouchableOpacity onPress={handleCall988} style={styles.crisisButton}>
@@ -783,7 +804,7 @@ export default function CheckInScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleTextCrisisLine} style={[styles.crisisButton, styles.crisisButtonSecondary]}>
                   <Text style={[styles.crisisButtonText, styles.crisisButtonTextSecondary]}>
-                    Text "HELLO" to 741741 (Crisis Text Line)
+                    Text &quot;HELLO&quot; to 741741 (Crisis Text Line)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleAcknowledgeCrisis} style={[styles.crisisButton, styles.crisisButtonSecondary]}>
