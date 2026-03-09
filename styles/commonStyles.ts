@@ -5,6 +5,7 @@ export const colors = {
   // Warm, gentle background colors
   background: '#F5E6D3', // Soft peachy beige
   backgroundSecondary: '#EFE0CE', // Slightly darker beige
+  backgroundPattern: 'rgba(255, 255, 255, 0.3)', // Subtle white overlay for pattern
   surface: '#FFFFFF', // Pure white for cards
   
   // Deep teal/green primary color (from the heart icon)
@@ -45,6 +46,13 @@ export const colors = {
   // Shadow colors
   shadow: 'rgba(45, 122, 110, 0.1)', // Teal-tinted shadow
   shadowDark: 'rgba(45, 122, 110, 0.2)',
+};
+
+export const gradientConfig = {
+  colors: ['#F5E6D3', '#EFE0CE', '#F5E6D3'], // Soft peachy beige gradient
+  locations: [0, 0.5, 1],
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
 };
 
 export const typography = {
