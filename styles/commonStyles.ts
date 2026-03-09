@@ -52,9 +52,10 @@ export const colors = {
   shadowColor: 'rgba(74, 74, 74, 0.15)',
   shadow: 'rgba(74, 74, 74, 0.15)', // Alias for shadowColor
   
-  // Gradient colors
-  gradientStart: '#F5E6D3',
-  gradientEnd: '#F0DDCB',
+  // Gradient colors - warm amber/yellow gradient
+  gradientStart: 'rgb(254, 243, 199)', // Warm amber/yellow
+  gradientMiddle: 'rgb(250, 250, 249)', // Very light stone/off-white
+  gradientEnd: 'rgb(254, 243, 199)', // Warm amber/yellow again
   
   // Additional aliases for consistency
   primaryLight: '#2D7A6E',
@@ -279,10 +280,16 @@ export const commonStyles = StyleSheet.create({
 });
 
 // Gradient configuration for GradientBackground component
+// Vertical gradient: amber-yellow → light stone → amber-yellow
 export const gradientConfig = {
-  colors: ['#F5E6D3', '#F0DDCB'], // Gentle peachy beige gradient
-  start: { x: 0, y: 0 },
-  end: { x: 1, y: 1 },
+  colors: [
+    'rgb(254, 243, 199)', // Top: warm amber/yellow
+    'rgb(250, 250, 249)', // Middle: very light stone/off-white
+    'rgb(254, 243, 199)', // Bottom: warm amber/yellow again
+  ],
+  locations: [0, 0.5, 1], // Top, middle, bottom
+  start: { x: 0, y: 0 }, // Top
+  end: { x: 0, y: 1 },   // Bottom (vertical gradient)
 };
 
 export const backgroundPattern = 'rgba(255, 255, 255, 0.03)';
