@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -14,6 +13,7 @@ import Animated, {
   Easing 
 } from 'react-native-reanimated';
 import { Audio } from 'expo-audio';
+import type { Href } from 'expo-router';
 
 interface GlitterParticle {
   id: number;
@@ -80,7 +80,6 @@ export default function OpenGiftScreen() {
   useEffect(() => {
     console.log('🎁 [OpenGift] useEffect - Screen is now visible to user');
     
-    // Configure audio mode
     const configureAudio = async () => {
       try {
         await Audio.setAudioModeAsync({
@@ -96,16 +95,14 @@ export default function OpenGiftScreen() {
     
     configureAudio();
     
-    // Cleanup on unmount
     return () => {
       if (sound) {
         console.log('🔊 [OpenGift] Unloading sound on unmount');
         sound.unloadAsync();
       }
     };
-  }, []);
+  }, [sound]);
   
-  // Create glitter particles
   const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
     id: index,
     angle: (index / 30) * Math.PI * 2,
@@ -114,7 +111,7 @@ export default function OpenGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  const bgColor = colors.backgroundTop; // Warm cream color
+  const bgColor = colors.backgroundTop;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
 
@@ -122,7 +119,6 @@ export default function OpenGiftScreen() {
     console.log('🔊 [OpenGift] User selected sound:', soundId);
     
     try {
-      // If same sound is selected, toggle play/pause
       if (selectedSound === soundId && sound) {
         if (isPlaying) {
           console.log('🔊 [OpenGift] Pausing sound');
@@ -136,14 +132,12 @@ export default function OpenGiftScreen() {
         return;
       }
       
-      // Stop and unload previous sound
       if (sound) {
         console.log('🔊 [OpenGift] Unloading previous sound');
         await sound.unloadAsync();
         setSound(null);
       }
       
-      // Load and play new sound
       const selectedAmbient = AMBIENT_SOUNDS.find(s => s.id === soundId);
       if (!selectedAmbient) {
         console.error('🔊 [OpenGift] Sound not found:', soundId);
@@ -193,19 +187,16 @@ export default function OpenGiftScreen() {
     console.log('🎁 [OpenGift] User tapped gift box - starting glitter animation');
     setIsOpening(true);
 
-    // Navigate after animation completes
     const navigationTimer = setTimeout(() => {
       console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
       try {
         router.replace('/daily-gift');
       } catch (error) {
         console.error('🎁 [OpenGift] Navigation error:', error);
-        // Fallback: try push instead of replace
         router.push('/daily-gift');
       }
     }, 1200);
 
-    // Cleanup timer on unmount
     return () => clearTimeout(navigationTimer);
   };
 
@@ -217,9 +208,9 @@ export default function OpenGiftScreen() {
   console.log('🎁 [OpenGift] Rendering screen content');
 
   const tabs = [
-    { name: 'home', route: '/(tabs)' as const, icon: 'home' as const, label: 'Home' },
-    { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
-    { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+    { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, label: 'Home' },
+    { name: 'community', route: '/(tabs)/community' as Href, icon: 'group' as const, label: 'Community' },
+    { name: 'profile', route: '/(tabs)/profile' as Href, icon: 'account-circle' as const, label: 'Profile' },
   ];
 
   return (
@@ -241,7 +232,6 @@ export default function OpenGiftScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Ambient Sound Box */}
         <View style={[styles.ambientSoundBox, { backgroundColor: colors.cardBackground }]}>
           <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
             {ambientSoundTitle}
@@ -291,7 +281,6 @@ export default function OpenGiftScreen() {
           )}
         </View>
 
-        {/* Gift Content */}
         <View style={styles.content}>
           <Text style={[styles.title, { color: textColor }]}>
             {titleText}
@@ -316,7 +305,6 @@ export default function OpenGiftScreen() {
               />
             </TouchableOpacity>
 
-            {/* Glitter particles */}
             {isOpening && glitterParticles.map((particle) => (
               <GlitterParticle
                 key={particle.id}
@@ -334,7 +322,6 @@ export default function OpenGiftScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Tab Bar */}
       <FloatingTabBar tabs={tabs} />
     </View>
   );
@@ -378,7 +365,7 @@ function GlitterParticle({
         withTiming(0.5, { duration: 600 })
       );
     }, delay);
-  }, []);
+  }, [angle, distance, delay, translateX, translateY, opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -409,7 +396,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100, // Space for floating tab bar
+    paddingBottom: 100,
   },
   ambientSoundBox: {
     marginHorizontal: spacing.lg,
