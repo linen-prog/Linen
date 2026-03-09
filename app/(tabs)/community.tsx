@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { authenticatedDelete } from '@/utils/api';
 
 interface Post {
   id: string;
@@ -56,6 +57,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     alignItems: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    left: spacing.lg,
+    top: spacing.lg,
+    zIndex: 10,
+    padding: spacing.xs,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -391,6 +399,65 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontFamily: typography.fontFamily,
   },
+  deleteConfirmModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  deleteConfirmContent: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  deleteConfirmTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  deleteConfirmMessage: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  deleteConfirmButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  deleteCancelButton: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  deleteConfirmButtonDelete: {
+    backgroundColor: '#DC2626',
+  },
+  deleteConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily,
+  },
+  deleteCancelButtonText: {
+    color: colors.text,
+  },
+  deleteConfirmButtonTextDelete: {
+    color: colors.background,
+  },
 });
 
 function formatTimeAgo(date: Date): string {
@@ -429,8 +496,12 @@ export default function CommunityScreen() {
   const [showCareModal, setShowCareModal] = useState(false);
   const [selectedCarePost, setSelectedCarePost] = useState<Post | null>(null);
   const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   useEffect(() => {
+    console.log('Community screen: Loading data for tab:', selectedTab);
     loadStats();
     loadPosts(selectedTab);
     if (selectedTab === 'care' && user) {
@@ -440,6 +511,7 @@ export default function CommunityScreen() {
 
   const loadStats = async () => {
     try {
+      console.log('Loading community stats');
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/stats`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`,
@@ -447,6 +519,7 @@ export default function CommunityScreen() {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('Community stats loaded:', data);
         setStats(data);
       }
     } catch (error) {
@@ -456,6 +529,7 @@ export default function CommunityScreen() {
 
   const loadPosts = async (category: string) => {
     try {
+      console.log('Loading posts for category:', category);
       const endpoint = category === 'feed' 
         ? '/api/community/posts'
         : `/api/community/posts?category=${category}`;
@@ -468,6 +542,7 @@ export default function CommunityScreen() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Posts loaded:', data.length, 'posts');
         const postsWithDates = data.map((post: any) => ({
           ...post,
           createdAt: new Date(post.createdAt),
@@ -481,6 +556,7 @@ export default function CommunityScreen() {
 
   const handlePray = async (postId: string) => {
     try {
+      console.log('Toggling prayer for post:', postId);
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/pray`, {
         method: 'POST',
         headers: {
@@ -491,6 +567,7 @@ export default function CommunityScreen() {
       });
 
       if (response.ok) {
+        console.log('Prayer toggled successfully');
         setPosts(posts.map(post => {
           if (post.id === postId) {
             const newUserHasPrayed = !post.userHasPrayed;
@@ -511,6 +588,7 @@ export default function CommunityScreen() {
 
   const handleFlagPost = async (postId: string) => {
     try {
+      console.log('Flagging post:', postId);
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/flag`, {
         method: 'POST',
         headers: {
@@ -521,6 +599,7 @@ export default function CommunityScreen() {
       });
 
       if (response.ok) {
+        console.log('Post flagged successfully');
         setPosts(posts.map(post => {
           if (post.id === postId) {
             return { ...post, isFlagged: true };
@@ -535,6 +614,7 @@ export default function CommunityScreen() {
 
   const handleReact = async (postId: string, reactionType: string) => {
     try {
+      console.log('Reacting to post:', postId, 'with reaction:', reactionType);
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/react`, {
         method: 'POST',
         headers: {
@@ -545,6 +625,7 @@ export default function CommunityScreen() {
       });
 
       if (response.ok) {
+        console.log('Reaction added successfully');
         loadPosts(selectedTab);
       }
     } catch (error) {
@@ -554,6 +635,7 @@ export default function CommunityScreen() {
 
   const loadCareMessages = async () => {
     try {
+      console.log('Loading care messages');
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/care-messages`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`,
@@ -562,6 +644,7 @@ export default function CommunityScreen() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Care messages loaded:', data.length, 'messages');
         const messagesWithDates = data.map((msg: any) => ({
           ...msg,
           createdAt: new Date(msg.createdAt),
@@ -579,6 +662,7 @@ export default function CommunityScreen() {
     }
 
     try {
+      console.log('Sending care message to post:', selectedCarePost.id);
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${selectedCarePost.id}/care`, {
         method: 'POST',
         headers: {
@@ -589,12 +673,45 @@ export default function CommunityScreen() {
       });
 
       if (response.ok) {
+        console.log('Care message sent successfully');
         setShowCareModal(false);
         setSelectedCarePost(null);
         setSelectedCareMessage('');
       }
     } catch (error) {
       console.error('Error sending care message:', error);
+    }
+  };
+
+  const confirmDeletePost = (post: Post) => {
+    console.log('User initiated delete for post:', post.id);
+    setPostToDelete(post);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeletePost = async () => {
+    if (!postToDelete) {
+      return;
+    }
+
+    setIsDeletingPost(true);
+    try {
+      console.log('Deleting post:', postToDelete.id);
+      await authenticatedDelete(`/api/community/post/${postToDelete.id}`);
+      console.log('Post deleted successfully');
+      
+      // Remove post from local state
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postToDelete.id));
+      
+      // Reload stats
+      await loadStats();
+      
+      setShowDeleteConfirm(false);
+      setPostToDelete(null);
+    } catch (error: any) {
+      console.error('Failed to delete post:', error);
+    } finally {
+      setIsDeletingPost(false);
     }
   };
 
@@ -649,6 +766,21 @@ export default function CommunityScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => {
+            console.log('User tapped back button');
+            router.back();
+          }}
+        >
+          <IconSymbol 
+            ios_icon_name="chevron.left" 
+            android_material_icon_name="arrow-back" 
+            size={24} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+
         <View style={styles.headerTopRow}>
           <Text style={styles.sparkleIcon}>✨</Text>
           <Text style={styles.headerText}>You are not alone in this journey</Text>
@@ -746,6 +878,7 @@ export default function CommunityScreen() {
             const categoryLabel = getCategoryLabel(post.category);
             const timeAgo = formatTimeAgo(post.createdAt);
             const prayIconColor = post.userHasPrayed ? colors.background : colors.text;
+            const isOwnPost = user && post.userId === user.id;
             
             return (
               <View key={post.id} style={styles.postCard}>
@@ -757,6 +890,20 @@ export default function CommunityScreen() {
                     </Text>
                   </View>
                   <View style={styles.postActions}>
+                    {isOwnPost && (
+                      <TouchableOpacity 
+                        style={styles.iconButton}
+                        onPress={() => confirmDeletePost(post)}
+                        disabled={isDeletingPost}
+                      >
+                        <IconSymbol 
+                          ios_icon_name="trash" 
+                          android_material_icon_name="delete" 
+                          size={20} 
+                          color="#DC2626" 
+                        />
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity 
                       style={styles.iconButton}
                       onPress={() => handleFlagPost(post.id)}
@@ -832,6 +979,7 @@ export default function CommunityScreen() {
                   <TouchableOpacity
                     style={[styles.prayButton, { marginTop: spacing.sm }]}
                     onPress={() => {
+                      console.log('User tapped Send Care button for post:', post.id);
                       setSelectedCarePost(post);
                       setShowCareModal(true);
                     }}
@@ -866,6 +1014,7 @@ export default function CommunityScreen() {
         )}
       </ScrollView>
 
+      {/* Care Modal */}
       <Modal
         visible={showCareModal}
         transparent
@@ -928,6 +1077,51 @@ export default function CommunityScreen() {
             >
               <Text style={styles.sendCareButtonText}>Send Care Message</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isDeletingPost && setShowDeleteConfirm(false)}
+      >
+        <View style={styles.deleteConfirmModal}>
+          <View style={styles.deleteConfirmContent}>
+            <Text style={styles.deleteConfirmTitle}>Delete Post?</Text>
+            <Text style={styles.deleteConfirmMessage}>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </Text>
+            
+            {isDeletingPost ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : (
+              <View style={styles.deleteConfirmButtons}>
+                <TouchableOpacity
+                  style={[styles.deleteConfirmButton, styles.deleteCancelButton]}
+                  onPress={() => {
+                    console.log('User cancelled post deletion');
+                    setShowDeleteConfirm(false);
+                    setPostToDelete(null);
+                  }}
+                >
+                  <Text style={[styles.deleteConfirmButtonText, styles.deleteCancelButtonText]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.deleteConfirmButton, styles.deleteConfirmButtonDelete]}
+                  onPress={handleDeletePost}
+                >
+                  <Text style={[styles.deleteConfirmButtonText, styles.deleteConfirmButtonTextDelete]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
