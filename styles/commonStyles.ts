@@ -1,66 +1,64 @@
 
 import { StyleSheet } from 'react-native';
 
+// Color palette matching the provided design
 export const colors = {
-  // Warm, gentle background colors
-  background: '#F5E6D3', // Soft peachy beige
-  backgroundSecondary: '#EFE0CE', // Slightly darker beige
-  backgroundPattern: 'rgba(255, 255, 255, 0.3)', // Subtle white overlay for pattern
-  surface: '#FFFFFF', // Pure white for cards
+  // Primary warm cream/beige background
+  background: '#F5EFE0',
   
-  // Deep teal/green primary color (from the heart icon)
-  primary: '#2D7A6E', // Deep teal green
-  primaryLight: '#4A9B8E', // Lighter teal
-  primaryDark: '#1F5A50', // Darker teal
+  // Deep teal green for primary accents and text
+  primary: '#2D7A6E',
+  
+  // Warm orange/amber for accents and highlights
+  accent: '#E8A547',
   
   // Text colors
-  text: '#4A4A4A', // Dark gray-brown for body text
-  textSecondary: '#7A7A7A', // Medium gray for secondary text
-  textLight: '#9A9A9A', // Light gray for subtle text
+  text: '#4A5D4F', // Dark green-gray for primary text
+  secondaryText: '#7A8A7D', // Lighter green-gray for secondary text
+  mutedText: '#9BA89E', // Very light for hints/placeholders
   
-  // Accent colors
-  accent: '#2D7A6E', // Same as primary for consistency
-  accentLight: '#E8F4F2', // Very light teal for backgrounds
+  // Card and surface colors
+  cardBackground: '#FDFBF7', // Slightly off-white for cards
+  cardBorder: '#E8E3D5', // Subtle warm border
   
-  // Semantic colors
-  success: '#4A9B8E',
-  warning: '#D4A574',
-  error: '#C85A54',
-  info: '#6B9AC4',
+  // Interactive elements
+  tint: '#2D7A6E', // Same as primary
+  icon: '#2D7A6E',
   
-  // UI element colors
-  border: '#E0D0BE', // Warm beige border
-  borderLight: '#EFE0CE',
-  divider: '#E8DCC8',
+  // Tab bar
+  tabIconDefault: '#B5C4B8',
+  tabIconSelected: '#2D7A6E',
   
-  // Interactive states
-  hover: '#E8F4F2',
-  pressed: '#D8E4E2',
-  disabled: '#C0C0C0',
+  // Status colors
+  success: '#4CAF50',
+  error: '#D84A4A',
+  warning: '#E8A547',
+  info: '#5B9BD5',
   
-  // Special colors
-  white: '#FFFFFF',
-  black: '#2A2A2A',
-  transparent: 'transparent',
+  // Borders and dividers
+  border: '#E8E3D5',
+  divider: '#EDE8DA',
   
-  // Shadow colors
-  shadow: 'rgba(45, 122, 110, 0.1)', // Teal-tinted shadow
-  shadowDark: 'rgba(45, 122, 110, 0.2)',
+  // Overlays and shadows
+  overlay: 'rgba(45, 122, 110, 0.1)',
+  shadowColor: 'rgba(74, 93, 79, 0.15)',
+  
+  // Special UI elements
+  inputBackground: '#FFFFFF',
+  inputBorder: '#D8D3C5',
+  inputFocus: '#2D7A6E',
+  
+  // Gradient colors
+  gradientStart: '#F5EFE0',
+  gradientEnd: '#EDE8DA',
 };
 
-export const gradientConfig = {
-  colors: ['#F5E6D3', '#EFE0CE', '#F5E6D3'], // Soft peachy beige gradient
-  locations: [0, 0.5, 1],
-  start: { x: 0, y: 0 },
-  end: { x: 1, y: 1 },
-};
-
+// Typography
 export const typography = {
   // Font families
-  fontRegular: 'System',
-  fontMedium: 'System',
-  fontBold: 'System',
-  fontLight: 'System',
+  regular: 'System',
+  medium: 'System',
+  bold: 'System',
   
   // Font sizes
   xs: 12,
@@ -77,13 +75,13 @@ export const typography = {
   lineHeightRelaxed: 1.75,
   
   // Font weights
-  weightLight: '300' as const,
   weightRegular: '400' as const,
   weightMedium: '500' as const,
   weightSemibold: '600' as const,
   weightBold: '700' as const,
 };
 
+// Spacing scale
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -94,6 +92,7 @@ export const spacing = {
   xxxl: 64,
 };
 
+// Border radius
 export const borderRadius = {
   sm: 8,
   md: 12,
@@ -102,47 +101,60 @@ export const borderRadius = {
   full: 9999,
 };
 
+// Shadows
 export const shadows = {
   sm: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 2,
   },
   md: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 4,
   },
   lg: {
-    shadowColor: colors.shadowDark,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: colors.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 16,
+    shadowRadius: 8,
     elevation: 8,
   },
 };
 
+// Common component styles
 export const commonStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
+  
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    ...shadows.sm,
-  },
-  cardLarge: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     ...shadows.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
+  
+  cardTitle: {
+    fontSize: typography.xl,
+    fontWeight: typography.weightBold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  
+  cardSubtitle: {
+    fontSize: typography.base,
+    color: colors.secondaryText,
+    lineHeight: typography.lineHeightRelaxed * typography.base,
+  },
+  
   button: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
@@ -150,88 +162,114 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.sm,
   },
+  
   buttonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: typography.base,
     fontWeight: typography.weightSemibold,
   },
-  buttonSecondary: {
-    backgroundColor: colors.accentLight,
+  
+  secondaryButton: {
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
   },
-  buttonSecondaryText: {
+  
+  secondaryButtonText: {
     color: colors.primary,
     fontSize: typography.base,
     fontWeight: typography.weightSemibold,
   },
+  
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     fontSize: typography.base,
     color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
+  
+  inputFocused: {
+    borderColor: colors.inputFocus,
+    borderWidth: 2,
+  },
+  
   heading1: {
     fontSize: typography.xxxl,
     fontWeight: typography.weightBold,
     color: colors.text,
-    lineHeight: typography.xxxl * typography.lineHeightTight,
+    marginBottom: spacing.md,
   },
+  
   heading2: {
     fontSize: typography.xxl,
     fontWeight: typography.weightBold,
     color: colors.text,
-    lineHeight: typography.xxl * typography.lineHeightTight,
+    marginBottom: spacing.sm,
   },
+  
   heading3: {
     fontSize: typography.xl,
     fontWeight: typography.weightSemibold,
     color: colors.text,
-    lineHeight: typography.xl * typography.lineHeightNormal,
+    marginBottom: spacing.sm,
   },
-  body: {
+  
+  bodyText: {
     fontSize: typography.base,
-    fontWeight: typography.weightRegular,
     color: colors.text,
-    lineHeight: typography.base * typography.lineHeightRelaxed,
+    lineHeight: typography.lineHeightRelaxed * typography.base,
   },
-  bodySecondary: {
+  
+  secondaryBodyText: {
+    fontSize: typography.base,
+    color: colors.secondaryText,
+    lineHeight: typography.lineHeightRelaxed * typography.base,
+  },
+  
+  mutedText: {
     fontSize: typography.sm,
-    fontWeight: typography.weightRegular,
-    color: colors.textSecondary,
-    lineHeight: typography.sm * typography.lineHeightRelaxed,
+    color: colors.mutedText,
   },
-  caption: {
-    fontSize: typography.xs,
-    fontWeight: typography.weightRegular,
-    color: colors.textLight,
-    lineHeight: typography.xs * typography.lineHeightNormal,
-  },
+  
   divider: {
     height: 1,
     backgroundColor: colors.divider,
     marginVertical: spacing.md,
   },
+  
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  
   row: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  
   spaceBetween: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 });
+
+// Gradient configuration for GradientBackground component
+export const gradientConfig = {
+  colors: [colors.gradientStart, colors.gradientEnd],
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+};
+
+export const backgroundPattern = 'rgba(255, 255, 255, 0.03)';
