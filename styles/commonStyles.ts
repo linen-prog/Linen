@@ -1,56 +1,55 @@
 
 import { StyleSheet } from 'react-native';
 
-// Color palette matching the provided design
+// Warm Linen Color Palette
 export const colors = {
-  // Primary warm cream/beige background
-  background: '#F5EFE0',
+  // Core "Warm Linen" scheme - soft peachy beige
+  background: '#F5E6D3', // Soft peachy beige
+  primary: '#2D7A6E',    // Deep teal green
+  text: '#4A4A4A',       // Dark gray-brown
+  border: '#E0D0C0',     // Warm beige border
   
-  // Deep teal green for primary accents and text
-  primary: '#2D7A6E',
+  // Gradient fix
+  backgroundPattern: 'rgba(255, 255, 255, 0.1)', // Subtle white overlay
   
-  // Warm orange/amber for accents and highlights
-  accent: '#E8A547',
+  // Other common colors, consistent with the theme
+  secondary: '#6B8E23',
+  accent: '#D4A574',
+  cardBackground: '#FFFFFF',
+  secondaryText: '#6B6B6B',
+  mutedText: '#999999',
+  lightText: '#888888',
+  white: '#FFFFFF',
+  black: '#000000',
+  error: '#FF3B30',
+  success: '#4CD964',
+  warning: '#FFCC00',
   
-  // Text colors
-  text: '#4A5D4F', // Dark green-gray for primary text
-  secondaryText: '#7A8A7D', // Lighter green-gray for secondary text
-  mutedText: '#9BA89E', // Very light for hints/placeholders
+  // Tab bar and icon colors
+  tabIconDefault: '#CCC',
+  tabIconSelected: '#2D7A6E', // Uses primary
+  tint: '#2D7A6E', // Uses primary
+  icon: '#4A4A4A', // Uses text
+  link: '#2D7A6E', // Uses primary
   
   // Card and surface colors
-  cardBackground: '#FDFBF7', // Slightly off-white for cards
-  cardBorder: '#E8E3D5', // Subtle warm border
+  cardBorder: '#E0D0C0',
   
   // Interactive elements
-  tint: '#2D7A6E', // Same as primary
-  icon: '#2D7A6E',
-  
-  // Tab bar
-  tabIconDefault: '#B5C4B8',
-  tabIconSelected: '#2D7A6E',
-  
-  // Status colors
-  success: '#4CAF50',
-  error: '#D84A4A',
-  warning: '#E8A547',
-  info: '#5B9BD5',
+  inputBackground: '#FFFFFF',
+  inputBorder: '#E0D0C0',
+  inputFocus: '#2D7A6E',
   
   // Borders and dividers
-  border: '#E8E3D5',
-  divider: '#EDE8DA',
+  divider: '#E8DDD0',
   
   // Overlays and shadows
   overlay: 'rgba(45, 122, 110, 0.1)',
-  shadowColor: 'rgba(74, 93, 79, 0.15)',
-  
-  // Special UI elements
-  inputBackground: '#FFFFFF',
-  inputBorder: '#D8D3C5',
-  inputFocus: '#2D7A6E',
+  shadowColor: 'rgba(74, 74, 74, 0.15)',
   
   // Gradient colors
-  gradientStart: '#F5EFE0',
-  gradientEnd: '#EDE8DA',
+  gradientStart: '#F5E6D3',
+  gradientEnd: '#F0DDCB',
 };
 
 // Typography
@@ -267,7 +266,7 @@ export const commonStyles = StyleSheet.create({
 
 // Gradient configuration for GradientBackground component
 export const gradientConfig = {
-  colors: [colors.gradientStart, colors.gradientEnd],
+  colors: ['#F5E6D3', '#F0DDCB'], // Gentle peachy beige gradient
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
 };
