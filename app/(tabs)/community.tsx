@@ -55,42 +55,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
+    alignItems: 'center',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  sparkleIcon: {
+    marginRight: spacing.xs,
+  },
+  headerText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontFamily: typography.fontFamily,
+    fontWeight: '500',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '600',
     color: colors.text,
     fontFamily: typography.fontFamily,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: 15,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
     fontFamily: typography.fontFamily,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: spacing.md,
-    gap: spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.cardBackground,
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily,
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
-    fontFamily: typography.fontFamily,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    fontFamily: typography.fontFamily,
+    fontWeight: '600',
+    color: colors.text,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -384,15 +404,19 @@ function formatTimeAgo(date: Date): string {
     return 'just now';
   }
   if (diffMins < 60) {
-    return `${diffMins}m ago`;
+    const minsText = `${diffMins}m ago`;
+    return minsText;
   }
   if (diffHours < 24) {
-    return `${diffHours}h ago`;
+    const hoursText = `${diffHours}h ago`;
+    return hoursText;
   }
   if (diffDays < 7) {
-    return `${diffDays}d ago`;
+    const daysText = `${diffDays}d ago`;
+    return daysText;
   }
-  return date.toLocaleDateString();
+  const dateText = date.toLocaleDateString();
+  return dateText;
 }
 
 export default function CommunityScreen() {
@@ -469,10 +493,12 @@ export default function CommunityScreen() {
       if (response.ok) {
         setPosts(posts.map(post => {
           if (post.id === postId) {
+            const newUserHasPrayed = !post.userHasPrayed;
+            const newPrayerCount = post.userHasPrayed ? post.prayerCount - 1 : post.prayerCount + 1;
             return {
               ...post,
-              userHasPrayed: !post.userHasPrayed,
-              prayerCount: post.userHasPrayed ? post.prayerCount - 1 : post.prayerCount + 1,
+              userHasPrayed: newUserHasPrayed,
+              prayerCount: newPrayerCount,
             };
           }
           return post;
@@ -617,20 +643,36 @@ export default function CommunityScreen() {
     }
   };
 
+  const sharedTodayText = `${stats.sharedToday} shared today`;
+  const liftedInPrayerText = `${stats.liftedInPrayer} lifted in prayer`;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.sparkleIcon}>✨</Text>
+          <Text style={styles.headerText}>You are not alone in this journey</Text>
+        </View>
+        
         <Text style={styles.title}>Community</Text>
-        <Text style={styles.subtitle}>A gentle space for shared reflection</Text>
+        <Text style={styles.subtitle}>
+          A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
+        </Text>
         
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.sharedToday}</Text>
-            <Text style={styles.statLabel}>Shared Today</Text>
+          <View style={styles.statItem}>
+            <View style={[styles.statDot, { backgroundColor: colors.primary }]} />
+            <Text style={styles.statText}>
+              <Text style={styles.statNumber}>{stats.sharedToday}</Text>
+              <Text> shared today</Text>
+            </Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.liftedInPrayer}</Text>
-            <Text style={styles.statLabel}>Lifted in Prayer</Text>
+          <View style={styles.statItem}>
+            <View style={[styles.statDot, { backgroundColor: '#DC2626' }]} />
+            <Text style={styles.statText}>
+              <Text style={styles.statNumber}>{stats.liftedInPrayer}</Text>
+              <Text> lifted in prayer</Text>
+            </Text>
           </View>
         </View>
       </View>
@@ -680,121 +722,132 @@ export default function CommunityScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {selectedTab === 'care' && careMessages.length > 0 ? (
-          careMessages.map((message) => (
-            <View key={message.id} style={styles.careMessageCard}>
-              <View style={styles.careMessageHeader}>
-                <Text style={styles.careMessageAuthor}>
-                  {message.isAnonymous ? 'Anonymous' : message.senderName || 'A friend'}
-                </Text>
-                <Text style={styles.careMessageTime}>{formatTimeAgo(message.createdAt)}</Text>
-              </View>
-              <Text style={styles.careMessageText}>{message.message}</Text>
-              <Text style={styles.careMessageContext}>
-                In response to: "{message.postContent.substring(0, 60)}..."
-              </Text>
-            </View>
-          ))
-        ) : posts.length > 0 ? (
-          posts.map((post) => (
-            <View key={post.id} style={styles.postCard}>
-              <View style={styles.postHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.postAuthor}>
-                    {post.isAnonymous ? 'Anonymous' : post.authorName || 'A friend'}
-                  </Text>
-                  <Text style={[styles.postCategory, { color: getCategoryColor(post.category) }]}>
-                    {getCategoryLabel(post.category)}
-                  </Text>
+          careMessages.map((message) => {
+            const authorDisplay = message.isAnonymous ? 'Anonymous' : message.senderName || 'A friend';
+            const timeAgo = formatTimeAgo(message.createdAt);
+            const contextPreview = message.postContent.substring(0, 60);
+            const contextText = `In response to: "${contextPreview}..."`;
+            
+            return (
+              <View key={message.id} style={styles.careMessageCard}>
+                <View style={styles.careMessageHeader}>
+                  <Text style={styles.careMessageAuthor}>{authorDisplay}</Text>
+                  <Text style={styles.careMessageTime}>{timeAgo}</Text>
                 </View>
-                <View style={styles.postActions}>
-                  <TouchableOpacity 
-                    style={styles.iconButton}
-                    onPress={() => handleFlagPost(post.id)}
+                <Text style={styles.careMessageText}>{message.message}</Text>
+                <Text style={styles.careMessageContext}>{contextText}</Text>
+              </View>
+            );
+          })
+        ) : posts.length > 0 ? (
+          posts.map((post) => {
+            const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName || 'A friend';
+            const categoryColor = getCategoryColor(post.category);
+            const categoryLabel = getCategoryLabel(post.category);
+            const timeAgo = formatTimeAgo(post.createdAt);
+            const prayIconColor = post.userHasPrayed ? colors.background : colors.text;
+            
+            return (
+              <View key={post.id} style={styles.postCard}>
+                <View style={styles.postHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.postAuthor}>{authorDisplay}</Text>
+                    <Text style={[styles.postCategory, { color: categoryColor }]}>
+                      {categoryLabel}
+                    </Text>
+                  </View>
+                  <View style={styles.postActions}>
+                    <TouchableOpacity 
+                      style={styles.iconButton}
+                      onPress={() => handleFlagPost(post.id)}
+                    >
+                      <IconSymbol 
+                        ios_icon_name="flag" 
+                        android_material_icon_name="flag" 
+                        size={20} 
+                        color={post.isFlagged ? '#DC2626' : colors.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {post.scriptureReference && (
+                  <Text style={styles.scriptureRef}>{post.scriptureReference}</Text>
+                )}
+
+                {post.artworkUrl && (
+                  <Image 
+                    source={{ uri: post.artworkUrl }} 
+                    style={styles.artworkImage}
+                    resizeMode="cover"
+                  />
+                )}
+
+                <Text style={styles.postContent}>{post.content}</Text>
+
+                {post.reactions && (
+                  <View style={styles.reactionsRow}>
+                    {Object.entries(post.reactions).map(([type, count]) => {
+                      if (count === 0) {
+                        return null;
+                      }
+                      const isActive = post.userReaction === type;
+                      const emoji = getReactionEmoji(type);
+                      
+                      return (
+                        <TouchableOpacity
+                          key={type}
+                          style={[styles.reactionButton, isActive && styles.reactionButtonActive]}
+                          onPress={() => handleReact(post.id, type)}
+                        >
+                          <Text style={styles.reactionEmoji}>{emoji}</Text>
+                          <Text style={[styles.reactionCount, isActive && styles.reactionCountActive]}>
+                            {count}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                <View style={styles.postFooter}>
+                  <TouchableOpacity
+                    style={[styles.prayButton, post.userHasPrayed && styles.prayButtonActive]}
+                    onPress={() => handlePray(post.id)}
                   >
                     <IconSymbol 
-                      ios_icon_name="flag" 
-                      android_material_icon_name="flag" 
-                      size={20} 
-                      color={post.isFlagged ? '#DC2626' : colors.textSecondary} 
+                      ios_icon_name="hands.sparkles" 
+                      android_material_icon_name="favorite" 
+                      size={18} 
+                      color={prayIconColor} 
                     />
+                    <Text style={[styles.prayText, post.userHasPrayed && styles.prayTextActive]}>
+                      {post.prayerCount}
+                    </Text>
                   </TouchableOpacity>
+                  <Text style={styles.postTime}>{timeAgo}</Text>
                 </View>
+
+                {post.category === 'care' && (
+                  <TouchableOpacity
+                    style={[styles.prayButton, { marginTop: spacing.sm }]}
+                    onPress={() => {
+                      setSelectedCarePost(post);
+                      setShowCareModal(true);
+                    }}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="heart" 
+                      android_material_icon_name="favorite" 
+                      size={18} 
+                      color={colors.text} 
+                    />
+                    <Text style={styles.prayText}>Send Care</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-
-              {post.scriptureReference && (
-                <Text style={styles.scriptureRef}>{post.scriptureReference}</Text>
-              )}
-
-              {post.artworkUrl && (
-                <Image 
-                  source={{ uri: post.artworkUrl }} 
-                  style={styles.artworkImage}
-                  resizeMode="cover"
-                />
-              )}
-
-              <Text style={styles.postContent}>{post.content}</Text>
-
-              {post.reactions && (
-                <View style={styles.reactionsRow}>
-                  {Object.entries(post.reactions).map(([type, count]) => {
-                    if (count === 0) {
-                      return null;
-                    }
-                    const isActive = post.userReaction === type;
-                    return (
-                      <TouchableOpacity
-                        key={type}
-                        style={[styles.reactionButton, isActive && styles.reactionButtonActive]}
-                        onPress={() => handleReact(post.id, type)}
-                      >
-                        <Text style={styles.reactionEmoji}>{getReactionEmoji(type)}</Text>
-                        <Text style={[styles.reactionCount, isActive && styles.reactionCountActive]}>
-                          {count}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-
-              <View style={styles.postFooter}>
-                <TouchableOpacity
-                  style={[styles.prayButton, post.userHasPrayed && styles.prayButtonActive]}
-                  onPress={() => handlePray(post.id)}
-                >
-                  <IconSymbol 
-                    ios_icon_name="hands.sparkles" 
-                    android_material_icon_name="favorite" 
-                    size={18} 
-                    color={post.userHasPrayed ? colors.background : colors.text} 
-                  />
-                  <Text style={[styles.prayText, post.userHasPrayed && styles.prayTextActive]}>
-                    {post.prayerCount}
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.postTime}>{formatTimeAgo(post.createdAt)}</Text>
-              </View>
-
-              {post.category === 'care' && (
-                <TouchableOpacity
-                  style={[styles.prayButton, { marginTop: spacing.sm }]}
-                  onPress={() => {
-                    setSelectedCarePost(post);
-                    setShowCareModal(true);
-                  }}
-                >
-                  <IconSymbol 
-                    ios_icon_name="heart" 
-                    android_material_icon_name="favorite" 
-                    size={18} 
-                    color={colors.text} 
-                  />
-                  <Text style={styles.prayText}>Send Care</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))
+            );
+          })
         ) : (
           <View style={styles.emptyState}>
             <IconSymbol 
