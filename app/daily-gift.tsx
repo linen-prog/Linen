@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
-import { Audio } from 'expo-audio';
+import { Audio, Recording, Sound } from 'expo-audio';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -162,16 +162,16 @@ export default function DailyGiftScreen() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Voice recording states
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recording, setRecording] = useState<Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<Sound | null>(null);
 
   // Ambient sound states
   const [selectedAmbientSound, setSelectedAmbientSound] = useState<string | null>(null);
-  const [ambientSound, setAmbientSound] = useState<Audio.Sound | null>(null);
+  const [ambientSound, setAmbientSound] = useState<Sound | null>(null);
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
@@ -289,7 +289,7 @@ export default function DailyGiftScreen() {
       }
       
       console.log('🔊 [DailyGift] Loading ambient sound from:', selectedSound.url);
-      const { sound: newSound } = await Audio.Sound.createAsync(
+      const newSound = await Sound.createAsync(
         { uri: selectedSound.url },
         { shouldPlay: true, isLooping: true, volume: 0.5 },
         (status) => {
@@ -479,8 +479,8 @@ export default function DailyGiftScreen() {
       });
 
       console.log('[DailyGift] Starting recording...');
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      const newRecording = await Recording.createAsync(
+        Recording.RecordingOptionsPresets.HIGH_QUALITY
       );
       
       setRecording(newRecording);
@@ -551,7 +551,7 @@ export default function DailyGiftScreen() {
         await sound.unloadAsync();
       }
 
-      const { sound: newSound } = await Audio.Sound.createAsync(
+      const newSound = await Sound.createAsync(
         { uri: audioUri },
         { shouldPlay: true }
       );
