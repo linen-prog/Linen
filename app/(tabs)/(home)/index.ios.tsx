@@ -72,8 +72,9 @@ export default function HomeScreen() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Notification Button - Top Right */}
-        <View style={styles.notificationContainer}>
+        {/* Top Bar with Notification Button */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarSpacer} />
           <NotificationButton />
         </View>
 
@@ -191,11 +192,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  notificationContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 50,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    zIndex: 100,
+  },
+  topBarSpacer: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
@@ -203,7 +209,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     marginBottom: spacing.xl,
   },
   appTitle: {
