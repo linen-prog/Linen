@@ -93,6 +93,8 @@ export default function CommunityScreen() {
   const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
   const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
   const [careAnonymous, setCareAnonymous] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
@@ -401,6 +403,46 @@ export default function CommunityScreen() {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    console.log('[Community] User confirmed delete for post:', postId);
+    setIsDeletingPost(true);
+    
+    try {
+      const { authenticatedDelete } = await import('@/utils/api');
+      await authenticatedDelete(`/api/community/post/${postId}`);
+      
+      console.log('[Community] ✅ Post deleted successfully');
+      
+      // Remove post from local state
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      
+      // Close confirmation modal
+      setShowDeleteConfirm(null);
+      
+      // Reload stats
+      loadStats();
+    } catch (error) {
+      console.error('[Community] ❌ Failed to delete post:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Show error to user
+      if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        console.error('[Community] User does not have permission to delete this post');
+      } else if (errorMessage.includes('404')) {
+        console.error('[Community] Post not found');
+        // Remove from local state anyway
+        setPosts(prev => prev.filter(p => p.id !== postId));
+      } else {
+        console.error('[Community] Unexpected error deleting post:', errorMessage);
+      }
+      
+      setShowDeleteConfirm(null);
+    } finally {
+      setIsDeletingPost(false);
+    }
+  };
+
   const bgColor = colors.backgroundTop;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
@@ -693,6 +735,7 @@ export default function CommunityScreen() {
               
               const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
               const hasUserReacted = !!post.userReaction;
+              const isOwnPost = user?.id && post.userId === user.id;
               
               return (
                 <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
@@ -715,17 +758,35 @@ export default function CommunityScreen() {
                         </View>
                       )}
                     </View>
-                    <TouchableOpacity 
-                      style={styles.flagButton}
-                      onPress={() => handleFlagPost(post.id)}
-                    >
-                      <IconSymbol 
-                        ios_icon_name="flag"
-                        android_material_icon_name="flag"
-                        size={18}
-                        color={textSecondaryColor}
-                      />
-                    </TouchableOpacity>
+                    <View style={styles.postActions}>
+                      {isOwnPost && (
+                        <TouchableOpacity 
+                          style={styles.deleteButton}
+                          onPress={() => {
+                            console.log('[Community] User tapped delete button for post:', post.id);
+                            setShowDeleteConfirm(post.id);
+                          }}
+                        >
+                          <IconSymbol 
+                            ios_icon_name="trash"
+                            android_material_icon_name="delete"
+                            size={18}
+                            color="#FF5252"
+                          />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity 
+                        style={styles.flagButton}
+                        onPress={() => handleFlagPost(post.id)}
+                      >
+                        <IconSymbol 
+                          ios_icon_name="flag"
+                          android_material_icon_name="flag"
+                          size={18}
+                          color={textSecondaryColor}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   {post.scriptureReference && (
@@ -999,6 +1060,70 @@ export default function CommunityScreen() {
                 <Text style={[styles.authPromptButtonTextSecondary, { color: textColor }]}>
                   Maybe Later
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(null)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowDeleteConfirm(null)}
+        >
+          <Pressable 
+            style={[styles.deleteConfirmModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.deleteConfirmHeader}>
+              <IconSymbol
+                ios_icon_name="trash.fill"
+                android_material_icon_name="delete"
+                size={48}
+                color="#FF5252"
+              />
+            </View>
+            <Text style={[styles.deleteConfirmTitle, { color: textColor }]}>
+              Delete Post?
+            </Text>
+            <Text style={[styles.deleteConfirmMessage, { color: textSecondaryColor }]}>
+              This will permanently remove your post from the community. This action cannot be undone.
+            </Text>
+            <View style={styles.deleteConfirmButtons}>
+              <TouchableOpacity
+                style={[styles.deleteConfirmButton, styles.deleteConfirmButtonCancel]}
+                onPress={() => {
+                  console.log('[Community] User cancelled delete');
+                  setShowDeleteConfirm(null);
+                }}
+                activeOpacity={0.8}
+                disabled={isDeletingPost}
+              >
+                <Text style={[styles.deleteConfirmButtonTextCancel, { color: textColor }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteConfirmButton, styles.deleteConfirmButtonDelete]}
+                onPress={() => showDeleteConfirm && handleDeletePost(showDeleteConfirm)}
+                activeOpacity={0.8}
+                disabled={isDeletingPost}
+              >
+                {isDeletingPost ? (
+                  <Text style={styles.deleteConfirmButtonTextDelete}>
+                    Deleting...
+                  </Text>
+                ) : (
+                  <Text style={styles.deleteConfirmButtonTextDelete}>
+                    Delete
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -1367,6 +1492,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  deleteButton: {
+    padding: spacing.xs,
+  },
   flagButton: {
     padding: spacing.xs,
   },
@@ -1691,6 +1824,59 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   signInButtonText: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
+  deleteConfirmModal: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+    alignItems: 'center',
+  },
+  deleteConfirmHeader: {
+    marginBottom: spacing.lg,
+  },
+  deleteConfirmTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  deleteConfirmMessage: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  deleteConfirmButtons: {
+    width: '100%',
+    gap: spacing.md,
+  },
+  deleteConfirmButton: {
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  deleteConfirmButtonCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border || '#E0E0E0',
+  },
+  deleteConfirmButtonDelete: {
+    backgroundColor: '#FF5252',
+  },
+  deleteConfirmButtonTextCancel: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+  },
+  deleteConfirmButtonTextDelete: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
