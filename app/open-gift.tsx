@@ -4,6 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { GradientBackground } from '@/components/GradientBackground';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
@@ -111,7 +113,7 @@ export default function OpenGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  const bgColor = colors.backgroundTop;
+  const bgColor = 'transparent';
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
 
@@ -214,116 +216,130 @@ export default function OpenGiftScreen() {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: '',
-          headerBackTitle: 'Home',
-          headerStyle: {
-            backgroundColor: bgColor,
-          },
-          headerTintColor: colors.primary,
-        }}
-      />
+    <GradientBackground>
+      <View style={[styles.container, { backgroundColor: bgColor }]}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.ambientSoundBox, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
-            {ambientSoundTitle}
-          </Text>
-          
-          <View style={styles.soundButtons}>
-            {AMBIENT_SOUNDS.map((ambientSound) => {
-              const isSelected = selectedSound === ambientSound.id;
-              const buttonBgColor = isSelected && isPlaying ? colors.primary : colors.backgroundTop;
-              const buttonTextColor = isSelected && isPlaying ? '#FFFFFF' : textColor;
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={[styles.header, { backgroundColor: bgColor }]}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.headerButton}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            <View style={styles.headerRight} />
+          </View>
+
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.ambientSoundBox, { backgroundColor: colors.cardBackground }]}>
+              <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
+                {ambientSoundTitle}
+              </Text>
               
-              return (
+              <View style={styles.soundButtons}>
+                {AMBIENT_SOUNDS.map((ambientSound) => {
+                  const isSelected = selectedSound === ambientSound.id;
+                  const buttonBgColor = isSelected && isPlaying ? colors.primary : colors.backgroundTop;
+                  const buttonTextColor = isSelected && isPlaying ? '#FFFFFF' : textColor;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={ambientSound.id}
+                      style={[styles.soundButton, { backgroundColor: buttonBgColor }]}
+                      onPress={() => handleSoundSelect(ambientSound.id)}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol
+                        ios_icon_name={ambientSound.icon}
+                        android_material_icon_name={ambientSound.materialIcon}
+                        size={24}
+                        color={buttonTextColor}
+                      />
+                      <Text style={[styles.soundButtonText, { color: buttonTextColor }]}>
+                        {ambientSound.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              
+              {selectedSound && isPlaying && (
                 <TouchableOpacity
-                  key={ambientSound.id}
-                  style={[styles.soundButton, { backgroundColor: buttonBgColor }]}
-                  onPress={() => handleSoundSelect(ambientSound.id)}
+                  style={[styles.stopButton, { backgroundColor: colors.error }]}
+                  onPress={handleStopSound}
                   activeOpacity={0.7}
                 >
                   <IconSymbol
-                    ios_icon_name={ambientSound.icon}
-                    android_material_icon_name={ambientSound.materialIcon}
-                    size={24}
-                    color={buttonTextColor}
+                    ios_icon_name="stop.fill"
+                    android_material_icon_name="stop"
+                    size={20}
+                    color="#FFFFFF"
                   />
-                  <Text style={[styles.soundButtonText, { color: buttonTextColor }]}>
-                    {ambientSound.name}
-                  </Text>
+                  <Text style={styles.stopButtonText}>Stop Sound</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-          
-          {selectedSound && isPlaying && (
-            <TouchableOpacity
-              style={[styles.stopButton, { backgroundColor: colors.error }]}
-              onPress={handleStopSound}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="stop.fill"
-                android_material_icon_name="stop"
-                size={20}
-                color="#FFFFFF"
-              />
-              <Text style={styles.stopButtonText}>Stop Sound</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+              )}
+            </View>
 
-        <View style={styles.content}>
-          <Text style={[styles.title, { color: textColor }]}>
-            {titleText}
-          </Text>
-          
-          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-            {subtitleText}
-          </Text>
+            <View style={styles.content}>
+              <Text style={[styles.title, { color: textColor }]}>
+                {titleText}
+              </Text>
+              
+              <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
+                {subtitleText}
+              </Text>
 
-          <View style={styles.giftContainer}>
-            <TouchableOpacity 
-              style={[styles.giftBox, { backgroundColor: colors.primary }]}
-              onPress={handleOpenGift}
-              activeOpacity={0.8}
-              disabled={isOpening}
-            >
-              <IconSymbol 
-                ios_icon_name="gift.fill"
-                android_material_icon_name="card-giftcard"
-                size={80}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
+              <View style={styles.giftContainer}>
+                <TouchableOpacity 
+                  style={[styles.giftBox, { backgroundColor: colors.primary }]}
+                  onPress={handleOpenGift}
+                  activeOpacity={0.8}
+                  disabled={isOpening}
+                >
+                  <IconSymbol 
+                    ios_icon_name="gift.fill"
+                    android_material_icon_name="card-giftcard"
+                    size={80}
+                    color="#FFFFFF"
+                  />
+                </TouchableOpacity>
 
-            {isOpening && glitterParticles.map((particle) => (
-              <GlitterParticle
-                key={particle.id}
-                angle={particle.angle}
-                distance={particle.distance}
-                delay={particle.delay}
-                color={particle.color}
-              />
-            ))}
-          </View>
+                {isOpening && glitterParticles.map((particle) => (
+                  <GlitterParticle
+                    key={particle.id}
+                    angle={particle.angle}
+                    distance={particle.distance}
+                    delay={particle.delay}
+                    color={particle.color}
+                  />
+                ))}
+              </View>
 
-          <Text style={[styles.tapText, { color: textSecondaryColor }]}>
-            {tapText}
-          </Text>
-        </View>
-      </ScrollView>
+              <Text style={[styles.tapText, { color: textSecondaryColor }]}>
+                {tapText}
+              </Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
 
-      <FloatingTabBar tabs={tabs} />
-    </View>
+        <FloatingTabBar tabs={tabs} />
+      </View>
+    </GradientBackground>
   );
 }
 
@@ -390,6 +406,22 @@ function GlitterParticle({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  headerButton: {
+    padding: spacing.xs,
+  },
+  headerRight: {
+    width: 24,
   },
   scrollView: {
     flex: 1,
