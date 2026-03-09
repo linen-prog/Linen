@@ -51,14 +51,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   headerActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  headerActionText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontFamily: typography.fontFamily,
+    padding: spacing.xs,
   },
   welcomeContainer: {
     flex: 1,
@@ -585,30 +578,18 @@ export default function CheckInScreen() {
             <IconSymbol 
               ios_icon_name="hands.sparkles" 
               android_material_icon_name="favorite-border" 
-              size={20} 
+              size={24} 
               color={colors.primary} 
             />
-            <Text style={styles.headerActionText}>Prayer</Text>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={handleCarePress} style={styles.headerActionButton}>
             <IconSymbol 
               ios_icon_name="heart" 
               android_material_icon_name="favorite" 
-              size={20} 
+              size={24} 
               color={colors.primary} 
             />
-            <Text style={styles.headerActionText}>Care</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={handleCommunityPress} style={styles.headerActionButton}>
-            <IconSymbol 
-              ios_icon_name="person.2" 
-              android_material_icon_name="group" 
-              size={20} 
-              color={colors.primary} 
-            />
-            <Text style={styles.headerActionText}>Community</Text>
           </TouchableOpacity>
         </View>
       </View>
