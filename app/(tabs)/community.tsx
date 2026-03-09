@@ -1,42 +1,11 @@
 
-/**
- * Community Screen - Tab-based content sharing
- * 
- * DATA FLOW DOCUMENTATION:
- * 
- * Feed Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'feed' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'feed' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'feed'
- * 
- * Wisdom Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'wisdom' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'wisdom' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'wisdom'
- * 
- * Care Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'care' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'care' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'care'
- * 
- * Prayers Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'prayers' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'prayers' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'prayers'
- * 
- * My Shared Tab:
- * - Shows all posts created by the current user
- * - Includes both Daily Gift reflections and Check-In prayers from all categories
- * - Fetched from /api/community/my-posts endpoint
- */
-
+import { useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface Post {
   id: string;
@@ -77,1199 +46,1014 @@ interface CommunityStats {
   liftedInPrayer: number;
 }
 
-export default function CommunityScreen() {
-  console.log('User viewing Community screen');
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundTop,
+  },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    marginRight: spacing.md,
+    padding: spacing.xs,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    fontFamily: typography.fontFamily,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+    gap: spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.cardBackground,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+    fontFamily: typography.fontFamily,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    fontFamily: typography.fontFamily,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.backgroundTop,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginRight: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  tabActive: {
+    backgroundColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    fontFamily: typography.fontFamily,
+  },
+  tabTextActive: {
+    color: colors.background,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+  },
+  postCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  postAuthor: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  postCategory: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    fontFamily: typography.fontFamily,
+  },
+  postActions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  iconButton: {
+    padding: spacing.xs,
+  },
+  postContent: {
+    fontSize: 15,
+    color: colors.text,
+    lineHeight: 22,
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily,
+  },
+  scriptureRef: {
+    fontSize: 13,
+    color: colors.primary,
+    fontStyle: 'italic',
+    marginBottom: spacing.sm,
+    fontFamily: typography.fontFamily,
+  },
+  artworkImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  prayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+  },
+  prayButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  prayText: {
+    fontSize: 14,
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  prayTextActive: {
+    color: colors.background,
+  },
+  postTime: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily,
+  },
+  reactionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  reactionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reactionButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  reactionEmoji: {
+    fontSize: 16,
+  },
+  reactionCount: {
+    fontSize: 13,
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  reactionCountActive: {
+    color: colors.background,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  emptyIcon: {
+    marginBottom: spacing.md,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.cardBackground,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.xl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
+  careMessageCard: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  careMessageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  careMessageAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  careMessageTime: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily,
+  },
+  careMessageText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+    fontFamily: typography.fontFamily,
+  },
+  careMessageContext: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    fontFamily: typography.fontFamily,
+  },
+  careOptionsContainer: {
+    marginTop: spacing.md,
+  },
+  careOptionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily,
+  },
+  careOptionButton: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  careOptionButtonSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  careOptionText: {
+    fontSize: 15,
+    color: colors.text,
+    fontFamily: typography.fontFamily,
+  },
+  careOptionTextSelected: {
+    color: colors.background,
+  },
+  sendCareButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  sendCareButtonDisabled: {
+    opacity: 0.5,
+  },
+  sendCareButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background,
+    fontFamily: typography.fontFamily,
+  },
+  deleteConfirmModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  deleteConfirmContent: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  deleteConfirmTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily,
+  },
+  deleteConfirmText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: typography.fontFamily,
+  },
+  deleteConfirmButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  deleteCancelButton: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  deleteConfirmButtonDelete: {
+    backgroundColor: '#DC2626',
+  },
+  deleteConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily,
+  },
+  deleteCancelButtonText: {
+    color: colors.text,
+  },
+  deleteConfirmButtonTextDelete: {
+    color: colors.background,
+  },
+});
 
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) {
+    return 'just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+  return date.toLocaleDateString();
+}
+
+export default function CommunityScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState('feed');
+  const [selectedTab, setSelectedTab] = useState<string>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [showCareModal, setShowCareModal] = useState<string | null>(null);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [careMessages, setCareMessages] = useState<CareMessage[]>([]);
-  const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
+  const [showCareModal, setShowCareModal] = useState(false);
+  const [selectedCarePost, setSelectedCarePost] = useState<Post | null>(null);
   const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
-  const [careAnonymous, setCareAnonymous] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   useEffect(() => {
-    console.log('[Community] Tab changed to:', selectedTab);
+    loadStats();
+    loadPosts(selectedTab);
     if (selectedTab === 'care' && user) {
-      // Only load care messages if user is authenticated
       loadCareMessages();
     }
-    loadPosts(selectedTab);
-    loadStats();
   }, [selectedTab, user]);
 
   const loadStats = async () => {
     try {
-      const { authenticatedGet } = await import('@/utils/api');
-      const response = await authenticatedGet<CommunityStats>('/api/community/stats');
-      console.log('[Community] Stats loaded:', response);
-      setStats(response);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/stats`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
     } catch (error) {
-      console.error('[Community] Failed to load community stats:', error);
+      console.error('Error loading community stats:', error);
     }
   };
 
   const loadPosts = async (category: string) => {
-    console.log('[Community] 🔵 Loading posts for category:', category);
-    setIsLoading(true);
-    
     try {
-      const { authenticatedGet } = await import('@/utils/api');
+      const endpoint = category === 'feed' 
+        ? '/api/community/posts'
+        : `/api/community/posts?category=${category}`;
       
-      let allPosts: Post[] = [];
-      
-      if (category === 'my-shared') {
-        const endpoint = '/api/community/my-posts';
-        console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
-        allPosts = await authenticatedGet<Post[]>(endpoint);
-      } else if (category === 'feed') {
-        // For feed tab, fetch posts from ALL categories (feed, wisdom, care, prayers)
-        console.log('[Community] 🔵 Fetching posts from ALL categories for feed');
-        const categories = ['feed', 'wisdom', 'care', 'prayers'];
-        const categoryPromises = categories.map(cat => 
-          authenticatedGet<Post[]>(`/api/community/posts?category=${cat}`)
-        );
-        const categoryResults = await Promise.all(categoryPromises);
-        
-        // Combine all posts from all categories
-        allPosts = categoryResults.flat();
-        
-        // Sort by createdAt (newest first)
-        allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        
-        console.log('[Community] ✅ Combined posts from all categories:', allPosts.length, 'posts');
-      } else {
-        // For specific category tabs (wisdom, care, prayers), only show that category
-        const endpoint = `/api/community/posts?category=${category}`;
-        console.log('[Community] 🔵 Fetching posts from:', endpoint);
-        allPosts = await authenticatedGet<Post[]>(endpoint);
-      }
-      
-      console.log('[Community] ✅ Posts loaded for', category, ':', allPosts.length, 'posts');
-      
-      console.log('[Community] 📊 DETAILED Post details:', allPosts.map(p => ({
-        id: p.id,
-        category: p.category,
-        contentType: p.contentType,
-        authorName: p.authorName,
-        isAnonymous: p.isAnonymous,
-        prayerCount: p.prayerCount,
-        hasArtwork: !!p.artworkUrl,
-        artworkUrl: p.artworkUrl,
-        artworkUrlType: typeof p.artworkUrl,
-        artworkUrlLength: p.artworkUrl ? p.artworkUrl.length : 0,
-        artworkUrlTrimmed: p.artworkUrl ? p.artworkUrl.trim() : '',
-        contentPreview: p.content ? p.content.substring(0, 50) + '...' : '[No text content]',
-        createdAt: p.createdAt
-      })));
-      
-      // Log specific artwork URLs
-      const postsWithArtwork = allPosts.filter(p => p.artworkUrl);
-      console.log('[Community] 🎨 Posts with artwork URLs:', postsWithArtwork.length);
-      postsWithArtwork.forEach(p => {
-        console.log('[Community] 🎨 Post', p.id, 'artworkUrl:', p.artworkUrl);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+        },
       });
       
-      // Fetch reactions for each post
-      const postsWithReactions = await Promise.all(
-        allPosts.map(async (post) => {
-          try {
-            const reactionsData = await authenticatedGet<{ reactions: any; userReaction: string | null }>(
-              `/api/community/reactions/${post.id}`
-            );
-            return {
-              ...post,
-              createdAt: new Date(post.createdAt),
-              reactions: reactionsData.reactions,
-              userReaction: reactionsData.userReaction,
-            };
-          } catch (error) {
-            console.error('[Community] Failed to load reactions for post:', post.id, error);
-            return {
-              ...post,
-              createdAt: new Date(post.createdAt),
-              reactions: { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 },
-              userReaction: null,
-            };
-          }
-        })
-      );
-      
-      setPosts(postsWithReactions);
+      if (response.ok) {
+        const data = await response.json();
+        const postsWithDates = data.map((post: any) => ({
+          ...post,
+          createdAt: new Date(post.createdAt),
+        }));
+        setPosts(postsWithDates);
+      }
     } catch (error) {
-      console.error('[Community] ❌ Failed to load posts:', error);
-      setPosts([]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error loading posts:', error);
     }
   };
 
   const handlePray = async (postId: string) => {
-    console.log('[Community] User holding post in prayer:', postId);
-    
     try {
-      const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost<{ prayerCount: number; userHasPrayed: boolean }>(`/api/community/pray/${postId}`, {});
-      
-      console.log('[Community] Prayer toggled:', response);
-      
-      setPosts(prev => prev.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            userHasPrayed: response.userHasPrayed,
-            prayerCount: response.prayerCount,
-          };
-        }
-        return post;
-      }));
-      
-      loadStats();
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/pray`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (response.ok) {
+        setPosts(posts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              userHasPrayed: !post.userHasPrayed,
+              prayerCount: post.userHasPrayed ? post.prayerCount - 1 : post.prayerCount + 1,
+            };
+          }
+          return post;
+        }));
+      }
     } catch (error) {
-      console.error('[Community] Failed to toggle prayer:', error);
+      console.error('Error toggling prayer:', error);
     }
   };
 
   const handleFlagPost = async (postId: string) => {
-    console.log('[Community] User flagging post:', postId);
-    
-    console.log('[Community] Flag post feature - requires confirmation modal');
-    
     try {
-      const { authenticatedPost } = await import('@/utils/api');
-      await authenticatedPost(`/api/community/flag/${postId}`, {});
-      console.log('[Community] Post flagged successfully');
-      loadPosts(selectedTab);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/flag`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (response.ok) {
+        setPosts(posts.map(post => {
+          if (post.id === postId) {
+            return { ...post, isFlagged: true };
+          }
+          return post;
+        }));
+      }
     } catch (error) {
-      console.error('[Community] Failed to flag post:', error);
+      console.error('Error flagging post:', error);
     }
   };
 
   const handleReact = async (postId: string, reactionType: string) => {
-    console.log('[Community] User attempting to react to post:', postId, 'with:', reactionType);
-    
-    // Check if user is authenticated
-    if (!user?.id) {
-      console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
-      setShowAuthPrompt(true);
-      setShowReactionPicker(null);
-      return;
-    }
-    
-    // Optimistically update the UI
-    const previousPosts = [...posts];
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        const currentReactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
-        const isTogglingOff = post.userReaction === reactionType;
-        
-        // Calculate new reaction counts
-        const newReactions = { ...currentReactions };
-        
-        // Remove old reaction count if switching
-        if (post.userReaction && post.userReaction !== reactionType) {
-          newReactions[post.userReaction as keyof typeof newReactions] = Math.max(0, newReactions[post.userReaction as keyof typeof newReactions] - 1);
-        }
-        
-        // Update new reaction count
-        if (isTogglingOff) {
-          newReactions[reactionType as keyof typeof newReactions] = Math.max(0, newReactions[reactionType as keyof typeof newReactions] - 1);
-        } else {
-          newReactions[reactionType as keyof typeof newReactions] = (newReactions[reactionType as keyof typeof newReactions] || 0) + 1;
-        }
-        
-        return {
-          ...post,
-          reactions: newReactions,
-          userReaction: isTogglingOff ? null : reactionType,
-        };
-      }
-      return post;
-    }));
-    
     try {
-      const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost<{ reactions: any; userReaction: string | null }>(
-        `/api/community/react/${postId}`,
-        { reactionType }
-      );
-      
-      console.log('[Community] ✅ Reaction toggled successfully:', response);
-      
-      // Update with actual server response
-      setPosts(prev => prev.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            reactions: response.reactions,
-            userReaction: response.userReaction,
-          };
-        }
-        return post;
-      }));
-      
-      setShowReactionPicker(null);
-    } catch (error) {
-      console.error('[Community] ❌ Failed to toggle reaction:', error);
-      // Revert optimistic update on error
-      setPosts(previousPosts);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        console.log('[Community] ⚠️ Reaction requires authentication - showing auth prompt');
-        setShowAuthPrompt(true);
-        setShowReactionPicker(null);
-      } else {
-        console.error('[Community] Unexpected error toggling reaction:', errorMessage);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/react`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reactionType }),
+      });
+
+      if (response.ok) {
+        loadPosts(selectedTab);
       }
+    } catch (error) {
+      console.error('Error reacting to post:', error);
     }
   };
 
   const loadCareMessages = async () => {
-    console.log('[Community] Loading care messages');
-    setIsLoadingCareMessages(true);
-    
     try {
-      const { authenticatedGet } = await import('@/utils/api');
-      const response = await authenticatedGet<CareMessage[]>('/api/community/care-messages');
-      console.log('[Community] Care messages loaded:', response.length);
-      
-      setCareMessages(response.map(msg => ({
-        ...msg,
-        createdAt: new Date(msg.createdAt),
-      })));
-    } catch (error) {
-      console.error('[Community] Failed to load care messages:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Check if it's an authentication error
-      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        console.log('[Community] ⚠️ Authentication required to view care messages');
-        // User needs to authenticate to see care messages
-        setCareMessages([]);
-      } else {
-        console.error('[Community] Unexpected error loading care messages:', errorMessage);
-        setCareMessages([]);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/care-messages`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const messagesWithDates = data.map((msg: any) => ({
+          ...msg,
+          createdAt: new Date(msg.createdAt),
+        }));
+        setCareMessages(messagesWithDates);
       }
-    } finally {
-      setIsLoadingCareMessages(false);
+    } catch (error) {
+      console.error('Error loading care messages:', error);
     }
   };
 
   const handleSendCare = async () => {
-    if (!showCareModal || !selectedCareMessage) {
+    if (!selectedCarePost || !selectedCareMessage) {
       return;
     }
-    
-    console.log('[Community] Sending care message to post:', showCareModal);
-    
+
     try {
-      const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost(`/api/community/send-care/${showCareModal}`, {
-        message: selectedCareMessage,
-        isAnonymous: careAnonymous,
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${selectedCarePost.id}/care`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: selectedCareMessage }),
       });
-      
-      console.log('[Community] ✅ Care message sent successfully:', response);
-      setShowCareModal(null);
-      setSelectedCareMessage('');
-      setCareAnonymous(false);
-    } catch (error) {
-      console.error('[Community] ❌ Failed to send care message:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Check if it's an authentication error
-      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        console.log('[Community] ⚠️ Authentication required - this should not happen as we check before showing modal');
-        // Close the modal and show auth prompt
-        setShowCareModal(null);
+
+      if (response.ok) {
+        setShowCareModal(false);
+        setSelectedCarePost(null);
         setSelectedCareMessage('');
-        setCareAnonymous(false);
-        setShowAuthPrompt(true);
-      } else {
-        console.error('[Community] Unexpected error sending care message:', errorMessage);
-        // Keep modal open so user can try again
       }
+    } catch (error) {
+      console.error('Error sending care message:', error);
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    console.log('[Community] User confirmed delete for post:', postId);
+    setPostToDelete(postId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) {
+      return;
+    }
+
     setIsDeletingPost(true);
-    
     try {
-      const { authenticatedDelete } = await import('@/utils/api');
-      await authenticatedDelete(`/api/community/post/${postId}`);
-      
-      console.log('[Community] ✅ Post deleted successfully');
-      
-      // Remove post from local state
-      setPosts(prev => prev.filter(p => p.id !== postId));
-      
-      // Close confirmation modal
-      setShowDeleteConfirm(null);
-      
-      // Reload stats
-      loadStats();
-    } catch (error) {
-      console.error('[Community] ❌ Failed to delete post:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Show error to user
-      if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
-        console.error('[Community] User does not have permission to delete this post');
-      } else if (errorMessage.includes('404')) {
-        console.error('[Community] Post not found');
-        // Remove from local state anyway
-        setPosts(prev => prev.filter(p => p.id !== postId));
-      } else {
-        console.error('[Community] Unexpected error deleting post:', errorMessage);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+        },
+      });
+
+      if (response.ok) {
+        setPosts(posts.filter(post => post.id !== postToDelete));
+        setShowDeleteConfirm(false);
+        setPostToDelete(null);
+      } else if (response.status === 403) {
+        console.error('You do not have permission to delete this post');
+      } else if (response.status === 404) {
+        console.error('Post not found');
       }
-      
-      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
     } finally {
       setIsDeletingPost(false);
     }
   };
 
-  const bgColor = colors.backgroundTop;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
-
-  const tabs = [
-    { id: 'feed', label: 'Feed', icon: 'favorite' as const },
-    { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
-    { id: 'care', label: 'Care', icon: 'chat' as const },
-    { id: 'prayers', label: 'Prayers', icon: 'church' as const },
-    { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
-  ];
-
-  const sharedTodayText = `${stats.sharedToday}`;
-  const liftedInPrayerText = `${stats.liftedInPrayer}`;
-
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category: string): string => {
     switch (category) {
-      case 'feed':
-        return colors.primary;
       case 'wisdom':
-        return '#9C27B0';
-      case 'care':
-        return '#FF5722';
-      case 'prayers':
-        return '#2196F3';
-      default:
         return colors.primary;
+      case 'care':
+        return '#DC2626';
+      case 'prayer':
+        return '#7C3AED';
+      default:
+        return colors.textSecondary;
     }
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category: string): string => {
     switch (category) {
-      case 'feed':
-        return 'Feed';
       case 'wisdom':
-        return 'Wisdom';
+        return 'Wisdom Share';
       case 'care':
-        return 'Care';
-      case 'prayers':
-        return 'Prayers';
+        return 'Care Request';
+      case 'prayer':
+        return 'Prayer Share';
       default:
-        return category;
+        return 'Reflection';
     }
   };
 
-  // Helper function to get reaction emoji
-  const getReactionEmoji = (reactionType: string) => {
+  const getReactionEmoji = (reactionType: string): string => {
     switch (reactionType) {
       case 'praying':
         return '🙏';
       case 'holding':
-        return '💙';
+        return '🤲';
       case 'light':
-        return '🕯️';
-      case 'amen':
         return '✨';
+      case 'amen':
+        return '🕊️';
       case 'growing':
         return '🌱';
       case 'peace':
-        return '🕊️';
+        return '☮️';
       default:
-        return '';
+        return '❤️';
     }
   };
 
+  const handleBackPress = () => {
+    router.push('/(tabs)/');
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Message */}
-        <View style={styles.headerMessage}>
-          <Text style={styles.headerMessageText}>
-            ✨ You are not alone in this journey
-          </Text>
-        </View>
-
-        {/* Title Section */}
-        <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: textColor }]}>
-            Community
-          </Text>
-          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-            A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
-          </Text>
-        </View>
-
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.statItem}>
-            <View style={styles.statDot} />
-            <Text style={[styles.statNumber, { color: textColor }]}>
-              {sharedTodayText}
-            </Text>
-            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
-              shared today
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <IconSymbol 
-              ios_icon_name="heart.fill"
-              android_material_icon_name="favorite"
-              size={16}
-              color={colors.prayer}
-            />
-            <Text style={[styles.statNumber, { color: textColor }]}>
-              {liftedInPrayerText}
-            </Text>
-            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
-              lifted in prayer
-            </Text>
-          </View>
-        </View>
-
-        {/* Tabs Section */}
-        <View style={styles.tabsSection}>
-          <ScrollView 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsContainer}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBackPress}
           >
-            {tabs.map(tab => {
-              const isSelected = selectedTab === tab.id;
-              const tabLabel = tab.label;
-              
-              return (
+            <IconSymbol 
+              ios_icon_name="arrow.left" 
+              android_material_icon_name="arrow-back" 
+              size={24} 
+              color={colors.text} 
+            />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Community</Text>
+          </View>
+        </View>
+        <Text style={styles.subtitle}>A gentle space for shared reflection</Text>
+        
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.sharedToday}</Text>
+            <Text style={styles.statLabel}>Shared Today</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.liftedInPrayer}</Text>
+            <Text style={styles.statLabel}>Lifted in Prayer</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'feed' && styles.tabActive]}
+          onPress={() => setSelectedTab('feed')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'feed' && styles.tabTextActive]}>
+            Feed
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'wisdom' && styles.tabActive]}
+          onPress={() => setSelectedTab('wisdom')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'wisdom' && styles.tabTextActive]}>
+            Wisdom
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'care' && styles.tabActive]}
+          onPress={() => setSelectedTab('care')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'care' && styles.tabTextActive]}>
+            Care
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'prayer' && styles.tabActive]}
+          onPress={() => setSelectedTab('prayer')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'prayer' && styles.tabTextActive]}>
+            Prayers
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'my-shared' && styles.tabActive]}
+          onPress={() => setSelectedTab('my-shared')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'my-shared' && styles.tabTextActive]}>
+            My Shared
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        {selectedTab === 'care' && careMessages.length > 0 ? (
+          careMessages.map((message) => (
+            <View key={message.id} style={styles.careMessageCard}>
+              <View style={styles.careMessageHeader}>
+                <Text style={styles.careMessageAuthor}>
+                  {message.isAnonymous ? 'Anonymous' : message.senderName || 'A friend'}
+                </Text>
+                <Text style={styles.careMessageTime}>{formatTimeAgo(message.createdAt)}</Text>
+              </View>
+              <Text style={styles.careMessageText}>{message.message}</Text>
+              <Text style={styles.careMessageContext}>
+                In response to: "{message.postContent.substring(0, 60)}..."
+              </Text>
+            </View>
+          ))
+        ) : posts.length > 0 ? (
+          posts.map((post) => (
+            <View key={post.id} style={styles.postCard}>
+              <View style={styles.postHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.postAuthor}>
+                    {post.isAnonymous ? 'Anonymous' : post.authorName || 'A friend'}
+                  </Text>
+                  <Text style={[styles.postCategory, { color: getCategoryColor(post.category) }]}>
+                    {getCategoryLabel(post.category)}
+                  </Text>
+                </View>
+                <View style={styles.postActions}>
+                  {user && post.userId === user.id && (
+                    <TouchableOpacity 
+                      style={styles.iconButton}
+                      onPress={() => handleDeletePost(post.id)}
+                    >
+                      <IconSymbol 
+                        ios_icon_name="trash" 
+                        android_material_icon_name="delete" 
+                        size={20} 
+                        color={colors.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity 
+                    style={styles.iconButton}
+                    onPress={() => handleFlagPost(post.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="flag" 
+                      android_material_icon_name="flag" 
+                      size={20} 
+                      color={post.isFlagged ? '#DC2626' : colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {post.scriptureReference && (
+                <Text style={styles.scriptureRef}>{post.scriptureReference}</Text>
+              )}
+
+              {post.artworkUrl && (
+                <Image 
+                  source={{ uri: post.artworkUrl }} 
+                  style={styles.artworkImage}
+                  resizeMode="cover"
+                />
+              )}
+
+              <Text style={styles.postContent}>{post.content}</Text>
+
+              {post.reactions && (
+                <View style={styles.reactionsRow}>
+                  {Object.entries(post.reactions).map(([type, count]) => {
+                    if (count === 0) {
+                      return null;
+                    }
+                    const isActive = post.userReaction === type;
+                    return (
+                      <TouchableOpacity
+                        key={type}
+                        style={[styles.reactionButton, isActive && styles.reactionButtonActive]}
+                        onPress={() => handleReact(post.id, type)}
+                      >
+                        <Text style={styles.reactionEmoji}>{getReactionEmoji(type)}</Text>
+                        <Text style={[styles.reactionCount, isActive && styles.reactionCountActive]}>
+                          {count}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              <View style={styles.postFooter}>
                 <TouchableOpacity
-                  key={tab.id}
-                  style={[
-                    styles.tab,
-                    isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
-                  ]}
+                  style={[styles.prayButton, post.userHasPrayed && styles.prayButtonActive]}
+                  onPress={() => handlePray(post.id)}
+                >
+                  <IconSymbol 
+                    ios_icon_name="hands.sparkles" 
+                    android_material_icon_name="favorite" 
+                    size={18} 
+                    color={post.userHasPrayed ? colors.background : colors.text} 
+                  />
+                  <Text style={[styles.prayText, post.userHasPrayed && styles.prayTextActive]}>
+                    {post.prayerCount}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.postTime}>{formatTimeAgo(post.createdAt)}</Text>
+              </View>
+
+              {post.category === 'care' && (
+                <TouchableOpacity
+                  style={[styles.prayButton, { marginTop: spacing.sm }]}
                   onPress={() => {
-                    console.log('[Community] User selected tab:', tab.id);
-                    setSelectedTab(tab.id);
+                    setSelectedCarePost(post);
+                    setShowCareModal(true);
                   }}
                 >
                   <IconSymbol 
-                    ios_icon_name={tab.icon}
-                    android_material_icon_name={tab.icon}
-                    size={16}
-                    color={isSelected ? '#FFFFFF' : textSecondaryColor}
+                    ios_icon_name="heart" 
+                    android_material_icon_name="favorite" 
+                    size={18} 
+                    color={colors.text} 
                   />
-                  <Text style={[
-                    styles.tabText,
-                    isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
-                  ]}>
-                    {tabLabel}
-                  </Text>
+                  <Text style={styles.prayText}>Send Care</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Care Message */}
-        <View style={styles.careMessage}>
-          <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
-            {selectedTab === 'my-shared' 
-              ? 'Your shared reflections and prayers ✨'
-              : selectedTab === 'feed'
-              ? 'All shared reflections, wisdom, care, and prayers from the community ✨'
-              : 'Each reflection below is held with care and prayer ✨'
-            }
-          </Text>
-        </View>
-
-        {/* Care Messages Section (only in Care tab) */}
-        {selectedTab === 'care' && (
-          <View style={styles.careMessagesSection}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              Messages You've Received
+              )}
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <IconSymbol 
+              ios_icon_name="leaf" 
+              android_material_icon_name="eco" 
+              size={48} 
+              color={colors.textSecondary} 
+              style={styles.emptyIcon}
+            />
+            <Text style={styles.emptyText}>
+              {selectedTab === 'care' 
+                ? 'No care messages yet'
+                : 'No posts in this category yet'}
             </Text>
-            {!user ? (
-              <View style={styles.emptyState}>
-                <IconSymbol
-                  ios_icon_name="lock.fill"
-                  android_material_icon_name="lock"
-                  size={32}
-                  color={textSecondaryColor}
-                />
-                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                  Sign in to view care messages
-                </Text>
-                <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-                  Create an account to receive and send care messages
-                </Text>
-                <TouchableOpacity
-                  style={[styles.signInButton, { backgroundColor: colors.primary }]}
-                  onPress={() => router.push('/auth')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.signInButtonText}>
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : isLoadingCareMessages ? (
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                  Loading messages...
-                </Text>
-              </View>
-            ) : careMessages.length === 0 ? (
-              <View style={styles.emptyState}>
-                <IconSymbol
-                  ios_icon_name="heart"
-                  android_material_icon_name="favorite-border"
-                  size={32}
-                  color={textSecondaryColor}
-                />
-                <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                  No care messages yet
-                </Text>
-                <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-                  When someone sends you care, it will appear here
-                </Text>
-              </View>
-            ) : (
-              careMessages.map(msg => {
-                const senderDisplay = msg.isAnonymous ? 'Anonymous' : msg.senderName;
-                const timeAgo = formatTimeAgo(msg.createdAt);
-                
-                return (
-                  <View key={msg.id} style={[styles.careMessageCard, { backgroundColor: cardBg }]}>
-                    <View style={styles.careMessageHeader}>
-                      <IconSymbol
-                        ios_icon_name="heart.fill"
-                        android_material_icon_name="favorite"
-                        size={20}
-                        color={colors.primary}
-                      />
-                      <Text style={[styles.careMessageSender, { color: textColor }]}>
-                        {senderDisplay}
-                      </Text>
-                      <Text style={[styles.careMessageTime, { color: textSecondaryColor }]}>
-                        {timeAgo}
-                      </Text>
-                    </View>
-                    <Text style={[styles.careMessageText, { color: textColor }]}>
-                      {msg.message}
-                    </Text>
-                    <Text style={[styles.careMessageContext, { color: textSecondaryColor }]}>
-                      In response to: {msg.postContent.substring(0, 60)}...
-                    </Text>
-                  </View>
-                );
-              })
-            )}
           </View>
         )}
-
-        {/* Posts Section */}
-        <View style={styles.postsSection}>
-          {isLoading ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                Loading...
-              </Text>
-            </View>
-          ) : posts.length === 0 ? (
-            <View style={styles.emptyState}>
-              <IconSymbol 
-                ios_icon_name="hands.sparkles"
-                android_material_icon_name="favorite-border"
-                size={48}
-                color={textSecondaryColor}
-              />
-              <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                {selectedTab === 'my-shared' 
-                  ? 'You haven\'t shared anything yet'
-                  : 'No posts yet in this category'
-                }
-              </Text>
-              <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-                {selectedTab === 'my-shared'
-                  ? 'Share from your check-ins, daily gifts, or practices'
-                  : 'Share from your check-ins, daily gifts, or practices'
-                }
-              </Text>
-            </View>
-          ) : (
-            posts.map(post => {
-              const authorDisplay = post.isAnonymous ? 'Anonymous' : (post.authorName || 'You');
-              const prayerCountText = `${post.prayerCount}`;
-              const categoryColor = getCategoryColor(post.category);
-              const categoryLabel = getCategoryLabel(post.category);
-              
-              const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
-              const hasUserReacted = !!post.userReaction;
-              const isOwnPost = user?.id && post.userId === user.id;
-              
-              return (
-                <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
-                  <View style={styles.postHeader}>
-                    <View style={styles.postAuthor}>
-                      <IconSymbol 
-                        ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
-                        android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
-                        size={20}
-                        color={textSecondaryColor}
-                      />
-                      <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
-                        {authorDisplay}
-                      </Text>
-                      {(selectedTab === 'my-shared' || selectedTab === 'feed') && post.category !== 'feed' && (
-                        <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '20' }]}>
-                          <Text style={[styles.categoryBadgeText, { color: categoryColor }]}>
-                            {categoryLabel}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.postActions}>
-                      {isOwnPost && (
-                        <TouchableOpacity 
-                          style={styles.deleteButton}
-                          onPress={() => {
-                            console.log('[Community] User tapped delete button for post:', post.id);
-                            setShowDeleteConfirm(post.id);
-                          }}
-                        >
-                          <IconSymbol 
-                            ios_icon_name="trash"
-                            android_material_icon_name="delete"
-                            size={18}
-                            color="#FF5252"
-                          />
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity 
-                        style={styles.flagButton}
-                        onPress={() => handleFlagPost(post.id)}
-                      >
-                        <IconSymbol 
-                          ios_icon_name="flag"
-                          android_material_icon_name="flag"
-                          size={18}
-                          color={textSecondaryColor}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {post.scriptureReference && (
-                    <Text style={[styles.scriptureReference, { color: textSecondaryColor }]}>
-                      {post.scriptureReference}
-                    </Text>
-                  )}
-
-                  {post.artworkUrl && post.artworkUrl.trim().length > 0 && (
-                    <View style={styles.artworkImageContainer}>
-                      {console.log('[Community] 🖼️ Rendering artwork image for post:', post.id, 'URL:', post.artworkUrl)}
-                      <Image 
-                        source={{ uri: post.artworkUrl }}
-                        style={styles.artworkImage}
-                        resizeMode="cover"
-                        onError={(error) => {
-                          console.error('[Community] ❌ Failed to load artwork image for post:', post.id);
-                          console.error('[Community] ❌ Artwork URL:', post.artworkUrl);
-                          console.error('[Community] ❌ Error:', error.nativeEvent.error);
-                        }}
-                        onLoad={() => {
-                          console.log('[Community] ✅ Artwork image loaded successfully for post:', post.id);
-                          console.log('[Community] ✅ Artwork URL:', post.artworkUrl);
-                        }}
-                      />
-                    </View>
-                  )}
-
-                  {post.content && post.content.trim().length > 0 && (
-                    <Text style={[styles.postContent, { color: textColor }]}>
-                      {post.content}
-                    </Text>
-                  )}
-
-                  <View style={styles.postFooter}>
-                    <TouchableOpacity 
-                      style={styles.prayButton}
-                      onPress={() => handlePray(post.id)}
-                    >
-                      <IconSymbol 
-                        ios_icon_name={post.userHasPrayed ? 'hands.sparkles.fill' : 'hands.sparkles'}
-                        android_material_icon_name={post.userHasPrayed ? 'favorite' : 'favorite-border'}
-                        size={22}
-                        color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
-                      />
-                      <View style={styles.prayTextContainer}>
-                        <Text style={[styles.prayCount, { color: textColor }]}>
-                          {prayerCountText}
-                        </Text>
-                        <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
-                          Held in Prayer
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Reaction Section - Show user's reaction if they've reacted, otherwise show Reactions button */}
-                  <View style={styles.reactionSection}>
-                    {hasUserReacted ? (
-                      <View style={styles.userReactionDisplay}>
-                        <TouchableOpacity 
-                          style={[styles.reactionBadge, styles.reactionBadgeActive]}
-                          onPress={() => {
-                            console.log('[Community] User tapped their reaction badge - opening reaction picker');
-                            setShowReactionPicker(post.id);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>
-                            {getReactionEmoji(post.userReaction!)}
-                          </Text>
-                          {reactions[post.userReaction! as keyof typeof reactions] > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions[post.userReaction! as keyof typeof reactions]}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
-                        style={styles.reactButton}
-                        onPress={() => {
-                          console.log('[Community] User tapped React button for post:', post.id);
-                          // Check if user is authenticated before showing reaction picker
-                          if (!user?.id) {
-                            console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
-                            setShowAuthPrompt(true);
-                          } else {
-                            setShowReactionPicker(post.id);
-                          }
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                          React
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Send Care Button (only for care category posts) */}
-                  {post.category === 'care' && (
-                    <TouchableOpacity
-                      style={[styles.sendCareButton, { backgroundColor: colors.primaryLight || '#FFF9E6' }]}
-                      onPress={() => {
-                        // Check if user is authenticated
-                        if (!user) {
-                          console.log('[Community] User must authenticate to send care');
-                          setShowAuthPrompt(true);
-                        } else {
-                          setShowCareModal(post.id);
-                        }
-                      }}
-                    >
-                      <IconSymbol
-                        ios_icon_name="heart.fill"
-                        android_material_icon_name="favorite"
-                        size={18}
-                        color={colors.primary}
-                      />
-                      <Text style={[styles.sendCareButtonText, { color: colors.primary }]}>
-                        Send Care
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })
-          )}
-        </View>
       </ScrollView>
 
-      {/* Reaction Picker Modal */}
       <Modal
-        visible={showReactionPicker !== null}
+        visible={showCareModal}
         transparent
-        animationType="fade"
-        onRequestClose={() => setShowReactionPicker(null)}
+        animationType="slide"
+        onRequestClose={() => setShowCareModal(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowReactionPicker(null)}
-        >
-          <View style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}>
-            <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
-              Choose a reaction
-            </Text>
-            <View style={styles.reactionGrid}>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'praying')}
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Send Care</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowCareModal(false)}
               >
-                <Text style={styles.reactionOptionEmoji}>
-                  🙏
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Praying
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'holding')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  💙
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Holding you
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'light')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🕯️
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Light with you
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'amen')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  ✨
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Amen
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'growing')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🌱
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Growing together
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'peace')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🕊️
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Peace
-                </Text>
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={24} 
+                  color={colors.text} 
+                />
               </TouchableOpacity>
             </View>
+
+            <View style={styles.careOptionsContainer}>
+              <Text style={styles.careOptionsTitle}>Choose a message:</Text>
+              <CareMessageOption
+                message="I'm holding you in prayer"
+                onPress={() => setSelectedCareMessage("I'm holding you in prayer")}
+                textColor={colors.text}
+                bgColor={colors.background}
+                isSelected={selectedCareMessage === "I'm holding you in prayer"}
+              />
+              <CareMessageOption
+                message="You're not alone in this"
+                onPress={() => setSelectedCareMessage("You're not alone in this")}
+                textColor={colors.text}
+                bgColor={colors.background}
+                isSelected={selectedCareMessage === "You're not alone in this"}
+              />
+              <CareMessageOption
+                message="Sending you peace and strength"
+                onPress={() => setSelectedCareMessage("Sending you peace and strength")}
+                textColor={colors.text}
+                bgColor={colors.background}
+                isSelected={selectedCareMessage === "Sending you peace and strength"}
+              />
+              <CareMessageOption
+                message="May you feel held and supported"
+                onPress={() => setSelectedCareMessage("May you feel held and supported")}
+                textColor={colors.text}
+                bgColor={colors.background}
+                isSelected={selectedCareMessage === "May you feel held and supported"}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.sendCareButton, !selectedCareMessage && styles.sendCareButtonDisabled]}
+              onPress={handleSendCare}
+              disabled={!selectedCareMessage}
+            >
+              <Text style={styles.sendCareButtonText}>Send Care Message</Text>
+            </TouchableOpacity>
           </View>
-        </Pressable>
+        </View>
       </Modal>
 
-      {/* Authentication Prompt Modal */}
       <Modal
-        visible={showAuthPrompt}
+        visible={showDeleteConfirm}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowAuthPrompt(false)}
+        onRequestClose={() => setShowDeleteConfirm(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowAuthPrompt(false)}
-        >
-          <Pressable 
-            style={[styles.authPromptModal, { backgroundColor: cardBg }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.authPromptHeader}>
-              <IconSymbol
-                ios_icon_name="lock.fill"
-                android_material_icon_name="lock"
-                size={48}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={[styles.authPromptTitle, { color: textColor }]}>
-              Sign In Required
-            </Text>
-            <Text style={[styles.authPromptMessage, { color: textSecondaryColor }]}>
-              To react to posts, send care messages, and connect with the community, please sign in or create an account.
-            </Text>
-            <View style={styles.authPromptButtons}>
-              <TouchableOpacity
-                style={[styles.authPromptButton, styles.authPromptButtonPrimary]}
-                onPress={() => {
-                  console.log('[Community] User tapped Sign In from auth prompt');
-                  setShowAuthPrompt(false);
-                  router.push('/auth');
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.authPromptButtonTextPrimary}>
-                  Sign In
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.authPromptButton, styles.authPromptButtonSecondary]}
-                onPress={() => {
-                  console.log('[Community] User dismissed auth prompt');
-                  setShowAuthPrompt(false);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.authPromptButtonTextSecondary, { color: textColor }]}>
-                  Maybe Later
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        visible={showDeleteConfirm !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDeleteConfirm(null)}
-      >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowDeleteConfirm(null)}
-        >
-          <Pressable 
-            style={[styles.deleteConfirmModal, { backgroundColor: cardBg }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.deleteConfirmHeader}>
-              <IconSymbol
-                ios_icon_name="trash.fill"
-                android_material_icon_name="delete"
-                size={48}
-                color="#FF5252"
-              />
-            </View>
-            <Text style={[styles.deleteConfirmTitle, { color: textColor }]}>
-              Delete Post?
-            </Text>
-            <Text style={[styles.deleteConfirmMessage, { color: textSecondaryColor }]}>
-              This will permanently remove your post from the community. This action cannot be undone.
+        <View style={styles.deleteConfirmModal}>
+          <View style={styles.deleteConfirmContent}>
+            <Text style={styles.deleteConfirmTitle}>Delete Post?</Text>
+            <Text style={styles.deleteConfirmText}>
+              Are you sure you want to delete this post? This action cannot be undone.
             </Text>
             <View style={styles.deleteConfirmButtons}>
               <TouchableOpacity
-                style={[styles.deleteConfirmButton, styles.deleteConfirmButtonCancel]}
+                style={[styles.deleteConfirmButton, styles.deleteCancelButton]}
                 onPress={() => {
-                  console.log('[Community] User cancelled delete');
-                  setShowDeleteConfirm(null);
+                  setShowDeleteConfirm(false);
+                  setPostToDelete(null);
                 }}
-                activeOpacity={0.8}
                 disabled={isDeletingPost}
               >
-                <Text style={[styles.deleteConfirmButtonTextCancel, { color: textColor }]}>
+                <Text style={[styles.deleteConfirmButtonText, styles.deleteCancelButtonText]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteConfirmButton, styles.deleteConfirmButtonDelete]}
-                onPress={() => showDeleteConfirm && handleDeletePost(showDeleteConfirm)}
-                activeOpacity={0.8}
+                onPress={confirmDeletePost}
                 disabled={isDeletingPost}
               >
-                {isDeletingPost ? (
-                  <Text style={styles.deleteConfirmButtonTextDelete}>
-                    Deleting...
-                  </Text>
-                ) : (
-                  <Text style={styles.deleteConfirmButtonTextDelete}>
-                    Delete
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Send Care Modal */}
-      <Modal
-        visible={showCareModal !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowCareModal(null);
-          setSelectedCareMessage('');
-          setCareAnonymous(false);
-        }}
-      >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => {
-            setShowCareModal(null);
-            setSelectedCareMessage('');
-            setCareAnonymous(false);
-          }}
-        >
-          <Pressable 
-            style={[styles.careModal, { backgroundColor: cardBg }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.careModalHeader}>
-              <Text style={[styles.careModalTitle, { color: textColor }]}>
-                Send Care
-              </Text>
-              <TouchableOpacity onPress={() => {
-                setShowCareModal(null);
-                setSelectedCareMessage('');
-                setCareAnonymous(false);
-              }}>
-                <IconSymbol
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={textSecondaryColor}
-                />
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.careModalSubtitle, { color: textSecondaryColor }]}>
-              Choose a gentle message to send
-            </Text>
-
-            <ScrollView style={styles.careMessagesList}>
-              <CareMessageOption
-                message="Holding you gently in this moment"
-                onPress={() => setSelectedCareMessage("Holding you gently in this moment")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "Holding you gently in this moment"}
-              />
-              <CareMessageOption
-                message="You are not walking this path alone"
-                onPress={() => setSelectedCareMessage("You are not walking this path alone")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "You are not walking this path alone"}
-              />
-              <CareMessageOption
-                message="May you feel surrounded by care today"
-                onPress={() => setSelectedCareMessage("May you feel surrounded by care today")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "May you feel surrounded by care today"}
-              />
-              <CareMessageOption
-                message="Sending gentle strength your way"
-                onPress={() => setSelectedCareMessage("Sending gentle strength your way")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "Sending gentle strength your way"}
-              />
-              <CareMessageOption
-                message="Your courage in sharing is beautiful"
-                onPress={() => setSelectedCareMessage("Your courage in sharing is beautiful")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "Your courage in sharing is beautiful"}
-              />
-              <CareMessageOption
-                message="May you sense the warmth of community around you"
-                onPress={() => setSelectedCareMessage("May you sense the warmth of community around you")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "May you sense the warmth of community around you"}
-              />
-              <CareMessageOption
-                message="Breathing alongside you with compassion"
-                onPress={() => setSelectedCareMessage("Breathing alongside you with compassion")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "Breathing alongside you with compassion"}
-              />
-              <CareMessageOption
-                message="You are worthy of all the care you need"
-                onPress={() => setSelectedCareMessage("You are worthy of all the care you need")}
-                textColor={textColor}
-                bgColor={bgColor}
-                isSelected={selectedCareMessage === "You are worthy of all the care you need"}
-              />
-            </ScrollView>
-
-            <View style={styles.careModalFooter}>
-              <TouchableOpacity
-                style={styles.anonymousToggleRow}
-                onPress={() => setCareAnonymous(!careAnonymous)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, careAnonymous && styles.checkboxChecked]}>
-                  {careAnonymous && (
-                    <IconSymbol
-                      ios_icon_name="checkmark"
-                      android_material_icon_name="check"
-                      size={14}
-                      color="#FFFFFF"
-                    />
-                  )}
-                </View>
-                <Text style={[styles.anonymousToggleText, { color: textColor }]}>
-                  Send anonymously
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sendCareButtonModal,
-                  !selectedCareMessage && styles.sendCareButtonDisabled
-                ]}
-                onPress={handleSendCare}
-                disabled={!selectedCareMessage}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.sendCareButtonModalText}>
-                  Send Care
+                <Text style={[styles.deleteConfirmButtonText, styles.deleteConfirmButtonTextDelete]}>
+                  {isDeletingPost ? 'Deleting...' : 'Delete'}
                 </Text>
               </TouchableOpacity>
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -1279,7 +1063,7 @@ function CareMessageOption({
   message, 
   onPress, 
   textColor, 
-  bgColor,
+  bgColor, 
   isSelected 
 }: { 
   message: string; 
@@ -1291,594 +1075,17 @@ function CareMessageOption({
   return (
     <TouchableOpacity
       style={[
-        styles.careMessageButton, 
-        { backgroundColor: bgColor, borderColor: colors.border },
-        isSelected && styles.careMessageButtonSelected
+        styles.careOptionButton,
+        isSelected && styles.careOptionButtonSelected,
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
     >
       <Text style={[
-        styles.careMessageButtonText, 
-        { color: isSelected ? colors.primary : textColor }
+        styles.careOptionText,
+        isSelected && styles.careOptionTextSelected,
       ]}>
         {message}
       </Text>
     </TouchableOpacity>
   );
 }
-
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) {
-    return 'Just now';
-  }
-  if (diffMins < 60) {
-    const minsText = `${diffMins}m ago`;
-    return minsText;
-  }
-  if (diffHours < 24) {
-    const hoursText = `${diffHours}h ago`;
-    return hoursText;
-  }
-  if (diffDays < 7) {
-    const daysText = `${diffDays}d ago`;
-    return daysText;
-  }
-  return date.toLocaleDateString();
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xxl,
-  },
-  headerMessage: {
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? 48 : spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  headerMessageText: {
-    fontSize: typography.bodySmall,
-    color: colors.primary,
-    backgroundColor: colors.primaryLight || '#E8F5E9',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  },
-  titleSection: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: typography.bold,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: typography.bodySmall,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  statsSection: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  statNumber: {
-    fontSize: typography.h3,
-    fontWeight: typography.bold,
-  },
-  statLabel: {
-    fontSize: typography.bodySmall,
-  },
-  tabsSection: {
-    marginBottom: spacing.md,
-  },
-  tabsContainer: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
-    alignItems: 'center',
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    gap: 6,
-  },
-  tabSelected: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: typography.medium,
-  },
-  tabTextSelected: {
-    color: '#FFFFFF',
-  },
-  careMessage: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  careMessageText: {
-    fontSize: typography.bodySmall,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  postsSection: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxl,
-    gap: spacing.md,
-  },
-  emptyStateText: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
-  },
-  emptyStateSubtext: {
-    fontSize: typography.bodySmall,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  postCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  postAuthor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flex: 1,
-  },
-  postAuthorName: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
-  },
-  categoryBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    marginLeft: spacing.xs,
-  },
-  categoryBadgeText: {
-    fontSize: 11,
-    fontWeight: typography.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  postActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  deleteButton: {
-    padding: spacing.xs,
-  },
-  flagButton: {
-    padding: spacing.xs,
-  },
-  scriptureReference: {
-    fontSize: typography.caption,
-    fontWeight: typography.medium,
-    marginBottom: spacing.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  artworkImageContainer: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    backgroundColor: colors.border || '#F5F5F5',
-  },
-  artworkImage: {
-    width: '100%',
-    height: '100%',
-  },
-  postContent: {
-    fontSize: typography.body,
-    lineHeight: 26,
-    marginBottom: spacing.md,
-  },
-  postFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  prayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  prayTextContainer: {
-    flexDirection: 'column',
-  },
-  prayCount: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-  prayLabel: {
-    fontSize: typography.caption,
-  },
-  reactionSection: {
-    marginTop: spacing.md,
-  },
-  reactButton: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colors.border || '#E0E0E0',
-  },
-  reactButtonText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
-  },
-  userReactionDisplay: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  reactionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primaryLight || '#F5F5F5',
-    minWidth: 44,
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  reactionBadgeActive: {
-    backgroundColor: colors.primary + '30',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  reactionEmoji: {
-    fontSize: 16,
-  },
-  reactionCount: {
-    fontSize: typography.caption,
-    fontWeight: typography.medium,
-  },
-  sendCareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    marginTop: spacing.md,
-  },
-  sendCareButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reactionPickerModal: {
-    width: '85%',
-    maxWidth: 400,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  reactionPickerTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.bold,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  reactionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    justifyContent: 'center',
-  },
-  reactionOption: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    width: '30%',
-    paddingVertical: spacing.md,
-  },
-  reactionOptionEmoji: {
-    fontSize: 32,
-  },
-  reactionOptionLabel: {
-    fontSize: typography.caption,
-    textAlign: 'center',
-    fontWeight: typography.medium,
-  },
-  careModal: {
-    width: '90%',
-    maxWidth: 500,
-    maxHeight: '80%',
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  careModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  careModalTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.bold,
-  },
-  careModalSubtitle: {
-    fontSize: typography.body,
-    marginBottom: spacing.lg,
-  },
-  careMessagesList: {
-    maxHeight: 400,
-    marginBottom: spacing.md,
-  },
-  careMessageButton: {
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    marginBottom: spacing.sm,
-  },
-  careMessageButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '15',
-  },
-  careMessageButtonText: {
-    fontSize: typography.body,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  careModalFooter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border || '#E0E0E0',
-    paddingTop: spacing.md,
-    gap: spacing.md,
-  },
-  anonymousToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary,
-  },
-  anonymousToggleText: {
-    fontSize: typography.body,
-  },
-  sendCareButtonModal: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  sendCareButtonDisabled: {
-    opacity: 0.4,
-  },
-  sendCareButtonModalText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-  careMessagesSection: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.bold,
-    marginBottom: spacing.sm,
-  },
-  careMessageCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: spacing.sm,
-  },
-  careMessageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  careMessageSender: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    flex: 1,
-  },
-  careMessageTime: {
-    fontSize: typography.caption,
-  },
-  authPromptModal: {
-    width: '85%',
-    maxWidth: 400,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 8,
-    alignItems: 'center',
-  },
-  authPromptHeader: {
-    marginBottom: spacing.lg,
-  },
-  authPromptTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.bold,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  authPromptMessage: {
-    fontSize: typography.body,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.xl,
-  },
-  authPromptButtons: {
-    width: '100%',
-    gap: spacing.md,
-  },
-  authPromptButton: {
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  authPromptButtonPrimary: {
-    backgroundColor: colors.primary,
-  },
-  authPromptButtonSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border || '#E0E0E0',
-  },
-  authPromptButtonTextPrimary: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-  authPromptButtonTextSecondary: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
-  },
-  signInButton: {
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.md,
-  },
-  signInButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-  deleteConfirmModal: {
-    width: '85%',
-    maxWidth: 400,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 8,
-    alignItems: 'center',
-  },
-  deleteConfirmHeader: {
-    marginBottom: spacing.lg,
-  },
-  deleteConfirmTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.bold,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  deleteConfirmMessage: {
-    fontSize: typography.body,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.xl,
-  },
-  deleteConfirmButtons: {
-    width: '100%',
-    gap: spacing.md,
-  },
-  deleteConfirmButton: {
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  deleteConfirmButtonCancel: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border || '#E0E0E0',
-  },
-  deleteConfirmButtonDelete: {
-    backgroundColor: '#FF5252',
-  },
-  deleteConfirmButtonTextCancel: {
-    fontSize: typography.body,
-    fontWeight: typography.medium,
-  },
-  deleteConfirmButtonTextDelete: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-});
