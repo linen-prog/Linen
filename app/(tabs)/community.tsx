@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedDelete } from '@/utils/api';
 import { GradientBackground } from '@/components/GradientBackground';
+import { Stack } from 'expo-router';
 
 interface Post {
   id: string;
@@ -51,7 +52,6 @@ interface CommunityStats {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundTop,
   },
   header: {
     paddingHorizontal: spacing.lg,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.backgroundTop,
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -766,367 +766,372 @@ export default function CommunityScreen() {
 
   return (
     <GradientBackground>
+      <Stack.Screen 
+        options={{
+          headerShown: false,
+        }} 
+      />
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => {
-            console.log('User tapped back button');
-            router.back();
-          }}
-        >
-          <IconSymbol 
-            ios_icon_name="chevron.left" 
-            android_material_icon_name="arrow-back" 
-            size={24} 
-            color={colors.text} 
-          />
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => {
+              console.log('User tapped back button');
+              router.back();
+            }}
+          >
+            <IconSymbol 
+              ios_icon_name="chevron.left" 
+              android_material_icon_name="arrow-back" 
+              size={24} 
+              color={colors.text} 
+            />
+          </TouchableOpacity>
 
-        <View style={styles.headerTopRow}>
-          <Text style={styles.sparkleIcon}>✨</Text>
-          <Text style={styles.headerText}>You are not alone in this journey</Text>
-        </View>
-        
-        <Text style={styles.title}>Community</Text>
-        <Text style={styles.subtitle}>
-          A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
-        </Text>
-        
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <View style={[styles.statDot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.statText}>
-              <Text style={styles.statNumber}>{stats.sharedToday}</Text>
-              <Text> shared today</Text>
-            </Text>
+          <View style={styles.headerTopRow}>
+            <Text style={styles.sparkleIcon}>✨</Text>
+            <Text style={styles.headerText}>You are not alone in this journey</Text>
           </View>
-          <View style={styles.statItem}>
-            <View style={[styles.statDot, { backgroundColor: '#DC2626' }]} />
-            <Text style={styles.statText}>
-              <Text style={styles.statNumber}>{stats.liftedInPrayer}</Text>
-              <Text> lifted in prayer</Text>
-            </Text>
+          
+          <Text style={styles.title}>Community</Text>
+          <Text style={styles.subtitle}>
+            A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
+          </Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <View style={[styles.statDot, { backgroundColor: colors.primary }]} />
+              <Text style={styles.statText}>
+                <Text style={styles.statNumber}>{stats.sharedToday}</Text>
+                <Text> shared today</Text>
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <View style={[styles.statDot, { backgroundColor: '#DC2626' }]} />
+              <Text style={styles.statText}>
+                <Text style={styles.statNumber}>{stats.liftedInPrayer}</Text>
+                <Text> lifted in prayer</Text>
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'feed' && styles.tabActive]}
-          onPress={() => setSelectedTab('feed')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'feed' && styles.tabTextActive]}>
-            Feed
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'wisdom' && styles.tabActive]}
-          onPress={() => setSelectedTab('wisdom')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'wisdom' && styles.tabTextActive]}>
-            Wisdom
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'care' && styles.tabActive]}
-          onPress={() => setSelectedTab('care')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'care' && styles.tabTextActive]}>
-            Care
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'prayer' && styles.tabActive]}
-          onPress={() => setSelectedTab('prayer')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'prayer' && styles.tabTextActive]}>
-            Prayers
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'my-shared' && styles.tabActive]}
-          onPress={() => setSelectedTab('my-shared')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'my-shared' && styles.tabTextActive]}>
-            My Shared
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'feed' && styles.tabActive]}
+            onPress={() => setSelectedTab('feed')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'feed' && styles.tabTextActive]}>
+              Feed
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'wisdom' && styles.tabActive]}
+            onPress={() => setSelectedTab('wisdom')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'wisdom' && styles.tabTextActive]}>
+              Wisdom
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'care' && styles.tabActive]}
+            onPress={() => setSelectedTab('care')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'care' && styles.tabTextActive]}>
+              Care
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'prayer' && styles.tabActive]}
+            onPress={() => setSelectedTab('prayer')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'prayer' && styles.tabTextActive]}>
+              Prayers
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'my-shared' && styles.tabActive]}
+            onPress={() => setSelectedTab('my-shared')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'my-shared' && styles.tabTextActive]}>
+              My Shared
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {selectedTab === 'care' && careMessages.length > 0 ? (
-          careMessages.map((message) => {
-            const authorDisplay = message.isAnonymous ? 'Anonymous' : message.senderName || 'A friend';
-            const timeAgo = formatTimeAgo(message.createdAt);
-            const contextPreview = message.postContent.substring(0, 60);
-            const contextText = `In response to: "${contextPreview}..."`;
-            
-            return (
-              <View key={message.id} style={styles.careMessageCard}>
-                <View style={styles.careMessageHeader}>
-                  <Text style={styles.careMessageAuthor}>{authorDisplay}</Text>
-                  <Text style={styles.careMessageTime}>{timeAgo}</Text>
-                </View>
-                <Text style={styles.careMessageText}>{message.message}</Text>
-                <Text style={styles.careMessageContext}>{contextText}</Text>
-              </View>
-            );
-          })
-        ) : posts.length > 0 ? (
-          posts.map((post) => {
-            const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName || 'A friend';
-            const categoryColor = getCategoryColor(post.category);
-            const categoryLabel = getCategoryLabel(post.category);
-            const timeAgo = formatTimeAgo(post.createdAt);
-            const prayIconColor = post.userHasPrayed ? colors.background : colors.text;
-            const isOwnPost = user && post.userId === user.id;
-            
-            return (
-              <View key={post.id} style={styles.postCard}>
-                <View style={styles.postHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.postAuthor}>{authorDisplay}</Text>
-                    <Text style={[styles.postCategory, { color: categoryColor }]}>
-                      {categoryLabel}
-                    </Text>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          {selectedTab === 'care' && careMessages.length > 0 ? (
+            careMessages.map((message) => {
+              const authorDisplay = message.isAnonymous ? 'Anonymous' : message.senderName || 'A friend';
+              const timeAgo = formatTimeAgo(message.createdAt);
+              const contextPreview = message.postContent.substring(0, 60);
+              const contextText = `In response to: "${contextPreview}..."`;
+              
+              return (
+                <View key={message.id} style={styles.careMessageCard}>
+                  <View style={styles.careMessageHeader}>
+                    <Text style={styles.careMessageAuthor}>{authorDisplay}</Text>
+                    <Text style={styles.careMessageTime}>{timeAgo}</Text>
                   </View>
-                  <View style={styles.postActions}>
-                    {isOwnPost && (
+                  <Text style={styles.careMessageText}>{message.message}</Text>
+                  <Text style={styles.careMessageContext}>{contextText}</Text>
+                </View>
+              );
+            })
+          ) : posts.length > 0 ? (
+            posts.map((post) => {
+              const authorDisplay = post.isAnonymous ? 'Anonymous' : post.authorName || 'A friend';
+              const categoryColor = getCategoryColor(post.category);
+              const categoryLabel = getCategoryLabel(post.category);
+              const timeAgo = formatTimeAgo(post.createdAt);
+              const prayIconColor = post.userHasPrayed ? colors.background : colors.text;
+              const isOwnPost = user && post.userId === user.id;
+              
+              return (
+                <View key={post.id} style={styles.postCard}>
+                  <View style={styles.postHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.postAuthor}>{authorDisplay}</Text>
+                      <Text style={[styles.postCategory, { color: categoryColor }]}>
+                        {categoryLabel}
+                      </Text>
+                    </View>
+                    <View style={styles.postActions}>
+                      {isOwnPost && (
+                        <TouchableOpacity 
+                          style={styles.iconButton}
+                          onPress={() => confirmDeletePost(post)}
+                          disabled={isDeletingPost}
+                        >
+                          <IconSymbol 
+                            ios_icon_name="trash" 
+                            android_material_icon_name="delete" 
+                            size={20} 
+                            color="#DC2626" 
+                          />
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity 
                         style={styles.iconButton}
-                        onPress={() => confirmDeletePost(post)}
-                        disabled={isDeletingPost}
+                        onPress={() => handleFlagPost(post.id)}
                       >
                         <IconSymbol 
-                          ios_icon_name="trash" 
-                          android_material_icon_name="delete" 
+                          ios_icon_name="flag" 
+                          android_material_icon_name="flag" 
                           size={20} 
-                          color="#DC2626" 
+                          color={post.isFlagged ? '#DC2626' : colors.textSecondary} 
                         />
                       </TouchableOpacity>
-                    )}
-                    <TouchableOpacity 
-                      style={styles.iconButton}
-                      onPress={() => handleFlagPost(post.id)}
+                    </View>
+                  </View>
+
+                  {post.scriptureReference && (
+                    <Text style={styles.scriptureRef}>{post.scriptureReference}</Text>
+                  )}
+
+                  {post.artworkUrl && (
+                    <Image 
+                      source={{ uri: post.artworkUrl }} 
+                      style={styles.artworkImage}
+                      resizeMode="cover"
+                    />
+                  )}
+
+                  <Text style={styles.postContent}>{post.content}</Text>
+
+                  {post.reactions && (
+                    <View style={styles.reactionsRow}>
+                      {Object.entries(post.reactions).map(([type, count]) => {
+                        if (count === 0) {
+                          return null;
+                        }
+                        const isActive = post.userReaction === type;
+                        const emoji = getReactionEmoji(type);
+                        
+                        return (
+                          <TouchableOpacity
+                            key={type}
+                            style={[styles.reactionButton, isActive && styles.reactionButtonActive]}
+                            onPress={() => handleReact(post.id, type)}
+                          >
+                            <Text style={styles.reactionEmoji}>{emoji}</Text>
+                            <Text style={[styles.reactionCount, isActive && styles.reactionCountActive]}>
+                              {count}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  <View style={styles.postFooter}>
+                    <TouchableOpacity
+                      style={[styles.prayButton, post.userHasPrayed && styles.prayButtonActive]}
+                      onPress={() => handlePray(post.id)}
                     >
                       <IconSymbol 
-                        ios_icon_name="flag" 
-                        android_material_icon_name="flag" 
-                        size={20} 
-                        color={post.isFlagged ? '#DC2626' : colors.textSecondary} 
+                        ios_icon_name="hands.sparkles" 
+                        android_material_icon_name="favorite" 
+                        size={18} 
+                        color={prayIconColor} 
                       />
+                      <Text style={[styles.prayText, post.userHasPrayed && styles.prayTextActive]}>
+                        {post.prayerCount}
+                      </Text>
                     </TouchableOpacity>
+                    <Text style={styles.postTime}>{timeAgo}</Text>
                   </View>
+
+                  {post.category === 'care' && (
+                    <TouchableOpacity
+                      style={[styles.prayButton, { marginTop: spacing.sm }]}
+                      onPress={() => {
+                        console.log('User tapped Send Care button for post:', post.id);
+                        setSelectedCarePost(post);
+                        setShowCareModal(true);
+                      }}
+                    >
+                      <IconSymbol 
+                        ios_icon_name="heart" 
+                        android_material_icon_name="favorite" 
+                        size={18} 
+                        color={colors.text} 
+                      />
+                      <Text style={styles.prayText}>Send Care</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+              );
+            })
+          ) : (
+            <View style={styles.emptyState}>
+              <IconSymbol 
+                ios_icon_name="leaf" 
+                android_material_icon_name="eco" 
+                size={48} 
+                color={colors.textSecondary} 
+                style={styles.emptyIcon}
+              />
+              <Text style={styles.emptyText}>
+                {selectedTab === 'care' 
+                  ? 'No care messages yet'
+                  : 'No posts in this category yet'}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
 
-                {post.scriptureReference && (
-                  <Text style={styles.scriptureRef}>{post.scriptureReference}</Text>
-                )}
-
-                {post.artworkUrl && (
-                  <Image 
-                    source={{ uri: post.artworkUrl }} 
-                    style={styles.artworkImage}
-                    resizeMode="cover"
+        {/* Care Modal */}
+        <Modal
+          visible={showCareModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowCareModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Send Care</Text>
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setShowCareModal(false)}
+                >
+                  <IconSymbol 
+                    ios_icon_name="xmark" 
+                    android_material_icon_name="close" 
+                    size={24} 
+                    color={colors.text} 
                   />
-                )}
-
-                <Text style={styles.postContent}>{post.content}</Text>
-
-                {post.reactions && (
-                  <View style={styles.reactionsRow}>
-                    {Object.entries(post.reactions).map(([type, count]) => {
-                      if (count === 0) {
-                        return null;
-                      }
-                      const isActive = post.userReaction === type;
-                      const emoji = getReactionEmoji(type);
-                      
-                      return (
-                        <TouchableOpacity
-                          key={type}
-                          style={[styles.reactionButton, isActive && styles.reactionButtonActive]}
-                          onPress={() => handleReact(post.id, type)}
-                        >
-                          <Text style={styles.reactionEmoji}>{emoji}</Text>
-                          <Text style={[styles.reactionCount, isActive && styles.reactionCountActive]}>
-                            {count}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-
-                <View style={styles.postFooter}>
-                  <TouchableOpacity
-                    style={[styles.prayButton, post.userHasPrayed && styles.prayButtonActive]}
-                    onPress={() => handlePray(post.id)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name="hands.sparkles" 
-                      android_material_icon_name="favorite" 
-                      size={18} 
-                      color={prayIconColor} 
-                    />
-                    <Text style={[styles.prayText, post.userHasPrayed && styles.prayTextActive]}>
-                      {post.prayerCount}
-                    </Text>
-                  </TouchableOpacity>
-                  <Text style={styles.postTime}>{timeAgo}</Text>
-                </View>
-
-                {post.category === 'care' && (
-                  <TouchableOpacity
-                    style={[styles.prayButton, { marginTop: spacing.sm }]}
-                    onPress={() => {
-                      console.log('User tapped Send Care button for post:', post.id);
-                      setSelectedCarePost(post);
-                      setShowCareModal(true);
-                    }}
-                  >
-                    <IconSymbol 
-                      ios_icon_name="heart" 
-                      android_material_icon_name="favorite" 
-                      size={18} 
-                      color={colors.text} 
-                    />
-                    <Text style={styles.prayText}>Send Care</Text>
-                  </TouchableOpacity>
-                )}
+                </TouchableOpacity>
               </View>
-            );
-          })
-        ) : (
-          <View style={styles.emptyState}>
-            <IconSymbol 
-              ios_icon_name="leaf" 
-              android_material_icon_name="eco" 
-              size={48} 
-              color={colors.textSecondary} 
-              style={styles.emptyIcon}
-            />
-            <Text style={styles.emptyText}>
-              {selectedTab === 'care' 
-                ? 'No care messages yet'
-                : 'No posts in this category yet'}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
 
-      {/* Care Modal */}
-      <Modal
-        visible={showCareModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCareModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Send Care</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowCareModal(false)}
-              >
-                <IconSymbol 
-                  ios_icon_name="xmark" 
-                  android_material_icon_name="close" 
-                  size={24} 
-                  color={colors.text} 
+              <View style={styles.careOptionsContainer}>
+                <Text style={styles.careOptionsTitle}>Choose a message:</Text>
+                <CareMessageOption
+                  message="I'm holding you in prayer"
+                  onPress={() => setSelectedCareMessage("I'm holding you in prayer")}
+                  textColor={colors.text}
+                  bgColor={colors.background}
+                  isSelected={selectedCareMessage === "I'm holding you in prayer"}
                 />
+                <CareMessageOption
+                  message="You're not alone in this"
+                  onPress={() => setSelectedCareMessage("You're not alone in this")}
+                  textColor={colors.text}
+                  bgColor={colors.background}
+                  isSelected={selectedCareMessage === "You're not alone in this"}
+                />
+                <CareMessageOption
+                  message="Sending you peace and strength"
+                  onPress={() => setSelectedCareMessage("Sending you peace and strength")}
+                  textColor={colors.text}
+                  bgColor={colors.background}
+                  isSelected={selectedCareMessage === "Sending you peace and strength"}
+                />
+                <CareMessageOption
+                  message="May you feel held and supported"
+                  onPress={() => setSelectedCareMessage("May you feel held and supported")}
+                  textColor={colors.text}
+                  bgColor={colors.background}
+                  isSelected={selectedCareMessage === "May you feel held and supported"}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.sendCareButton, !selectedCareMessage && styles.sendCareButtonDisabled]}
+                onPress={handleSendCare}
+                disabled={!selectedCareMessage}
+              >
+                <Text style={styles.sendCareButtonText}>Send Care Message</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </Modal>
 
-            <View style={styles.careOptionsContainer}>
-              <Text style={styles.careOptionsTitle}>Choose a message:</Text>
-              <CareMessageOption
-                message="I'm holding you in prayer"
-                onPress={() => setSelectedCareMessage("I'm holding you in prayer")}
-                textColor={colors.text}
-                bgColor={colors.background}
-                isSelected={selectedCareMessage === "I'm holding you in prayer"}
-              />
-              <CareMessageOption
-                message="You're not alone in this"
-                onPress={() => setSelectedCareMessage("You're not alone in this")}
-                textColor={colors.text}
-                bgColor={colors.background}
-                isSelected={selectedCareMessage === "You're not alone in this"}
-              />
-              <CareMessageOption
-                message="Sending you peace and strength"
-                onPress={() => setSelectedCareMessage("Sending you peace and strength")}
-                textColor={colors.text}
-                bgColor={colors.background}
-                isSelected={selectedCareMessage === "Sending you peace and strength"}
-              />
-              <CareMessageOption
-                message="May you feel held and supported"
-                onPress={() => setSelectedCareMessage("May you feel held and supported")}
-                textColor={colors.text}
-                bgColor={colors.background}
-                isSelected={selectedCareMessage === "May you feel held and supported"}
-              />
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={showDeleteConfirm}
+          transparent
+          animationType="fade"
+          onRequestClose={() => !isDeletingPost && setShowDeleteConfirm(false)}
+        >
+          <View style={styles.deleteConfirmModal}>
+            <View style={styles.deleteConfirmContent}>
+              <Text style={styles.deleteConfirmTitle}>Delete Post?</Text>
+              <Text style={styles.deleteConfirmMessage}>
+                Are you sure you want to delete this post? This action cannot be undone.
+              </Text>
+              
+              {isDeletingPost ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : (
+                <View style={styles.deleteConfirmButtons}>
+                  <TouchableOpacity
+                    style={[styles.deleteConfirmButton, styles.deleteCancelButton]}
+                    onPress={() => {
+                      console.log('User cancelled post deletion');
+                      setShowDeleteConfirm(false);
+                      setPostToDelete(null);
+                    }}
+                  >
+                    <Text style={[styles.deleteConfirmButtonText, styles.deleteCancelButtonText]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.deleteConfirmButton, styles.deleteConfirmButtonDelete]}
+                    onPress={handleDeletePost}
+                  >
+                    <Text style={[styles.deleteConfirmButtonText, styles.deleteConfirmButtonTextDelete]}>
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-
-            <TouchableOpacity
-              style={[styles.sendCareButton, !selectedCareMessage && styles.sendCareButtonDisabled]}
-              onPress={handleSendCare}
-              disabled={!selectedCareMessage}
-            >
-              <Text style={styles.sendCareButtonText}>Send Care Message</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        visible={showDeleteConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => !isDeletingPost && setShowDeleteConfirm(false)}
-      >
-        <View style={styles.deleteConfirmModal}>
-          <View style={styles.deleteConfirmContent}>
-            <Text style={styles.deleteConfirmTitle}>Delete Post?</Text>
-            <Text style={styles.deleteConfirmMessage}>
-              Are you sure you want to delete this post? This action cannot be undone.
-            </Text>
-            
-            {isDeletingPost ? (
-              <ActivityIndicator size="large" color={colors.primary} />
-            ) : (
-              <View style={styles.deleteConfirmButtons}>
-                <TouchableOpacity
-                  style={[styles.deleteConfirmButton, styles.deleteCancelButton]}
-                  onPress={() => {
-                    console.log('User cancelled post deletion');
-                    setShowDeleteConfirm(false);
-                    setPostToDelete(null);
-                  }}
-                >
-                  <Text style={[styles.deleteConfirmButtonText, styles.deleteCancelButtonText]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.deleteConfirmButton, styles.deleteConfirmButtonDelete]}
-                  onPress={handleDeletePost}
-                >
-                  <Text style={[styles.deleteConfirmButtonText, styles.deleteConfirmButtonTextDelete]}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
+        </Modal>
       </SafeAreaView>
     </GradientBackground>
   );
