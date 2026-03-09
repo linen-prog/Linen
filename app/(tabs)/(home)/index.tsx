@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
+import NotificationButton from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -71,6 +72,11 @@ export default function HomeScreen() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Notification Button - Top Right */}
+        <View style={styles.notificationContainer}>
+          <NotificationButton />
+        </View>
+
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -184,6 +190,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  notificationContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 50,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
