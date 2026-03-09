@@ -6,6 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface WeeklyRecap {
   id: string;
@@ -37,7 +38,7 @@ interface WeeklyRecap {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: spacing.lg,
@@ -268,24 +269,30 @@ export default function WeeklyRecapScreen() {
     const endDay = endDate.getDate();
     
     if (startMonth === endMonth) {
-      return `${startMonth} ${startDay}–${endDay}`;
+      const dateRangeText = `${startMonth} ${startDay}–${endDay}`;
+      return dateRangeText;
     }
-    return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+    const dateRangeText = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+    return dateRangeText;
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <Stack.Screen
-          options={{
-            title: 'Weekly Recap',
-            headerShown: true,
-          }}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
+      <GradientBackground>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
+          <Stack.Screen
+            options={{
+              title: 'Weekly Recap',
+              headerShown: true,
+              headerTransparent: true,
+              headerBlurEffect: 'light',
+            }}
+          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -293,235 +300,244 @@ export default function WeeklyRecapScreen() {
     const dateRangeText = weekStartDate && weekEndDate ? formatDateRange(weekStartDate, weekEndDate) : '';
     
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <Stack.Screen
-          options={{
-            title: 'Weekly Recap',
-            headerShown: true,
-          }}
-        />
-        <View style={styles.emptyContainer}>
-          <IconSymbol
-            ios_icon_name="calendar"
-            android_material_icon_name="calendar-today"
-            size={64}
-            color={colors.textSecondary}
+      <GradientBackground>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
+          <Stack.Screen
+            options={{
+              title: 'Weekly Recap',
+              headerShown: true,
+              headerTransparent: true,
+              headerBlurEffect: 'light',
+            }}
           />
-          <Text style={styles.emptyText}>
-            No recap available yet for this week
-          </Text>
-          {dateRangeText && (
-            <Text style={[styles.emptyText, { marginTop: spacing.xs }]}>
-              {dateRangeText}
+          <View style={styles.emptyContainer}>
+            <IconSymbol
+              ios_icon_name="calendar"
+              android_material_icon_name="calendar-today"
+              size={64}
+              color={colors.textSecondary}
+            />
+            <Text style={styles.emptyText}>
+              No recap available yet for this week
             </Text>
-          )}
-          <TouchableOpacity
-            style={styles.generateButton}
-            onPress={handleGenerateRecap}
-            disabled={generating}
-          >
-            {generating ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.generateButtonText}>Generate Recap</Text>
-              </>
+            {dateRangeText && (
+              <Text style={[styles.emptyText, { marginTop: spacing.xs }]}>
+                {dateRangeText}
+              </Text>
             )}
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            <TouchableOpacity
+              style={styles.generateButton}
+              onPress={handleGenerateRecap}
+              disabled={generating}
+            >
+              {generating ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <IconSymbol
+                    ios_icon_name="sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.generateButtonText}>Generate Recap</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   const dateRangeDisplay = formatDateRange(recap.weekStartDate, recap.weekEndDate);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          title: 'Weekly Recap',
-          headerShown: true,
-        }}
-      />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.weekRange}>{dateRangeDisplay}</Text>
-          {recap.isPremium && (
-            <View style={styles.premiumBadge}>
-              <IconSymbol
-                ios_icon_name="star.fill"
-                android_material_icon_name="star"
-                size={16}
-                color={colors.primary}
-              />
-              <Text style={styles.premiumBadgeText}>Enhanced Recap</Text>
+    <GradientBackground>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <Stack.Screen
+          options={{
+            title: 'Weekly Recap',
+            headerShown: true,
+            headerTransparent: true,
+            headerBlurEffect: 'light',
+          }}
+        />
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.weekRange}>{dateRangeDisplay}</Text>
+            {recap.isPremium && (
+              <View style={styles.premiumBadge}>
+                <IconSymbol
+                  ios_icon_name="star.fill"
+                  android_material_icon_name="star"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text style={styles.premiumBadgeText}>Enhanced Recap</Text>
+              </View>
+            )}
+          </View>
+
+          {recap.personalSynthesis && (
+            <View style={styles.synthesisCard}>
+              <Text style={styles.synthesisText}>{recap.personalSynthesis}</Text>
             </View>
           )}
-        </View>
 
-        {recap.personalSynthesis && (
-          <View style={styles.synthesisCard}>
-            <Text style={styles.synthesisText}>{recap.personalSynthesis}</Text>
-          </View>
-        )}
-
-        {/* Scripture Section */}
-        {(recap.scriptureSection.reflections.length > 0 || recap.scriptureSection.sharedReflections.length > 0) && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol
-                ios_icon_name="book.fill"
-                android_material_icon_name="menu-book"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={styles.sectionTitle}>Scripture</Text>
-            </View>
-            <View style={styles.sectionContent}>
-              {recap.scriptureSection.reflections.map((reflection, index) => (
-                <View key={index} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{reflection}</Text>
-                  </View>
-                </View>
-              ))}
-              {recap.scriptureSection.sharedReflections.map((reflection, index) => (
-                <View key={`shared-${index}`} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{reflection}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Body Section */}
-        {(recap.bodySection.practices.length > 0 || recap.bodySection.notes.length > 0) && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol
-                ios_icon_name="figure.walk"
-                android_material_icon_name="directions-walk"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={styles.sectionTitle}>Body</Text>
-            </View>
-            <View style={styles.sectionContent}>
-              {recap.bodySection.practices.map((practice, index) => (
-                <View key={index} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{practice}</Text>
-                  </View>
-                </View>
-              ))}
-              {recap.bodySection.notes.map((note, index) => (
-                <View key={`note-${index}`} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{note}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Community Section */}
-        {(recap.communitySection.checkInSummary || recap.communitySection.sharedPosts.length > 0) && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol
-                ios_icon_name="person.3.fill"
-                android_material_icon_name="group"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={styles.sectionTitle}>Community</Text>
-            </View>
-            <View style={styles.sectionContent}>
-              {recap.communitySection.checkInSummary && (
-                <Text style={styles.itemText}>{recap.communitySection.checkInSummary}</Text>
-              )}
-              {recap.communitySection.sharedPosts.map((post, index) => (
-                <View key={index} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{post}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Prompting Section */}
-        {recap.promptingSection.suggestions.length > 0 && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol
-                ios_icon_name="lightbulb.fill"
-                android_material_icon_name="lightbulb"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={styles.sectionTitle}>For the Week Ahead</Text>
-            </View>
-            <View style={styles.sectionContent}>
-              {recap.promptingSection.suggestions.map((suggestion, index) => (
-                <View key={index} style={styles.itemRow}>
-                  <View style={styles.bulletPoint} />
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{suggestion}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Practice Visualization (Premium) */}
-        {recap.practiceVisualization && recap.practiceVisualization.weeklyData.length > 0 && (
-          <View style={styles.visualizationCard}>
-            <Text style={styles.visualizationTitle}>Practice Patterns</Text>
-            <View style={styles.chartContainer}>
-              {recap.practiceVisualization.weeklyData.map((count, index) => {
-                const weekLabel = `W${index + 1}`;
-                const heightPercentage = count > 0 ? (count / Math.max(...recap.practiceVisualization!.weeklyData)) * 100 : 10;
-                
-                return (
-                  <View key={index} style={{ alignItems: 'center' }}>
-                    <View style={[styles.chartBar, { height: `${heightPercentage}%` }]}>
-                      <Text style={styles.chartValue}>{count}</Text>
+          {/* Scripture Section */}
+          {(recap.scriptureSection.reflections.length > 0 || recap.scriptureSection.sharedReflections.length > 0) && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol
+                  ios_icon_name="book.fill"
+                  android_material_icon_name="menu-book"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.sectionTitle}>Scripture</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                {recap.scriptureSection.reflections.map((reflection, index) => (
+                  <View key={index} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{reflection}</Text>
                     </View>
-                    <Text style={styles.chartLabel}>{weekLabel}</Text>
                   </View>
-                );
-              })}
+                ))}
+                {recap.scriptureSection.sharedReflections.map((reflection, index) => (
+                  <View key={`shared-${index}`} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{reflection}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        <TouchableOpacity style={styles.historyButton} onPress={handleViewHistory}>
-          <IconSymbol
-            ios_icon_name="clock.fill"
-            android_material_icon_name="history"
-            size={20}
-            color={colors.primary}
-          />
-          <Text style={styles.historyButtonText}>View Past Recaps</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Body Section */}
+          {(recap.bodySection.practices.length > 0 || recap.bodySection.notes.length > 0) && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol
+                  ios_icon_name="figure.walk"
+                  android_material_icon_name="directions-walk"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.sectionTitle}>Body</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                {recap.bodySection.practices.map((practice, index) => (
+                  <View key={index} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{practice}</Text>
+                    </View>
+                  </View>
+                ))}
+                {recap.bodySection.notes.map((note, index) => (
+                  <View key={`note-${index}`} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{note}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Community Section */}
+          {(recap.communitySection.checkInSummary || recap.communitySection.sharedPosts.length > 0) && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol
+                  ios_icon_name="person.3.fill"
+                  android_material_icon_name="group"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.sectionTitle}>Community</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                {recap.communitySection.checkInSummary && (
+                  <Text style={styles.itemText}>{recap.communitySection.checkInSummary}</Text>
+                )}
+                {recap.communitySection.sharedPosts.map((post, index) => (
+                  <View key={index} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{post}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Prompting Section */}
+          {recap.promptingSection.suggestions.length > 0 && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol
+                  ios_icon_name="lightbulb.fill"
+                  android_material_icon_name="lightbulb"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.sectionTitle}>For the Week Ahead</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                {recap.promptingSection.suggestions.map((suggestion, index) => (
+                  <View key={index} style={styles.itemRow}>
+                    <View style={styles.bulletPoint} />
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemText}>{suggestion}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Practice Visualization (Premium) */}
+          {recap.practiceVisualization && recap.practiceVisualization.weeklyData.length > 0 && (
+            <View style={styles.visualizationCard}>
+              <Text style={styles.visualizationTitle}>Practice Patterns</Text>
+              <View style={styles.chartContainer}>
+                {recap.practiceVisualization.weeklyData.map((count, index) => {
+                  const weekLabel = `W${index + 1}`;
+                  const maxCount = Math.max(...recap.practiceVisualization!.weeklyData);
+                  const heightPercentage = count > 0 ? (count / maxCount) * 100 : 10;
+                  
+                  return (
+                    <View key={index} style={{ alignItems: 'center' }}>
+                      <View style={[styles.chartBar, { height: `${heightPercentage}%` }]}>
+                        <Text style={styles.chartValue}>{count}</Text>
+                      </View>
+                      <Text style={styles.chartLabel}>{weekLabel}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.historyButton} onPress={handleViewHistory}>
+            <IconSymbol
+              ios_icon_name="clock.fill"
+              android_material_icon_name="history"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.historyButtonText}>View Past Recaps</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
