@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   headerActionButton: {
     padding: spacing.xs,
@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl * 2,
+    paddingTop: spacing.xl * 3,
   },
   heartIcon: {
     marginBottom: spacing.xl,
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   },
   assistantMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     borderWidth: 1,
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     gap: spacing.sm,
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily,
   },
   prayerCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   shareOption: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     borderWidth: 1,
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily,
   },
   careRequestInput: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     fontSize: 16,
@@ -577,7 +578,7 @@ export default function CheckInScreen() {
           <TouchableOpacity onPress={handlePrayerPress} style={styles.headerActionButton}>
             <IconSymbol 
               ios_icon_name="hands.sparkles" 
-              android_material_icon_name="favorite-border" 
+              android_material_icon_name="self-improvement" 
               size={24} 
               color={colors.primary} 
             />
@@ -587,6 +588,15 @@ export default function CheckInScreen() {
             <IconSymbol 
               ios_icon_name="heart" 
               android_material_icon_name="favorite" 
+              size={24} 
+              color={colors.primary} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={handleCommunityPress} style={styles.headerActionButton}>
+            <IconSymbol 
+              ios_icon_name="person.3" 
+              android_material_icon_name="people" 
               size={24} 
               color={colors.primary} 
             />
