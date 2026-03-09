@@ -109,6 +109,11 @@ export default function NotificationButton() {
     }
   }, [markNotificationAsRead, router]);
 
+  const handleDropdownPress = useCallback(() => {
+    // Prevent closing when tapping inside the dropdown
+    console.log('[NotificationButton] Dropdown panel tapped');
+  }, []);
+
   const badgeScale = pulseAnim.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [1, 1.1, 1],
@@ -146,7 +151,7 @@ export default function NotificationButton() {
         >
           <TouchableOpacity 
             activeOpacity={1} 
-            onPress={(e) => e.stopPropagation()}
+            onPress={handleDropdownPress}
             style={styles.dropdownPanel}
           >
             <View style={styles.dropdownHeader}>

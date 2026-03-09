@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
-import NotificationButton from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -72,12 +71,6 @@ export default function HomeScreen() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar with Notification Button */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarSpacer} />
-          <NotificationButton />
-        </View>
-
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -192,24 +185,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    zIndex: 100,
-  },
-  topBarSpacer: {
-    flex: 1,
-  },
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.xl,
     marginBottom: spacing.xl,
   },
   appTitle: {
