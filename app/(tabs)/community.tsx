@@ -7,6 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedDelete } from '@/utils/api';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface Post {
   id: string;
@@ -764,8 +765,9 @@ export default function CommunityScreen() {
   const liftedInPrayerText = `${stats.liftedInPrayer} lifted in prayer`;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <GradientBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => {
@@ -1125,7 +1127,8 @@ export default function CommunityScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 

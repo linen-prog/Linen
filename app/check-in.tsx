@@ -6,6 +6,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface Message {
   id: string;
@@ -564,8 +565,9 @@ export default function CheckInScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Stack.Screen options={{ headerShown: false }} />
+    <GradientBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -875,6 +877,7 @@ export default function CheckInScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
