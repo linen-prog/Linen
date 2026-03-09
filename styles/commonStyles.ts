@@ -1,10 +1,11 @@
 
 import { StyleSheet } from 'react-native';
 
-// Warm Linen Color Palette
+// Warm Linen Color Palette - matches the screenshots
 export const colors = {
   // Core "Warm Linen" scheme - soft peachy beige
-  background: '#F5E6D3', // Soft peachy beige
+  background: '#F5E6D3', // Soft peachy beige (main background)
+  backgroundTop: '#F5E6D3', // Same as background for consistency
   primary: '#2D7A6E',    // Deep teal green
   text: '#4A4A4A',       // Dark gray-brown
   border: '#E0D0C0',     // Warm beige border
@@ -16,7 +17,9 @@ export const colors = {
   secondary: '#6B8E23',
   accent: '#D4A574',
   cardBackground: '#FFFFFF',
+  card: '#FFFFFF', // Alias for cardBackground
   secondaryText: '#6B6B6B',
+  textSecondary: '#6B6B6B', // Alias for secondaryText
   mutedText: '#999999',
   lightText: '#888888',
   white: '#FFFFFF',
@@ -24,6 +27,7 @@ export const colors = {
   error: '#FF3B30',
   success: '#4CD964',
   warning: '#FFCC00',
+  prayer: '#D4A574', // For glitter particles
   
   // Tab bar and icon colors
   tabIconDefault: '#CCC',
@@ -46,10 +50,14 @@ export const colors = {
   // Overlays and shadows
   overlay: 'rgba(45, 122, 110, 0.1)',
   shadowColor: 'rgba(74, 74, 74, 0.15)',
+  shadow: 'rgba(74, 74, 74, 0.15)', // Alias for shadowColor
   
   // Gradient colors
   gradientStart: '#F5E6D3',
   gradientEnd: '#F0DDCB',
+  
+  // Additional aliases for consistency
+  primaryLight: '#2D7A6E',
 };
 
 // Typography
@@ -58,15 +66,20 @@ export const typography = {
   regular: 'System',
   medium: 'System',
   bold: 'System',
+  fontFamily: 'System',
   
   // Font sizes
   xs: 12,
   sm: 14,
   base: 16,
+  body: 16,
+  bodySmall: 14,
   lg: 18,
   xl: 20,
   xxl: 24,
   xxxl: 32,
+  h2: 24,
+  h3: 20,
   
   // Line heights
   lineHeightTight: 1.2,
@@ -78,6 +91,7 @@ export const typography = {
   weightMedium: '500' as const,
   weightSemibold: '600' as const,
   weightBold: '700' as const,
+  semibold: '600' as const,
 };
 
 // Spacing scale
