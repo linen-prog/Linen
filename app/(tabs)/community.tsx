@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { authenticatedDelete } from '@/utils/api';
+import { authenticatedDelete, authenticatedGet, authenticatedPost } from '@/utils/api';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack } from 'expo-router';
 
@@ -513,16 +513,9 @@ export default function CommunityScreen() {
   const loadStats = async () => {
     try {
       console.log('Loading community stats');
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/stats`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Community stats loaded:', data);
-        setStats(data);
-      }
+      const data = await authenticatedGet('/api/community/stats');
+      console.log('Community stats loaded:', data);
+      setStats(data);
     } catch (error) {
       console.error('Error loading community stats:', error);
     }
@@ -535,21 +528,13 @@ export default function CommunityScreen() {
         ? '/api/community/posts'
         : `/api/community/posts?category=${category}`;
       
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Posts loaded:', data.length, 'posts');
-        const postsWithDates = data.map((post: any) => ({
-          ...post,
-          createdAt: new Date(post.createdAt),
-        }));
-        setPosts(postsWithDates);
-      }
+      const data = await authenticatedGet(endpoint);
+      console.log('Posts loaded:', data.length, 'posts');
+      const postsWithDates = data.map((post: any) => ({
+        ...post,
+        createdAt: new Date(post.createdAt),
+      }));
+      setPosts(postsWithDates);
     } catch (error) {
       console.error('Error loading posts:', error);
     }
@@ -558,30 +543,20 @@ export default function CommunityScreen() {
   const handlePray = async (postId: string) => {
     try {
       console.log('Toggling prayer for post:', postId);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/pray`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        console.log('Prayer toggled successfully');
-        setPosts(posts.map(post => {
-          if (post.id === postId) {
-            const newUserHasPrayed = !post.userHasPrayed;
-            const newPrayerCount = post.userHasPrayed ? post.prayerCount - 1 : post.prayerCount + 1;
-            return {
-              ...post,
-              userHasPrayed: newUserHasPrayed,
-              prayerCount: newPrayerCount,
-            };
-          }
-          return post;
-        }));
-      }
+      await authenticatedPost(`/api/community/post/${postId}/pray`, {});
+      console.log('Prayer toggled successfully');
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          const newUserHasPrayed = !post.userHasPrayed;
+          const newPrayerCount = post.userHasPrayed ? post.prayerCount - 1 : post.prayerCount + 1;
+          return {
+            ...post,
+            userHasPrayed: newUserHasPrayed,
+            prayerCount: newPrayerCount,
+          };
+        }
+        return post;
+      }));
     } catch (error) {
       console.error('Error toggling prayer:', error);
     }
@@ -590,24 +565,14 @@ export default function CommunityScreen() {
   const handleFlagPost = async (postId: string) => {
     try {
       console.log('Flagging post:', postId);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/flag`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        console.log('Post flagged successfully');
-        setPosts(posts.map(post => {
-          if (post.id === postId) {
-            return { ...post, isFlagged: true };
-          }
-          return post;
-        }));
-      }
+      await authenticatedPost(`/api/community/post/${postId}/flag`, {});
+      console.log('Post flagged successfully');
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return { ...post, isFlagged: true };
+        }
+        return post;
+      }));
     } catch (error) {
       console.error('Error flagging post:', error);
     }
@@ -616,19 +581,9 @@ export default function CommunityScreen() {
   const handleReact = async (postId: string, reactionType: string) => {
     try {
       console.log('Reacting to post:', postId, 'with reaction:', reactionType);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${postId}/react`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reactionType }),
-      });
-
-      if (response.ok) {
-        console.log('Reaction added successfully');
-        loadPosts(selectedTab);
-      }
+      await authenticatedPost(`/api/community/post/${postId}/react`, { reactionType });
+      console.log('Reaction added successfully');
+      loadPosts(selectedTab);
     } catch (error) {
       console.error('Error reacting to post:', error);
     }
@@ -637,21 +592,13 @@ export default function CommunityScreen() {
   const loadCareMessages = async () => {
     try {
       console.log('Loading care messages');
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/care-messages`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Care messages loaded:', data.length, 'messages');
-        const messagesWithDates = data.map((msg: any) => ({
-          ...msg,
-          createdAt: new Date(msg.createdAt),
-        }));
-        setCareMessages(messagesWithDates);
-      }
+      const data = await authenticatedGet('/api/community/care-messages');
+      console.log('Care messages loaded:', data.length, 'messages');
+      const messagesWithDates = data.map((msg: any) => ({
+        ...msg,
+        createdAt: new Date(msg.createdAt),
+      }));
+      setCareMessages(messagesWithDates);
     } catch (error) {
       console.error('Error loading care messages:', error);
     }
@@ -664,21 +611,11 @@ export default function CommunityScreen() {
 
     try {
       console.log('Sending care message to post:', selectedCarePost.id);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/community/post/${selectedCarePost.id}/care`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user?.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: selectedCareMessage }),
-      });
-
-      if (response.ok) {
-        console.log('Care message sent successfully');
-        setShowCareModal(false);
-        setSelectedCarePost(null);
-        setSelectedCareMessage('');
-      }
+      await authenticatedPost(`/api/community/post/${selectedCarePost.id}/care`, { message: selectedCareMessage });
+      console.log('Care message sent successfully');
+      setShowCareModal(false);
+      setSelectedCarePost(null);
+      setSelectedCareMessage('');
     } catch (error) {
       console.error('Error sending care message:', error);
     }
