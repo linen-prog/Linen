@@ -77,6 +77,52 @@ interface GlitterParticle {
   color: string;
 }
 
+interface AmbientSound {
+  id: string;
+  name: string;
+  icon: string;
+  materialIcon: string;
+  url: string;
+}
+
+const AMBIENT_SOUNDS: AmbientSound[] = [
+  {
+    id: 'birds',
+    name: 'Birds',
+    icon: 'bird',
+    materialIcon: 'flutter-dash',
+    url: 'https://assets.mixkit.co/active_storage/sfx/17/17.wav',
+  },
+  {
+    id: 'rain',
+    name: 'Rain',
+    icon: 'cloud.rain.fill',
+    materialIcon: 'water-drop',
+    url: 'https://assets.mixkit.co/active_storage/sfx/2394/2394.wav',
+  },
+  {
+    id: 'wind',
+    name: 'Wind',
+    icon: 'wind',
+    materialIcon: 'air',
+    url: 'https://assets.mixkit.co/active_storage/sfx/2500/2500.wav',
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean Waves',
+    icon: 'water.waves',
+    materialIcon: 'waves',
+    url: 'https://assets.mixkit.co/active_storage/sfx/1208/1208.wav',
+  },
+  {
+    id: 'bells',
+    name: 'Church Bells',
+    icon: 'bell.fill',
+    materialIcon: 'notifications',
+    url: 'https://assets.mixkit.co/active_storage/sfx/628/628.wav',
+  },
+];
+
 export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
@@ -121,6 +167,11 @@ export default function DailyGiftScreen() {
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+
+  // Ambient sound states
+  const [selectedAmbientSound, setSelectedAmbientSound] = useState<string | null>(null);
+  const [ambientSound, setAmbientSound] = useState<Audio.Sound | null>(null);
+  const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
@@ -193,6 +244,10 @@ export default function DailyGiftScreen() {
         console.log('[DailyGift] Cleanup: unloading sound');
         sound.unloadAsync();
       }
+      if (ambientSound) {
+        console.log('[DailyGift] Cleanup: unloading ambient sound');
+        ambientSound.unloadAsync();
+      }
       if (recording) {
         console.log('[DailyGift] Cleanup: stopping recording');
         recording.stopAndUnloadAsync();
@@ -201,7 +256,70 @@ export default function DailyGiftScreen() {
         clearInterval(recordingTimerRef.current);
       }
     };
-  }, [sound, recording]);
+  }, [sound, ambientSound, recording]);
+
+  const handleAmbientSoundSelect = async (soundId: string) => {
+    console.log('🔊 [DailyGift] User selected ambient sound:', soundId);
+    
+    try {
+      if (selectedAmbientSound === soundId && ambientSound) {
+        if (isAmbientPlaying) {
+          console.log('🔊 [DailyGift] Pausing ambient sound');
+          await ambientSound.pauseAsync();
+          setIsAmbientPlaying(false);
+        } else {
+          console.log('🔊 [DailyGift] Resuming ambient sound');
+          await ambientSound.playAsync();
+          setIsAmbientPlaying(true);
+        }
+        return;
+      }
+      
+      if (ambientSound) {
+        console.log('🔊 [DailyGift] Unloading previous ambient sound');
+        await ambientSound.unloadAsync();
+        setAmbientSound(null);
+      }
+      
+      const selectedSound = AMBIENT_SOUNDS.find(s => s.id === soundId);
+      if (!selectedSound) {
+        console.error('🔊 [DailyGift] Ambient sound not found:', soundId);
+        return;
+      }
+      
+      console.log('🔊 [DailyGift] Loading ambient sound from:', selectedSound.url);
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: selectedSound.url },
+        { shouldPlay: true, isLooping: true, volume: 0.5 },
+        (status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish && !status.isLooping) {
+              console.log('🔊 [DailyGift] Ambient sound finished playing');
+              setIsAmbientPlaying(false);
+            }
+          }
+        }
+      );
+      
+      console.log('🔊 [DailyGift] Ambient sound loaded and playing');
+      setAmbientSound(newSound);
+      setSelectedAmbientSound(soundId);
+      setIsAmbientPlaying(true);
+    } catch (error) {
+      console.error('🔊 [DailyGift] Error playing ambient sound:', error);
+    }
+  };
+
+  const handleStopAmbientSound = async () => {
+    console.log('🔊 [DailyGift] User stopped ambient sound');
+    if (ambientSound) {
+      await ambientSound.stopAsync();
+      await ambientSound.unloadAsync();
+      setAmbientSound(null);
+      setSelectedAmbientSound(null);
+      setIsAmbientPlaying(false);
+    }
+  };
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -829,6 +947,8 @@ export default function DailyGiftScreen() {
   const recordingSeconds = recordingDuration % 60;
   const recordingDurationDisplay = `${recordingMinutes}:${recordingSeconds.toString().padStart(2, '0')}`;
 
+  const ambientSoundTitle = 'Ambient Sound';
+
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
     clientDayOfYear: dayOfYear,
@@ -941,6 +1061,55 @@ export default function DailyGiftScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <View style={[styles.ambientSoundBox, { backgroundColor: cardBg }]}>
+            <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
+              {ambientSoundTitle}
+            </Text>
+            
+            <View style={styles.soundButtons}>
+              {AMBIENT_SOUNDS.map((ambientSoundItem) => {
+                const isSelected = selectedAmbientSound === ambientSoundItem.id;
+                const buttonBgColor = isSelected && isAmbientPlaying ? colors.primary : colors.backgroundTop;
+                const buttonTextColor = isSelected && isAmbientPlaying ? '#FFFFFF' : textColor;
+                
+                return (
+                  <TouchableOpacity
+                    key={ambientSoundItem.id}
+                    style={[styles.soundButton, { backgroundColor: buttonBgColor }]}
+                    onPress={() => handleAmbientSoundSelect(ambientSoundItem.id)}
+                    activeOpacity={0.7}
+                  >
+                    <IconSymbol
+                      ios_icon_name={ambientSoundItem.icon}
+                      android_material_icon_name={ambientSoundItem.materialIcon}
+                      size={24}
+                      color={buttonTextColor}
+                    />
+                    <Text style={[styles.soundButtonText, { color: buttonTextColor }]}>
+                      {ambientSoundItem.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            
+            {selectedAmbientSound && isAmbientPlaying && (
+              <TouchableOpacity
+                style={[styles.stopButton, { backgroundColor: colors.error }]}
+                onPress={handleStopAmbientSound}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  ios_icon_name="stop.fill"
+                  android_material_icon_name="stop"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.stopButtonText}>Stop Sound</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <View style={styles.themeSection}>
             <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
               {liturgicalSeasonDisplay}
@@ -1765,6 +1934,61 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.xl,
     paddingBottom: spacing.xxl * 2,
+  },
+
+  ambientSoundBox: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  ambientSoundTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  soundButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  soundButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  soundButtonText: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    alignSelf: 'center',
+  },
+  stopButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
   },
 
   themeSection: {
