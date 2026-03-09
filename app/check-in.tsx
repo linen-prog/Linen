@@ -1,21 +1,11 @@
 
 import { IconSymbol } from '@/components/IconSymbol';
-import FloatingTabBar from '@/components/FloatingTabBar';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal, TextInput, Linking, FlatList } from 'react-native';
 import { StreamdownRN } from 'streamdown-rn';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring,
-  withSequence,
-  withTiming,
-  withRepeat,
-  Easing
-} from 'react-native-reanimated';
+import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 
 interface Message {
   id: string;
@@ -32,52 +22,114 @@ interface Prayer {
   isShared: boolean;
 }
 
-const ENCOURAGING_MESSAGES = [
-  "Each reflection below is held with care and prayer ✨",
-  "You are not alone in this journey 🕊️",
-  "Every word here is received with gentleness 💚",
-  "This is a sacred space for your heart 🌿",
-  "Your reflections are held in prayer 🙏",
-  "Peace be with you as you share 💫",
-  "God walks with you in this moment ✨",
-  "You are seen, heard, and loved 💚"
-];
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: typography.fontFamily,
-  },
-  exitButton: {
+  backButton: {
     padding: spacing.xs,
   },
-  encouragementText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.primary,
     fontFamily: typography.fontFamily,
-    fontStyle: 'italic',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerActionText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontFamily: typography.fontFamily,
+  },
+  welcomeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl * 2,
+  },
+  heartIcon: {
+    marginBottom: spacing.xl,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-    marginTop: spacing.xs,
+    fontFamily: typography.fontFamily,
+  },
+  welcomeDescription: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+    fontFamily: typography.fontFamily,
+  },
+  expectationsSection: {
+    width: '100%',
+    marginTop: spacing.lg,
+  },
+  expectationsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily,
+  },
+  expectationItem: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+    paddingLeft: spacing.md,
+  },
+  bulletPoint: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginRight: spacing.sm,
+    fontFamily: typography.fontFamily,
+  },
+  expectationText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    fontFamily: typography.fontFamily,
+  },
+  startButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl * 2,
+    marginTop: spacing.xl,
+    alignSelf: 'center',
+  },
+  startButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: typography.fontFamily,
+  },
+  chatContainer: {
+    flex: 1,
   },
   messagesList: {
     flex: 1,
@@ -127,30 +179,6 @@ const styles = StyleSheet.create({
   assistantMessageTime: {
     color: colors.textSecondary,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  emptyIcon: {
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontFamily: typography.fontFamily,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    fontFamily: typography.fontFamily,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -185,16 +213,6 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: colors.border,
-  },
-  prayerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   modalOverlay: {
     flex: 1,
@@ -403,20 +421,31 @@ export default function CheckInScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCareModal, setShowCareModal] = useState(false);
   const [careRequestText, setCareRequestText] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [encouragementMessage] = useState(
-    ENCOURAGING_MESSAGES[Math.floor(Math.random() * ENCOURAGING_MESSAGES.length)]
-  );
+  const [hasStarted, setHasStarted] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Load conversation history
-    // TODO: Backend Integration - GET /api/check-in/messages to load conversation history
     console.log('CheckInScreen mounted - ready to load conversation history');
   }, []);
 
-  const handleExit = () => {
+  const handleBack = () => {
     router.back();
+  };
+
+  const handleStartConversation = () => {
+    setHasStarted(true);
+  };
+
+  const handlePrayerPress = () => {
+    setShowPrayerModal(true);
+  };
+
+  const handleCarePress = () => {
+    setShowCareModal(true);
+  };
+
+  const handleCommunityPress = () => {
+    router.push('/(tabs)/community');
   };
 
   const checkForCrisis = (message: string): boolean => {
@@ -450,17 +479,13 @@ export default function CheckInScreen() {
     setInputText('');
     setIsLoading(true);
 
-    // Check for crisis keywords
     if (checkForCrisis(userMessage.content)) {
       setIsLoading(false);
       return;
     }
 
-    // TODO: Backend Integration - POST /api/check-in/messages with { message: userMessage.content }
-    // The backend should use the Linen system prompt for gentle, non-directive responses
     console.log('Sending message to companion:', userMessage.content);
 
-    // Simulate AI response for now
     setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -473,12 +498,7 @@ export default function CheckInScreen() {
     }, 1500);
   };
 
-  const handlePrayerIconPress = () => {
-    setShowPrayerModal(true);
-  };
-
   const handleGeneratePrayer = () => {
-    // TODO: Backend Integration - POST /api/check-in/generate-prayer
     console.log('Generating prayer from conversation');
     
     const newPrayer: Prayer = {
@@ -497,24 +517,15 @@ export default function CheckInScreen() {
     setShowShareModal(true);
   };
 
-  const handleRequestCare = () => {
-    setShowShareModal(false);
-    setShowCareModal(true);
-  };
-
   const handleSubmitCareRequest = () => {
-    // TODO: Backend Integration - POST /api/community/care-request with { message: careRequestText }
     console.log('Submitting care request:', careRequestText);
     setCareRequestText('');
     setShowCareModal(false);
-    Alert.alert('Sent', 'Your request for care has been shared with the community.');
   };
 
   const handleShareMessage = () => {
-    // TODO: Backend Integration - POST /api/community/posts with selected message
     console.log('Sharing message to community');
     setShowShareModal(false);
-    Alert.alert('Shared', 'Your reflection has been shared with the community.');
   };
 
   const handleAcknowledgeCrisis = () => {
@@ -552,92 +563,150 @@ export default function CheckInScreen() {
     );
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyIcon}>
-        <IconSymbol 
-          ios_icon_name="heart.circle.fill" 
-          android_material_icon_name="favorite" 
-          size={64} 
-          color={colors.primary} 
-        />
-      </View>
-      <Text style={styles.emptyTitle}>A Gentle Space</Text>
-      <Text style={styles.emptySubtitle}>
-        This is a place for reflection, prayer, and presence. Share what's on your heart, and I will listen with care.
-      </Text>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Check-In</Text>
-          <TouchableOpacity onPress={handleExit} style={styles.exitButton}>
-            <IconSymbol 
-              ios_icon_name="xmark.circle.fill" 
-              android_material_icon_name="close" 
-              size={28} 
-              color={colors.textSecondary} 
-            />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.encouragementText}>{encouragementMessage}</Text>
-      </View>
-
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          ListEmptyComponent={renderEmptyState}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-
-        <View style={styles.inputContainer}>
-          <TouchableOpacity onPress={handlePrayerIconPress} style={styles.prayerButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <IconSymbol 
+            ios_icon_name="arrow.left" 
+            android_material_icon_name="arrow-back" 
+            size={24} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+        
+        <Text style={styles.headerTitle}>Heart Conversation</Text>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handlePrayerPress} style={styles.headerActionButton}>
             <IconSymbol 
               ios_icon_name="hands.sparkles" 
               android_material_icon_name="favorite-border" 
-              size={24} 
+              size={20} 
               color={colors.primary} 
             />
+            <Text style={styles.headerActionText}>Prayer</Text>
           </TouchableOpacity>
           
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Share what's on your heart..."
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            maxLength={1000}
-          />
-          
-          <TouchableOpacity 
-            onPress={handleSend} 
-            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-            disabled={!inputText.trim() || isLoading}
-          >
+          <TouchableOpacity onPress={handleCarePress} style={styles.headerActionButton}>
             <IconSymbol 
-              ios_icon_name="arrow.up" 
-              android_material_icon_name="send" 
-              size={24} 
-              color="#FFFFFF" 
+              ios_icon_name="heart" 
+              android_material_icon_name="favorite" 
+              size={20} 
+              color={colors.primary} 
             />
+            <Text style={styles.headerActionText}>Care</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={handleCommunityPress} style={styles.headerActionButton}>
+            <IconSymbol 
+              ios_icon_name="person.2" 
+              android_material_icon_name="group" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.headerActionText}>Community</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
+
+      {!hasStarted && messages.length === 0 ? (
+        <ScrollView contentContainerStyle={styles.welcomeContainer}>
+          <View style={styles.heartIcon}>
+            <IconSymbol 
+              ios_icon_name="heart.fill" 
+              android_material_icon_name="favorite" 
+              size={80} 
+              color={colors.primary} 
+            />
+          </View>
+          
+          <Text style={styles.welcomeTitle}>A gentle space for reflection</Text>
+          
+          <Text style={styles.welcomeDescription}>
+            I'm here to listen with compassion and gentle presence. Share what's on your heart—your joys, struggles, questions, or simply what you're noticing in this moment.
+          </Text>
+          
+          <View style={styles.expectationsSection}>
+            <Text style={styles.expectationsTitle}>What to expect:</Text>
+            
+            <View style={styles.expectationItem}>
+              <Text style={styles.bulletPoint}>•</Text>
+              <Text style={styles.expectationText}>
+                I'll help you notice what's happening in your body
+              </Text>
+            </View>
+            
+            <View style={styles.expectationItem}>
+              <Text style={styles.bulletPoint}>•</Text>
+              <Text style={styles.expectationText}>
+                We'll explore sensations, emotions, and patterns together
+              </Text>
+            </View>
+            
+            <View style={styles.expectationItem}>
+              <Text style={styles.bulletPoint}>•</Text>
+              <Text style={styles.expectationText}>
+                Scripture and prayer may weave naturally into our conversation
+              </Text>
+            </View>
+            
+            <View style={styles.expectationItem}>
+              <Text style={styles.bulletPoint}>•</Text>
+              <Text style={styles.expectationText}>
+                I'm not here to fix or advise, but to witness and companion
+              </Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity onPress={handleStartConversation} style={styles.startButton}>
+            <Text style={styles.startButtonText}>Begin</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
+        <KeyboardAvoidingView 
+          style={styles.chatContainer} 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Share what's on your heart..."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              maxLength={1000}
+            />
+            
+            <TouchableOpacity 
+              onPress={handleSend} 
+              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+              disabled={!inputText.trim() || isLoading}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.up" 
+                android_material_icon_name="send" 
+                size={24} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
 
       {/* Prayer Modal */}
       <Modal
@@ -758,13 +827,6 @@ export default function CheckInScreen() {
                   Share this moment with the community for prayer and support
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity onPress={handleRequestCare} style={styles.shareOption}>
-                <Text style={styles.shareOptionTitle}>Request Care</Text>
-                <Text style={styles.shareOptionDescription}>
-                  Ask for specific prayers or encouragement from the community
-                </Text>
-              </TouchableOpacity>
             </View>
             
             <TouchableOpacity onPress={() => setShowShareModal(false)} style={styles.closeModalButton}>
@@ -813,14 +875,6 @@ export default function CheckInScreen() {
           </View>
         </View>
       </Modal>
-
-      <FloatingTabBar
-        tabs={[
-          { name: 'Home', icon: 'house', route: '/(tabs)/(home)' },
-          { name: 'Community', icon: 'person.2', route: '/(tabs)/community' },
-          { name: 'Profile', icon: 'person.crop.circle', route: '/(tabs)/profile' },
-        ]}
-      />
     </SafeAreaView>
   );
 }
