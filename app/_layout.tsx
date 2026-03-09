@@ -264,8 +264,10 @@ function RootLayoutContent() {
                   <Stack.Screen name="weekly-recap-detail" options={{ headerShown: false }} />
                   <Stack.Screen name="weekly-recap-history" options={{ headerShown: false }} />
                   <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
-                  {/* Scripture Verification (dev tool) */}
-                  <Stack.Screen name="scripture-verification" options={{ headerShown: false }} />
+                  {/* Companion Preferences screen */}
+                  <Stack.Screen name="companion-preferences" options={{ headerShown: false }} />
+                  {/* Theme Preview screen */}
+                  <Stack.Screen name="theme-preview" options={{ headerShown: false }} />
                   {/* Main app with tabs */}
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 </Stack>
