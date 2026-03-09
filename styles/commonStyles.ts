@@ -1,79 +1,79 @@
 
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-// Warm Linen Color Palette - Gentle, faith-rooted aesthetic
 export const colors = {
-  // Background Gradient Colors
-  backgroundTop: '#fef3c7',      // Warm cream/amber (top)
-  backgroundMiddle: '#fafaf9',   // Off-white/stone (middle)
-  backgroundBottom: '#fef3c7',   // Warm cream/amber (bottom)
-  backgroundPattern: 'rgba(214, 201, 184, 0.08)', // Subtle pattern overlay at 8% opacity
+  // Warm, gentle background colors
+  background: '#F5E6D3', // Soft peachy beige
+  backgroundSecondary: '#EFE0CE', // Slightly darker beige
+  surface: '#FFFFFF', // Pure white for cards
   
-  // Primary - Emerald/Green
-  primary: '#047857',            // Emerald 700 (primary green)
-  primaryLight: '#ecfdf5',       // Emerald 50 (very light mint)
-  primaryMedium: '#059669',      // Emerald 600 (medium green)
-  primaryDark: '#065f46',        // Emerald 800 (dark green)
-  primaryVeryDark: '#064e3b',    // Emerald 900 (very dark green)
+  // Deep teal/green primary color (from the heart icon)
+  primary: '#2D7A6E', // Deep teal green
+  primaryLight: '#4A9B8E', // Lighter teal
+  primaryDark: '#1F5A50', // Darker teal
   
-  // Background - Stone
-  background: '#fafaf9',         // Stone 50 (off-white)
-  backgroundDark: '#1c1917',     // Stone 900 (near black)
+  // Text colors
+  text: '#4A4A4A', // Dark gray-brown for body text
+  textSecondary: '#7A7A7A', // Medium gray for secondary text
+  textLight: '#9A9A9A', // Light gray for subtle text
   
-  // Card - Stone
-  card: '#f5f5f4',               // Stone 100
-  cardDark: '#292524',           // Stone 800
+  // Accent colors
+  accent: '#2D7A6E', // Same as primary for consistency
+  accentLight: '#E8F4F2', // Very light teal for backgrounds
   
-  // Text - Stone
-  text: '#1c1917',               // Stone 900 (near black)
-  textSecondary: '#57534e',      // Stone 600
-  textLight: '#78716c',          // Stone 500 (medium gray)
-  textDark: '#fafaf9',           // Stone 50 (off-white)
-  textSecondaryDark: '#e7e5e4',  // Stone 200
+  // Semantic colors
+  success: '#4A9B8E',
+  warning: '#D4A574',
+  error: '#C85A54',
+  info: '#6B9AC4',
   
-  // Accent - Amber/Gold
-  accent: '#fbbf24',             // Amber 400
-  accentLight: '#fef3c7',        // Amber 100
-  accentVeryLight: '#fffbeb',    // Amber 50
-  accentMedium: '#fcd34d',       // Amber 300
-  accentDark: '#b45309',         // Amber 700
+  // UI element colors
+  border: '#E0D0BE', // Warm beige border
+  borderLight: '#EFE0CE',
+  divider: '#E8DCC8',
   
-  // Functional - Stone
-  border: '#e7e5e4',             // Stone 200
-  borderDark: '#44403c',         // Stone 700
-  shadow: 'rgba(4, 120, 87, 0.08)',  // Emerald 700 at 8%
-  shadowDark: 'rgba(0, 0, 0, 0.3)',
+  // Interactive states
+  hover: '#E8F4F2',
+  pressed: '#D8E4E2',
+  disabled: '#C0C0C0',
   
-  // Prayer/Community - Warm tones
-  prayer: '#b45309',             // Amber 700
-  prayerLight: '#fcd34d',        // Amber 300
+  // Special colors
+  white: '#FFFFFF',
+  black: '#2A2A2A',
+  transparent: 'transparent',
   
-  // Status (gentle, non-urgent)
-  success: '#059669',            // Emerald 600
-  warning: '#fbbf24',            // Amber 400
-  error: '#dc2626',              // Red for errors
+  // Shadow colors
+  shadow: 'rgba(45, 122, 110, 0.1)', // Teal-tinted shadow
+  shadowDark: 'rgba(45, 122, 110, 0.2)',
 };
 
 export const typography = {
-  // Calm, readable fonts
-  fontFamily: 'System',
-  fontFamilySerif: 'Georgia',
+  // Font families
+  fontRegular: 'System',
+  fontMedium: 'System',
+  fontBold: 'System',
+  fontLight: 'System',
   
-  // Sizes - spacious, not cramped
-  h1: 32,
-  h2: 26,
-  h3: 22,
-  h4: 18,
-  body: 16,
-  bodySmall: 14,
-  caption: 12,
+  // Font sizes
+  xs: 12,
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
   
-  // Weights
-  light: '300' as TextStyle['fontWeight'],
-  regular: '400' as TextStyle['fontWeight'],
-  medium: '500' as TextStyle['fontWeight'],
-  semibold: '600' as TextStyle['fontWeight'],
-  bold: '700' as TextStyle['fontWeight'],
+  // Line heights
+  lineHeightTight: 1.2,
+  lineHeightNormal: 1.5,
+  lineHeightRelaxed: 1.75,
+  
+  // Font weights
+  weightLight: '300' as const,
+  weightRegular: '400' as const,
+  weightMedium: '500' as const,
+  weightSemibold: '600' as const,
+  weightBold: '700' as const,
 };
 
 export const spacing = {
@@ -83,6 +83,7 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 64,
 };
 
 export const borderRadius = {
@@ -93,12 +94,28 @@ export const borderRadius = {
   full: 9999,
 };
 
-// Gradient configuration for elegant background
-export const gradientConfig = {
-  colors: [colors.backgroundTop, colors.backgroundMiddle, colors.backgroundTop],
-  locations: [0, 0.5, 1],
-  start: { x: 0, y: 0 },
-  end: { x: 0, y: 1 },
+export const shadows = {
+  sm: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: colors.shadowDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
 };
 
 export const commonStyles = StyleSheet.create({
@@ -106,129 +123,107 @@ export const commonStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  containerDark: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    ...shadows.sm,
+  },
+  cardLarge: {
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardDark: {
-    backgroundColor: colors.cardDark,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: colors.shadowDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  heading1: {
-    fontSize: typography.h1,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  heading1Dark: {
-    fontSize: typography.h1,
-    fontWeight: typography.semibold,
-    color: colors.textDark,
-    marginBottom: spacing.md,
-  },
-  heading2: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  heading2Dark: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    color: colors.textDark,
-    marginBottom: spacing.sm,
-  },
-  heading3: {
-    fontSize: typography.h3,
-    fontWeight: typography.medium,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  heading3Dark: {
-    fontSize: typography.h3,
-    fontWeight: typography.medium,
-    color: colors.textDark,
-    marginBottom: spacing.sm,
-  },
-  body: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.text,
-    lineHeight: 24,
-  },
-  bodyDark: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textDark,
-    lineHeight: 24,
-  },
-  bodySecondary: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  bodySecondaryDark: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textSecondaryDark,
-    lineHeight: 24,
-  },
-  caption: {
-    fontSize: typography.caption,
-    fontWeight: typography.regular,
-    color: colors.textLight,
-  },
-  captionDark: {
-    fontSize: typography.caption,
-    fontWeight: typography.regular,
-    color: colors.textSecondaryDark,
+    ...shadows.md,
   },
   button: {
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
+    color: colors.white,
+    fontSize: typography.base,
+    fontWeight: typography.weightSemibold,
+  },
+  buttonSecondary: {
+    backgroundColor: colors.accentLight,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  buttonSecondaryText: {
+    color: colors.primary,
+    fontSize: typography.base,
+    fontWeight: typography.weightSemibold,
   },
   input: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    fontSize: typography.body,
+    fontSize: typography.base,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  inputDark: {
-    backgroundColor: colors.cardDark,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.body,
-    color: colors.textDark,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
+  heading1: {
+    fontSize: typography.xxxl,
+    fontWeight: typography.weightBold,
+    color: colors.text,
+    lineHeight: typography.xxxl * typography.lineHeightTight,
+  },
+  heading2: {
+    fontSize: typography.xxl,
+    fontWeight: typography.weightBold,
+    color: colors.text,
+    lineHeight: typography.xxl * typography.lineHeightTight,
+  },
+  heading3: {
+    fontSize: typography.xl,
+    fontWeight: typography.weightSemibold,
+    color: colors.text,
+    lineHeight: typography.xl * typography.lineHeightNormal,
+  },
+  body: {
+    fontSize: typography.base,
+    fontWeight: typography.weightRegular,
+    color: colors.text,
+    lineHeight: typography.base * typography.lineHeightRelaxed,
+  },
+  bodySecondary: {
+    fontSize: typography.sm,
+    fontWeight: typography.weightRegular,
+    color: colors.textSecondary,
+    lineHeight: typography.sm * typography.lineHeightRelaxed,
+  },
+  caption: {
+    fontSize: typography.xs,
+    fontWeight: typography.weightRegular,
+    color: colors.textLight,
+    lineHeight: typography.xs * typography.lineHeightNormal,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginVertical: spacing.md,
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  spaceBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });
