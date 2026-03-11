@@ -8,6 +8,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
+import NotificationButton from '@/components/NotificationButton';
 
 interface UserStats {
   checkInStreak: number;
@@ -71,6 +72,12 @@ export default function HomeScreen() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Bar with Notification Button */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarSpacer} />
+          <NotificationButton />
+        </View>
+
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -183,6 +190,17 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: 12,
+    zIndex: 100,
+  },
+  topBarSpacer: {
     flex: 1,
   },
   scrollContent: {
