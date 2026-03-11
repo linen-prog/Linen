@@ -127,8 +127,8 @@ export default function NotificationButton() {
   });
 
   const unreadCountDisplay = unreadCount > 9 ? '9+' : unreadCount.toString();
-  const iconColor = isHovered ? '#b45309' : '#d97706';
-  const textColor = isHovered ? '#b45309' : '#57534e';
+  const iconColor = isHovered ? colors.accentDark : colors.accent;
+  const textColor = isHovered ? colors.accentDark : colors.textSecondary;
 
   return (
     <View style={styles.container}>
@@ -194,14 +194,14 @@ export default function NotificationButton() {
                       ios_icon_name="sparkles" 
                       android_material_icon_name="auto-awesome" 
                       size={48} 
-                      color="#d97706"
+                      color={colors.accent}
                     />
                     <Text style={styles.emptyStateText}>No new notifications</Text>
                   </View>
                 ) : (
                   <React.Fragment>
                     {notifications.map((notification) => {
-                      const cardBgColor = notification.read ? '#FFFFFF' : '#fffbeb';
+                      const cardBgColor = notification.read ? '#FFFFFF' : colors.accentVeryLight;
                       
                       return (
                         <TouchableOpacity
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     width: 300,
     maxHeight: '60%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -314,13 +314,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
+    borderBottomColor: colors.border,
   },
   dropdownTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.body,
+    fontWeight: typography.medium,
     color: colors.text,
   },
   headerActions: {
@@ -329,9 +329,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   markAllReadText: {
-    fontSize: 14,
-    color: '#10b981',
-    fontWeight: '400',
+    fontSize: typography.bodySmall,
+    color: colors.primaryMedium,
+    fontWeight: typography.regular,
   },
   closeButton: {
     padding: 4,
@@ -345,425 +345,42 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyStateText: {
-    fontSize: 14,
-    color: '#78716c',
+    fontSize: typography.bodySmall,
+    color: colors.textLight,
     marginTop: 10,
   },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f4',
+    borderBottomColor: colors.card,
   },
   avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   feedbackIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#059669',
+    backgroundColor: colors.primaryMedium,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   notificationContent: {
     flex: 1,
   },
   notificationText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: typography.bodySmall,
+    color: colors.text,
     marginBottom: 4,
   },
   notificationTimestamp: {
-    fontSize: 12,
-    color: '#78716c',
-  },
-});
-</write file>
-
-Now I need to integrate the NotificationButton into both home page files (base and iOS):
-
-<write file="app/(tabs)/(home)/index.tsx">
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { GradientBackground } from '@/components/GradientBackground';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { useAuth } from '@/contexts/AuthContext';
-import { authenticatedGet } from '@/utils/api';
-import NotificationButton from '@/components/NotificationButton';
-
-interface UserStats {
-  checkInStreak: number;
-  reflectionStreak: number;
-  displayName?: string;
-}
-
-export default function HomeScreen() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
-
-  useEffect(() => {
-    loadUserStats();
-    loadLastCheckIn();
-  }, []);
-
-  const loadUserStats = async () => {
-    try {
-      const response = await authenticatedGet('/api/profile/stats');
-      const data = await response.json();
-      setStats(data);
-      console.log('[Home] Loaded user stats:', data);
-    } catch (error) {
-      console.log('[Home] Error loading stats:', error);
-    }
-  };
-
-  const loadLastCheckIn = async () => {
-    try {
-      const response = await authenticatedGet('/api/check-in/last-message');
-      const data = await response.json();
-      if (data.lastMessage) {
-        setLastCheckInMessage(data.lastMessage);
-      }
-      console.log('[Home] Loaded last check-in message');
-    } catch (error) {
-      console.log('[Home] Error loading last check-in:', error);
-    }
-  };
-
-  const displayName = stats?.displayName || user?.name || 'friend';
-  const greetingText = `Peace to you, ${displayName}`;
-
-  const handleCheckInPress = () => {
-    console.log('[Home] User tapped Check-In button');
-    router.push('/check-in');
-  };
-
-  const handleOpenGiftPress = () => {
-    console.log('[Home] User tapped Open Your Gift button');
-    router.push('/daily-gift');
-  };
-
-  const handleCommunityPress = () => {
-    console.log('[Home] User tapped Community button');
-    router.push('/(tabs)/community');
-  };
-
-  return (
-    <GradientBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar with Notification Button */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarSpacer} />
-          <NotificationButton />
-        </View>
-
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.appTitle}>Linen</Text>
-            <Text style={styles.greeting}>{greetingText}</Text>
-          </View>
-
-          {/* Streak Cards */}
-          <View style={styles.streakContainer}>
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Check-In Streak</Text>
-              <View style={styles.streakValueContainer}>
-                <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
-                <Text style={styles.streakBest}>best: 2</Text>
-              </View>
-            </View>
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Reflection Streak</Text>
-              <View style={styles.streakValueContainer}>
-                <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
-                <Text style={styles.streakBest}>best: 4</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Check-In Card */}
-          <TouchableOpacity 
-            style={styles.checkInCard}
-            onPress={handleCheckInPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.iconCircle}>
-              <IconSymbol 
-                ios_icon_name="message.fill" 
-                android_material_icon_name="chat" 
-                size={40} 
-                color={colors.primary}
-              />
-            </View>
-            
-            <Text style={styles.cardTitle}>Check-In</Text>
-            
-            <Text style={styles.cardSubtitle}>Dove is here for you</Text>
-            
-            {lastCheckInMessage ? (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  {lastCheckInMessage.length > 80 
-                    ? `${lastCheckInMessage.substring(0, 80)}...` 
-                    : lastCheckInMessage}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  My lower avoid en is so sore and my low back hurts. With th...
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Open Your Gift Card */}
-          <TouchableOpacity 
-            style={styles.giftCard}
-            onPress={handleOpenGiftPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.giftIconCircle}>
-              <IconSymbol 
-                ios_icon_name="gift.fill" 
-                android_material_icon_name="card-giftcard" 
-                size={40} 
-                color={colors.accent}
-              />
-            </View>
-            
-            <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-            
-            <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
-          </TouchableOpacity>
-
-          {/* Community Card */}
-          <TouchableOpacity 
-            style={styles.communityCard}
-            onPress={handleCommunityPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.communityIconCircle}>
-              <IconSymbol 
-                ios_icon_name="person.3.fill" 
-                android_material_icon_name="group" 
-                size={28} 
-                color={colors.primary}
-              />
-            </View>
-            
-            <View style={styles.communityTextContainer}>
-              <Text style={styles.communityCardTitle}>Community</Text>
-              <Text style={styles.communityCardSubtitle}>Share your reflections</Text>
-            </View>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </GradientBackground>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: 12,
-    zIndex: 100,
-  },
-  topBarSpacer: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-  appTitle: {
-    fontSize: 48,
-    fontWeight: typography.regular,
-    color: colors.text,
-    fontFamily: typography.fontFamilySerif,
-    marginBottom: spacing.sm,
-  },
-  greeting: {
-    fontSize: typography.h4,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamilySerif,
-  },
-  streakContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-    gap: spacing.md,
-  },
-  streakCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  streakLabel: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  streakValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  streakValue: {
-    fontSize: 36,
-    fontWeight: typography.bold,
-    color: colors.primary,
-  },
-  streakBest: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
+    fontSize: typography.caption,
     color: colors.textLight,
-  },
-  checkInCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.xxl,
-    alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(76, 110, 78, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  cardTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  cardSubtitle: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
-  promptContainer: {
-    width: '100%',
-    paddingHorizontal: spacing.md,
-  },
-  promptText: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textLight,
-    fontStyle: 'italic',
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  giftCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.xxl,
-    alignItems: 'center',
-    shadowColor: colors.accentDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  giftIconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(218, 165, 32, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  giftCardTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  giftCardSubtitle: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-  },
-  communityCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  communityIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(218, 165, 32, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  communityTextContainer: {
-    flex: 1,
-  },
-  communityCardTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.xxs,
-  },
-  communityCardSubtitle: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
   },
 });
