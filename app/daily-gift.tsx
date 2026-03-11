@@ -3,18 +3,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { GradientBackground } from '@/components/GradientBackground';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
-import { Audio } from 'expo-audio';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
   withTiming, 
   withSequence,
-  withRepeat,
   Easing 
 } from 'react-native-reanimated';
 
@@ -78,52 +75,6 @@ interface GlitterParticle {
   color: string;
 }
 
-interface AmbientSound {
-  id: string;
-  name: string;
-  icon: string;
-  materialIcon: string;
-  url: string;
-}
-
-const AMBIENT_SOUNDS: AmbientSound[] = [
-  {
-    id: 'birds',
-    name: 'Birds',
-    icon: 'bird',
-    materialIcon: 'flutter-dash',
-    url: 'https://assets.mixkit.co/active_storage/sfx/17/17.wav',
-  },
-  {
-    id: 'rain',
-    name: 'Rain',
-    icon: 'cloud.rain.fill',
-    materialIcon: 'water-drop',
-    url: 'https://assets.mixkit.co/active_storage/sfx/2394/2394.wav',
-  },
-  {
-    id: 'wind',
-    name: 'Wind',
-    icon: 'wind',
-    materialIcon: 'air',
-    url: 'https://assets.mixkit.co/active_storage/sfx/2500/2500.wav',
-  },
-  {
-    id: 'ocean',
-    name: 'Ocean Waves',
-    icon: 'water.waves',
-    materialIcon: 'waves',
-    url: 'https://assets.mixkit.co/active_storage/sfx/1208/1208.wav',
-  },
-  {
-    id: 'bells',
-    name: 'Church Bells',
-    icon: 'bell.fill',
-    materialIcon: 'notifications',
-    url: 'https://assets.mixkit.co/active_storage/sfx/628/628.wav',
-  },
-];
-
 export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
@@ -161,19 +112,6 @@ export default function DailyGiftScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Voice recording states
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [audioUri, setAudioUri] = useState<string | null>(null);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  // Ambient sound states
-  const [selectedAmbientSound, setSelectedAmbientSound] = useState<string | null>(null);
-  const [ambientSound, setAmbientSound] = useState<Audio.Sound | null>(null);
-  const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
-
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
 
@@ -187,7 +125,6 @@ export default function DailyGiftScreen() {
 
   // Use ref to track timer interval
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timer effect for somatic invitation - FIXED
   useEffect(() => {
@@ -237,90 +174,6 @@ export default function DailyGiftScreen() {
       }
     };
   }, [somaticTimerActive]); // Only depend on somaticTimerActive, not somaticTimeRemaining
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        console.log('[DailyGift] Cleanup: unloading sound');
-        sound.unloadAsync();
-      }
-      if (ambientSound) {
-        console.log('[DailyGift] Cleanup: unloading ambient sound');
-        ambientSound.unloadAsync();
-      }
-      if (recording) {
-        console.log('[DailyGift] Cleanup: stopping recording');
-        recording.stopAndUnloadAsync();
-      }
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
-    };
-  }, [sound, ambientSound, recording]);
-
-  const handleAmbientSoundSelect = async (soundId: string) => {
-    console.log('🔊 [DailyGift] User selected ambient sound:', soundId);
-    
-    try {
-      if (selectedAmbientSound === soundId && ambientSound) {
-        if (isAmbientPlaying) {
-          console.log('🔊 [DailyGift] Pausing ambient sound');
-          await ambientSound.pauseAsync();
-          setIsAmbientPlaying(false);
-        } else {
-          console.log('🔊 [DailyGift] Resuming ambient sound');
-          await ambientSound.playAsync();
-          setIsAmbientPlaying(true);
-        }
-        return;
-      }
-      
-      if (ambientSound) {
-        console.log('🔊 [DailyGift] Unloading previous ambient sound');
-        await ambientSound.unloadAsync();
-        setAmbientSound(null);
-      }
-      
-      const selectedSound = AMBIENT_SOUNDS.find(s => s.id === soundId);
-      if (!selectedSound) {
-        console.error('🔊 [DailyGift] Ambient sound not found:', soundId);
-        return;
-      }
-      
-      console.log('🔊 [DailyGift] Loading ambient sound from:', selectedSound.url);
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: selectedSound.url },
-        { shouldPlay: true, isLooping: true, volume: 0.5 },
-        (status) => {
-          if (status.isLoaded) {
-            if (status.didJustFinish && !status.isLooping) {
-              console.log('🔊 [DailyGift] Ambient sound finished playing');
-              setIsAmbientPlaying(false);
-            }
-          }
-        }
-      );
-      
-      console.log('🔊 [DailyGift] Ambient sound loaded and playing');
-      setAmbientSound(newSound);
-      setSelectedAmbientSound(soundId);
-      setIsAmbientPlaying(true);
-    } catch (error) {
-      console.error('🔊 [DailyGift] Error playing ambient sound:', error);
-    }
-  };
-
-  const handleStopAmbientSound = async () => {
-    console.log('🔊 [DailyGift] User stopped ambient sound');
-    if (ambientSound) {
-      await ambientSound.stopAsync();
-      await ambientSound.unloadAsync();
-      setAmbientSound(null);
-      setSelectedAmbientSound(null);
-      setIsAmbientPlaying(false);
-    }
-  };
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -460,144 +313,7 @@ export default function DailyGiftScreen() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      console.log('[DailyGift] Requesting microphone permissions...');
-      const permission = await Audio.requestPermissionsAsync();
-      
-      if (permission.status !== 'granted') {
-        console.log('[DailyGift] Microphone permission denied. Status:', permission.status);
-        setErrorMessage('Microphone permission is required to record audio reflections. Please enable microphone access in your device settings.');
-        setShowErrorModal(true);
-        return;
-      }
-
-      console.log('[DailyGift] Microphone permission granted. Setting audio mode...');
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      console.log('[DailyGift] Starting recording...');
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(newRecording);
-      setIsRecording(true);
-      setRecordingDuration(0);
-      
-      // Start duration timer
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
-      
-      console.log('[DailyGift] Recording started successfully');
-    } catch (error) {
-      console.log('[DailyGift] Failed to start recording:', error);
-      setErrorMessage('Unable to start recording. Please make sure microphone access is enabled in your device settings and try again.');
-      setShowErrorModal(true);
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      console.log('[DailyGift] Stopping recording...');
-      
-      if (!recording) {
-        console.log('[DailyGift] No recording to stop');
-        return;
-      }
-
-      // Clear timer
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-
-      setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      
-      const uri = recording.getURI();
-      console.log('[DailyGift] Recording stopped. URI:', uri);
-      
-      setAudioUri(uri);
-      setRecording(null);
-      
-      // Set reflection text to indicate audio recording
-      const durationMinutes = Math.floor(recordingDuration / 60);
-      const durationSeconds = recordingDuration % 60;
-      const durationText = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
-      setReflectionText(`[Voice Recording - ${durationText}]`);
-      
-    } catch (error) {
-      console.log('[DailyGift] Failed to stop recording:', error);
-      setErrorMessage('Unable to stop recording. Please try again.');
-      setShowErrorModal(true);
-    }
-  };
-
-  const playRecording = async () => {
-    try {
-      if (!audioUri) {
-        console.log('[DailyGift] No audio to play');
-        return;
-      }
-
-      console.log('[DailyGift] Playing recording from:', audioUri);
-      
-      // Unload previous sound if exists
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUri },
-        { shouldPlay: true }
-      );
-      
-      setSound(newSound);
-      setIsPlayingAudio(true);
-      
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          console.log('[DailyGift] Playback finished');
-          setIsPlayingAudio(false);
-        }
-      });
-      
-      console.log('[DailyGift] Playing audio...');
-    } catch (error) {
-      console.log('[DailyGift] Failed to play recording:', error);
-      setErrorMessage('Unable to play recording. Please try again.');
-      setShowErrorModal(true);
-    }
-  };
-
-  const stopPlayback = async () => {
-    try {
-      if (sound) {
-        console.log('[DailyGift] Stopping playback...');
-        await sound.stopAsync();
-        setIsPlayingAudio(false);
-      }
-    } catch (error) {
-      console.log('[DailyGift] Failed to stop playback:', error);
-    }
-  };
-
-  const deleteRecording = () => {
-    console.log('[DailyGift] Deleting recording');
-    setAudioUri(null);
-    setRecordingDuration(0);
-    setReflectionText('');
-    if (sound) {
-      sound.unloadAsync();
-      setSound(null);
-    }
-  };
-
-  const bgColor = 'transparent';
+  const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
   const cardBg = colors.card;
@@ -624,8 +340,8 @@ export default function DailyGiftScreen() {
     const saveTimestamp = new Date().toISOString();
     console.log(`[DailyGift] ${saveTimestamp} - handleSaveReflection called`);
     
-    if (!reflectionText.trim() && !audioUri) {
-      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: no reflection text or audio`);
+    if (!reflectionText.trim()) {
+      console.log(`[DailyGift] ${saveTimestamp} - Cannot save: reflection text is empty`);
       return;
     }
     
@@ -654,7 +370,6 @@ export default function DailyGiftScreen() {
 
     console.log(`[DailyGift] ${saveTimestamp} - Preparing to save reflection:`, { 
       reflectionTextLength: reflectionText.trim().length,
-      hasAudio: !!audioUri,
       shareToComm,
       shareAnonymously,
       responseMode,
@@ -783,7 +498,9 @@ export default function DailyGiftScreen() {
       router.push('/artwork-canvas');
     }
     
-    // Voice mode is now handled inline
+    if (mode === 'voice') {
+      console.log('[DailyGift] Voice recording not yet implemented');
+    }
   };
 
   const handleCommunityPress = () => {
@@ -814,21 +531,19 @@ export default function DailyGiftScreen() {
     const loadingMessage = 'Loading today\'s gift...';
     
     return (
-      <GradientBackground>
-        <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-          <Stack.Screen 
-            options={{
-              headerShown: false,
-            }}
-          />
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
-              {loadingMessage}
-            </Text>
-          </View>
-        </SafeAreaView>
-      </GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
+            {loadingMessage}
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -838,60 +553,58 @@ export default function DailyGiftScreen() {
     const retryButtonText = 'Try Again';
     
     return (
-      <GradientBackground>
-        <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-          <Stack.Screen 
-            options={{
-              headerShown: false,
-            }}
-          />
-          
-          <View style={[styles.header, { backgroundColor: bgColor }]}>
-            <TouchableOpacity 
-              onPress={() => router.back()}
-              style={styles.headerButton}
-              activeOpacity={0.7}
-            >
-              <IconSymbol 
-                ios_icon_name="arrow.left"
-                android_material_icon_name="arrow-back"
-                size={24}
-                color={textColor}
-              />
-            </TouchableOpacity>
-            <View style={styles.headerRight} />
-          </View>
-          
-          <View style={styles.errorContainer}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        
+        <View style={[styles.header, { backgroundColor: bgColor }]}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
             <IconSymbol 
-              ios_icon_name="exclamationmark.triangle"
-              android_material_icon_name="warning"
-              size={48}
-              color={colors.accent}
+              ios_icon_name="arrow.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={textColor}
             />
-            <Text style={[styles.errorText, { color: textColor }]}>
-              {errorTitle}
+          </TouchableOpacity>
+          <View style={styles.headerRight} />
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <IconSymbol 
+            ios_icon_name="exclamationmark.triangle"
+            android_material_icon_name="warning"
+            size={48}
+            color={colors.accent}
+          />
+          <Text style={[styles.errorText, { color: textColor }]}>
+            {errorTitle}
+          </Text>
+          <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
+            {errorSubtext}
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              const retryTimestamp = new Date().toISOString();
+              console.log(`[DailyGift] ${retryTimestamp} - User tapped retry button`);
+              loadDailyGift();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.retryButtonText}>
+              {retryButtonText}
             </Text>
-            <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
-              {errorSubtext}
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={() => {
-                const retryTimestamp = new Date().toISOString();
-                console.log(`[DailyGift] ${retryTimestamp} - User tapped retry button`);
-                loadDailyGift();
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.retryButtonText}>
-                {retryButtonText}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </GradientBackground>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -947,13 +660,6 @@ export default function DailyGiftScreen() {
   const timerSeconds = somaticTimeRemaining % 60;
   const timerDisplay = `${timerMinutes}:${timerSeconds.toString().padStart(2, '0')}`;
 
-  // Format recording duration
-  const recordingMinutes = Math.floor(recordingDuration / 60);
-  const recordingSeconds = recordingDuration % 60;
-  const recordingDurationDisplay = `${recordingMinutes}:${recordingSeconds.toString().padStart(2, '0')}`;
-
-  const ambientSoundTitle = 'Ambient Sound';
-
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
     clientDayOfYear: dayOfYear,
@@ -966,9 +672,8 @@ export default function DailyGiftScreen() {
   });
 
   return (
-    <GradientBackground>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
-        <Stack.Screen 
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+      <Stack.Screen 
         options={{
           headerShown: false,
         }}
@@ -1000,6 +705,22 @@ export default function DailyGiftScreen() {
               android_material_icon_name="refresh"
               size={24}
               color={isRefreshing ? colors.textSecondary : textColor}
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => {
+              console.log('[DailyGift] User tapped verification icon');
+              router.push('/scripture-verification');
+            }}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="checkmark.seal"
+              android_material_icon_name="verified"
+              size={24}
+              color={textColor}
             />
           </TouchableOpacity>
           
@@ -1067,55 +788,6 @@ export default function DailyGiftScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.ambientSoundBox, { backgroundColor: cardBg }]}>
-            <Text style={[styles.ambientSoundTitle, { color: textColor }]}>
-              {ambientSoundTitle}
-            </Text>
-            
-            <View style={styles.soundButtons}>
-              {AMBIENT_SOUNDS.map((ambientSoundItem) => {
-                const isSelected = selectedAmbientSound === ambientSoundItem.id;
-                const buttonBgColor = isSelected && isAmbientPlaying ? colors.primary : colors.backgroundTop;
-                const buttonTextColor = isSelected && isAmbientPlaying ? '#FFFFFF' : textColor;
-                
-                return (
-                  <TouchableOpacity
-                    key={ambientSoundItem.id}
-                    style={[styles.soundButton, { backgroundColor: buttonBgColor }]}
-                    onPress={() => handleAmbientSoundSelect(ambientSoundItem.id)}
-                    activeOpacity={0.7}
-                  >
-                    <IconSymbol
-                      ios_icon_name={ambientSoundItem.icon}
-                      android_material_icon_name={ambientSoundItem.materialIcon}
-                      size={24}
-                      color={buttonTextColor}
-                    />
-                    <Text style={[styles.soundButtonText, { color: buttonTextColor }]}>
-                      {ambientSoundItem.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            
-            {selectedAmbientSound && isAmbientPlaying && (
-              <TouchableOpacity
-                style={[styles.stopButton, { backgroundColor: colors.error }]}
-                onPress={handleStopAmbientSound}
-                activeOpacity={0.7}
-              >
-                <IconSymbol
-                  ios_icon_name="stop.fill"
-                  android_material_icon_name="stop"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.stopButtonText}>Stop Sound</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           <View style={styles.themeSection}>
             <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
               {liturgicalSeasonDisplay}
@@ -1328,101 +1000,6 @@ export default function DailyGiftScreen() {
                 />
               )}
 
-              {responseMode === 'voice' && (
-                <View style={styles.voiceRecordingContainer}>
-                  {!audioUri ? (
-                    <>
-                      {!isRecording ? (
-                        <TouchableOpacity
-                          style={styles.recordButton}
-                          onPress={startRecording}
-                          activeOpacity={0.8}
-                        >
-                          <IconSymbol 
-                            ios_icon_name="mic.circle.fill"
-                            android_material_icon_name="mic"
-                            size={64}
-                            color={colors.primary}
-                          />
-                          <Text style={[styles.recordButtonText, { color: textColor }]}>
-                            Tap to Record
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.recordingActiveContainer}>
-                          <View style={styles.recordingIndicator}>
-                            <View style={styles.recordingDot} />
-                            <Text style={[styles.recordingText, { color: colors.error }]}>
-                              Recording...
-                            </Text>
-                          </View>
-                          <Text style={[styles.recordingDuration, { color: textColor }]}>
-                            {recordingDurationDisplay}
-                          </Text>
-                          <TouchableOpacity
-                            style={styles.stopRecordButton}
-                            onPress={stopRecording}
-                            activeOpacity={0.8}
-                          >
-                            <IconSymbol 
-                              ios_icon_name="stop.circle.fill"
-                              android_material_icon_name="stop-circle"
-                              size={64}
-                              color={colors.error}
-                            />
-                            <Text style={[styles.stopRecordButtonText, { color: textColor }]}>
-                              Stop Recording
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </>
-                  ) : (
-                    <View style={styles.audioPlaybackContainer}>
-                      <View style={styles.audioInfoRow}>
-                        <IconSymbol 
-                          ios_icon_name="waveform"
-                          android_material_icon_name="graphic-eq"
-                          size={24}
-                          color={colors.primary}
-                        />
-                        <Text style={[styles.audioInfoText, { color: textColor }]}>
-                          Voice Recording ({recordingDurationDisplay})
-                        </Text>
-                      </View>
-                      
-                      <View style={styles.audioControls}>
-                        <TouchableOpacity
-                          style={styles.audioControlButton}
-                          onPress={isPlayingAudio ? stopPlayback : playRecording}
-                          activeOpacity={0.8}
-                        >
-                          <IconSymbol 
-                            ios_icon_name={isPlayingAudio ? "pause.circle.fill" : "play.circle.fill"}
-                            android_material_icon_name={isPlayingAudio ? "pause-circle" : "play-circle"}
-                            size={48}
-                            color={colors.primary}
-                          />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                          style={styles.audioControlButton}
-                          onPress={deleteRecording}
-                          activeOpacity={0.8}
-                        >
-                          <IconSymbol 
-                            ios_icon_name="trash.circle.fill"
-                            android_material_icon_name="delete"
-                            size={48}
-                            color={colors.error}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
-
               <TouchableOpacity 
                 style={styles.shareToggle}
                 onPress={() => {
@@ -1443,22 +1020,21 @@ export default function DailyGiftScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[styles.saveButton, ((!reflectionText.trim() && !audioUri) || isLoading) && styles.saveButtonDisabled]}
+                style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
                 onPress={() => {
                   const buttonPressTimestamp = new Date().toISOString();
                   console.log(`[DailyGift] ${buttonPressTimestamp} - Save button pressed`);
                   console.log(`[DailyGift] ${buttonPressTimestamp} - Button state:`, {
                     hasReflectionText: !!reflectionText.trim(),
-                    hasAudio: !!audioUri,
                     reflectionTextLength: reflectionText.trim().length,
                     isLoading,
-                    isDisabled: (!reflectionText.trim() && !audioUri) || isLoading,
+                    isDisabled: !reflectionText.trim() || isLoading,
                     hasDailyContent: !!dailyGiftResponse?.dailyContent,
                     dailyContentId: dailyGiftResponse?.dailyContent?.id
                   });
                   handleSaveReflection();
                 }}
-                disabled={(!reflectionText.trim() && !audioUri) || isLoading}
+                disabled={!reflectionText.trim() || isLoading}
                 activeOpacity={0.8}
               >
                 <Text style={styles.saveButtonText}>
@@ -1686,7 +1262,7 @@ export default function DailyGiftScreen() {
             />
 
             <Text style={styles.errorModalTitle}>
-              Permission Required
+              Unable to Save
             </Text>
 
             <Text style={styles.errorModalMessage}>
@@ -1755,8 +1331,7 @@ export default function DailyGiftScreen() {
           </View>
         </View>
       </Modal>
-      </SafeAreaView>
-    </GradientBackground>
+    </SafeAreaView>
   );
 }
 
@@ -1941,61 +1516,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.xl,
     paddingBottom: spacing.xxl * 2,
-  },
-
-  ambientSoundBox: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  ambientSoundTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  soundButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  soundButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    gap: spacing.xs,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  soundButtonText: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  stopButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    gap: spacing.xs,
-    alignSelf: 'center',
-  },
-  stopButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
   },
 
   themeSection: {
@@ -2243,79 +1763,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.md,
   },
-  
-  voiceRecordingContainer: {
-    borderRadius: borderRadius.md,
-    padding: spacing.xl,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 200,
-  },
-  recordButton: {
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  recordButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  recordingActiveContainer: {
-    alignItems: 'center',
-    gap: spacing.lg,
-    width: '100%',
-  },
-  recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  recordingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.error,
-  },
-  recordingText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  recordingDuration: {
-    fontSize: 32,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  stopRecordButton: {
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  stopRecordButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  audioPlaybackContainer: {
-    width: '100%',
-    gap: spacing.lg,
-  },
-  audioInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    justifyContent: 'center',
-  },
-  audioInfoText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  audioControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
-  audioControlButton: {
-    padding: spacing.sm,
-  },
-  
   shareToggle: {
     flexDirection: 'row',
     alignItems: 'center',

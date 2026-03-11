@@ -690,7 +690,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.backgroundTop }]} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -706,7 +706,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor: colors.backgroundTop }]} 
+      style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} 
       edges={['top']}
     >
       <ScrollView
@@ -864,41 +864,6 @@ export default function ProfileScreen() {
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                   {profile?.companionName || 'Not set'}
-                </Text>
-              </View>
-            </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron-right" 
-              size={20} 
-              color={colors.textLight} 
-            />
-          </TouchableOpacity>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => {
-              console.log('ProfileScreen: Navigating to companion preferences');
-              router.push('/companion-preferences');
-            }}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
-                <IconSymbol 
-                  ios_icon_name="slider.horizontal.3" 
-                  android_material_icon_name="tune" 
-                  size={20} 
-                  color={colors.primary} 
-                />
-              </View>
-              <View style={styles.menuItemTextContainer}>
-                <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Companion Preferences
-                </Text>
-                <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  Customize tone, directness, and more
                 </Text>
               </View>
             </View>
@@ -1217,7 +1182,6 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* All modals remain the same - omitted for brevity but they're all included in the actual file */}
       {/* Sign Out Confirmation Modal */}
       <Modal
         visible={showSignOutModal}

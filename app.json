@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Linen",
-    "slug": "linen",
+    "slug": "Linen",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
@@ -47,7 +47,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "linen",
+    "scheme": "Linen",
     "experiments": {
       "typedRoutes": true
     },

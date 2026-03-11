@@ -4,7 +4,6 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from '
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { GradientBackground } from '@/components/GradientBackground';
 
 interface PersonalizationData {
   companionTagline: string | null;
@@ -93,6 +92,7 @@ export default function HomeScreen() {
   }, []);
 
   // Always use light theme colors
+  const bgColor = colors.background;
   const textColor = colors.text;
   const textSecondaryColor = colors.textSecondary;
   const cardBg = colors.card;
@@ -136,161 +136,159 @@ export default function HomeScreen() {
           headerShown: true,
         }}
       />
-      <GradientBackground>
-        <View style={styles.container}>
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.header}>
-              <Text style={[styles.greeting, { color: textColor }]}>
-                {greetingText}
+      <View style={[styles.container, { backgroundColor: bgColor }]}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.greeting, { color: textColor }]}>
+              {greetingText}
+            </Text>
+          </View>
+
+          <View style={styles.streakContainer}>
+            <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Check-In Streak
               </Text>
-            </View>
-
-            <View style={styles.streakContainer}>
-              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                  Check-In Streak
+              <View style={styles.streakRow}>
+                <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                  {checkInStreakText}
                 </Text>
-                <View style={styles.streakRow}>
-                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
-                    {checkInStreakText}
-                  </Text>
-                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
-                    {checkInBestText}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                  Reflection Streak
+                <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                  {checkInBestText}
                 </Text>
-                <View style={styles.streakRow}>
-                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
-                    {reflectionStreakText}
-                  </Text>
-                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
-                    {reflectionBestText}
-                  </Text>
-                </View>
               </View>
             </View>
 
-            <View style={styles.primaryActions}>
-              <TouchableOpacity 
-                style={[styles.primaryCard, { backgroundColor: cardBg }]}
-                onPress={handleCheckIn}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.primaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
-                  <IconSymbol 
-                    ios_icon_name="message.fill"
-                    android_material_icon_name="chat"
-                    size={40}
-                    color={colors.primary}
-                  />
-                </View>
-                <Text style={[styles.primaryCardTitle, { color: textColor }]}>
-                  Check-In
+            <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                Reflection Streak
+              </Text>
+              <View style={styles.streakRow}>
+                <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                  {reflectionStreakText}
                 </Text>
-                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
-                  {personalization?.companionTagline || "What's on your mind?"}
+                <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                  {reflectionBestText}
                 </Text>
-                {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
-                  <View style={styles.personalizationContainer}>
-                    {personalization.recentActivity && (
-                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.recentActivity}
-                      </Text>
-                    )}
-                    {personalization.streakMessage && (
-                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.streakMessage}
-                      </Text>
-                    )}
-                    {personalization.conversationContext && (
-                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.conversationContext}
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.primaryCard, { backgroundColor: cardBg }]}
-                onPress={handleDailyGift}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.primaryIconContainer, { backgroundColor: colors.accent + '15' }]}>
-                  <IconSymbol 
-                    ios_icon_name="gift.fill"
-                    android_material_icon_name="card-giftcard"
-                    size={40}
-                    color={colors.accent}
-                  />
-                </View>
-                <Text style={[styles.primaryCardTitle, { color: textColor }]}>
-                  Open Your Gift
-                </Text>
-                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
-                  Daily scripture reflection
-                </Text>
-              </TouchableOpacity>
+              </View>
             </View>
+          </View>
 
-            <View style={styles.secondaryActions}>
-              <TouchableOpacity 
-                style={[styles.secondaryCard, { backgroundColor: cardBg }]}
-                onPress={handleCommunity}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.secondaryIconContainer, { backgroundColor: colors.prayer + '15' }]}>
-                  <IconSymbol 
-                    ios_icon_name="person.3.fill"
-                    android_material_icon_name="group"
-                    size={24}
-                    color={colors.prayer}
-                  />
+          <View style={styles.primaryActions}>
+            <TouchableOpacity 
+              style={[styles.primaryCard, { backgroundColor: cardBg }]}
+              onPress={handleCheckIn}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.primaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="message.fill"
+                  android_material_icon_name="chat"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                Check-In
+              </Text>
+              <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                {personalization?.companionTagline || "What's on your mind?"}
+              </Text>
+              {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
+                <View style={styles.personalizationContainer}>
+                  {personalization.recentActivity && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.recentActivity}
+                    </Text>
+                  )}
+                  {personalization.streakMessage && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.streakMessage}
+                    </Text>
+                  )}
+                  {personalization.conversationContext && (
+                    <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                      {personalization.conversationContext}
+                    </Text>
+                  )}
                 </View>
-                <View style={styles.secondaryCardContent}>
-                  <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
-                    Community
-                  </Text>
-                  <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
-                    Share your reflections
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              )}
+            </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.secondaryCard, { backgroundColor: cardBg }]}
-                onPress={handleWeeklyRecap}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.secondaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
-                  <IconSymbol 
-                    ios_icon_name="calendar"
-                    android_material_icon_name="calendar-today"
-                    size={24}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={styles.secondaryCardContent}>
-                  <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
-                    Weekly Recap
-                  </Text>
-                  <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
-                    See your journey this week
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      </GradientBackground>
+            <TouchableOpacity 
+              style={[styles.primaryCard, { backgroundColor: cardBg }]}
+              onPress={handleDailyGift}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.primaryIconContainer, { backgroundColor: colors.accent + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="gift.fill"
+                  android_material_icon_name="card-giftcard"
+                  size={40}
+                  color={colors.accent}
+                />
+              </View>
+              <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                Open Your Gift
+              </Text>
+              <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                Daily scripture reflection
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity 
+              style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+              onPress={handleCommunity}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryIconContainer, { backgroundColor: colors.prayer + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="person.3.fill"
+                  android_material_icon_name="group"
+                  size={24}
+                  color={colors.prayer}
+                />
+              </View>
+              <View style={styles.secondaryCardContent}>
+                <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                  Community
+                </Text>
+                <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                  Share your reflections
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+              onPress={handleWeeklyRecap}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.secondaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <IconSymbol 
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.secondaryCardContent}>
+                <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                  Weekly Recap
+                </Text>
+                <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                  See your journey this week
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
     </React.Fragment>
   );
 }
