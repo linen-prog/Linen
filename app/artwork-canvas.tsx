@@ -898,25 +898,7 @@ export default function ArtworkCanvasScreen() {
         setIsUploadingPhoto(true);
 
         try {
-          const { BACKEND_URL } = await import('@/utils/api');
-          const { getBearerToken } = await import('@/lib/auth');
-          
-          console.log('[Canvas] Getting authentication token...');
-          const token = await getBearerToken();
-          
-          if (!token) {
-            console.error('[Canvas] No authentication token available');
-            setIsUploadingPhoto(false);
-            Alert.alert(
-              'Authentication Required',
-              'You need to be signed in to upload photos. Please sign in and try again.',
-              [{ text: 'OK' }]
-            );
-            return;
-          }
-
-          console.log('[Canvas] Authentication token obtained successfully');
-
+          // Use the authenticatedPost utility which handles auth tokens (including guest tokens)
           const formData = new FormData();
           
           const fileUri = result.assets[0].uri;
@@ -937,11 +919,54 @@ export default function ArtworkCanvasScreen() {
             } as any);
           }
 
-          console.log('[Canvas] Uploading photo to backend...');
+          console.log('[Canvas] Uploading photo to backend using authenticated API...');
+          
+          // Import BACKEND_URL and make authenticated request
+          const { BACKEND_URL } = await import('@/utils/api');
+          
+          // Get auth token using the same method as authenticatedPost
+          let authToken: string;
+          const { getBearerToken } = await import('@/lib/auth');
+          const bearerToken = await getBearerToken();
+          
+          if (bearerToken) {
+            console.log('[Canvas] Using Better Auth bearer token');
+            authToken = bearerToken;
+          } else {
+            // Fall back to guest token
+            console.log('[Canvas] No Better Auth session, using guest token');
+            const GUEST_TOKEN_KEY = 'linen_guest_token';
+            let guestToken: string | null = null;
+            
+            if (Platform.OS === 'web') {
+              guestToken = localStorage.getItem(GUEST_TOKEN_KEY);
+            } else {
+              const SecureStore = await import('expo-secure-store');
+              guestToken = await SecureStore.getItemAsync(GUEST_TOKEN_KEY);
+            }
+            
+            if (!guestToken) {
+              // Generate new guest token
+              const timestamp = Date.now();
+              const randomId = Math.random().toString(36).substring(2, 15);
+              guestToken = `guest-token-${timestamp}-${randomId}`;
+              
+              if (Platform.OS === 'web') {
+                localStorage.setItem(GUEST_TOKEN_KEY, guestToken);
+              } else {
+                const SecureStore = await import('expo-secure-store');
+                await SecureStore.setItemAsync(GUEST_TOKEN_KEY, guestToken);
+              }
+              console.log('[Canvas] Generated new guest token');
+            }
+            
+            authToken = guestToken;
+          }
+
           const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${authToken}`,
             },
             body: formData,
           });

@@ -1,46 +1,57 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Linen Color Palette - Warm, gentle, faith-rooted
+// Warm Linen Color Palette - Gentle, faith-rooted aesthetic
 export const colors = {
-  // Primary - Deep green (spiritual, grounded)
-  primary: '#1B5E4F',
-  primaryLight: '#D4EDD4',
-  primaryDark: '#0F3D32',
+  // Background Gradient Colors
+  backgroundTop: '#fef3c7',      // Warm cream/amber (top)
+  backgroundMiddle: '#fafaf9',   // Off-white/stone (middle)
+  backgroundBottom: '#fef3c7',   // Warm cream/amber (bottom)
+  backgroundPattern: '#d6c9b8',  // Subtle pattern overlay at 8% opacity
   
-  // Background - Warm off-white (reverted from cream)
-  background: '#F5F5F0',
-  backgroundDark: '#1C1C1E',
+  // Primary - Emerald/Green
+  primary: '#047857',            // Emerald 700 (primary green)
+  primaryLight: '#ecfdf5',       // Emerald 50 (very light mint)
+  primaryMedium: '#059669',      // Emerald 600 (medium green)
+  primaryDark: '#065f46',        // Emerald 800 (dark green)
+  primaryVeryDark: '#064e3b',    // Emerald 900 (very dark green)
   
-  // Card - Soft white with warmth
-  card: '#FFFFFF',
-  cardDark: '#2C2C2E',
+  // Background - Stone
+  background: '#fafaf9',         // Stone 50 (off-white)
+  backgroundDark: '#1c1917',     // Stone 900 (near black)
   
-  // Text
-  text: '#2C2C2E',
-  textSecondary: '#6B6B6B',
-  textLight: '#9B9B9B',
-  textDark: '#F5F5F5',
-  textSecondaryDark: '#A8A8A8',
+  // Card - Stone
+  card: '#f5f5f4',               // Stone 100
+  cardDark: '#292524',           // Stone 800
   
-  // Accent - Soft gold for highlights
-  accent: '#D4A574',
-  accentLight: '#E8C9A3',
+  // Text - Stone
+  text: '#1c1917',               // Stone 900 (near black)
+  textSecondary: '#57534e',      // Stone 600
+  textLight: '#78716c',          // Stone 500 (medium gray)
+  textDark: '#fafaf9',           // Stone 50 (off-white)
+  textSecondaryDark: '#e7e5e4',  // Stone 200
   
-  // Functional
-  border: '#E8E8E3',
-  borderDark: '#3A3A3C',
-  shadow: 'rgba(27, 94, 79, 0.08)',
+  // Accent - Amber/Gold
+  accent: '#fbbf24',             // Amber 400
+  accentLight: '#fef3c7',        // Amber 100
+  accentVeryLight: '#fffbeb',    // Amber 50
+  accentMedium: '#fcd34d',       // Amber 300
+  accentDark: '#b45309',         // Amber 700
+  
+  // Functional - Stone
+  border: '#e7e5e4',             // Stone 200
+  borderDark: '#44403c',         // Stone 700
+  shadow: 'rgba(4, 120, 87, 0.08)',  // Emerald 700 at 8%
   shadowDark: 'rgba(0, 0, 0, 0.3)',
   
-  // Prayer/Community
-  prayer: '#8B7355',
-  prayerLight: '#B39A7D',
+  // Prayer/Community - Warm tones
+  prayer: '#b45309',             // Amber 700
+  prayerLight: '#fcd34d',        // Amber 300
   
   // Status (gentle, non-urgent)
-  success: '#5A8F7B',
-  warning: '#C9A66B',
-  error: '#B85C50',
+  success: '#059669',            // Emerald 600
+  warning: '#fbbf24',            // Amber 400
+  error: '#dc2626',              // Red for errors
 };
 
 export const typography = {
