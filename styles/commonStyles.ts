@@ -7,7 +7,7 @@ export const colors = {
   backgroundTop: '#fef3c7',      // Warm cream/amber (top)
   backgroundMiddle: '#fafaf9',   // Off-white/stone (middle)
   backgroundBottom: '#fef3c7',   // Warm cream/amber (bottom)
-  backgroundPattern: '#d6c9b8',  // Subtle pattern overlay at 8% opacity
+  backgroundPattern: 'rgba(214, 201, 184, 0.08)', // Subtle pattern overlay at 8% opacity
   
   // Primary - Emerald/Green
   primary: '#047857',            // Emerald 700 (primary green)
@@ -91,6 +91,14 @@ export const borderRadius = {
   lg: 16,
   xl: 24,
   full: 9999,
+};
+
+// Gradient configuration for elegant background
+export const gradientConfig = {
+  colors: [colors.backgroundTop, colors.backgroundMiddle, colors.backgroundTop],
+  locations: [0, 0.5, 1],
+  start: { x: 0, y: 0 },
+  end: { x: 0, y: 1 },
 };
 
 export const commonStyles = StyleSheet.create({
