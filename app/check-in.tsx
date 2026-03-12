@@ -7,7 +7,6 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
 import { GradientBackground } from '@/components/GradientBackground';
-import NotificationButton from '@/components/NotificationButton';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -570,7 +569,6 @@ export default function CheckInScreen() {
             headerTintColor: colors.primary,
             headerRight: () => (
               <View style={styles.headerButtons}>
-                <NotificationButton />
                 <TouchableOpacity 
                   onPress={handlePrayerIconPress}
                   style={styles.headerButtonContainer}
