@@ -1,5 +1,6 @@
 
 import { IconSymbol } from '@/components/IconSymbol';
+import { GradientBackground } from '@/components/GradientBackground';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
@@ -275,17 +276,24 @@ export default function WeeklyRecapScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <Stack.Screen
-          options={{
-            title: 'Weekly Recap',
-            headerShown: true,
-          }}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
+      <GradientBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+          <Stack.Screen
+            options={{
+              title: 'Weekly Recap',
+              headerShown: true,
+              headerTransparent: true,
+              headerStyle: {
+                backgroundColor: 'transparent',
+              },
+              headerTintColor: colors.primary,
+            }}
+          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -293,63 +301,76 @@ export default function WeeklyRecapScreen() {
     const dateRangeText = weekStartDate && weekEndDate ? formatDateRange(weekStartDate, weekEndDate) : '';
     
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <Stack.Screen
-          options={{
-            title: 'Weekly Recap',
-            headerShown: true,
-          }}
-        />
-        <View style={styles.emptyContainer}>
-          <IconSymbol
-            ios_icon_name="calendar"
-            android_material_icon_name="calendar-today"
-            size={64}
-            color={colors.textSecondary}
+      <GradientBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+          <Stack.Screen
+            options={{
+              title: 'Weekly Recap',
+              headerShown: true,
+              headerTransparent: true,
+              headerStyle: {
+                backgroundColor: 'transparent',
+              },
+              headerTintColor: colors.primary,
+            }}
           />
-          <Text style={styles.emptyText}>
-            No recap available yet for this week
-          </Text>
-          {dateRangeText && (
-            <Text style={[styles.emptyText, { marginTop: spacing.xs }]}>
-              {dateRangeText}
+          <View style={styles.emptyContainer}>
+            <IconSymbol
+              ios_icon_name="calendar"
+              android_material_icon_name="calendar-today"
+              size={64}
+              color={colors.textSecondary}
+            />
+            <Text style={styles.emptyText}>
+              No recap available yet for this week
             </Text>
-          )}
-          <TouchableOpacity
-            style={styles.generateButton}
-            onPress={handleGenerateRecap}
-            disabled={generating}
-          >
-            {generating ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.generateButtonText}>Generate Recap</Text>
-              </>
+            {dateRangeText && (
+              <Text style={[styles.emptyText, { marginTop: spacing.xs }]}>
+                {dateRangeText}
+              </Text>
             )}
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            <TouchableOpacity
+              style={styles.generateButton}
+              onPress={handleGenerateRecap}
+              disabled={generating}
+            >
+              {generating ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <IconSymbol
+                    ios_icon_name="sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.generateButtonText}>Generate Recap</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   const dateRangeDisplay = formatDateRange(recap.weekStartDate, recap.weekEndDate);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          title: 'Weekly Recap',
-          headerShown: true,
-        }}
-      />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+        <Stack.Screen
+          options={{
+            title: 'Weekly Recap',
+            headerShown: true,
+            headerTransparent: true,
+            headerStyle: {
+              backgroundColor: 'transparent',
+            },
+            headerTintColor: colors.primary,
+          }}
+        />
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.weekRange}>{dateRangeDisplay}</Text>
           {recap.isPremium && (
@@ -523,5 +544,6 @@ export default function WeeklyRecapScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
