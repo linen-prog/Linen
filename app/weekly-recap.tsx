@@ -50,49 +50,57 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   title: {
-    ...typography.h1,
-    color: colors.emerald[900],
+    fontSize: typography.h1,
+    fontWeight: typography.semibold,
+    color: colors.primaryVeryDark,
     marginBottom: spacing.xs,
   },
   dateRange: {
-    ...typography.body,
-    color: colors.stone[600],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
   },
   section: {
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    shadowColor: colors.stone[900],
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.emerald[800],
-    marginBottom: spacing.md,
+  sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.medium,
+    color: colors.primaryDark,
   },
   sectionIcon: {
     marginRight: spacing.sm,
   },
   itemText: {
-    ...typography.body,
-    color: colors.stone[700],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
     marginBottom: spacing.sm,
     lineHeight: 24,
   },
   emptyText: {
-    ...typography.body,
-    color: colors.stone[500],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textLight,
     fontStyle: 'italic',
   },
   synthesisText: {
-    ...typography.body,
-    color: colors.stone[800],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.text,
     lineHeight: 24,
     fontStyle: 'italic',
   },
@@ -103,29 +111,30 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: colors.emerald[600],
+    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    shadowColor: colors.emerald[900],
+    shadowColor: colors.primaryVeryDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
   buttonSecondary: {
-    backgroundColor: colors.stone[200],
+    backgroundColor: colors.border,
   },
   buttonText: {
-    ...typography.button,
-    color: colors.white,
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
     marginLeft: spacing.sm,
   },
   buttonTextSecondary: {
-    color: colors.stone[700],
+    color: colors.textSecondary,
   },
   loadingContainer: {
     flex: 1,
@@ -133,8 +142,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    ...typography.body,
-    color: colors.stone[600],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
     marginTop: spacing.md,
   },
   emptyContainer: {
@@ -144,34 +154,37 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   emptyTitle: {
-    ...typography.h2,
-    color: colors.emerald[800],
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    color: colors.primaryDark,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyDescription: {
-    ...typography.body,
-    color: colors.stone[600],
+    fontSize: typography.body,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
   generateButton: {
-    backgroundColor: colors.emerald[600],
+    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.emerald[900],
+    shadowColor: colors.primaryVeryDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
   generateButtonText: {
-    ...typography.button,
-    color: colors.white,
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
     marginLeft: spacing.sm,
   },
 });
@@ -256,11 +269,11 @@ export default function WeeklyRecapScreen() {
               headerTransparent: true,
               headerBlurEffect: 'light',
               headerStyle: { backgroundColor: 'transparent' },
-              headerTintColor: colors.emerald[900],
+              headerTintColor: colors.primaryVeryDark,
             }}
           />
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.emerald[600]} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading your recap...</Text>
           </View>
         </SafeAreaView>
@@ -287,7 +300,7 @@ export default function WeeklyRecapScreen() {
               ios_icon_name="calendar"
               android_material_icon_name="calendar-today"
               size={64}
-              color={colors.emerald[600]}
+              color={colors.primary}
             />
             <Text style={styles.emptyTitle}>No Recap Yet</Text>
             <Text style={styles.emptyDescription}>
@@ -299,14 +312,14 @@ export default function WeeklyRecapScreen() {
               disabled={generating}
             >
               {generating ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <IconSymbol
                     ios_icon_name="sparkles"
                     android_material_icon_name="auto-awesome"
                     size={20}
-                    color={colors.white}
+                    color="#FFFFFF"
                   />
                   <Text style={styles.generateButtonText}>Generate Recap</Text>
                 </>
@@ -342,12 +355,12 @@ export default function WeeklyRecapScreen() {
           {/* Scripture Section */}
           {recap.scriptureSection && (recap.scriptureSection.reflections.length > 0 || recap.scriptureSection.sharedReflections.length > 0) && (
             <View style={styles.section}>
-              <View style={styles.sectionTitle}>
+              <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="book"
                   android_material_icon_name="menu-book"
                   size={24}
-                  color={colors.emerald[700]}
+                  color={colors.primary}
                   style={styles.sectionIcon}
                 />
                 <Text style={styles.sectionTitle}>Scripture & Reflection</Text>
@@ -364,12 +377,12 @@ export default function WeeklyRecapScreen() {
           {/* Body Section */}
           {recap.bodySection && (recap.bodySection.practices.length > 0 || recap.bodySection.notes.length > 0) && (
             <View style={styles.section}>
-              <View style={styles.sectionTitle}>
+              <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="figure.walk"
                   android_material_icon_name="directions-walk"
                   size={24}
-                  color={colors.emerald[700]}
+                  color={colors.primary}
                   style={styles.sectionIcon}
                 />
                 <Text style={styles.sectionTitle}>Body & Practice</Text>
@@ -386,12 +399,12 @@ export default function WeeklyRecapScreen() {
           {/* Community Section */}
           {recap.communitySection && (recap.communitySection.checkInSummary || recap.communitySection.sharedPosts.length > 0) && (
             <View style={styles.section}>
-              <View style={styles.sectionTitle}>
+              <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="person.3"
                   android_material_icon_name="group"
                   size={24}
-                  color={colors.emerald[700]}
+                  color={colors.primary}
                   style={styles.sectionIcon}
                 />
                 <Text style={styles.sectionTitle}>Community</Text>
@@ -408,12 +421,12 @@ export default function WeeklyRecapScreen() {
           {/* Prompting Section */}
           {recap.promptingSection && recap.promptingSection.suggestions.length > 0 && (
             <View style={styles.section}>
-              <View style={styles.sectionTitle}>
+              <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="lightbulb"
                   android_material_icon_name="lightbulb"
                   size={24}
-                  color={colors.emerald[700]}
+                  color={colors.primary}
                   style={styles.sectionIcon}
                 />
                 <Text style={styles.sectionTitle}>Gentle Invitations</Text>
@@ -427,12 +440,12 @@ export default function WeeklyRecapScreen() {
           {/* Personal Synthesis */}
           {recap.personalSynthesis && (
             <View style={styles.section}>
-              <View style={styles.sectionTitle}>
+              <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="heart"
                   android_material_icon_name="favorite"
                   size={24}
-                  color={colors.emerald[700]}
+                  color={colors.primary}
                   style={styles.sectionIcon}
                 />
                 <Text style={styles.sectionTitle}>A Word for You</Text>
@@ -450,7 +463,7 @@ export default function WeeklyRecapScreen() {
                 ios_icon_name="clock"
                 android_material_icon_name="history"
                 size={20}
-                color={colors.stone[700]}
+                color={colors.textSecondary}
               />
               <Text style={[styles.buttonText, styles.buttonTextSecondary]}>View History</Text>
             </TouchableOpacity>
@@ -460,14 +473,14 @@ export default function WeeklyRecapScreen() {
               disabled={generating}
             >
               {generating ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <IconSymbol
                     ios_icon_name="arrow.clockwise"
                     android_material_icon_name="refresh"
                     size={20}
-                    color={colors.white}
+                    color="#FFFFFF"
                   />
                   <Text style={styles.buttonText}>Regenerate</Text>
                 </>
