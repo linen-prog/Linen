@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
 import { GradientBackground } from '@/components/GradientBackground';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -31,6 +32,12 @@ interface Prayer {
   isSaid: boolean;
   isShared: boolean;
 }
+
+const tabs = [
+  { name: 'home', route: '/(tabs)/(home)' as const, icon: 'home' as const, label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+];
 
 export default function CheckInScreen() {
   console.log('[CheckIn] User viewing Check-In screen');
@@ -1369,6 +1376,9 @@ export default function CheckInScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Floating Tab Bar */}
+        <FloatingTabBar tabs={tabs} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -1437,6 +1447,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     gap: spacing.md,
+    paddingBottom: 100, // Add padding for FloatingTabBar
   },
   messageContainer: {
     flexDirection: 'row',
@@ -1496,6 +1507,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     gap: spacing.sm,
+    marginBottom: 80, // Add margin for FloatingTabBar
   },
   input: {
     flex: 1,

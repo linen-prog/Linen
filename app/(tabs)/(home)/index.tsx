@@ -77,17 +77,18 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Header with Love Messages Button */}
           <View style={styles.header}>
-            <Text style={styles.appTitle}>Linen</Text>
-            <NotificationBell />
-            
-            <Text style={styles.greeting}>{greetingText}</Text>
+            <View style={styles.headerLeft}>
+              <Text style={styles.appTitle}>Linen</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <NotificationButton />
+            </View>
           </View>
 
-          {/* Love Messages Button - Top Right */}
-          <View style={styles.loveMessagesContainer}>
-            <NotificationButton />
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
           {/* Check-In Card */}
@@ -183,23 +184,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  loveMessagesContainer: {
-    position: 'absolute',
-    top: spacing.xl,
-    right: spacing.lg,
-    zIndex: 100,
-  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
   appTitle: {
     fontSize: 48,
     fontWeight: typography.regular,
     color: colors.text,
     fontFamily: typography.fontFamilySerif,
-    marginBottom: spacing.sm,
+  },
+  greetingContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   greeting: {
     fontSize: typography.h4,
