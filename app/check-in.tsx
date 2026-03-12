@@ -144,13 +144,6 @@ export default function CheckInScreen() {
     };
   }, []);
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
-  const inputBg = colors.card;
-  const inputBorder = colors.border;
-
   const checkForCrisis = async (message: string): Promise<boolean> => {
     try {
       const { authenticatedPost } = await import('@/utils/api');
