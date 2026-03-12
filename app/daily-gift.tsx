@@ -577,7 +577,20 @@ export default function DailyGiftScreen() {
                 color={textColor}
               />
             </TouchableOpacity>
-            <View style={styles.headerRight} />
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                onPress={handleCommunityPress}
+                style={styles.headerButton}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="person.2"
+                  android_material_icon_name="group"
+                  size={24}
+                  color={textColor}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           
           <View style={styles.errorContainer}>
@@ -686,64 +699,34 @@ export default function DailyGiftScreen() {
         />
 
         <View style={[styles.header, { backgroundColor: 'transparent' }]}>
-        <TouchableOpacity 
-          onPress={() => router.back()}
-          style={styles.headerButton}
-          activeOpacity={0.7}
-        >
-          <IconSymbol 
-            ios_icon_name="arrow.left"
-            android_material_icon_name="arrow-back"
-            size={24}
-            color={textColor}
-          />
-        </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol 
+              ios_icon_name="arrow.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={textColor}
+            />
+          </TouchableOpacity>
 
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            onPress={handleRefresh}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-            disabled={isRefreshing}
-          >
-            <IconSymbol 
-              ios_icon_name={isRefreshing ? "arrow.clockwise" : "arrow.clockwise"}
-              android_material_icon_name="refresh"
-              size={24}
-              color={isRefreshing ? colors.textSecondary : textColor}
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => {
-              console.log('[DailyGift] User tapped verification icon');
-              router.push('/scripture-verification');
-            }}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="checkmark.seal"
-              android_material_icon_name="verified"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={handleCommunityPress}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="person.2"
-              android_material_icon_name="group"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              onPress={handleCommunityPress}
+              style={styles.headerButton}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="person.2"
+                android_material_icon_name="group"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
       {!isGiftOpened ? (
         <View style={styles.unopenedContainer}>

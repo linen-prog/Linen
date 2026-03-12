@@ -69,6 +69,11 @@ export default function OpenGiftScreen() {
     return () => clearTimeout(navigationTimer);
   };
 
+  const handleCommunityPress = () => {
+    console.log('🎁 [OpenGift] User tapped Community icon');
+    router.push('/(tabs)/community');
+  };
+
   const titleText = 'Your Daily Gift';
   const subtitleText = 'A word for your heart today';
   const tapText = 'Tap to open';
@@ -80,58 +85,81 @@ export default function OpenGiftScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
         <Stack.Screen 
           options={{
-            headerShown: true,
-            title: '',
-            headerBackTitle: 'Home',
-            headerStyle: {
-              backgroundColor: 'transparent',
-            },
-            headerTransparent: true,
-            headerTintColor: colors.primary,
+            headerShown: false,
           }}
         />
 
-        <View style={styles.content}>
-        <Text style={[styles.title, { color: textColor }]}>
-          {titleText}
-        </Text>
-        
-        <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-          {subtitleText}
-        </Text>
-
-        <View style={styles.giftContainer}>
+        <View style={[styles.header, { backgroundColor: 'transparent' }]}>
           <TouchableOpacity 
-            style={[styles.giftBox, { backgroundColor: colors.primary }]}
-            onPress={handleOpenGift}
-            activeOpacity={0.8}
-            disabled={isOpening}
+            onPress={() => router.back()}
+            style={styles.headerButton}
+            activeOpacity={0.7}
           >
             <IconSymbol 
-              ios_icon_name="gift.fill"
-              android_material_icon_name="card-giftcard"
-              size={80}
-              color="#FFFFFF"
+              ios_icon_name="arrow.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={textColor}
             />
           </TouchableOpacity>
 
-          {/* Glitter particles */}
-          {isOpening && glitterParticles.map((particle) => (
-            <GlitterParticle
-              key={particle.id}
-              angle={particle.angle}
-              distance={particle.distance}
-              delay={particle.delay}
-              color={particle.color}
-            />
-          ))}
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              onPress={handleCommunityPress}
+              style={styles.headerButton}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="person.2"
+                android_material_icon_name="group"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <Text style={[styles.tapText, { color: textSecondaryColor }]}>
-          {tapText}
-        </Text>
-      </View>
-    </SafeAreaView>
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: textColor }]}>
+            {titleText}
+          </Text>
+          
+          <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
+            {subtitleText}
+          </Text>
+
+          <View style={styles.giftContainer}>
+            <TouchableOpacity 
+              style={[styles.giftBox, { backgroundColor: colors.primary }]}
+              onPress={handleOpenGift}
+              activeOpacity={0.8}
+              disabled={isOpening}
+            >
+              <IconSymbol 
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={80}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            {/* Glitter particles */}
+            {isOpening && glitterParticles.map((particle) => (
+              <GlitterParticle
+                key={particle.id}
+                angle={particle.angle}
+                distance={particle.distance}
+                delay={particle.delay}
+                color={particle.color}
+              />
+            ))}
+          </View>
+
+          <Text style={[styles.tapText, { color: textSecondaryColor }]}>
+            {tapText}
+          </Text>
+        </View>
+      </SafeAreaView>
     </GradientBackground>
   );
 }
@@ -199,6 +227,20 @@ function GlitterParticle({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  headerButton: {
+    padding: spacing.xs,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   content: {
     flex: 1,
