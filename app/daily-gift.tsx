@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -75,6 +76,12 @@ interface GlitterParticle {
   delay: number;
   color: string;
 }
+
+const tabs = [
+  { name: 'home', route: '/(tabs)/(home)' as const, icon: 'home' as const, label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+];
 
 export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
@@ -1320,6 +1327,9 @@ export default function DailyGiftScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Floating Tab Bar */}
+      <FloatingTabBar tabs={tabs} />
     </SafeAreaView>
     </GradientBackground>
   );
@@ -1505,7 +1515,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.xl,
-    paddingBottom: spacing.xxl * 2,
+    paddingBottom: 120, // Add padding for FloatingTabBar
   },
 
   themeSection: {
