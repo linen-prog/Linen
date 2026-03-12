@@ -140,8 +140,8 @@ export default function NotificationButton() {
   });
 
   const unreadCountDisplay = unreadCount > 9 ? '9+' : unreadCount.toString();
-  const iconColor = isHovered ? '#b45309' : '#d97706'; // amber-700 : amber-600
-  const textColor = isHovered ? '#b45309' : '#57534e'; // amber-700 : stone-600
+  const iconColor = isHovered ? '#b45309' : '#d97706';
+  const textColor = isHovered ? '#b45309' : '#57534e';
 
   return (
     <View style={styles.container}>
@@ -212,13 +212,13 @@ export default function NotificationButton() {
                     <Text style={styles.emptyStateText}>No new notifications</Text>
                   </View>
                 ) : (
-                  <React.Fragment>
-                    {notifications.map((notification) => {
+                  <>
+                    {notifications.map((notification, index) => {
                       const cardBgColor = notification.read ? '#FFFFFF' : colors.accentVeryLight;
                       
                       return (
                         <TouchableOpacity
-                          key={notification.id}
+                          key={index}
                           style={[styles.notificationCard, { backgroundColor: cardBgColor }]}
                           onPress={() => handleNotificationClick(notification)}
                           activeOpacity={0.7}
@@ -246,7 +246,7 @@ export default function NotificationButton() {
                         </TouchableOpacity>
                       );
                     })}
-                  </React.Fragment>
+                  </>
                 )}
               </ScrollView>
             </Pressable>

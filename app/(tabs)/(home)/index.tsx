@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
-import { NotificationBell } from "@/components/NotificationBell";
-import NotificationButton from "@/components/NotificationButton";
+import NotificationButton from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -24,6 +23,7 @@ export default function HomeScreen() {
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
 
   useEffect(() => {
+    console.log('[Home] Component mounted - NotificationButton should be visible');
     loadUserStats();
     loadLastCheckIn();
   }, []);
@@ -77,7 +77,6 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header with Love Messages Button */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.appTitle}>Linen</Text>
@@ -91,7 +90,6 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
-          {/* Check-In Card */}
           <TouchableOpacity 
             style={styles.checkInCard}
             onPress={handleCheckInPress}
@@ -133,7 +131,6 @@ export default function HomeScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Open Your Gift Card */}
           <TouchableOpacity 
             style={styles.giftCard}
             onPress={handleOpenGiftPress}
@@ -153,7 +150,6 @@ export default function HomeScreen() {
             <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
           </TouchableOpacity>
 
-          {/* Community Card */}
           <TouchableOpacity 
             style={styles.communityCard}
             onPress={handleCommunityPress}
