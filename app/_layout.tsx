@@ -18,6 +18,7 @@ import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { BACKEND_URL } from "@/utils/api";
 import { colors, spacing, typography, borderRadius } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
@@ -242,6 +243,7 @@ function RootLayoutContent() {
       <StatusBar style={statusBarStyle} animated />
         <NavigationThemeProvider value={currentTheme}>
           <AuthProvider>
+        <NotificationProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <Stack>
@@ -272,7 +274,8 @@ function RootLayoutContent() {
                 <SystemBars style={statusBarStyle} />
               </GestureHandlerRootView>
             </WidgetProvider>
-          </AuthProvider>
+          </NotificationProvider>
+        </AuthProvider>
         </NavigationThemeProvider>
     </>
   );

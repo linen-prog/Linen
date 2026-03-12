@@ -1066,6 +1066,41 @@ export default function ProfileScreen() {
               color={colors.textLight} 
             />
           </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
+
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              console.log('ProfileScreen: Navigating to notification preferences');
+              router.push('/notification-preferences');
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol 
+                  ios_icon_name="bell.badge" 
+                  android_material_icon_name="notifications-active" 
+                  size={20} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.menuItemTextContainer}>
+                <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                  Push Notifications
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                  Manage push notification settings
+                </Text>
+              </View>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textLight} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Legal */}

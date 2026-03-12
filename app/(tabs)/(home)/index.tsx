@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
+import { NotificationBell } from "@/components/NotificationBell";
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -78,7 +79,9 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.appTitle}>Linen</Text>
-            <Text style={styles.greeting}>{greetingText}</Text>
+                        <NotificationBell />
+            
+<Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
           {/* Check-In Card */}

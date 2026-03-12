@@ -21,7 +21,15 @@
         "NSUserTrackingUsageDescription": "This app does not track you. This permission is required by Apple for analytics.",
         "NSPhotoLibraryUsageDescription": "Linen needs access to your photo library to let you upload a profile picture.",
         "NSCameraUsageDescription": "Linen needs access to your camera to let you take a profile picture.",
-        "UIBackgroundModes": []
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "production",
+        "com.apple.security.application-groups": [
+          "group.com.linen.app.onesignal"
+        ]
       }
     },
     "android": {
@@ -43,6 +51,12 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
       "expo-font",
       "expo-router",
       "expo-web-browser"
@@ -53,7 +67,8 @@
     },
     "extra": {
       "router": {},
-      "backendUrl": "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev"
+      "backendUrl": "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev",
+      "oneSignalAppId": "96468dbf-fc22-4e5d-8815-0b34ed040738"
     },
     "privacyPolicyUrl": "https://ts4lxkyubgrt4.mocha.app/privacy",
     "description": "A gentle space for reflection, prayer, and embodied awareness. Linen provides a faith-rooted, non-clinical environment for spiritual reflection, daily scripture-based gifts, and supportive community connection.",

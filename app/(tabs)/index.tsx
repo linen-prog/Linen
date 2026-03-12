@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface PersonalizationData {
   companionTagline: string | null;
@@ -195,7 +196,9 @@ export default function HomeScreen() {
                 <Text style={[styles.primaryCardTitle, { color: textColor }]}>
                   Check-In
                 </Text>
-                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                                <NotificationBell />
+                
+<Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
                   {personalization?.companionTagline || "What's on your mind?"}
                 </Text>
                 {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
