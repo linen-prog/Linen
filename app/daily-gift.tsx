@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -531,19 +532,21 @@ export default function DailyGiftScreen() {
     const loadingMessage = 'Loading today\'s gift...';
     
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-        <Stack.Screen 
-          options={{
-            headerShown: false,
-          }}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
-            {loadingMessage}
-          </Text>
-        </View>
-      </SafeAreaView>
+      <GradientBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+          <Stack.Screen 
+            options={{
+              headerShown: false,
+            }}
+          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
+              {loadingMessage}
+            </Text>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -553,58 +556,60 @@ export default function DailyGiftScreen() {
     const retryButtonText = 'Try Again';
     
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-        <Stack.Screen 
-          options={{
-            headerShown: false,
-          }}
-        />
-        
-        <View style={[styles.header, { backgroundColor: bgColor }]}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.left"
-              android_material_icon_name="arrow-back"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
-          <View style={styles.headerRight} />
-        </View>
-        
-        <View style={styles.errorContainer}>
-          <IconSymbol 
-            ios_icon_name="exclamationmark.triangle"
-            android_material_icon_name="warning"
-            size={48}
-            color={colors.accent}
-          />
-          <Text style={[styles.errorText, { color: textColor }]}>
-            {errorTitle}
-          </Text>
-          <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
-            {errorSubtext}
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => {
-              const retryTimestamp = new Date().toISOString();
-              console.log(`[DailyGift] ${retryTimestamp} - User tapped retry button`);
-              loadDailyGift();
+      <GradientBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+          <Stack.Screen 
+            options={{
+              headerShown: false,
             }}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.retryButtonText}>
-              {retryButtonText}
+          />
+          
+          <View style={[styles.header, { backgroundColor: 'transparent' }]}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.headerButton}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            <View style={styles.headerRight} />
+          </View>
+          
+          <View style={styles.errorContainer}>
+            <IconSymbol 
+              ios_icon_name="exclamationmark.triangle"
+              android_material_icon_name="warning"
+              size={48}
+              color={colors.accent}
+            />
+            <Text style={[styles.errorText, { color: textColor }]}>
+              {errorTitle}
             </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            <Text style={[styles.errorSubtext, { color: textSecondaryColor }]}>
+              {errorSubtext}
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => {
+                const retryTimestamp = new Date().toISOString();
+                console.log(`[DailyGift] ${retryTimestamp} - User tapped retry button`);
+                loadDailyGift();
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.retryButtonText}>
+                {retryButtonText}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -672,14 +677,15 @@ export default function DailyGiftScreen() {
   });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <Stack.Screen 
-        options={{
-          headerShown: false,
-        }}
-      />
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
 
-      <View style={[styles.header, { backgroundColor: bgColor }]}>
+        <View style={[styles.header, { backgroundColor: 'transparent' }]}>
         <TouchableOpacity 
           onPress={() => router.back()}
           style={styles.headerButton}
@@ -1332,6 +1338,7 @@ export default function DailyGiftScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

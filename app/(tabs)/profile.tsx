@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking, KeyboardAvoidingView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -705,17 +706,18 @@ export default function ProfileScreen() {
   const currentTimeText = formatTime(reminderSettings.hour, reminderSettings.minute);
 
   return (
-    <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor: isDark ? colors.backgroundDark : colors.background }]} 
-      edges={['top']}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
+    <GradientBackground>
+      <SafeAreaView 
+        style={[styles.safeArea, { backgroundColor: 'transparent' }]} 
+        edges={['top']}
       >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.contentContainer,
+            Platform.OS !== 'ios' && styles.contentContainerWithTabBar
+          ]}
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: isDark ? colors.textDark : colors.text }]}>
@@ -1947,6 +1949,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

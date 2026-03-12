@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -75,20 +76,22 @@ export default function OpenGiftScreen() {
   console.log('🎁 [OpenGift] Rendering screen content');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: '',
-          headerBackTitle: 'Home',
-          headerStyle: {
-            backgroundColor: bgColor,
-          },
-          headerTintColor: colors.primary,
-        }}
-      />
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: true,
+            title: '',
+            headerBackTitle: 'Home',
+            headerStyle: {
+              backgroundColor: 'transparent',
+            },
+            headerTransparent: true,
+            headerTintColor: colors.primary,
+          }}
+        />
 
-      <View style={styles.content}>
+        <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>
           {titleText}
         </Text>
@@ -129,6 +132,7 @@ export default function OpenGiftScreen() {
         </Text>
       </View>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

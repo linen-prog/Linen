@@ -33,6 +33,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -468,11 +469,12 @@ export default function CommunityScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Header Message */}
         <View style={styles.headerMessage}>
           <Text style={styles.headerMessageText}>
@@ -1147,6 +1149,7 @@ export default function CommunityScreen() {
         </Pressable>
       </Modal>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

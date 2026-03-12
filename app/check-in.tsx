@@ -64,6 +64,14 @@ export default function CheckInScreen() {
   const [messageShareAnonymous, setMessageShareAnonymous] = useState(false);
   const [isSharingMessage, setIsSharingMessage] = useState(false);
 
+  // Color variables for consistency
+  const bgColor = colors.background;
+  const textColor = colors.text;
+  const textSecondaryColor = colors.textSecondary;
+  const cardBg = colors.card;
+  const inputBg = colors.card;
+  const inputBorder = colors.border;
+
   useEffect(() => {
     let isMounted = true;
     
