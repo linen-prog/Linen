@@ -6,6 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { StreamdownRN } from 'streamdown-rn';
+import { GradientBackground } from '@/components/GradientBackground';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -553,819 +554,822 @@ export default function CheckInScreen() {
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: headerTitle,
-          headerBackTitle: 'Home',
-          headerStyle: {
-            backgroundColor: bgColor,
-          },
-          headerTintColor: colors.primary,
-          headerRight: () => (
-            <View style={styles.headerButtons}>
-              <TouchableOpacity 
-                onPress={handlePrayerIconPress}
-                style={styles.headerButtonContainer}
-                disabled={isGeneratingPrayer}
-              >
-                <IconSymbol 
-                  ios_icon_name="hands.sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={24}
-                  color={prayerIconColor}
-                />
-                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                  Prayer
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={handleRequestCare}
-                style={styles.headerButtonContainer}
-              >
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <Stack.Screen 
+          options={{
+            headerShown: true,
+            title: headerTitle,
+            headerBackTitle: 'Home',
+            headerStyle: {
+              backgroundColor: 'transparent',
+            },
+            headerTransparent: true,
+            headerTintColor: colors.primary,
+            headerRight: () => (
+              <View style={styles.headerButtons}>
+                <TouchableOpacity 
+                  onPress={handlePrayerIconPress}
+                  style={styles.headerButtonContainer}
+                  disabled={isGeneratingPrayer}
+                >
+                  <IconSymbol 
+                    ios_icon_name="hands.sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={24}
+                    color={prayerIconColor}
+                  />
+                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                    Prayer
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleRequestCare}
+                  style={styles.headerButtonContainer}
+                >
+                  <IconSymbol 
+                    ios_icon_name="heart.fill"
+                    android_material_icon_name="favorite"
+                    size={24}
+                    color={careIconColor}
+                  />
+                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                    Care
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ),
+          }}
+        />
+        
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          {messages.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.messagesList}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            />
+          )}
+
+          <View style={[styles.inputContainer, { 
+            backgroundColor: colors.card,
+            borderTopColor: inputBorder 
+          }]}>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                color: textColor 
+              }]}
+              placeholder="Share what's on your heart..."
+              placeholderTextColor={textSecondaryColor}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={1000}
+            />
+            <TouchableOpacity 
+              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+              onPress={handleSend}
+              disabled={!inputText.trim() || isLoading}
+            >
+              <IconSymbol 
+                ios_icon_name="arrow.up"
+                android_material_icon_name="send"
+                size={24}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+
+        {/* Crisis Resources Modal */}
+        <Modal
+          visible={showCrisisModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {}}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
                 <IconSymbol 
                   ios_icon_name="heart.fill"
                   android_material_icon_name="favorite"
-                  size={24}
-                  color={careIconColor}
+                  size={32}
+                  color={colors.primary}
                 />
-                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                  Care
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  You&apos;re Not Alone
                 </Text>
-              </TouchableOpacity>
-            </View>
-          ),
-        }}
-      />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        {messages.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.messagesList}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          />
-        )}
-
-        <View style={[styles.inputContainer, { 
-          backgroundColor: bgColor,
-          borderTopColor: inputBorder 
-        }]}>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: inputBg,
-              borderColor: inputBorder,
-              color: textColor 
-            }]}
-            placeholder="Share what's on your heart..."
-            placeholderTextColor={textSecondaryColor}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={1000}
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={handleSend}
-            disabled={!inputText.trim() || isLoading}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.up"
-              android_material_icon_name="send"
-              size={24}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* Crisis Resources Modal */}
-      <Modal
-        visible={showCrisisModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {}}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                You&apos;re Not Alone
+              </View>
+              
+              <Text style={[styles.modalText, { color: textColor }]}>
+                It sounds like you&apos;re going through something really difficult. Please know that support is available right now.
               </Text>
-            </View>
-            
-            <Text style={[styles.modalText, { color: textColor }]}>
-              It sounds like you&apos;re going through something really difficult. Please know that support is available right now.
-            </Text>
 
-            <View style={styles.crisisButtons}>
-              <TouchableOpacity 
-                style={[styles.crisisButton, { backgroundColor: colors.primary }]}
-                onPress={handleCall988}
-              >
-                <IconSymbol 
-                  ios_icon_name="phone.fill"
-                  android_material_icon_name="phone"
-                  size={24}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.crisisButtonText}>
-                  Call 988 Lifeline
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.crisisButtons}>
+                <TouchableOpacity 
+                  style={[styles.crisisButton, { backgroundColor: colors.primary }]}
+                  onPress={handleCall988}
+                >
+                  <IconSymbol 
+                    ios_icon_name="phone.fill"
+                    android_material_icon_name="phone"
+                    size={24}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.crisisButtonText}>
+                    Call 988 Lifeline
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.crisisButton, { backgroundColor: colors.accent }]}
+                  onPress={handleTextCrisisLine}
+                >
+                  <IconSymbol 
+                    ios_icon_name="message.fill"
+                    android_material_icon_name="message"
+                    size={24}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.crisisButtonText}>
+                    Text HOME to 741741
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <TouchableOpacity 
-                style={[styles.crisisButton, { backgroundColor: colors.accent }]}
-                onPress={handleTextCrisisLine}
+                style={styles.acknowledgeButton}
+                onPress={handleAcknowledgeCrisis}
               >
-                <IconSymbol 
-                  ios_icon_name="message.fill"
-                  android_material_icon_name="message"
-                  size={24}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.crisisButtonText}>
-                  Text HOME to 741741
+                <Text style={[styles.acknowledgeButtonText, { color: colors.primary }]}>
+                  I understand
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity 
-              style={styles.acknowledgeButton}
-              onPress={handleAcknowledgeCrisis}
-            >
-              <Text style={[styles.acknowledgeButtonText, { color: colors.primary }]}>
-                I understand
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Prayer Options Modal */}
-      <Modal
-        visible={showPrayerOptions}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPrayerOptions(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowPrayerOptions(false)}
+        {/* Prayer Options Modal */}
+        <Modal
+          visible={showPrayerOptions}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPrayerOptions(false)}
         >
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="hands.sparkles"
-                android_material_icon_name="auto-awesome"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Generate Prayer
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowPrayerOptions(false)}
+          >
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <IconSymbol 
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={32}
+                  color={colors.primary}
+                />
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Generate Prayer
+                </Text>
+              </View>
+              
+              <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+                I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared. It will be written in your own voice, naming what&apos;s real for you right now.
               </Text>
-            </View>
-            
-            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-              I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared. It will be written in your own voice, naming what&apos;s real for you right now.
-            </Text>
-            
-            <TouchableOpacity 
-              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-              onPress={handleGeneratePrayer}
-            >
-              <Text style={styles.primaryButtonText}>
-                Create Prayer
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={() => setShowPrayerOptions(false)}
-            >
-              <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                Maybe later
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Generated Prayer Modal */}
-      <Modal
-        visible={showPrayerModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPrayerModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="hands.sparkles"
-                android_material_icon_name="auto-awesome"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Your Prayer
-              </Text>
-            </View>
-            
-            <ScrollView style={styles.prayerScroll}>
-              <Text style={[styles.prayerText, { color: textColor }]}>
-                {generatedPrayer}
-              </Text>
-            </ScrollView>
-
-            <Text style={[styles.prayerNote, { color: textSecondaryColor }]}>
-              You can pray this aloud, edit it, or simply let it rest with you.
-            </Text>
-
-            <View style={styles.prayerActions}>
+              
               <TouchableOpacity 
                 style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  console.log('[CheckIn] 🔵 User clicked "Share with Community" button in prayer modal');
-                  console.log('[CheckIn] 🔵 Current prayer ID:', generatedPrayerId);
-                  if (!generatedPrayerId) {
-                    console.error('[CheckIn] ❌ Prayer ID is empty when trying to share!');
-                    Alert.alert('Error', 'Prayer ID is missing. Please try generating the prayer again.');
-                    return;
-                  }
-                  setShowShareModal(true);
-                }}
+                onPress={handleGeneratePrayer}
               >
+                <Text style={styles.primaryButtonText}>
+                  Create Prayer
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowPrayerOptions(false)}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Maybe later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Generated Prayer Modal */}
+        <Modal
+          visible={showPrayerModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPrayerModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
+                <IconSymbol 
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={32}
+                  color={colors.primary}
+                />
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Your Prayer
+                </Text>
+              </View>
+              
+              <ScrollView style={styles.prayerScroll}>
+                <Text style={[styles.prayerText, { color: textColor }]}>
+                  {generatedPrayer}
+                </Text>
+              </ScrollView>
+
+              <Text style={[styles.prayerNote, { color: textSecondaryColor }]}>
+                You can pray this aloud, edit it, or simply let it rest with you.
+              </Text>
+
+              <View style={styles.prayerActions}>
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    console.log('[CheckIn] 🔵 User clicked "Share with Community" button in prayer modal');
+                    console.log('[CheckIn] 🔵 Current prayer ID:', generatedPrayerId);
+                    if (!generatedPrayerId) {
+                      console.error('[CheckIn] ❌ Prayer ID is empty when trying to share!');
+                      Alert.alert('Error', 'Prayer ID is missing. Please try generating the prayer again.');
+                      return;
+                    }
+                    setShowShareModal(true);
+                  }}
+                >
+                  <IconSymbol 
+                    ios_icon_name="square.and.arrow.up"
+                    android_material_icon_name="share"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.primaryButtonText}>
+                    Share with Community
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    console.log('[CheckIn] User keeping prayer private');
+                    setShowPrayerModal(false);
+                  }}
+                >
+                  <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                    Keep Private
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Share to Community Modal */}
+        <Modal
+          visible={showShareModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowShareModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+              <View style={styles.modalHeader}>
                 <IconSymbol 
                   ios_icon_name="square.and.arrow.up"
                   android_material_icon_name="share"
-                  size={20}
-                  color="#FFFFFF"
+                  size={32}
+                  color={colors.primary}
                 />
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.modalTitle, { color: textColor }]}>
                   Share with Community
                 </Text>
-              </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => {
-                  console.log('[CheckIn] User keeping prayer private');
-                  setShowPrayerModal(false);
-                }}
-              >
-                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                  Keep Private
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Share to Community Modal */}
-      <Modal
-        visible={showShareModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowShareModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="square.and.arrow.up"
-                android_material_icon_name="share"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Share with Community
+              <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+                Choose where to share your prayer:
               </Text>
-            </View>
 
-            <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-              Choose where to share your prayer:
-            </Text>
-
-            <View style={styles.categoryGrid}>
-              {categories.map(category => {
-                const isSelected = shareCategory === category.id;
-                const categoryLabel = category.label;
-                
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryCard,
-                      { backgroundColor: inputBg, borderColor: inputBorder },
-                      isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
-                    ]}
-                    onPress={() => {
-                      console.log('[CheckIn] 🔵 User selected category:', category.id);
-                      setShareCategory(category.id);
-                    }}
-                  >
-                    <IconSymbol 
-                      ios_icon_name={category.icon}
-                      android_material_icon_name={category.icon}
-                      size={32}
-                      color={isSelected ? '#FFFFFF' : colors.primary}
-                    />
-                    <Text style={[
-                      styles.categoryLabel,
-                      { color: isSelected ? '#FFFFFF' : textColor }
-                    ]}>
-                      {categoryLabel}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <TouchableOpacity 
-              style={styles.anonymousToggle}
-              onPress={() => {
-                console.log('[CheckIn] 🔵 User toggled anonymous:', !shareAnonymous);
-                setShareAnonymous(!shareAnonymous);
-              }}
-            >
-              <IconSymbol 
-                ios_icon_name={shareAnonymous ? 'checkmark.square.fill' : 'square'}
-                android_material_icon_name={shareAnonymous ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                Share anonymously
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.shareActions}>
-              <TouchableOpacity 
-                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  console.log('[CheckIn] 🔵 User clicked final "Share" button');
-                  handleShareToCommunity();
-                }}
-                disabled={isSharing}
-              >
-                {isSharing ? (
-                  <Text style={styles.primaryButtonText}>
-                    Sharing...
-                  </Text>
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    Share
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => {
-                  console.log('[CheckIn] 🔵 User cancelled sharing');
-                  setShowShareModal(false);
-                }}
-                disabled={isSharing}
-              >
-                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Care Request Modal - FIXED FOR KEYBOARD */}
-      <Modal
-        visible={showCareModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowCareModal(false);
-          setCareRequestText('');
-          setCareAnonymous(false);
-        }}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-          keyboardVerticalOffset={0}
-        >
-          <TouchableOpacity 
-            style={styles.modalOverlayInner}
-            activeOpacity={1}
-            onPress={() => {
-              setShowCareModal(false);
-              setCareRequestText('');
-              setCareAnonymous(false);
-            }}
-          >
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-              style={styles.careModalWrapper}
-            >
-              <View style={[styles.careModalContainer, { backgroundColor: cardBg }]}>
-                <ScrollView 
-                  style={styles.careModalScrollView}
-                  contentContainerStyle={styles.careModalContent}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                >
-                  <View style={styles.modalHeader}>
-                    <IconSymbol 
-                      ios_icon_name="heart.fill"
-                      android_material_icon_name="favorite"
-                      size={32}
-                      color={colors.primary}
-                    />
-                    <Text style={[styles.modalTitle, { color: textColor }]}>
-                      Request Care
-                    </Text>
-                  </View>
-
-                  <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-                    Share what you need care for. The community can send you encouragement and prayers.
-                  </Text>
-
-                  <TextInput
-                    style={[styles.careInput, { 
-                      backgroundColor: inputBg,
-                      borderColor: inputBorder,
-                      color: textColor 
-                    }]}
-                    placeholder="What do you need care for?"
-                    placeholderTextColor={textSecondaryColor}
-                    value={careRequestText}
-                    onChangeText={setCareRequestText}
-                    multiline
-                    maxLength={500}
-                    numberOfLines={6}
-                    textAlignVertical="top"
-                  />
-
-                  <TouchableOpacity 
-                    style={styles.anonymousToggle}
-                    onPress={() => setCareAnonymous(!careAnonymous)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name={careAnonymous ? 'checkmark.square.fill' : 'square'}
-                      android_material_icon_name={careAnonymous ? 'check-box' : 'check-box-outline-blank'}
-                      size={24}
-                      color={colors.primary}
-                    />
-                    <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                      Share anonymously
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.shareActions}>
-                    <TouchableOpacity 
-                      style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                      onPress={handleSubmitCareRequest}
-                      disabled={isSubmittingCare}
-                    >
-                      {isSubmittingCare ? (
-                        <Text style={styles.primaryButtonText}>
-                          Sharing...
-                        </Text>
-                      ) : (
-                        <Text style={styles.primaryButtonText}>
-                          Share
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={styles.cancelButton}
+              <View style={styles.categoryGrid}>
+                {categories.map(category => {
+                  const isSelected = shareCategory === category.id;
+                  const categoryLabel = category.label;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[
+                        styles.categoryCard,
+                        { backgroundColor: inputBg, borderColor: inputBorder },
+                        isSelected && [styles.categoryCardSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                      ]}
                       onPress={() => {
-                        setShowCareModal(false);
-                        setCareRequestText('');
-                        setCareAnonymous(false);
+                        console.log('[CheckIn] 🔵 User selected category:', category.id);
+                        setShareCategory(category.id);
                       }}
-                      disabled={isSubmittingCare}
                     >
-                      <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                        Cancel
+                      <IconSymbol 
+                        ios_icon_name={category.icon}
+                        android_material_icon_name={category.icon}
+                        size={32}
+                        color={isSelected ? '#FFFFFF' : colors.primary}
+                      />
+                      <Text style={[
+                        styles.categoryLabel,
+                        { color: isSelected ? '#FFFFFF' : textColor }
+                      ]}>
+                        {categoryLabel}
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                </ScrollView>
+                  );
+                })}
               </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </Modal>
 
-      {/* Celebratory Care Success Modal */}
-      <Modal
-        visible={showCareSuccessModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setShowCareSuccessModal(false);
-          setCareAnonymous(false);
-        }}
-      >
-        <View style={styles.celebrationOverlay}>
-          <View style={styles.celebrationModal}>
-            {/* Decorative hearts */}
-            <View style={styles.decorativeHeartTopLeft}>
-              <Text style={styles.decorativeHeartText}>
-                ♡
-              </Text>
-            </View>
-            <View style={styles.decorativeHeartBottomRight}>
-              <Text style={styles.decorativeHeartText}>
-                ♡
-              </Text>
-            </View>
-            
-            {/* Sparkle decorations */}
-            <View style={styles.sparkleTopRight}>
-              <Text style={styles.sparkleText}>
-                ✨
-              </Text>
-            </View>
-            <View style={styles.sparkleBottomLeft}>
-              <Text style={styles.sparkleText}>
-                ✨
-              </Text>
-            </View>
-
-            {/* Main icon with circle background */}
-            <View style={styles.celebrationIconContainer}>
-              <View style={styles.celebrationIconCircle}>
+              <TouchableOpacity 
+                style={styles.anonymousToggle}
+                onPress={() => {
+                  console.log('[CheckIn] 🔵 User toggled anonymous:', !shareAnonymous);
+                  setShareAnonymous(!shareAnonymous);
+                }}
+              >
                 <IconSymbol 
-                  ios_icon_name="message.fill"
-                  android_material_icon_name="chat"
-                  size={48}
-                  color="#FFFFFF"
+                  ios_icon_name={shareAnonymous ? 'checkmark.square.fill' : 'square'}
+                  android_material_icon_name={shareAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                  size={24}
+                  color={colors.primary}
                 />
-              </View>
-              <View style={styles.celebrationSparkle}>
-                <Text style={styles.celebrationSparkleText}>
-                  ✨
+                <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                  Share anonymously
                 </Text>
+              </TouchableOpacity>
+
+              <View style={styles.shareActions}>
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    console.log('[CheckIn] 🔵 User clicked final "Share" button');
+                    handleShareToCommunity();
+                  }}
+                  disabled={isSharing}
+                >
+                  {isSharing ? (
+                    <Text style={styles.primaryButtonText}>
+                      Sharing...
+                    </Text>
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      Share
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    console.log('[CheckIn] 🔵 User cancelled sharing');
+                    setShowShareModal(false);
+                  }}
+                  disabled={isSharing}
+                >
+                  <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
+          </View>
+        </Modal>
 
-            {/* Title */}
-            <Text style={styles.celebrationTitle}>
-              Your Request is Shared 🎉
-            </Text>
-
-            {/* Subtitle */}
-            <Text style={styles.celebrationSubtitle}>
-              The community will be able to send you encouragement
-            </Text>
-
-            {/* Anonymous note */}
-            {careAnonymous && (
-              <Text style={styles.celebrationAnonymousNote}>
-                (shared anonymously)
-              </Text>
-            )}
-
-            {/* Reassurance box */}
-            <View style={styles.celebrationReassuranceBox}>
-              <Text style={styles.celebrationReassuranceText}>
-                You are not alone. The community is here to hold you with gentle care and support.
-              </Text>
-            </View>
-
-            {/* Continue button */}
+        {/* Care Request Modal - FIXED FOR KEYBOARD */}
+        <Modal
+          visible={showCareModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setShowCareModal(false);
+            setCareRequestText('');
+            setCareAnonymous(false);
+          }}
+        >
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+            keyboardVerticalOffset={0}
+          >
             <TouchableOpacity 
-              style={styles.celebrationButton}
+              style={styles.modalOverlayInner}
+              activeOpacity={1}
               onPress={() => {
-                console.log('[CheckIn] User closing celebration modal');
-                setShowCareSuccessModal(false);
+                setShowCareModal(false);
+                setCareRequestText('');
                 setCareAnonymous(false);
               }}
             >
-              <Text style={styles.celebrationButtonText}>
-                Continue
-              </Text>
+              <TouchableOpacity 
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+                style={styles.careModalWrapper}
+              >
+                <View style={[styles.careModalContainer, { backgroundColor: cardBg }]}>
+                  <ScrollView 
+                    style={styles.careModalScrollView}
+                    contentContainerStyle={styles.careModalContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                  >
+                    <View style={styles.modalHeader}>
+                      <IconSymbol 
+                        ios_icon_name="heart.fill"
+                        android_material_icon_name="favorite"
+                        size={32}
+                        color={colors.primary}
+                      />
+                      <Text style={[styles.modalTitle, { color: textColor }]}>
+                        Request Care
+                      </Text>
+                    </View>
+
+                    <Text style={[styles.modalText, { color: textSecondaryColor }]}>
+                      Share what you need care for. The community can send you encouragement and prayers.
+                    </Text>
+
+                    <TextInput
+                      style={[styles.careInput, { 
+                        backgroundColor: inputBg,
+                        borderColor: inputBorder,
+                        color: textColor 
+                      }]}
+                      placeholder="What do you need care for?"
+                      placeholderTextColor={textSecondaryColor}
+                      value={careRequestText}
+                      onChangeText={setCareRequestText}
+                      multiline
+                      maxLength={500}
+                      numberOfLines={6}
+                      textAlignVertical="top"
+                    />
+
+                    <TouchableOpacity 
+                      style={styles.anonymousToggle}
+                      onPress={() => setCareAnonymous(!careAnonymous)}
+                    >
+                      <IconSymbol 
+                        ios_icon_name={careAnonymous ? 'checkmark.square.fill' : 'square'}
+                        android_material_icon_name={careAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                        size={24}
+                        color={colors.primary}
+                      />
+                      <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                        Share anonymously
+                      </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.shareActions}>
+                      <TouchableOpacity 
+                        style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                        onPress={handleSubmitCareRequest}
+                        disabled={isSubmittingCare}
+                      >
+                        {isSubmittingCare ? (
+                          <Text style={styles.primaryButtonText}>
+                            Sharing...
+                          </Text>
+                        ) : (
+                          <Text style={styles.primaryButtonText}>
+                            Share
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => {
+                          setShowCareModal(false);
+                          setCareRequestText('');
+                          setCareAnonymous(false);
+                        }}
+                        disabled={isSubmittingCare}
+                      >
+                        <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                </View>
+              </TouchableOpacity>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal>
 
-      {/* Celebratory Prayer Success Modal - GREEN THEME */}
-      <Modal
-        visible={showPrayerSuccessModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setShowPrayerSuccessModal(false);
-          setShareAnonymous(false);
-        }}
-      >
-        <View style={styles.prayerCelebrationOverlay}>
-          <View style={styles.prayerCelebrationModal}>
-            {/* Decorative hearts */}
-            <View style={styles.prayerDecorativeHeartTopLeft}>
-              <Text style={styles.prayerDecorativeHeartText}>
-                ♡
-              </Text>
-            </View>
-            <View style={styles.prayerDecorativeHeartBottomRight}>
-              <Text style={styles.prayerDecorativeHeartText}>
-                ♡
-              </Text>
-            </View>
-            
-            {/* Sparkle decorations */}
-            <View style={styles.prayerSparkleTopRight}>
-              <Text style={styles.prayerSparkleText}>
-                ✨
-              </Text>
-            </View>
-            <View style={styles.prayerSparkleBottomLeft}>
-              <Text style={styles.prayerSparkleText}>
-                ✨
-              </Text>
-            </View>
-
-            {/* Main icon with circle background */}
-            <View style={styles.prayerCelebrationIconContainer}>
-              <View style={styles.prayerCelebrationIconCircle}>
-                <IconSymbol 
-                  ios_icon_name="person.3.fill"
-                  android_material_icon_name="group"
-                  size={48}
-                  color="#FFFFFF"
-                />
+        {/* Celebratory Care Success Modal */}
+        <Modal
+          visible={showCareSuccessModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            setShowCareSuccessModal(false);
+            setCareAnonymous(false);
+          }}
+        >
+          <View style={styles.celebrationOverlay}>
+            <View style={styles.celebrationModal}>
+              {/* Decorative hearts */}
+              <View style={styles.decorativeHeartTopLeft}>
+                <Text style={styles.decorativeHeartText}>
+                  ♡
+                </Text>
               </View>
-              <View style={styles.prayerCelebrationSparkle}>
-                <Text style={styles.prayerCelebrationSparkleText}>
+              <View style={styles.decorativeHeartBottomRight}>
+                <Text style={styles.decorativeHeartText}>
+                  ♡
+                </Text>
+              </View>
+              
+              {/* Sparkle decorations */}
+              <View style={styles.sparkleTopRight}>
+                <Text style={styles.sparkleText}>
                   ✨
                 </Text>
               </View>
-            </View>
+              <View style={styles.sparkleBottomLeft}>
+                <Text style={styles.sparkleText}>
+                  ✨
+                </Text>
+              </View>
 
-            {/* Title */}
-            <Text style={styles.prayerCelebrationTitle}>
-              Thank you for sharing 🙏
-            </Text>
+              {/* Main icon with circle background */}
+              <View style={styles.celebrationIconContainer}>
+                <View style={styles.celebrationIconCircle}>
+                  <IconSymbol 
+                    ios_icon_name="message.fill"
+                    android_material_icon_name="chat"
+                    size={48}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <View style={styles.celebrationSparkle}>
+                  <Text style={styles.celebrationSparkleText}>
+                    ✨
+                  </Text>
+                </View>
+              </View>
 
-            {/* Subtitle */}
-            <Text style={styles.prayerCelebrationSubtitle}>
-              Your prayer has been shared with the community
-            </Text>
-
-            {/* Anonymous note */}
-            {shareAnonymous && (
-              <Text style={styles.prayerCelebrationAnonymousNote}>
-                (shared anonymously)
+              {/* Title */}
+              <Text style={styles.celebrationTitle}>
+                Your Request is Shared 🎉
               </Text>
-            )}
 
-            {/* Reassurance box */}
-            <View style={styles.prayerCelebrationReassuranceBox}>
-              <Text style={styles.prayerCelebrationReassuranceText}>
-                Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
+              {/* Subtitle */}
+              <Text style={styles.celebrationSubtitle}>
+                The community will be able to send you encouragement
               </Text>
-            </View>
 
-            {/* Continue button */}
-            <TouchableOpacity 
-              style={styles.prayerCelebrationButton}
-              onPress={() => {
-                console.log('[CheckIn] User closing prayer celebration modal');
-                setShowPrayerSuccessModal(false);
-                setShareAnonymous(false);
-              }}
-            >
-              <Text style={styles.prayerCelebrationButtonText}>
-                Continue
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+              {/* Anonymous note */}
+              {careAnonymous && (
+                <Text style={styles.celebrationAnonymousNote}>
+                  (shared anonymously)
+                </Text>
+              )}
 
-      {/* Share AI Message Modal - Wisdom Only */}
-      <Modal
-        visible={showMessageShareModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowMessageShareModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => {
-                setShowMessageShareModal(false);
-                setSelectedMessageId('');
-                setSelectedMessageContent('');
-                setMessageShareAnonymous(false);
-              }}
-            >
-              <IconSymbol 
-                ios_icon_name="xmark"
-                android_material_icon_name="close"
-                size={24}
-                color={textSecondaryColor}
-              />
-            </TouchableOpacity>
+              {/* Reassurance box */}
+              <View style={styles.celebrationReassuranceBox}>
+                <Text style={styles.celebrationReassuranceText}>
+                  You are not alone. The community is here to hold you with gentle care and support.
+                </Text>
+              </View>
 
-            <View style={styles.modalHeader}>
-              <IconSymbol 
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                Share to Community Wisdom
-              </Text>
-            </View>
-
-            <Text style={[styles.modalText, { color: textColor }]}>
-              This message touched your heart. Would you like to share it with the community so others can be encouraged?
-            </Text>
-
-            <View style={styles.messagePreviewContainer}>
-              <Text style={[styles.messagePreviewText, { color: textSecondaryColor }]} numberOfLines={4}>
-                {selectedMessageContent}
-              </Text>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.anonymousToggle}
-              onPress={() => setMessageShareAnonymous(!messageShareAnonymous)}
-            >
-              <IconSymbol 
-                ios_icon_name={messageShareAnonymous ? 'checkmark.square.fill' : 'square'}
-                android_material_icon_name={messageShareAnonymous ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                Share anonymously (don&apos;t show my name)
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.shareActions}>
+              {/* Continue button */}
               <TouchableOpacity 
-                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={handleShareMessage}
-                disabled={isSharingMessage}
+                style={styles.celebrationButton}
+                onPress={() => {
+                  console.log('[CheckIn] User closing celebration modal');
+                  setShowCareSuccessModal(false);
+                  setCareAnonymous(false);
+                }}
               >
-                {isSharingMessage ? (
-                  <Text style={styles.primaryButtonText}>
-                    Sharing...
-                  </Text>
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    Share
-                  </Text>
-                )}
+                <Text style={styles.celebrationButtonText}>
+                  Continue
+                </Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
+        {/* Celebratory Prayer Success Modal - GREEN THEME */}
+        <Modal
+          visible={showPrayerSuccessModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            setShowPrayerSuccessModal(false);
+            setShareAnonymous(false);
+          }}
+        >
+          <View style={styles.prayerCelebrationOverlay}>
+            <View style={styles.prayerCelebrationModal}>
+              {/* Decorative hearts */}
+              <View style={styles.prayerDecorativeHeartTopLeft}>
+                <Text style={styles.prayerDecorativeHeartText}>
+                  ♡
+                </Text>
+              </View>
+              <View style={styles.prayerDecorativeHeartBottomRight}>
+                <Text style={styles.prayerDecorativeHeartText}>
+                  ♡
+                </Text>
+              </View>
+              
+              {/* Sparkle decorations */}
+              <View style={styles.prayerSparkleTopRight}>
+                <Text style={styles.prayerSparkleText}>
+                  ✨
+                </Text>
+              </View>
+              <View style={styles.prayerSparkleBottomLeft}>
+                <Text style={styles.prayerSparkleText}>
+                  ✨
+                </Text>
+              </View>
+
+              {/* Main icon with circle background */}
+              <View style={styles.prayerCelebrationIconContainer}>
+                <View style={styles.prayerCelebrationIconCircle}>
+                  <IconSymbol 
+                    ios_icon_name="person.3.fill"
+                    android_material_icon_name="group"
+                    size={48}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <View style={styles.prayerCelebrationSparkle}>
+                  <Text style={styles.prayerCelebrationSparkleText}>
+                    ✨
+                  </Text>
+                </View>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.prayerCelebrationTitle}>
+                Thank you for sharing 🙏
+              </Text>
+
+              {/* Subtitle */}
+              <Text style={styles.prayerCelebrationSubtitle}>
+                Your prayer has been shared with the community
+              </Text>
+
+              {/* Anonymous note */}
+              {shareAnonymous && (
+                <Text style={styles.prayerCelebrationAnonymousNote}>
+                  (shared anonymously)
+                </Text>
+              )}
+
+              {/* Reassurance box */}
+              <View style={styles.prayerCelebrationReassuranceBox}>
+                <Text style={styles.prayerCelebrationReassuranceText}>
+                  Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
+                </Text>
+              </View>
+
+              {/* Continue button */}
               <TouchableOpacity 
-                style={styles.cancelButton}
+                style={styles.prayerCelebrationButton}
+                onPress={() => {
+                  console.log('[CheckIn] User closing prayer celebration modal');
+                  setShowPrayerSuccessModal(false);
+                  setShareAnonymous(false);
+                }}
+              >
+                <Text style={styles.prayerCelebrationButtonText}>
+                  Continue
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Share AI Message Modal - Wisdom Only */}
+        <Modal
+          visible={showMessageShareModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowMessageShareModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.shareModalContent, { backgroundColor: cardBg }]}>
+              <TouchableOpacity 
+                style={styles.closeButton}
                 onPress={() => {
                   setShowMessageShareModal(false);
                   setSelectedMessageId('');
                   setSelectedMessageContent('');
                   setMessageShareAnonymous(false);
                 }}
-                disabled={isSharingMessage}
               >
-                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                  Cancel
+                <IconSymbol 
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={textSecondaryColor}
+                />
+              </TouchableOpacity>
+
+              <View style={styles.modalHeader}>
+                <IconSymbol 
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={32}
+                  color={colors.primary}
+                />
+                <Text style={[styles.modalTitle, { color: textColor }]}>
+                  Share to Community Wisdom
+                </Text>
+              </View>
+
+              <Text style={[styles.modalText, { color: textColor }]}>
+                This message touched your heart. Would you like to share it with the community so others can be encouraged?
+              </Text>
+
+              <View style={styles.messagePreviewContainer}>
+                <Text style={[styles.messagePreviewText, { color: textSecondaryColor }]} numberOfLines={4}>
+                  {selectedMessageContent}
+                </Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.anonymousToggle}
+                onPress={() => setMessageShareAnonymous(!messageShareAnonymous)}
+              >
+                <IconSymbol 
+                  ios_icon_name={messageShareAnonymous ? 'checkmark.square.fill' : 'square'}
+                  android_material_icon_name={messageShareAnonymous ? 'check-box' : 'check-box-outline-blank'}
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={[styles.anonymousLabel, { color: textColor }]}>
+                  Share anonymously (don&apos;t show my name)
                 </Text>
               </TouchableOpacity>
+
+              <View style={styles.shareActions}>
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                  onPress={handleShareMessage}
+                  disabled={isSharingMessage}
+                >
+                  {isSharingMessage ? (
+                    <Text style={styles.primaryButtonText}>
+                      Sharing...
+                    </Text>
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      Share
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowMessageShareModal(false);
+                    setSelectedMessageId('');
+                    setSelectedMessageContent('');
+                    setMessageShareAnonymous(false);
+                  }}
+                  disabled={isSharingMessage}
+                >
+                  <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
