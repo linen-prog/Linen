@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
 import { NotificationBell } from "@/components/NotificationBell";
+import NotificationButton from "@/components/NotificationButton";
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -79,9 +80,14 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.appTitle}>Linen</Text>
-                        <NotificationBell />
+            <NotificationBell />
             
-<Text style={styles.greeting}>{greetingText}</Text>
+            <Text style={styles.greeting}>{greetingText}</Text>
+          </View>
+
+          {/* Love Messages Button - Top Right */}
+          <View style={styles.loveMessagesContainer}>
+            <NotificationButton />
           </View>
 
           {/* Check-In Card */}
@@ -176,6 +182,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  loveMessagesContainer: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.lg,
+    zIndex: 100,
   },
   header: {
     alignItems: 'center',

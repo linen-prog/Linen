@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, Image, StyleSheet, Animated, Easing, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, Image, StyleSheet, Animated, Easing, Pressable, ImageSourcePropType } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
@@ -15,6 +15,13 @@ interface Notification {
   communityPostId?: string;
   userAvatarUrl?: string;
   feedbackIcon?: string;
+}
+
+// Helper to resolve image sources (handles both local require() and remote URLs)
+function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
+  if (!source) return { uri: '' };
+  if (typeof source === 'string') return { uri: source };
+  return source as ImageSourcePropType;
 }
 
 export default function NotificationButton() {
@@ -48,7 +55,9 @@ export default function NotificationButton() {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const data = await authenticatedGet<{ count: number }>('/api/notifications/unread-count');
+      // TODO: Backend Integration - GET /api/notifications/unread-count → { count: number }
+      const response = await authenticatedGet('/api/notifications/unread-count');
+      const data = await response.json();
       const count = data.count || 0;
       setUnreadCount(count);
       console.log('[NotificationButton] Unread count:', count);
@@ -64,7 +73,9 @@ export default function NotificationButton() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await authenticatedGet<Notification[]>('/api/notifications');
+      // TODO: Backend Integration - GET /api/notifications → [{ id, type, message, postId, senderName, senderAvatarUrl, read, createdAt }]
+      const response = await authenticatedGet('/api/notifications');
+      const data = await response.json();
       setNotifications(data || []);
       console.log('[NotificationButton] Fetched notifications:', data?.length || 0);
     } catch (error) {
@@ -74,6 +85,7 @@ export default function NotificationButton() {
 
   const markNotificationAsRead = useCallback(async (id: string) => {
     try {
+      // TODO: Backend Integration - POST /api/notifications/:id/read with {} → { success: true }
       await authenticatedPost(`/api/notifications/${id}/read`, {});
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -85,6 +97,7 @@ export default function NotificationButton() {
 
   const markAllAsRead = useCallback(async () => {
     try {
+      // TODO: Backend Integration - POST /api/notifications/mark-all-read with {} → { success: true, count: number }
       await authenticatedPost('/api/notifications/mark-all-read', {});
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
@@ -127,8 +140,8 @@ export default function NotificationButton() {
   });
 
   const unreadCountDisplay = unreadCount > 9 ? '9+' : unreadCount.toString();
-  const iconColor = isHovered ? colors.accentDark : colors.accent;
-  const textColor = isHovered ? colors.accentDark : colors.textSecondary;
+  const iconColor = isHovered ? '#b45309' : '#d97706'; // amber-700 : amber-600
+  const textColor = isHovered ? '#b45309' : '#57534e'; // amber-700 : stone-600
 
   return (
     <View style={styles.container}>
@@ -212,7 +225,7 @@ export default function NotificationButton() {
                         >
                           {notification.type === 'reaction' && notification.userAvatarUrl ? (
                             <Image 
-                              source={{ uri: notification.userAvatarUrl }} 
+                              source={resolveImageSource(notification.userAvatarUrl)} 
                               style={styles.avatar} 
                             />
                           ) : (
