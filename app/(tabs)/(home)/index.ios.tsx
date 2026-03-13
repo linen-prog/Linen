@@ -68,9 +68,6 @@ export default function HomeScreen() {
   const displayName = stats?.displayName || user?.name || 'Friend';
   const greetingText = `Peace to you, ${displayName}`;
 
-  // Dynamic colors based on love messages state
-  const appTitleColor = hasLoveMessages ? '#000000' : colors.text;
-
   const handleCheckInPress = () => {
     console.log('[Home iOS] User tapped Check-In button');
     router.push('/check-in');
@@ -95,8 +92,8 @@ export default function HomeScreen() {
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={[styles.appTitle, { color: appTitleColor }]}>Linen</Text>
           <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
+          <Text style={styles.appTitle}>Linen</Text>
         </View>
 
         <ScrollView 
@@ -213,7 +210,7 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 48,
     fontWeight: typography.regular,
-    color: colors.text,
+    color: colors.primary,
     fontFamily: typography.fontFamilySerif,
   },
   scrollContent: {
