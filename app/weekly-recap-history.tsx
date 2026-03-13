@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
   loadingContainer: {
@@ -220,7 +221,7 @@ export default function WeeklyRecapHistoryScreen() {
   };
 
   const stackOptions = {
-    title: 'Recap History',
+    title: 'Weekly History',
     headerShown: true,
     headerTransparent: true,
     headerTintColor: YELLOW.accentDark,
