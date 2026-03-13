@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     color: YELLOW.accentDark,
     marginBottom: spacing.sm,
+    marginTop: 64,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -231,6 +232,7 @@ export default function WeeklyRecapHistoryScreen() {
     headerShown: true,
     headerTransparent: true,
     headerTintColor: YELLOW.accentDark,
+    headerTitleStyle: { fontSize: 34, fontWeight: '700' as const },
     headerBackTitle: '',
     headerBackButtonDisplayMode: 'minimal' as const,
     headerLeft: () => (
