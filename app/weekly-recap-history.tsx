@@ -75,6 +75,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  pageSubtitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    color: YELLOW.accentDark,
+    marginBottom: spacing.sm,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,6 +231,8 @@ export default function WeeklyRecapHistoryScreen() {
     headerShown: true,
     headerTransparent: true,
     headerTintColor: YELLOW.accentDark,
+    headerBackTitle: '',
+    headerBackButtonDisplayMode: 'minimal' as const,
     headerLeft: () => (
       <TouchableOpacity
         onPress={() => {
@@ -280,6 +288,8 @@ export default function WeeklyRecapHistoryScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <Text style={styles.pageSubtitle}>Recap</Text>
+
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderDot} />
             <Text style={styles.sectionHeaderText}>
