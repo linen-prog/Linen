@@ -206,9 +206,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
+    backgroundColor: 'transparent',
   },
   appTitle: {
-    fontSize: 48,
+    fontSize: 32,
     fontWeight: typography.regular,
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
@@ -218,14 +219,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   greetingContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: spacing.md,
     marginBottom: spacing.lg,
   },
   greeting: {
-    fontSize: typography.h4,
+    fontSize: typography.h3,
     fontWeight: typography.regular,
-    color: colors.textSecondary,
+    color: colors.primary,
     fontFamily: typography.fontFamilySerif,
   },
   streakContainer: {
