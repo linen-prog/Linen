@@ -24,13 +24,13 @@ export default function HomeScreen() {
   const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log('[Home iOS] Component mounted - NotificationButton should be visible');
+    console.log('🏠 [Home iOS] Component mounted - NotificationButton should be visible');
     loadUserStats();
     loadLastCheckIn();
   }, []);
 
   const handleUnreadCountChange = (count: number) => {
-    console.log('[Home iOS] Love messages count changed:', count);
+    console.log('🏠 [Home iOS] Love messages count changed:', count);
     setHasLoveMessages(count > 0);
   };
 
@@ -88,12 +88,16 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
+  console.log('🏠 [Home iOS] RENDERING - About to render NotificationButton');
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.appTitle}>Linen</Text>
-          <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
+          <View style={styles.notificationButtonWrapper}>
+            <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
+          </View>
         </View>
 
         <ScrollView 
@@ -207,12 +211,16 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: 'transparent',
+    zIndex: 100,
   },
   appTitle: {
     fontSize: 32,
     fontWeight: typography.regular,
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
+  },
+  notificationButtonWrapper: {
+    zIndex: 101,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,

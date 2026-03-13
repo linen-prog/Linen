@@ -150,7 +150,7 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
   }, [pulseAnim, fetchNotifications, onUnreadCountChange]);
 
   useEffect(() => {
-    console.log('[NotificationButton] Component mounted');
+    console.log('🔔 [NotificationButton] Component MOUNTED and RENDERING');
     fetchUnreadCount();
     
     // Poll for new notifications every 30 seconds
@@ -195,6 +195,8 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
   const unreadCountDisplay = unreadCount > 9 ? '9+' : unreadCount.toString();
   const iconColor = isHovered ? '#b45309' : '#d97706';
   const textColor = isHovered ? '#b45309' : '#57534e';
+
+  console.log('🔔 [NotificationButton] RENDERING - unreadCount:', unreadCount);
 
   return (
     <View style={styles.container}>
@@ -337,12 +339,14 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    zIndex: 10,
   },
   button: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 8,
+    minWidth: 80,
   },
   iconContainer: {
     position: 'relative',
