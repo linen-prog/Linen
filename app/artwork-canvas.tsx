@@ -466,9 +466,44 @@ export default function ArtworkCanvasScreen() {
       withTiming(0, { duration: 100 })
     );
     
-    // Haptic feedback
+    // Brush-specific haptic patterns
     if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      switch (selectedBrush) {
+        case 'pencil':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          break;
+        case 'marker':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          break;
+        case 'watercolor':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 100);
+          break;
+        case 'spray':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 80);
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 160);
+          break;
+        case 'glitter':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          break;
+        case 'chalk':
+        case 'charcoal':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          break;
+        case 'ink':
+        case 'pen':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          break;
+        case 'oil':
+        case 'pastel':
+        case 'crayon':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
+          break;
+        default:
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
     }
   }, [selectedBrush]);
 
@@ -673,9 +708,16 @@ export default function ArtworkCanvasScreen() {
         setCursorPosition({ x: locationX, y: locationY });
         cursorScale.value = withSpring(1, { damping: 10 });
         
-        // Haptic feedback on touch start
+        // Haptic feedback on stroke start — intensity varies by brush type
         if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const brush = selectedBrushRef.current;
+          if (brush === 'glitter' || brush === 'spray') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          } else if (brush === 'marker' || brush === 'oil') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          } else {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
         }
         
         if (hasSaved) {
@@ -723,6 +765,9 @@ export default function ArtworkCanvasScreen() {
           
           if (updatedStroke.points.length % 10 === 0) {
             console.log('[Canvas] Stroke now has', updatedStroke.points.length, 'points');
+            if (Platform.OS !== 'web') {
+              Haptics.selectionAsync();
+            }
           }
         } else {
           console.log('[Canvas] WARNING: onPanResponderMove called but no current stroke!');
@@ -735,9 +780,9 @@ export default function ArtworkCanvasScreen() {
         cursorScale.value = withTiming(0, { duration: 200 });
         setTimeout(() => setCursorPosition(null), 200);
         
-        // Haptic feedback on touch end
+        // Haptic feedback on stroke completion
         if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
         
         if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
@@ -2798,7 +2843,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -2962,8 +3006,8 @@ const styles = StyleSheet.create({
   },
   canvasContainer: {
     flex: 1,
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.md,
+    marginHorizontal: 0,
+    marginVertical: 0,
     borderRadius: borderRadius.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -3050,8 +3094,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.medium,
   },
   controlsBar: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    marginHorizontal: 0,
+    marginBottom: 0,
   },
   controlsBarContent: {
     gap: spacing.sm,
