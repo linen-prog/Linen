@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   header: {
+    marginTop: spacing.xl,
     marginBottom: spacing.xl,
   },
   title: {
@@ -189,27 +190,44 @@ const styles = StyleSheet.create({
   },
 });
 
-function formatDateRange(start: string, end: string): string {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  
-  const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
-  const startDay = startDate.getDate();
-  const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
-  const endDay = endDate.getDate();
-  
-  if (startMonth === endMonth) {
-    const monthText = startMonth;
-    const startDayText = String(startDay);
-    const endDayText = String(endDay);
-    return `${monthText} ${startDayText} - ${endDayText}`;
+/** Parse an ISO date string (YYYY-MM-DD or ISO-8601) into a local-time Date,
+ *  avoiding the UTC-midnight timezone shift that causes off-by-one day bugs. */
+function parseDateLocal(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  // Try to extract YYYY-MM-DD from the start of the string
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1; // months are 0-indexed
+    const day = parseInt(match[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
   }
-  
-  const startMonthText = startMonth;
-  const startDayText = String(startDay);
-  const endMonthText = endMonth;
-  const endDayText = String(endDay);
-  return `${startMonthText} ${startDayText} - ${endMonthText} ${endDayText}`;
+  // Fallback: try native parse
+  const fallback = new Date(dateStr);
+  return isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function formatDateRange(start: string, end: string): string {
+  const startDate = parseDateLocal(start);
+  const endDate = parseDateLocal(end);
+
+  if (!startDate || !endDate) return '';
+
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const startMonth = MONTHS[startDate.getMonth()];
+  const startDay = startDate.getDate();
+  const endMonth = MONTHS[endDate.getMonth()];
+  const endDay = endDate.getDate();
+  const year = endDate.getFullYear();
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay} - ${endDay}, ${year}`;
+  }
+
+  return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
 }
 
 export default function WeeklyRecapScreen() {
