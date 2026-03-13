@@ -6,6 +6,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import { NotificationBell } from "@/components/NotificationBell";
+import NotificationButton from '@/components/NotificationButton';
 
 interface PersonalizationData {
   companionTagline: string | null;
@@ -123,7 +124,7 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
-  const greetingText = `Peace to you, ${firstName}`;
+  const greetingText = 'Peace to you, friend.';
   const checkInStreakText = `${checkInStreak}`;
   const checkInBestText = `best: 2`;
   const reflectionStreakText = `${reflectionStreak}`;
@@ -135,6 +136,7 @@ export default function HomeScreen() {
         options={{
           title: 'Linen',
           headerShown: true,
+          headerRight: () => <NotificationButton />,
         }}
       />
       <GradientBackground>
@@ -144,7 +146,7 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.header}>
-              <Text style={[styles.greeting, { color: textColor }]}>
+              <Text style={[styles.greeting, { color: colors.primary }]}>
                 {greetingText}
               </Text>
             </View>
