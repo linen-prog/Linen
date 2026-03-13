@@ -371,6 +371,7 @@ export default function ArtworkCanvasScreen() {
   const [photoScale, setPhotoScale] = useState(1);
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
   const [showPostSaveModal, setShowPostSaveModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [encouragementMessage, setEncouragementMessage] = useState('');
@@ -716,6 +717,10 @@ export default function ArtworkCanvasScreen() {
         if (hasSaved) {
           setHasSaved(false);
         }
+
+        // Mark that the user has drawn at least one stroke
+        setHasDrawn(true);
+        console.log('[Canvas] First/subsequent stroke started — hasDrawn set to true');
         
         const isEraser = selectedBrushRef.current === 'pencil' && selectedColorRef.current === '#FFFFFF';
         const newStroke: DrawingStroke = {
@@ -1531,6 +1536,7 @@ export default function ArtworkCanvasScreen() {
   const premiumBrushes = BRUSH_OPTIONS.filter(b => b.isPremium);
 
   const saveButtonText = isSaving ? 'Saving...' : 'Save Artwork';
+
   const headerTitle = 'Create Artwork';
   const canvasPlaceholderText = 'Touch and drag to draw on the canvas';
   const brushSizeLabel = 'Brush Size';
@@ -1548,7 +1554,7 @@ export default function ArtworkCanvasScreen() {
 
   const canUndo = strokes.length > 0;
   const canRedo = undoneStrokes.length > 0;
-  const canSave = strokes.length > 0 || backgroundImage !== null || stickers.length > 0;
+  const canSave = hasDrawn && (strokes.length > 0 || backgroundImage !== null || stickers.length > 0);
 
   const selectedBrushLabel = BRUSH_OPTIONS.find(b => b.id === selectedBrush)?.label || 'Pencil';
   const isEraserMode = selectedColor === '#FFFFFF';
@@ -2187,12 +2193,29 @@ export default function ArtworkCanvasScreen() {
           {/* Save Button */}
           <TouchableOpacity 
             style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
-            onPress={handleSave}
+            onPress={() => { console.log('[Canvas] Save Artwork button pressed, hasDrawn:', hasDrawn, 'canSave:', canSave); handleSave(); }}
             disabled={!canSave || isSaving}
             activeOpacity={0.8}
           >
             <Text style={styles.saveButtonText}>
               {saveButtonText}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Share to Community button */}
+          <TouchableOpacity
+            style={[styles.shareButton, (!canSave || isSharing) && styles.shareButtonDisabled]}
+            onPress={() => {
+              console.log('[Canvas] Share to Community button pressed, hasDrawn:', hasDrawn, 'canSave:', canSave);
+              setShareCategory('feed');
+              setShowShareModal(true);
+            }}
+            disabled={!canSave || isSharing}
+            activeOpacity={0.8}
+          >
+            {isSharing && <ActivityIndicator size="small" color="#FFFFFF" />}
+            <Text style={styles.shareButtonText}>
+              {shareButtonText}
             </Text>
           </TouchableOpacity>
         </View>
