@@ -2839,6 +2839,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     flexDirection: 'column',
+    paddingBottom: 80,
   },
   header: {
     flexDirection: 'row',
