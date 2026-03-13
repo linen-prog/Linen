@@ -486,8 +486,7 @@ export default function WeeklyRecapScreen() {
         />
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Your Week in Review</Text>
-            <Text style={styles.dateRange}>{dateRangeText}</Text>
+            <Text style={styles.title}>Your Journey in Review</Text>
           </View>
 
           {/* Scripture Section */}
