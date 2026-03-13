@@ -90,19 +90,15 @@ export default function HomeScreen() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={[styles.appTitle, { color: appTitleColor }]}>Linen</Text>
+          <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
+        </View>
+
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={[styles.appTitle, { color: appTitleColor }]}>Linen</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
-            </View>
-          </View>
-
           <View style={styles.greetingContainer}>
             <Text style={styles.greeting}>{greetingText}</Text>
           </View>
@@ -193,22 +189,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   appTitle: {
     fontSize: 48,
@@ -216,8 +203,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: typography.fontFamilySerif,
   },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
   greetingContainer: {
     alignItems: 'center',
+    marginTop: spacing.md,
     marginBottom: spacing.xl,
   },
   greeting: {
