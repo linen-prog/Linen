@@ -8,6 +8,19 @@ import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 
+interface MonthlySummaryResponse {
+  summary: {
+    monthName: string;
+    mainThemes: string[];
+    emotionalJourney: string;
+    reflections: string[];
+    checkInInsights: string;
+    encouragement: string;
+  } | null;
+  hasEnoughData: boolean;
+  message?: string;
+}
+
 interface WeeklyRecap {
   id: string;
   weekStartDate: string;
@@ -197,6 +210,71 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     lineHeight: 22,
   },
+  monthlySubtitle: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  monthlyNotEnough: {
+    fontSize: typography.body,
+    color: colors.textLight,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  monthlySubLabel: {
+    fontSize: 13,
+    fontWeight: typography.semibold as '600',
+    color: colors.primaryDark,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  monthlyParagraph: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    lineHeight: 24,
+  },
+  monthlyBullet: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 2,
+  },
+  monthlyEncouragement: {
+    fontSize: 17,
+    color: colors.primary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 26,
+    marginTop: spacing.md,
+  },
+  themesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  themePill: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+  },
+  themePillText: {
+    fontSize: 12,
+    fontWeight: typography.semibold as '600',
+    color: '#FFFFFF',
+  },
+  monthlyError: {
+    fontSize: typography.body,
+    color: colors.textLight,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
+  },
+  monthlyLoadingContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
 });
 
 /** Parse an ISO date string (YYYY-MM-DD or ISO-8601) into a local-time Date,
@@ -243,11 +321,44 @@ export default function WeeklyRecapScreen() {
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlySummaryResponse | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(true);
+  const [monthlyError, setMonthlyError] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    loadCurrentRecap();
+    loadData();
   }, []);
+
+  async function loadData() {
+    console.log('Loading weekly recap and monthly summary');
+    setLoading(true);
+    setMonthlyLoading(true);
+    const [recapResult, monthlyResult] = await Promise.allSettled([
+      authenticatedGet('/api/weekly-recap/current'),
+      authenticatedGet('/api/monthly-summary'),
+    ]);
+
+    if (recapResult.status === 'fulfilled') {
+      console.log('Weekly recap loaded:', recapResult.value);
+      setRecap(recapResult.value);
+    } else {
+      console.error('Error loading weekly recap:', recapResult.reason);
+      setRecap(null);
+    }
+
+    if (monthlyResult.status === 'fulfilled') {
+      console.log('Monthly summary loaded:', monthlyResult.value);
+      setMonthlySummary(monthlyResult.value);
+      setMonthlyError(false);
+    } else {
+      console.error('Error loading monthly summary:', monthlyResult.reason);
+      setMonthlyError(true);
+    }
+
+    setLoading(false);
+    setMonthlyLoading(false);
+  }
 
   async function loadCurrentRecap() {
     try {
@@ -291,7 +402,7 @@ export default function WeeklyRecapScreen() {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <Stack.Screen
             options={{
-              title: 'Weekly Recap',
+              title: 'Recap',
               headerShown: true,
               headerTransparent: true,
               headerBlurEffect: 'light',
@@ -314,7 +425,7 @@ export default function WeeklyRecapScreen() {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <Stack.Screen
             options={{
-              title: 'Weekly Recap',
+              title: 'Recap',
               headerShown: true,
               headerTransparent: true,
               headerBlurEffect: 'light',
@@ -365,7 +476,7 @@ export default function WeeklyRecapScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Stack.Screen
           options={{
-            title: 'Weekly Recap',
+            title: 'Recap',
             headerShown: true,
             headerTransparent: true,
             headerBlurEffect: 'light',
@@ -518,6 +629,84 @@ export default function WeeklyRecapScreen() {
           <Text style={styles.reflectionNote}>
             Tracking your progress helps you grow and develop. Sometimes we need to look back to move forward. This summary shows your week in review — a reflection of your journey, your moments of peace, and the steps you've taken. You'll also find personalized suggestions to guide and inspire you in the week ahead.
           </Text>
+
+          {/* Monthly Summary Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionTitleContainer}>
+              <IconSymbol
+                ios_icon_name="calendar.badge.clock"
+                android_material_icon_name="calendar-month"
+                size={24}
+                color={colors.primary}
+                style={styles.sectionIcon}
+              />
+              <Text style={styles.sectionTitle}>Your Month in Review</Text>
+            </View>
+
+            {monthlyLoading ? (
+              <View style={styles.monthlyLoadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : monthlyError ? (
+              <Text style={styles.monthlyError}>Unable to load monthly summary</Text>
+            ) : monthlySummary ? (
+              <>
+                {monthlySummary.summary && (
+                  <Text style={styles.monthlySubtitle}>{monthlySummary.summary.monthName}</Text>
+                )}
+                {!monthlySummary.hasEnoughData ? (
+                  <Text style={styles.monthlyNotEnough}>{monthlySummary.message}</Text>
+                ) : monthlySummary.summary ? (
+                  <>
+                    {/* Main Themes */}
+                    {monthlySummary.summary.mainThemes.length > 0 && (
+                      <>
+                        <Text style={styles.monthlySubLabel}>Main Themes</Text>
+                        <View style={styles.themesRow}>
+                          {monthlySummary.summary.mainThemes.map((theme, index) => (
+                            <View key={index} style={styles.themePill}>
+                              <Text style={styles.themePillText}>{theme}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </>
+                    )}
+
+                    {/* Emotional Journey */}
+                    {monthlySummary.summary.emotionalJourney ? (
+                      <>
+                        <Text style={styles.monthlySubLabel}>Emotional Journey</Text>
+                        <Text style={styles.monthlyParagraph}>{monthlySummary.summary.emotionalJourney}</Text>
+                      </>
+                    ) : null}
+
+                    {/* Reflections */}
+                    {monthlySummary.summary.reflections.length > 0 && (
+                      <>
+                        <Text style={styles.monthlySubLabel}>Key Reflections</Text>
+                        {monthlySummary.summary.reflections.map((reflection, index) => (
+                          <Text key={index} style={styles.monthlyBullet}>{'• '}{reflection}</Text>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Check-In Insights */}
+                    {monthlySummary.summary.checkInInsights ? (
+                      <>
+                        <Text style={styles.monthlySubLabel}>Conversations with Dove</Text>
+                        <Text style={styles.monthlyParagraph}>{monthlySummary.summary.checkInInsights}</Text>
+                      </>
+                    ) : null}
+
+                    {/* Encouragement */}
+                    {monthlySummary.summary.encouragement ? (
+                      <Text style={styles.monthlyEncouragement}>{monthlySummary.summary.encouragement}</Text>
+                    ) : null}
+                  </>
+                ) : null}
+              </>
+            ) : null}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
