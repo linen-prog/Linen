@@ -288,7 +288,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.secondaryCardContent}>
                   <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
-                    Weekly Recap
+                    Heart Threads
                   </Text>
                   <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
                     See your journey this week
