@@ -28,7 +28,7 @@ interface NotificationButtonProps {
   onUnreadCountChange?: (count: number) => void;
 }
 
-export default function NotificationButton({ onUnreadCountChange }: NotificationButtonProps = {}) {
+export default function NotificationButton({ onUnreadCountChange }: NotificationButtonProps) {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
@@ -221,117 +221,115 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
         <Text style={[styles.buttonLabel, { color: textColor }]}>Love Messages</Text>
       </TouchableOpacity>
 
-      {isDropdownVisible && (
-        <Modal
-          transparent={true}
-          visible={isDropdownVisible}
-          onRequestClose={() => setIsDropdownVisible(false)}
-          animationType="fade"
+      <Modal
+        transparent={true}
+        visible={isDropdownVisible}
+        onRequestClose={() => setIsDropdownVisible(false)}
+        animationType="fade"
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsDropdownVisible(false)}
         >
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setIsDropdownVisible(false)}
+          <Pressable 
+            onPress={(e) => e.stopPropagation()}
+            style={styles.dropdownPanel}
           >
-            <Pressable 
-              onPress={(e) => e.stopPropagation()}
-              style={styles.dropdownPanel}
-            >
-              <View style={styles.dropdownHeader}>
-                <Text style={styles.dropdownTitle}>Notifications</Text>
-                <View style={styles.headerActions}>
-                  {notifications.length > 0 && (
-                    <TouchableOpacity onPress={markAllAsRead}>
-                      <Text style={styles.markAllReadText}>Mark all read</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity onPress={() => setIsDropdownVisible(false)} style={styles.closeButton}>
-                    <IconSymbol 
-                      ios_icon_name="xmark" 
-                      android_material_icon_name="close" 
-                      size={24} 
-                      color={colors.text}
-                    />
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Notifications</Text>
+              <View style={styles.headerActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={markAllAsRead}>
+                    <Text style={styles.markAllReadText}>Mark all read</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setIsDropdownVisible(false)} style={styles.closeButton}>
+                  <IconSymbol 
+                    ios_icon_name="xmark" 
+                    android_material_icon_name="close" 
+                    size={24} 
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView style={styles.dropdownBody} showsVerticalScrollIndicator={false}>
+              {isLoading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>Loading...</Text>
+                </View>
+              ) : hasError ? (
+                <View style={styles.emptyState}>
+                  <IconSymbol 
+                    ios_icon_name="exclamationmark.triangle" 
+                    android_material_icon_name="warning" 
+                    size={48} 
+                    color={colors.warning}
+                  />
+                  <Text style={styles.emptyStateText}>Unable to load notifications</Text>
+                  <Text style={styles.errorSubtext}>Please check your connection and try again</Text>
+                  <TouchableOpacity 
+                    style={styles.retryButton}
+                    onPress={fetchNotifications}
+                  >
+                    <Text style={styles.retryButtonText}>Retry</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-
-              <ScrollView style={styles.dropdownBody} showsVerticalScrollIndicator={false}>
-                {isLoading ? (
-                  <View style={styles.emptyState}>
-                    <Text style={styles.emptyStateText}>Loading...</Text>
-                  </View>
-                ) : hasError ? (
-                  <View style={styles.emptyState}>
-                    <IconSymbol 
-                      ios_icon_name="exclamationmark.triangle" 
-                      android_material_icon_name="warning" 
-                      size={48} 
-                      color={colors.warning}
-                    />
-                    <Text style={styles.emptyStateText}>Unable to load notifications</Text>
-                    <Text style={styles.errorSubtext}>Please check your connection and try again</Text>
-                    <TouchableOpacity 
-                      style={styles.retryButton}
-                      onPress={fetchNotifications}
-                    >
-                      <Text style={styles.retryButtonText}>Retry</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : notifications.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <IconSymbol 
-                      ios_icon_name="sparkles" 
-                      android_material_icon_name="auto-awesome" 
-                      size={48} 
-                      color={colors.accent}
-                    />
-                    <Text style={styles.emptyStateText}>No new notifications</Text>
-                    <Text style={styles.emptyStateSubtext}>
-                      You&apos;ll see love messages here when someone reacts to your posts
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    {notifications.map((notification, index) => {
-                      const cardBgColor = notification.read ? '#FFFFFF' : colors.accentVeryLight;
-                      
-                      return (
-                        <TouchableOpacity
-                          key={index}
-                          style={[styles.notificationCard, { backgroundColor: cardBgColor }]}
-                          onPress={() => handleNotificationClick(notification)}
-                          activeOpacity={0.7}
-                        >
-                          {notification.senderAvatarUrl ? (
-                            <Image 
-                              source={resolveImageSource(notification.senderAvatarUrl)} 
-                              style={styles.avatar} 
+              ) : notifications.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <IconSymbol 
+                    ios_icon_name="sparkles" 
+                    android_material_icon_name="auto-awesome" 
+                    size={48} 
+                    color={colors.accent}
+                  />
+                  <Text style={styles.emptyStateText}>No new notifications</Text>
+                  <Text style={styles.emptyStateSubtext}>
+                    You&apos;ll see love messages here when someone reacts to your posts
+                  </Text>
+                </View>
+              ) : (
+                <React.Fragment>
+                  {notifications.map((notification, index) => {
+                    const cardBgColor = notification.read ? '#FFFFFF' : colors.accentVeryLight;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[styles.notificationCard, { backgroundColor: cardBgColor }]}
+                        onPress={() => handleNotificationClick(notification)}
+                        activeOpacity={0.7}
+                      >
+                        {notification.senderAvatarUrl ? (
+                          <Image 
+                            source={resolveImageSource(notification.senderAvatarUrl)} 
+                            style={styles.avatar} 
+                          />
+                        ) : (
+                          <View style={styles.feedbackIconContainer}>
+                            <IconSymbol 
+                              ios_icon_name="sparkles" 
+                              android_material_icon_name="auto-awesome" 
+                              size={18} 
+                              color="#FFFFFF"
                             />
-                          ) : (
-                            <View style={styles.feedbackIconContainer}>
-                              <IconSymbol 
-                                ios_icon_name="sparkles" 
-                                android_material_icon_name="auto-awesome" 
-                                size={18} 
-                                color="#FFFFFF"
-                              />
-                            </View>
-                          )}
-                          
-                          <View style={styles.notificationContent}>
-                            <Text style={styles.notificationText}>{notification.message}</Text>
-                            <Text style={styles.notificationTimestamp}>{notification.createdAt}</Text>
                           </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </>
-                )}
-              </ScrollView>
-            </Pressable>
+                        )}
+                        
+                        <View style={styles.notificationContent}>
+                          <Text style={styles.notificationText}>{notification.message}</Text>
+                          <Text style={styles.notificationTimestamp}>{notification.createdAt}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </React.Fragment>
+              )}
+            </ScrollView>
           </Pressable>
-        </Modal>
-      )}
+        </Pressable>
+      </Modal>
     </View>
   );
 }
