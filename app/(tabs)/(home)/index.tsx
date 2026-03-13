@@ -65,12 +65,11 @@ export default function HomeScreen() {
     }
   };
 
-  const displayName = stats?.displayName || user?.name || 'friend';
+  const displayName = stats?.displayName || user?.name || 'Friend';
   const greetingText = `Peace to you, ${displayName}`;
 
   // Dynamic colors based on love messages state
   const appTitleColor = hasLoveMessages ? '#000000' : colors.text;
-  const giftIconColor = hasLoveMessages ? colors.primary : colors.primary;
 
   const handleCheckInPress = () => {
     console.log('[Home] User tapped Check-In button');
@@ -85,6 +84,11 @@ export default function HomeScreen() {
   const handleCommunityPress = () => {
     console.log('[Home] User tapped Community button');
     router.push('/(tabs)/community');
+  };
+
+  const handleWeeklyRecapPress = () => {
+    console.log('[Home] User tapped Weekly Recap button');
+    router.push('/weekly-recap');
   };
 
   return (
@@ -103,6 +107,20 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingText}</Text>
           </View>
 
+          <View style={styles.streakContainer}>
+            <View style={styles.streakCard}>
+              <Text style={styles.streakLabel}>Check-in Streak</Text>
+              <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
+              <Text style={styles.streakBest}>best: {stats?.checkInStreak || 0}</Text>
+            </View>
+            
+            <View style={styles.streakCard}>
+              <Text style={styles.streakLabel}>Reflection Streak</Text>
+              <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
+              <Text style={styles.streakBest}>best: {stats?.reflectionStreak || 0}</Text>
+            </View>
+          </View>
+
           <TouchableOpacity 
             style={styles.checkInCard}
             onPress={handleCheckInPress}
@@ -119,29 +137,7 @@ export default function HomeScreen() {
             
             <Text style={styles.cardTitle}>Check-In</Text>
             
-            <Text style={styles.cardSubtitle}>What&apos;s on your heart?</Text>
-            
-            {lastCheckInMessage ? (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  {lastCheckInMessage.length > 80 
-                    ? `${lastCheckInMessage.substring(0, 80)}...` 
-                    : lastCheckInMessage}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.promptContainer}>
-                <Text style={styles.promptText}>
-                  You reflected on scripture this morning—want to explore it deeper?
-                </Text>
-              </View>
-            )}
-            
-            {lastCheckInMessage && (
-              <Text style={styles.lastTimeText}>
-                Last time: &quot;{lastCheckInMessage.substring(0, 50)}...&quot;
-              </Text>
-            )}
+            <Text style={styles.cardSubtitle}>Dove is here for you</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -154,13 +150,30 @@ export default function HomeScreen() {
                 ios_icon_name="gift.fill" 
                 android_material_icon_name="card-giftcard" 
                 size={48} 
-                color={giftIconColor}
+                color={colors.primary}
               />
             </View>
             
             <Text style={styles.giftCardTitle}>Open Your Gift</Text>
             
             <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.weeklyRecapCard}
+            onPress={handleWeeklyRecapPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.weeklyRecapIconContainer}>
+              <IconSymbol 
+                ios_icon_name="calendar" 
+                android_material_icon_name="calendar-today" 
+                size={24} 
+                color={colors.primary}
+              />
+            </View>
+            
+            <Text style={styles.weeklyRecapTitle}>Weekly Recap</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -210,13 +223,48 @@ const styles = StyleSheet.create({
   greetingContainer: {
     alignItems: 'center',
     marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   greeting: {
     fontSize: typography.h4,
     fontWeight: typography.regular,
     color: colors.textSecondary,
     fontFamily: typography.fontFamilySerif,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  streakCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  streakLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  streakValue: {
+    fontSize: 32,
+    fontWeight: typography.semibold,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  streakBest: {
+    fontSize: typography.caption,
+    fontWeight: typography.regular,
+    color: colors.textLight,
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
@@ -239,29 +287,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   cardSubtitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.medium,
-    color: colors.primary,
-    marginBottom: spacing.md,
-  },
-  promptContainer: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.border,
-    paddingLeft: spacing.md,
-    marginBottom: spacing.md,
-  },
-  promptText: {
     fontSize: typography.body,
     fontWeight: typography.regular,
-    color: colors.textLight,
-    fontStyle: 'italic',
-    lineHeight: 22,
-  },
-  lastTimeText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
-    color: colors.textLight,
-    lineHeight: 20,
+    color: colors.textSecondary,
   },
   giftCard: {
     backgroundColor: '#FFFFFF',
@@ -286,6 +314,27 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.regular,
     color: colors.textSecondary,
+  },
+  weeklyRecapCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  weeklyRecapIconContainer: {
+    marginRight: spacing.md,
+  },
+  weeklyRecapTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    color: colors.text,
   },
   communityCard: {
     backgroundColor: '#FFFFFF',
