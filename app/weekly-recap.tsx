@@ -188,6 +188,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: spacing.sm,
   },
+  reflectionNote: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
 });
 
 /** Parse an ISO date string (YYYY-MM-DD or ISO-8601) into a local-time Date,
@@ -505,6 +514,10 @@ export default function WeeklyRecapScreen() {
               )}
             </TouchableOpacity>
           </View>
+
+          <Text style={styles.reflectionNote}>
+            Tracking your progress helps you grow and develop. Sometimes we need to look back to move forward. This summary shows your week in review — a reflection of your journey, your moments of peace, and the steps you've taken.
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
