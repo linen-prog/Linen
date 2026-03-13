@@ -21,12 +21,18 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
+  const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
 
   useEffect(() => {
     console.log('[Home iOS] Component mounted - NotificationButton should be visible');
     loadUserStats();
     loadLastCheckIn();
   }, []);
+
+  const handleUnreadCountChange = (count: number) => {
+    console.log('[Home iOS] Love messages count changed:', count);
+    setHasLoveMessages(count > 0);
+  };
 
   const loadUserStats = async () => {
     try {
@@ -62,6 +68,10 @@ export default function HomeScreen() {
   const displayName = stats?.displayName || user?.name || 'friend';
   const greetingText = `Peace to you, ${displayName}`;
 
+  // Dynamic colors based on love messages state
+  const appTitleColor = hasLoveMessages ? '#000000' : colors.text;
+  const giftIconColor = hasLoveMessages ? colors.primary : colors.primary;
+
   const handleCheckInPress = () => {
     console.log('[Home iOS] User tapped Check-In button');
     router.push('/check-in');
@@ -86,10 +96,10 @@ export default function HomeScreen() {
         >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.appTitle}>Linen</Text>
+              <Text style={[styles.appTitle, { color: appTitleColor }]}>Linen</Text>
             </View>
             <View style={styles.headerRight}>
-              <NotificationButton />
+              <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
             </View>
           </View>
 
@@ -148,7 +158,7 @@ export default function HomeScreen() {
                 ios_icon_name="gift.fill" 
                 android_material_icon_name="card-giftcard" 
                 size={48} 
-                color={colors.primary}
+                color={giftIconColor}
               />
             </View>
             

@@ -24,7 +24,11 @@ function resolveImageSource(source: string | number | ImageSourcePropType | unde
   return source as ImageSourcePropType;
 }
 
-export default function NotificationButton() {
+interface NotificationButtonProps {
+  onUnreadCountChange?: (count: number) => void;
+}
+
+export default function NotificationButton({ onUnreadCountChange }: NotificationButtonProps = {}) {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
@@ -64,6 +68,11 @@ export default function NotificationButton() {
       setHasError(false);
       console.log('[NotificationButton] Unread count:', count);
       
+      // Notify parent component of count change
+      if (onUnreadCountChange) {
+        onUnreadCountChange(count);
+      }
+      
       if (count > 0) {
         startPulse();
       } else {
@@ -75,7 +84,7 @@ export default function NotificationButton() {
       // Don't show error to user - just fail silently for better UX
       // The button will still be visible and functional
     }
-  }, [startPulse, pulseAnim]);
+  }, [startPulse, pulseAnim, onUnreadCountChange]);
 
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -101,7 +110,13 @@ export default function NotificationButton() {
       
       // Optimistically update UI
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      const newCount = Math.max(0, unreadCount - 1);
+      setUnreadCount(newCount);
+      
+      // Notify parent component of count change
+      if (onUnreadCountChange) {
+        onUnreadCountChange(newCount);
+      }
       
       console.log('[NotificationButton] Marked notification as read');
     } catch (error: any) {
@@ -109,7 +124,7 @@ export default function NotificationButton() {
       // Revert optimistic update on error
       fetchNotifications();
     }
-  }, [fetchNotifications]);
+  }, [fetchNotifications, unreadCount, onUnreadCountChange]);
 
   const markAllAsRead = useCallback(async () => {
     try {
@@ -121,13 +136,18 @@ export default function NotificationButton() {
       setUnreadCount(0);
       pulseAnim.stopAnimation();
       
+      // Notify parent component of count change
+      if (onUnreadCountChange) {
+        onUnreadCountChange(0);
+      }
+      
       console.log('[NotificationButton] Marked all notifications as read');
     } catch (error: any) {
       console.log('[NotificationButton] Failed to mark all as read:', error?.message || error);
       // Revert optimistic update on error
       fetchNotifications();
     }
-  }, [pulseAnim, fetchNotifications]);
+  }, [pulseAnim, fetchNotifications, onUnreadCountChange]);
 
   useEffect(() => {
     console.log('[NotificationButton] Component mounted');
