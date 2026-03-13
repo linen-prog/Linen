@@ -292,7 +292,7 @@ export default function WeeklyRecapScreen() {
               headerTransparent: true,
               headerBlurEffect: 'light',
               headerStyle: { backgroundColor: 'transparent' },
-              headerTintColor: colors.emerald[900],
+              headerTintColor: colors.primaryVeryDark,
             }}
           />
           <View style={styles.emptyContainer}>
@@ -343,7 +343,7 @@ export default function WeeklyRecapScreen() {
             headerTransparent: true,
             headerBlurEffect: 'light',
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: colors.emerald[900],
+            headerTintColor: colors.primaryVeryDark,
           }}
         />
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>

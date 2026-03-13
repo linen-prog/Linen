@@ -2,7 +2,7 @@
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedGet } from '@/utils/api';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
@@ -51,7 +51,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   weekRange: {
-    ...typography.h2,
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
     color: colors.text,
     marginBottom: spacing.xs,
   },
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   premiumBadgeText: {
-    ...typography.caption,
+    fontSize: typography.caption,
     color: colors.primary,
     marginLeft: spacing.xs,
     fontWeight: '600',
@@ -80,7 +81,8 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.primary,
   },
   synthesisText: {
-    ...typography.body,
+    fontSize: typography.body,
+    fontWeight: typography.regular,
     color: colors.text,
     lineHeight: 24,
     fontStyle: 'italic',
@@ -97,7 +99,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    ...typography.h3,
+    fontSize: typography.h3,
+    fontWeight: typography.medium,
     color: colors.text,
     marginLeft: spacing.sm,
     flex: 1,
@@ -106,7 +109,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   itemText: {
-    ...typography.body,
+    fontSize: typography.body,
+    fontWeight: typography.regular,
     color: colors.text,
     lineHeight: 22,
   },
@@ -132,7 +136,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   visualizationTitle: {
-    ...typography.h4,
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
     color: colors.text,
     marginBottom: spacing.md,
   },
@@ -152,19 +157,19 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   chartLabel: {
-    ...typography.caption,
+    fontSize: typography.caption,
+    fontWeight: typography.regular,
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
   chartValue: {
-    ...typography.caption,
+    fontSize: typography.caption,
     color: colors.text,
     fontWeight: '600',
   },
 });
 
 export default function WeeklyRecapDetailScreen() {
-  const router = useRouter();
   const { weekStartDate } = useLocalSearchParams<{ weekStartDate: string }>();
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
@@ -395,12 +400,14 @@ export default function WeeklyRecapDetailScreen() {
             <View style={styles.chartContainer}>
               {recap.practiceVisualization.weeklyData.map((count, index) => {
                 const weekLabel = `W${index + 1}`;
-                const heightPercentage = count > 0 ? (count / Math.max(...recap.practiceVisualization!.weeklyData)) * 100 : 10;
+                const maxVal = Math.max(...recap.practiceVisualization!.weeklyData);
+                const barHeight = count > 0 ? Math.max((count / maxVal) * 100, 10) : 10;
+                const countText = String(count);
                 
                 return (
                   <View key={index} style={{ alignItems: 'center' }}>
-                    <View style={[styles.chartBar, { height: `${heightPercentage}%` }]}>
-                      <Text style={styles.chartValue}>{count}</Text>
+                    <View style={[styles.chartBar, { height: barHeight }]}>
+                      <Text style={styles.chartValue}>{countText}</Text>
                     </View>
                     <Text style={styles.chartLabel}>{weekLabel}</Text>
                   </View>
