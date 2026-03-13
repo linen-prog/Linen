@@ -92,8 +92,8 @@ export default function HomeScreen() {
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
           <Text style={styles.appTitle}>Linen</Text>
+          <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
         </View>
 
         <ScrollView 
