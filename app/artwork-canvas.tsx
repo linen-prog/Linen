@@ -708,16 +708,9 @@ export default function ArtworkCanvasScreen() {
         setCursorPosition({ x: locationX, y: locationY });
         cursorScale.value = withSpring(1, { damping: 10 });
         
-        // Haptic feedback on stroke start — intensity varies by brush type
-        if (Platform.OS !== 'web') {
-          const brush = selectedBrushRef.current;
-          if (brush === 'glitter' || brush === 'spray') {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          } else if (brush === 'marker' || brush === 'oil') {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          } else {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
+        // Medium haptic on every stroke start — simulates brush "tap" feel (iOS only)
+        if (process.env.EXPO_OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }
         
         if (hasSaved) {
@@ -747,6 +740,11 @@ export default function ArtworkCanvasScreen() {
         
         // Update cursor position
         setCursorPosition({ x: locationX, y: locationY });
+
+        // Light haptic on every stroke move (iOS only)
+        if (process.env.EXPO_OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         
         if (currentStrokeRef.current) {
           const updatedStroke = {
@@ -765,9 +763,6 @@ export default function ArtworkCanvasScreen() {
           
           if (updatedStroke.points.length % 10 === 0) {
             console.log('[Canvas] Stroke now has', updatedStroke.points.length, 'points');
-            if (Platform.OS !== 'web') {
-              Haptics.selectionAsync();
-            }
           }
         } else {
           console.log('[Canvas] WARNING: onPanResponderMove called but no current stroke!');
@@ -2843,6 +2838,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
@@ -3008,6 +3004,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 0,
     marginVertical: 0,
+    marginBottom: 80,
     borderRadius: borderRadius.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -3094,8 +3091,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.medium,
   },
   controlsBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     marginHorizontal: 0,
     marginBottom: 0,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
   },
   controlsBarContent: {
     gap: spacing.sm,
