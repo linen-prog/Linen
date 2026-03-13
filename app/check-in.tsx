@@ -1403,7 +1403,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   iconContainer: {
-    marginTop: spacing.xxl,
+    marginTop: 120,
     marginBottom: spacing.xl,
   },
   emptyStateTitle: {
