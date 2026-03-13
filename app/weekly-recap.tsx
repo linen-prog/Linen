@@ -516,7 +516,7 @@ export default function WeeklyRecapScreen() {
           </View>
 
           <Text style={styles.reflectionNote}>
-            Tracking your progress helps you grow and develop. Sometimes we need to look back to move forward. This summary shows your week in review — a reflection of your journey, your moments of peace, and the steps you've taken.
+            Tracking your progress helps you grow and develop. Sometimes we need to look back to move forward. This summary shows your week in review — a reflection of your journey, your moments of peace, and the steps you've taken. You'll also find personalized suggestions to guide and inspire you in the week ahead.
           </Text>
         </ScrollView>
       </SafeAreaView>
