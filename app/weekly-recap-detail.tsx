@@ -2,8 +2,9 @@
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { authenticatedGet } from '@/utils/api';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 
@@ -171,6 +172,7 @@ const styles = StyleSheet.create({
 
 export default function WeeklyRecapDetailScreen() {
   const { weekStartDate } = useLocalSearchParams<{ weekStartDate: string }>();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
 
@@ -217,6 +219,11 @@ export default function WeeklyRecapDetailScreen() {
           options={{
             title: 'Weekly Recap',
             headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
+                <ChevronLeft size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -233,6 +240,11 @@ export default function WeeklyRecapDetailScreen() {
           options={{
             title: 'Weekly Recap',
             headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
+                <ChevronLeft size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -250,6 +262,11 @@ export default function WeeklyRecapDetailScreen() {
         options={{
           title: 'Weekly Recap',
           headerShown: true,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
+              <ChevronLeft size={24} color={colors.primary} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>

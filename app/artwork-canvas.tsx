@@ -413,7 +413,8 @@ export default function ArtworkCanvasScreen() {
   const cursorScale = useSharedValue(0);
   const paletteButtonScale = useSharedValue(1);
 
-  // Select random prompt on mount
+  // Select random prompt on mount — promptOpacity is a Reanimated shared value, intentionally omitted from deps
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const randomPrompt = DRAWING_PROMPTS[Math.floor(Math.random() * DRAWING_PROMPTS.length)];
     setCurrentPrompt(randomPrompt);
@@ -427,6 +428,7 @@ export default function ArtworkCanvasScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     selectedColorRef.current = selectedColor;
     console.log('[Canvas] Color updated to:', selectedColor);
@@ -448,6 +450,7 @@ export default function ArtworkCanvasScreen() {
     console.log('[Canvas] Brush size updated to:', brushSize);
   }, [brushSize]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     selectedBrushRef.current = selectedBrush;
     console.log('[Canvas] Brush type updated to:', selectedBrush);
@@ -469,7 +472,8 @@ export default function ArtworkCanvasScreen() {
     }
   }, [selectedBrush]);
 
-  // Pulse animation for brush preview
+  // Pulse animation for brush preview — shared value intentionally omitted from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     brushPreviewScale.value = withRepeat(
       withSequence(
@@ -579,6 +583,7 @@ export default function ArtworkCanvasScreen() {
   }, []);
 
   // Check for achievements - INCREASED DISPLAY TIME TO 6 SECONDS
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (strokeCount > 0) {
       const achievement = ACHIEVEMENTS.find(

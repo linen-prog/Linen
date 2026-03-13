@@ -6,6 +6,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 
 interface MonthlySummaryResponse {
@@ -408,6 +409,11 @@ export default function WeeklyRecapScreen() {
               headerBlurEffect: 'light',
               headerStyle: { backgroundColor: 'transparent' },
               headerTintColor: colors.primaryVeryDark,
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap'); router.back(); }} style={{ paddingRight: 8 }}>
+                  <ChevronLeft size={24} color={colors.primary} />
+                </TouchableOpacity>
+              ),
             }}
           />
           <View style={styles.loadingContainer}>
@@ -431,6 +437,11 @@ export default function WeeklyRecapScreen() {
               headerBlurEffect: 'light',
               headerStyle: { backgroundColor: 'transparent' },
               headerTintColor: colors.primaryVeryDark,
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap'); router.back(); }} style={{ paddingRight: 8 }}>
+                  <ChevronLeft size={24} color={colors.primary} />
+                </TouchableOpacity>
+              ),
             }}
           />
           <View style={styles.emptyContainer}>
@@ -482,6 +493,11 @@ export default function WeeklyRecapScreen() {
             headerBlurEffect: 'light',
             headerStyle: { backgroundColor: 'transparent' },
             headerTintColor: colors.primaryVeryDark,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap'); router.back(); }} style={{ paddingRight: 8 }}>
+                <ChevronLeft size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
           }}
         />
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>

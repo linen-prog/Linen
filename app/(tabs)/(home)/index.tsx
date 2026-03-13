@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,18 +23,7 @@ export default function HomeScreen() {
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
   const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
 
-  useEffect(() => {
-    console.log('🏠 [Home] Component mounted - NotificationButton should be visible');
-    loadUserStats();
-    loadLastCheckIn();
-  }, []);
-
-  const handleUnreadCountChange = (count: number) => {
-    console.log('🏠 [Home] Love messages count changed:', count);
-    setHasLoveMessages(count > 0);
-  };
-
-  const loadUserStats = async () => {
+  const loadUserStats = useCallback(async () => {
     try {
       console.log('[Home] Loading user stats...');
       const data = await authenticatedGet<UserStats>('/api/profile/stats');
@@ -42,14 +31,13 @@ export default function HomeScreen() {
       console.log('[Home] Loaded user stats:', data);
     } catch (error: any) {
       console.log('[Home] Error loading stats:', error?.message || error);
-      // Set default stats on error
       setStats({
         checkInStreak: 0,
         reflectionStreak: 0,
-        displayName: user?.name || 'friend'
+        displayName: user?.name || 'friend',
       });
     }
-  };
+  }, [user?.name]);
 
   const loadLastCheckIn = async () => {
     try {
@@ -63,6 +51,17 @@ export default function HomeScreen() {
       console.log('[Home] Error loading last check-in:', error?.message || error);
       // Fail silently - not critical for home screen
     }
+  };
+
+  useEffect(() => {
+    console.log('🏠 [Home] Component mounted - NotificationButton should be visible');
+    loadUserStats();
+    loadLastCheckIn();
+  }, [loadUserStats]);
+
+  const handleUnreadCountChange = (count: number) => {
+    console.log('🏠 [Home] Love messages count changed:', count);
+    setHasLoveMessages(count > 0);
   };
 
   const displayName = stats?.displayName || user?.name || 'Friend';

@@ -4,6 +4,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { authenticatedGet } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 
@@ -158,6 +159,11 @@ export default function WeeklyRecapHistoryScreen() {
           options={{
             title: 'Recap History',
             headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => { console.log('Back pressed from recap history'); router.back(); }} style={{ paddingRight: 8 }}>
+                <ChevronLeft size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -174,6 +180,11 @@ export default function WeeklyRecapHistoryScreen() {
           options={{
             title: 'Recap History',
             headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => { console.log('Back pressed from recap history'); router.back(); }} style={{ paddingRight: 8 }}>
+                <ChevronLeft size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
           }}
         />
         <View style={styles.emptyContainer}>
@@ -197,6 +208,11 @@ export default function WeeklyRecapHistoryScreen() {
         options={{
           title: 'Recap History',
           headerShown: true,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => { console.log('Back pressed from recap history'); router.back(); }} style={{ paddingRight: 8 }}>
+              <ChevronLeft size={24} color={colors.primary} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
