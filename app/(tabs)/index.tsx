@@ -134,7 +134,7 @@ export default function HomeScreen() {
     <React.Fragment>
       <Stack.Screen
         options={{
-          title: 'Linen',
+          title: '',
           headerShown: true,
           headerRight: () => <NotificationButton />,
         }}
@@ -146,6 +146,9 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.header}>
+              <Text style={[styles.appTitle, { color: colors.primary }]}>
+                Linen
+              </Text>
               <Text style={[styles.greeting, { color: colors.primary }]}>
                 {greetingText}
               </Text>
@@ -311,6 +314,10 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
+  },
+  appTitle: {
+    fontSize: typography.h2 * 2,
+    fontWeight: typography.bold,
   },
   greeting: {
     fontSize: typography.h2,
