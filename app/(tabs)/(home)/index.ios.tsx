@@ -30,25 +30,32 @@ export default function HomeScreen() {
 
   const loadUserStats = async () => {
     try {
-      const response = await authenticatedGet('/api/profile/stats');
-      const data = await response.json();
+      console.log('[Home iOS] Loading user stats...');
+      const data = await authenticatedGet<UserStats>('/api/profile/stats');
       setStats(data);
       console.log('[Home iOS] Loaded user stats:', data);
-    } catch (error) {
-      console.log('[Home iOS] Error loading stats:', error);
+    } catch (error: any) {
+      console.log('[Home iOS] Error loading stats:', error?.message || error);
+      // Set default stats on error
+      setStats({
+        checkInStreak: 0,
+        reflectionStreak: 0,
+        displayName: user?.name || 'friend'
+      });
     }
   };
 
   const loadLastCheckIn = async () => {
     try {
-      const response = await authenticatedGet('/api/check-in/last-message');
-      const data = await response.json();
+      console.log('[Home iOS] Loading last check-in message...');
+      const data = await authenticatedGet<{ lastMessage?: string }>('/api/check-in/last-message');
       if (data.lastMessage) {
         setLastCheckInMessage(data.lastMessage);
+        console.log('[Home iOS] Loaded last check-in message');
       }
-      console.log('[Home iOS] Loaded last check-in message');
-    } catch (error) {
-      console.log('[Home iOS] Error loading last check-in:', error);
+    } catch (error: any) {
+      console.log('[Home iOS] Error loading last check-in:', error?.message || error);
+      // Fail silently - not critical for home screen
     }
   };
 

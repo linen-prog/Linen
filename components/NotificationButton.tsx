@@ -8,13 +8,13 @@ import { useRouter } from 'expo-router';
 
 interface Notification {
   id: string;
-  type: 'reaction' | 'feedback';
+  type: 'reaction' | 'feedback' | 'care_message';
   message: string;
-  timestamp: string;
+  createdAt: string;
   read: boolean;
   communityPostId?: string;
-  userAvatarUrl?: string;
-  feedbackIcon?: string;
+  senderAvatarUrl?: string;
+  senderName?: string;
 }
 
 // Helper to resolve image sources (handles both local require() and remote URLs)
@@ -29,6 +29,8 @@ export default function NotificationButton() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
   const router = useRouter();
 
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -55,68 +57,95 @@ export default function NotificationButton() {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      // TODO: Backend Integration - GET /api/notifications/unread-count → { count: number }
-      const response = await authenticatedGet('/api/notifications/unread-count');
-      const data = await response.json();
+      console.log('[NotificationButton] Fetching unread count...');
+      const data = await authenticatedGet<{ count: number }>('/api/notifications/unread-count');
       const count = data.count || 0;
       setUnreadCount(count);
+      setHasError(false);
       console.log('[NotificationButton] Unread count:', count);
+      
       if (count > 0) {
         startPulse();
       } else {
         pulseAnim.stopAnimation();
       }
-    } catch (error) {
-      console.log('[NotificationButton] Failed to fetch unread count:', error);
+    } catch (error: any) {
+      console.log('[NotificationButton] Failed to fetch unread count:', error?.message || error);
+      setHasError(true);
+      // Don't show error to user - just fail silently for better UX
+      // The button will still be visible and functional
     }
   }, [startPulse, pulseAnim]);
 
   const fetchNotifications = useCallback(async () => {
+    setIsLoading(true);
     try {
-      // TODO: Backend Integration - GET /api/notifications → [{ id, type, message, postId, senderName, senderAvatarUrl, read, createdAt }]
-      const response = await authenticatedGet('/api/notifications');
-      const data = await response.json();
+      console.log('[NotificationButton] Fetching notifications...');
+      const data = await authenticatedGet<Notification[]>('/api/notifications');
       setNotifications(data || []);
+      setHasError(false);
       console.log('[NotificationButton] Fetched notifications:', data?.length || 0);
-    } catch (error) {
-      console.log('[NotificationButton] Failed to fetch notifications:', error);
+    } catch (error: any) {
+      console.log('[NotificationButton] Failed to fetch notifications:', error?.message || error);
+      setHasError(true);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   const markNotificationAsRead = useCallback(async (id: string) => {
     try {
-      // TODO: Backend Integration - POST /api/notifications/:id/read with {} → { success: true }
+      console.log('[NotificationButton] Marking notification as read:', id);
       await authenticatedPost(`/api/notifications/${id}/read`, {});
+      
+      // Optimistically update UI
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      console.log('[NotificationButton] Marked notification as read:', id);
-    } catch (error) {
-      console.log('[NotificationButton] Failed to mark notification as read:', error);
+      
+      console.log('[NotificationButton] Marked notification as read');
+    } catch (error: any) {
+      console.log('[NotificationButton] Failed to mark notification as read:', error?.message || error);
+      // Revert optimistic update on error
+      fetchNotifications();
     }
-  }, []);
+  }, [fetchNotifications]);
 
   const markAllAsRead = useCallback(async () => {
     try {
-      // TODO: Backend Integration - POST /api/notifications/mark-all-read with {} → { success: true, count: number }
+      console.log('[NotificationButton] Marking all notifications as read...');
       await authenticatedPost('/api/notifications/mark-all-read', {});
+      
+      // Optimistically update UI
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
       pulseAnim.stopAnimation();
+      
       console.log('[NotificationButton] Marked all notifications as read');
-    } catch (error) {
-      console.log('[NotificationButton] Failed to mark all as read:', error);
+    } catch (error: any) {
+      console.log('[NotificationButton] Failed to mark all as read:', error?.message || error);
+      // Revert optimistic update on error
+      fetchNotifications();
     }
-  }, [pulseAnim]);
+  }, [pulseAnim, fetchNotifications]);
 
   useEffect(() => {
+    console.log('[NotificationButton] Component mounted');
     fetchUnreadCount();
+    
+    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      console.log('[NotificationButton] Component unmounting, clearing interval');
+      clearInterval(interval);
+    };
   }, [fetchUnreadCount]);
 
   const handleButtonClick = useCallback(() => {
     console.log('[NotificationButton] User tapped notification button');
     setIsDropdownVisible(prev => !prev);
+    
     if (!isDropdownVisible) {
       fetchNotifications();
     }
@@ -124,12 +153,16 @@ export default function NotificationButton() {
 
   const handleNotificationClick = useCallback((notification: Notification) => {
     console.log('[NotificationButton] User tapped notification:', notification.id);
+    
     if (!notification.read) {
       markNotificationAsRead(notification.id);
     }
+    
     setIsDropdownVisible(false);
     
-    if (notification.type === 'reaction' && notification.communityPostId) {
+    // Navigate to community if it's a reaction or care message
+    if ((notification.type === 'reaction' || notification.type === 'care_message') && notification.communityPostId) {
+      console.log('[NotificationButton] Navigating to community for post:', notification.communityPostId);
       router.push('/(tabs)/community');
     }
   }, [markNotificationAsRead, router]);
@@ -186,9 +219,11 @@ export default function NotificationButton() {
               <View style={styles.dropdownHeader}>
                 <Text style={styles.dropdownTitle}>Notifications</Text>
                 <View style={styles.headerActions}>
-                  <TouchableOpacity onPress={markAllAsRead}>
-                    <Text style={styles.markAllReadText}>Mark all read</Text>
-                  </TouchableOpacity>
+                  {notifications.length > 0 && (
+                    <TouchableOpacity onPress={markAllAsRead}>
+                      <Text style={styles.markAllReadText}>Mark all read</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => setIsDropdownVisible(false)} style={styles.closeButton}>
                     <IconSymbol 
                       ios_icon_name="xmark" 
@@ -201,7 +236,28 @@ export default function NotificationButton() {
               </View>
 
               <ScrollView style={styles.dropdownBody} showsVerticalScrollIndicator={false}>
-                {notifications.length === 0 ? (
+                {isLoading ? (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>Loading...</Text>
+                  </View>
+                ) : hasError ? (
+                  <View style={styles.emptyState}>
+                    <IconSymbol 
+                      ios_icon_name="exclamationmark.triangle" 
+                      android_material_icon_name="warning" 
+                      size={48} 
+                      color={colors.warning}
+                    />
+                    <Text style={styles.emptyStateText}>Unable to load notifications</Text>
+                    <Text style={styles.errorSubtext}>Please check your connection and try again</Text>
+                    <TouchableOpacity 
+                      style={styles.retryButton}
+                      onPress={fetchNotifications}
+                    >
+                      <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : notifications.length === 0 ? (
                   <View style={styles.emptyState}>
                     <IconSymbol 
                       ios_icon_name="sparkles" 
@@ -210,6 +266,9 @@ export default function NotificationButton() {
                       color={colors.accent}
                     />
                     <Text style={styles.emptyStateText}>No new notifications</Text>
+                    <Text style={styles.emptyStateSubtext}>
+                      You&apos;ll see love messages here when someone reacts to your posts
+                    </Text>
                   </View>
                 ) : (
                   <>
@@ -223,9 +282,9 @@ export default function NotificationButton() {
                           onPress={() => handleNotificationClick(notification)}
                           activeOpacity={0.7}
                         >
-                          {notification.type === 'reaction' && notification.userAvatarUrl ? (
+                          {notification.senderAvatarUrl ? (
                             <Image 
-                              source={resolveImageSource(notification.userAvatarUrl)} 
+                              source={resolveImageSource(notification.senderAvatarUrl)} 
                               style={styles.avatar} 
                             />
                           ) : (
@@ -241,7 +300,7 @@ export default function NotificationButton() {
                           
                           <View style={styles.notificationContent}>
                             <Text style={styles.notificationText}>{notification.message}</Text>
-                            <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text>
+                            <Text style={styles.notificationTimestamp}>{notification.createdAt}</Text>
                           </View>
                         </TouchableOpacity>
                       );
@@ -356,11 +415,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
+    paddingHorizontal: spacing.lg,
   },
   emptyStateText: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.body,
     color: colors.textLight,
     marginTop: 10,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontSize: typography.bodySmall,
+    color: colors.textLight,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  errorSubtext: {
+    fontSize: typography.bodySmall,
+    color: colors.textLight,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+  },
+  retryButtonText: {
+    fontSize: typography.bodySmall,
+    color: '#FFFFFF',
+    fontWeight: typography.medium,
   },
   notificationCard: {
     flexDirection: 'row',
