@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -22,6 +22,41 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
   const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
+
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(-12)).current;
+  const greetingOpacity = useRef(new Animated.Value(0)).current;
+  const greetingTranslateY = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleTranslateY, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(1200),
+      Animated.parallel([
+        Animated.timing(greetingOpacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(greetingTranslateY, {
+          toValue: 0,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
 
   const loadUserStats = useCallback(async () => {
     try {
@@ -93,18 +128,32 @@ export default function HomeScreen() {
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.appTitle}>Linen</Text>
+          <Animated.Text
+            style={[
+              styles.appTitle,
+              { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] },
+            ]}
+          >
+            Linen
+          </Animated.Text>
           <View style={styles.notificationButtonWrapper}>
             <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
           </View>
         </View>
 
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.greetingContainer}>
-            <Text style={styles.greeting}>{greetingText}</Text>
+            <Animated.Text
+              style={[
+                styles.greeting,
+                { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
+              ]}
+            >
+              {greetingText}
+            </Animated.Text>
           </View>
 
           <View style={styles.streakContainer}>
@@ -113,7 +162,7 @@ export default function HomeScreen() {
               <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
               <Text style={styles.streakBest}>best: {stats?.checkInStreak || 0}</Text>
             </View>
-            
+
             <View style={styles.streakCard}>
               <Text style={styles.streakLabel}>Reflection Streak</Text>
               <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
@@ -121,75 +170,75 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.checkInCard}
             onPress={handleCheckInPress}
             activeOpacity={0.7}
           >
             <View style={styles.cardIconContainer}>
-              <IconSymbol 
-                ios_icon_name="message.fill" 
-                android_material_icon_name="chat" 
-                size={48} 
+              <IconSymbol
+                ios_icon_name="message.fill"
+                android_material_icon_name="chat"
+                size={48}
                 color={colors.primary}
               />
             </View>
-            
+
             <Text style={styles.cardTitle}>Check-In</Text>
-            
+
             <Text style={styles.cardSubtitle}>Dove is here for you</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.giftCard}
             onPress={handleOpenGiftPress}
             activeOpacity={0.7}
           >
             <View style={styles.cardIconContainer}>
-              <IconSymbol 
-                ios_icon_name="gift.fill" 
-                android_material_icon_name="card-giftcard" 
-                size={48} 
+              <IconSymbol
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={48}
                 color={colors.primary}
               />
             </View>
-            
+
             <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-            
+
             <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.weeklyRecapCard}
             onPress={handleWeeklyRecapPress}
             activeOpacity={0.7}
           >
             <View style={styles.weeklyRecapIconContainer}>
-              <IconSymbol 
-                ios_icon_name="calendar" 
-                android_material_icon_name="calendar-today" 
-                size={24} 
+              <IconSymbol
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar-today"
+                size={24}
                 color={colors.primary}
               />
             </View>
-            
+
             <Text style={styles.weeklyRecapTitle}>Weekly Recap</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.communityCard}
             onPress={handleCommunityPress}
             activeOpacity={0.7}
           >
             <View style={styles.communityIconContainer}>
-              <IconSymbol 
-                ios_icon_name="heart.fill" 
-                android_material_icon_name="favorite" 
-                size={32} 
+              <IconSymbol
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={32}
                 color={colors.primary}
               />
             </View>
-            
+
             <Text style={styles.communityCardTitle}>Community</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -207,7 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.xxl,
     paddingBottom: spacing.sm,
     backgroundColor: 'transparent',
     zIndex: 100,
