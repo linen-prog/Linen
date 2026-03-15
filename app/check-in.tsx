@@ -6,6 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -32,6 +33,12 @@ interface Prayer {
 }
 
 
+
+const tabs = [
+  { name: 'home', route: '/(tabs)/(home)' as const, icon: 'home' as const, label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+];
 
 export default function CheckInScreen() {
   console.log('[CheckIn] User viewing Check-In screen');
@@ -631,6 +638,7 @@ export default function CheckInScreen() {
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
               onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+              style={{ flex: 1 }}
             />
           )}
 
@@ -1282,6 +1290,9 @@ export default function CheckInScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Floating Tab Bar */}
+        <FloatingTabBar tabs={tabs} />
 
         {/* Share AI Message Modal - Wisdom Only */}
         <Modal
