@@ -30,8 +30,8 @@
  * - Fetched from /api/community/my-posts endpoint
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -52,7 +52,7 @@ interface Post {
   scriptureReference?: string;
   isFlagged?: boolean;
   userId?: string;
-  reactions?: {
+  reactions: {
     praying: number;
     holding: number;
     light: number;
@@ -60,7 +60,7 @@ interface Post {
     growing: number;
     peace: number;
   };
-  userReactions?: string[];
+  userReactions: string[];
   artworkUrl?: string | null;
 }
 
@@ -153,56 +153,18 @@ export default function CommunityScreen() {
       }
       
       console.log('[Community] ✅ Posts loaded for', category, ':', allPosts.length, 'posts');
-      
-      console.log('[Community] 📊 DETAILED Post details:', allPosts.map(p => ({
-        id: p.id,
-        category: p.category,
-        contentType: p.contentType,
-        authorName: p.authorName,
-        isAnonymous: p.isAnonymous,
-        prayerCount: p.prayerCount,
-        hasArtwork: !!p.artworkUrl,
-        artworkUrl: p.artworkUrl,
-        artworkUrlType: typeof p.artworkUrl,
-        artworkUrlLength: p.artworkUrl ? p.artworkUrl.length : 0,
-        artworkUrlTrimmed: p.artworkUrl ? p.artworkUrl.trim() : '',
-        contentPreview: p.content ? p.content.substring(0, 50) + '...' : '[No text content]',
-        createdAt: p.createdAt
-      })));
-      
-      // Log specific artwork URLs
-      const postsWithArtwork = allPosts.filter(p => p.artworkUrl);
-      console.log('[Community] 🎨 Posts with artwork URLs:', postsWithArtwork.length);
-      postsWithArtwork.forEach(p => {
-        console.log('[Community] 🎨 Post', p.id, 'artworkUrl:', p.artworkUrl);
-      });
-      
-      // Fetch reactions for each post
-      const postsWithReactions = await Promise.all(
-        allPosts.map(async (post) => {
-          try {
-            const reactionsData = await authenticatedGet<{ reactionCounts: any; userReactions: string[] }>(
-              `/api/community/reactions/${post.id}`
-            );
-            return {
-              ...post,
-              createdAt: new Date(post.createdAt),
-              reactions: reactionsData.reactionCounts,
-              userReactions: reactionsData.userReactions || [],
-            };
-          } catch (error) {
-            console.error('[Community] Failed to load reactions for post:', post.id, error);
-            return {
-              ...post,
-              createdAt: new Date(post.createdAt),
-              reactions: { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 },
-              userReactions: [],
-            };
-          }
-        })
-      );
-      
-      setPosts(postsWithReactions);
+
+      const defaultReactions = { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
+
+      type RawPost = Record<string, unknown>;
+      const mappedPosts: Post[] = (allPosts as RawPost[]).map((post) => ({
+        ...(post as Omit<Post, 'reactions' | 'userReactions' | 'createdAt'>),
+        createdAt: new Date(post.createdAt as string),
+        reactions: (post.reactionCounts ?? post.reactions ?? defaultReactions) as Post['reactions'],
+        userReactions: (post.userReactions ?? []) as string[],
+      }));
+
+      setPosts(mappedPosts);
     } catch (error) {
       console.error('[Community] ❌ Failed to load posts:', error);
       setPosts([]);
@@ -715,10 +677,11 @@ export default function CommunityScreen() {
               const categoryColor = getCategoryColor(post.category);
               const categoryLabel = getCategoryLabel(post.category);
               
-              const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
-              const userReactions = post.userReactions || [];
+              const reactions = post.reactions;
+              const userReactions = post.userReactions;
               const isOwnPost = !!user?.id && post.userId === user.id;
-              const activeReactionBadges = (Object.keys(reactions) as Array<keyof typeof reactions>).filter(k => reactions[k] > 0);
+              const activeReactionBadges = (Object.keys(reactions) as (keyof typeof reactions)[]).filter(k => reactions[k] > 0);
+              const hasUserReacted = userReactions.length > 0;
               
               return (
                 <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
@@ -830,39 +793,46 @@ export default function CommunityScreen() {
                         const isUserReaction = userReactions.includes(reactionKey);
                         const reactionCountVal = reactions[reactionKey];
                         const reactionEmoji = getReactionEmoji(reactionKey);
+                        const countText = `${reactionCountVal}`;
                         return (
-                          <AnimatedReactionBadge
+                          <TouchableOpacity
                             key={reactionKey}
-                            emoji={reactionEmoji}
-                            count={reactionCountVal}
-                            isActive={isUserReaction}
+                            style={[styles.reactionBadge, isUserReaction && styles.reactionBadgeActive]}
                             onPress={() => {
                               console.log('[Community] User tapped reaction badge:', reactionKey, 'on post:', post.id);
                               handleReact(post.id, reactionKey);
                             }}
-                          />
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.reactionEmoji}>{reactionEmoji}</Text>
+                            <Text style={[styles.reactionCount, { color: isUserReaction ? colors.primary : colors.textSecondary }]}>
+                              {countText}
+                            </Text>
+                          </TouchableOpacity>
                         );
                       })}
-                      <TouchableOpacity
-                        style={styles.reactButton}
-                        onPress={() => {
-                          console.log('[Community] User tapped React button for post:', post.id);
-                          if (!user?.id) {
-                            console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
-                            setShowAuthPrompt(true);
-                          } else {
-                            setShowReactionPicker(post.id);
-                          }
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.reactButtonEmoji}>
-                          🙂
-                        </Text>
-                        <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                          React
-                        </Text>
-                      </TouchableOpacity>
+                      {!hasUserReacted && (
+                        <TouchableOpacity
+                          style={styles.reactButton}
+                          onPress={() => {
+                            console.log('[Community] User tapped React button for post:', post.id);
+                            if (!user?.id) {
+                              console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
+                              setShowAuthPrompt(true);
+                            } else {
+                              setShowReactionPicker(post.id);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.reactButtonEmoji}>
+                            😊
+                          </Text>
+                          <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
+                            React
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
 
@@ -1167,86 +1137,6 @@ export default function CommunityScreen() {
   );
 }
 
-function AnimatedReactionBadge({
-  emoji,
-  count,
-  isActive,
-  onPress,
-}: {
-  emoji: string;
-  count: number;
-  isActive: boolean;
-  onPress: () => void;
-}) {
-  // Start fully visible — badges are only rendered when count > 0, so no entrance animation needed
-  const scaleAnimRef = useRef(new Animated.Value(1));
-  const opacityAnimRef = useRef(new Animated.Value(1));
-  const prevCount = useRef(0);
-  const isMounted = useRef(false);
-
-  useEffect(() => {
-    const scaleAnim = scaleAnimRef.current;
-    const opacityAnim = opacityAnimRef.current;
-
-    if (!isMounted.current) {
-      // First mount: pop-in entrance animation
-      isMounted.current = true;
-      scaleAnim.setValue(0.5);
-      opacityAnim.setValue(0);
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 200,
-          friction: 8,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (count !== prevCount.current) {
-      // Count changed: quick bounce to signal update
-      Animated.sequence([
-        Animated.spring(scaleAnim, {
-          toValue: 1.25,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 6,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 6,
-        }),
-      ]).start();
-    }
-    prevCount.current = count;
-  }, [count]);
-
-  const countText = `${count}`;
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnimRef.current }], opacity: opacityAnimRef.current }}>
-      <TouchableOpacity
-        style={[
-          styles.reactionBadge,
-          isActive && styles.reactionBadgeActive,
-        ]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.reactionEmoji}>{emoji}</Text>
-        <Text style={[styles.reactionCount, { color: isActive ? colors.primary : colors.textSecondary }]}>
-          {countText}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
 function ReactionPickerOption({
   emoji,
   label,
@@ -1260,35 +1150,15 @@ function ReactionPickerOption({
   onPress: () => void;
   textColor: string;
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.spring(scaleAnim, {
-        toValue: 1.3,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 6,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 6,
-      }),
-    ]).start();
-    onPress();
-  };
-
   return (
     <TouchableOpacity
       style={[styles.reactionOption, isActive && styles.reactionOptionActive]}
-      onPress={handlePress}
+      onPress={onPress}
       activeOpacity={0.8}
     >
-      <Animated.Text style={[styles.reactionOptionEmoji, { transform: [{ scale: scaleAnim }] }]}>
+      <Text style={styles.reactionOptionEmoji}>
         {emoji}
-      </Animated.Text>
+      </Text>
       <Text style={[styles.reactionOptionLabel, { color: isActive ? colors.primary : textColor }]}>
         {label}
       </Text>
