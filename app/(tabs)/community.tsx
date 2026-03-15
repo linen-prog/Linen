@@ -30,8 +30,8 @@
  * - Fetched from /api/community/my-posts endpoint
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -831,22 +831,16 @@ export default function CommunityScreen() {
                         const reactionCountVal = reactions[reactionKey];
                         const reactionEmoji = getReactionEmoji(reactionKey);
                         return (
-                          <TouchableOpacity
+                          <AnimatedReactionBadge
                             key={reactionKey}
-                            style={[
-                              styles.reactionBadge,
-                              isUserReaction && styles.reactionBadgeActive,
-                            ]}
-                            onPress={() => handleReact(post.id, reactionKey)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.reactionEmoji}>
-                              {reactionEmoji}
-                            </Text>
-                            <Text style={[styles.reactionCount, { color: isUserReaction ? colors.primary : textSecondaryColor }]}>
-                              {reactionCountVal}
-                            </Text>
-                          </TouchableOpacity>
+                            emoji={reactionEmoji}
+                            count={reactionCountVal}
+                            isActive={isUserReaction}
+                            onPress={() => {
+                              console.log('[Community] User tapped reaction badge:', reactionKey, 'on post:', post.id);
+                              handleReact(post.id, reactionKey);
+                            }}
+                          />
                         );
                       })}
                       <TouchableOpacity
@@ -911,10 +905,7 @@ export default function CommunityScreen() {
         animationType="fade"
         onRequestClose={() => setShowReactionPicker(null)}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowReactionPicker(null)}
-        >
+        <View style={styles.modalOverlay}>
           <Pressable
             style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}
             onPress={(e) => e.stopPropagation()}
@@ -923,8 +914,11 @@ export default function CommunityScreen() {
               <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
                 Choose reactions
               </Text>
-              <TouchableOpacity onPress={() => setShowReactionPicker(null)} hitSlop={8}>
-                <Text style={[styles.reactionPickerClose, { color: textSecondaryColor }]}>
+              <TouchableOpacity onPress={() => {
+                console.log('[Community] User tapped Done on reaction picker');
+                setShowReactionPicker(null);
+              }} hitSlop={8}>
+                <Text style={[styles.reactionPickerClose, { color: colors.primary }]}>
                   Done
                 </Text>
               </TouchableOpacity>
@@ -945,30 +939,26 @@ export default function CommunityScreen() {
                   {reactionOptions.map(opt => {
                     const isActive = pickerUserReactions.includes(opt.type);
                     return (
-                      <TouchableOpacity
+                      <ReactionPickerOption
                         key={opt.type}
-                        style={[styles.reactionOption, isActive && styles.reactionOptionActive]}
+                        emoji={opt.emoji}
+                        label={opt.label}
+                        isActive={isActive}
                         onPress={() => {
                           console.log('[Community] User selected reaction:', opt.type, 'on post:', showReactionPicker);
                           if (showReactionPicker) {
                             handleReact(showReactionPicker, opt.type);
                           }
                         }}
-                      >
-                        <Text style={styles.reactionOptionEmoji}>
-                          {opt.emoji}
-                        </Text>
-                        <Text style={[styles.reactionOptionLabel, { color: isActive ? colors.primary : textColor }]}>
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
+                        textColor={textColor}
+                      />
                     );
                   })}
                 </View>
               );
             })()}
           </Pressable>
-        </Pressable>
+        </View>
       </Modal>
 
       {/* Authentication Prompt Modal */}
@@ -1174,6 +1164,116 @@ export default function CommunityScreen() {
       </Modal>
     </SafeAreaView>
     </GradientBackground>
+  );
+}
+
+function AnimatedReactionBadge({
+  emoji,
+  count,
+  isActive,
+  onPress,
+}: {
+  emoji: string;
+  count: number;
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  const scaleAnimRef = useRef(new Animated.Value(0.6));
+  const opacityAnimRef = useRef(new Animated.Value(0));
+  const prevCount = useRef(count);
+
+  useEffect(() => {
+    const scaleAnim = scaleAnimRef.current;
+    const opacityAnim = opacityAnimRef.current;
+    // Entrance animation when badge first appears (count goes from 0 to >0)
+    if (prevCount.current === 0 && count > 0) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 200,
+          friction: 8,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (count > 0) {
+      scaleAnim.setValue(1);
+      opacityAnim.setValue(1);
+    }
+    prevCount.current = count;
+  }, [count]);
+
+  const countText = `${count}`;
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnimRef.current }], opacity: opacityAnimRef.current }}>
+      <TouchableOpacity
+        style={[
+          styles.reactionBadge,
+          isActive && styles.reactionBadgeActive,
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.reactionEmoji}>{emoji}</Text>
+        <Text style={[styles.reactionCount, { color: isActive ? colors.primary : colors.textSecondary }]}>
+          {countText}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function ReactionPickerOption({
+  emoji,
+  label,
+  isActive,
+  onPress,
+  textColor,
+}: {
+  emoji: string;
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+  textColor: string;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 1.3,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 6,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 6,
+      }),
+    ]).start();
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.reactionOption, isActive && styles.reactionOptionActive]}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <Animated.Text style={[styles.reactionOptionEmoji, { transform: [{ scale: scaleAnim }] }]}>
+        {emoji}
+      </Animated.Text>
+      <Text style={[styles.reactionOptionLabel, { color: isActive ? colors.primary : textColor }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -1492,6 +1592,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reactionBadgeActive: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#047857',
+    borderWidth: 1,
     backgroundColor: colors.primary + '30',
     borderWidth: 1,
     borderColor: colors.primary,
@@ -1565,6 +1668,9 @@ const styles = StyleSheet.create({
     fontSize: 32,
   },
   reactionOptionActive: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#047857',
+    borderWidth: 1,
     backgroundColor: colors.primaryLight || '#E8F5E9',
     borderColor: colors.primary,
     borderWidth: 1,
