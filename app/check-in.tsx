@@ -576,9 +576,8 @@ export default function CheckInScreen() {
             title: headerTitle,
             headerBackTitle: 'Home',
             headerStyle: {
-              backgroundColor: 'transparent',
+              backgroundColor: colors.background,
             },
-            headerTransparent: true,
             headerTintColor: colors.primary,
             headerRight: () => (
               <View style={styles.headerButtons}>
