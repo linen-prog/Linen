@@ -198,10 +198,6 @@ function RootLayoutProviders() {
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
-  if (!loaded) {
-    return null;
-  }
-
   // Custom light theme
   const CustomLightTheme: Theme = {
     ...DefaultTheme,
