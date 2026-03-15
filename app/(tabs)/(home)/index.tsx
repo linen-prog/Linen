@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: spacing.md,
+    marginTop: 40,
     marginBottom: spacing.lg,
   },
   greeting: {
