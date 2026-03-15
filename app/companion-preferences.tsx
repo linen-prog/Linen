@@ -198,26 +198,9 @@ export default function CompanionPreferencesScreen() {
     animateStep(() => setCurrentStep((s) => s - 1));
   };
 
-  const safeNavigateBack = () => {
-    try {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)');
-      }
-    } catch (e) {
-      console.warn('CompanionPreferences: navigation error, falling back to tabs', e);
-      try {
-        router.replace('/(tabs)');
-      } catch (e2) {
-        console.error('CompanionPreferences: fallback navigation also failed', e2);
-      }
-    }
-  };
-
   const handleCancel = () => {
     console.log('CompanionPreferences: Cancel pressed, navigating back');
-    safeNavigateBack();
+    router.back();
   };
 
   const handleSave = async () => {
@@ -236,7 +219,7 @@ export default function CompanionPreferencesScreen() {
       console.log('CompanionPreferences: Preferences saved successfully:', result);
       setSaveSuccess(true);
       setTimeout(() => {
-        safeNavigateBack();
+        router.back();
       }, 800);
     } catch (error) {
       console.error('CompanionPreferences: Failed to save preferences:', error);
