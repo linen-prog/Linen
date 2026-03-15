@@ -495,7 +495,12 @@ export default function CheckInScreen() {
 
   const renderEmptyState = () => {
     return (
-      <View style={styles.emptyStateContainer}>
+      <ScrollView
+        style={styles.emptyStateContainer}
+        contentContainerStyle={styles.emptyStateScrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.emptyStateContent}>
           <View style={styles.iconContainer}>
             <IconSymbol 
@@ -538,7 +543,7 @@ export default function CheckInScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -1385,6 +1390,10 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
+  emptyStateScrollContent: {
+    paddingBottom: 56,
+    flexGrow: 1,
+  },
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1428,6 +1437,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   disclaimerContainer: {
+    marginTop: 24,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     borderTopWidth: 1,
@@ -1442,7 +1452,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     gap: spacing.md,
-    paddingBottom: 100, // Add padding for FloatingTabBar
+    paddingBottom: 120, // Add padding for FloatingTabBar + input area
   },
   messageContainer: {
     flexDirection: 'row',
