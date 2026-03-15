@@ -1,7 +1,9 @@
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: ['./src/db/schema.ts', './src/db/auth-schema.ts'],
+  // Use only auth-schema for migrations - app schema is created via raw SQL in initDatabase.ts
+  // This avoids drizzle-kit introspection issues with the app schema
+  schema: './src/db/auth-schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
   ...(process.env.DATABASE_URL && {
