@@ -39,7 +39,7 @@ interface FloatingTabBarProps {
 
 export default function FloatingTabBar({
   tabs,
-  containerWidth = screenWidth / 2.5,
+  containerWidth = Math.min(screenWidth - 40, Math.max(260, tabs.length * 90)),
   borderRadius = 35,
   bottomMargin
 }: FloatingTabBarProps) {
@@ -189,6 +189,7 @@ export default function FloatingTabBar({
                       color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
                     />
                     <Text
+                      numberOfLines={1}
                       style={[
                         styles.tabLabel,
                         { color: theme.dark ? '#98989D' : '#8E8E93' },
@@ -248,9 +249,11 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    minWidth: 72,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   tabContent: {
     alignItems: 'center',
@@ -258,9 +261,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
+    textAlign: 'center',
     // Dynamic styling applied in component
   },
 });
