@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -10,10 +10,15 @@ import { GradientBackground } from '@/components/GradientBackground';
 export default function LandingScreen() {
   console.log('User viewing Landing/Orientation screen');
   const router = useRouter();
+  const navigationState = useRootNavigationState();
 
   const handleContinue = () => {
     console.log('User tapped Begin Your Journey button - entering app as guest');
-    // Navigate directly to the main app (no auth required)
+    if (!navigationState?.key) {
+      console.log('[LandingScreen] Navigation not ready yet, deferring navigate');
+      setTimeout(() => router.replace('/(tabs)'), 100);
+      return;
+    }
     router.replace('/(tabs)');
   };
 
