@@ -862,8 +862,11 @@ export default function CommunityScreen() {
                         }}
                         activeOpacity={0.7}
                       >
+                        <Text style={styles.reactButtonEmoji}>
+                          🙂
+                        </Text>
                         <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                          +
+                          React
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -912,10 +915,20 @@ export default function CommunityScreen() {
           style={styles.modalOverlay}
           onPress={() => setShowReactionPicker(null)}
         >
-          <View style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}>
-            <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
-              Choose reactions
-            </Text>
+          <Pressable
+            style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.reactionPickerHeader}>
+              <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
+                Choose reactions
+              </Text>
+              <TouchableOpacity onPress={() => setShowReactionPicker(null)} hitSlop={8}>
+                <Text style={[styles.reactionPickerClose, { color: textSecondaryColor }]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
             {(() => {
               const pickerPost = posts.find(p => p.id === showReactionPicker);
               const pickerUserReactions = pickerPost?.userReactions || [];
@@ -935,7 +948,12 @@ export default function CommunityScreen() {
                       <TouchableOpacity
                         key={opt.type}
                         style={[styles.reactionOption, isActive && styles.reactionOptionActive]}
-                        onPress={() => showReactionPicker && handleReact(showReactionPicker, opt.type)}
+                        onPress={() => {
+                          console.log('[Community] User selected reaction:', opt.type, 'on post:', showReactionPicker);
+                          if (showReactionPicker) {
+                            handleReact(showReactionPicker, opt.type);
+                          }
+                        }}
                       >
                         <Text style={styles.reactionOptionEmoji}>
                           {opt.emoji}
@@ -949,7 +967,7 @@ export default function CommunityScreen() {
                 </View>
               );
             })()}
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
 
@@ -1439,7 +1457,13 @@ const styles = StyleSheet.create({
   reactionSection: {
     marginTop: spacing.md,
   },
+  reactButtonEmoji: {
+    fontSize: 14,
+  },
   reactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     alignSelf: 'flex-start',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -1508,6 +1532,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  reactionPickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  reactionPickerClose: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   reactionPickerTitle: {
     fontSize: typography.h3,
