@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
-import { NotificationBell } from "@/components/NotificationBell";
 
 export default function LandingScreen() {
   console.log('User viewing Landing/Orientation screen');
@@ -86,9 +85,7 @@ export default function LandingScreen() {
         >
           <View style={styles.header}>
             <Text style={styles.title}>{titleText}</Text>
-                        <NotificationBell />
-            
-<Text style={styles.tagline}>{taglineText}</Text>
+            <Text style={styles.tagline}>{taglineText}</Text>
           </View>
 
           <View style={styles.introSection}>
