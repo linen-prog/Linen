@@ -118,10 +118,24 @@ export async function authenticatedGet<T = any>(endpoint: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`GET ${endpoint} failed: ${response.statusText}`);
+    const errorText = await response.text().catch(() => response.statusText);
+    console.error(`[API] GET ${endpoint} error body:`, errorText);
+    throw new Error(`GET ${endpoint} failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text().catch(() => '');
+    console.error(`[API] GET ${endpoint} returned non-JSON content-type: ${contentType}`, text.slice(0, 200));
+    throw new Error(`GET ${endpoint} returned non-JSON response`);
+  }
+
+  try {
+    return await response.json();
+  } catch (parseError) {
+    console.error(`[API] GET ${endpoint} JSON parse error:`, parseError);
+    throw new Error(`GET ${endpoint} failed to parse JSON response`);
+  }
 }
 
 // Authenticated POST request

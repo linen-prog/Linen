@@ -168,13 +168,14 @@ export default function CompanionPreferencesScreen() {
       console.log('CompanionPreferences: GET /api/companion/preferences');
       const data = await authenticatedGet<CompanionPreferences>('/api/companion/preferences');
       console.log('CompanionPreferences: Preferences loaded:', data);
-      if (data.tone) setTone(data.tone);
-      if (data.directness) setDirectness(data.directness);
-      if (data.spiritualIntegration) setSpiritualIntegration(data.spiritualIntegration);
-      if (data.responseLength) setResponseLength(data.responseLength);
-      if (data.customPreferences) setCustomPreferences(data.customPreferences);
+      if (data && data.tone) setTone(data.tone);
+      if (data && data.directness) setDirectness(data.directness);
+      if (data && data.spiritualIntegration) setSpiritualIntegration(data.spiritualIntegration);
+      if (data && data.responseLength) setResponseLength(data.responseLength);
+      if (data && data.customPreferences) setCustomPreferences(data.customPreferences);
     } catch (error) {
       console.error('CompanionPreferences: Failed to load preferences:', error);
+      // Do not navigate on error — just show defaults
     } finally {
       setLoading(false);
     }
