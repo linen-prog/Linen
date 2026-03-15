@@ -31,7 +31,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -60,7 +60,7 @@ interface Post {
     growing: number;
     peace: number;
   };
-  userReaction?: string | null;
+  userReactions?: string[];
   artworkUrl?: string | null;
 }
 
@@ -181,14 +181,14 @@ export default function CommunityScreen() {
       const postsWithReactions = await Promise.all(
         allPosts.map(async (post) => {
           try {
-            const reactionsData = await authenticatedGet<{ reactions: any; userReaction: string | null }>(
+            const reactionsData = await authenticatedGet<{ reactionCounts: any; userReactions: string[] }>(
               `/api/community/reactions/${post.id}`
             );
             return {
               ...post,
               createdAt: new Date(post.createdAt),
-              reactions: reactionsData.reactions,
-              userReaction: reactionsData.userReaction,
+              reactions: reactionsData.reactionCounts,
+              userReactions: reactionsData.userReactions || [],
             };
           } catch (error) {
             console.error('[Community] Failed to load reactions for post:', post.id, error);
@@ -196,7 +196,7 @@ export default function CommunityScreen() {
               ...post,
               createdAt: new Date(post.createdAt),
               reactions: { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 },
-              userReaction: null,
+              userReactions: [],
             };
           }
         })
@@ -253,7 +253,7 @@ export default function CommunityScreen() {
   };
 
   const handleReact = async (postId: string, reactionType: string) => {
-    console.log('[Community] User attempting to react to post:', postId, 'with:', reactionType);
+    console.log('[Community] User tapped reaction:', reactionType, 'on post:', postId);
     
     // Check if user is authenticated
     if (!user?.id) {
@@ -263,32 +263,29 @@ export default function CommunityScreen() {
       return;
     }
     
-    // Optimistically update the UI
+    // Optimistically update the UI — keep picker open
     const previousPosts = [...posts];
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
         const currentReactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
-        const isTogglingOff = post.userReaction === reactionType;
+        const currentUserReactions = post.userReactions || [];
+        const isTogglingOff = currentUserReactions.includes(reactionType);
         
-        // Calculate new reaction counts
         const newReactions = { ...currentReactions };
-        
-        // Remove old reaction count if switching
-        if (post.userReaction && post.userReaction !== reactionType) {
-          newReactions[post.userReaction as keyof typeof newReactions] = Math.max(0, newReactions[post.userReaction as keyof typeof newReactions] - 1);
-        }
-        
-        // Update new reaction count
         if (isTogglingOff) {
-          newReactions[reactionType as keyof typeof newReactions] = Math.max(0, newReactions[reactionType as keyof typeof newReactions] - 1);
+          newReactions[reactionType as keyof typeof newReactions] = Math.max(0, (newReactions[reactionType as keyof typeof newReactions] || 0) - 1);
         } else {
           newReactions[reactionType as keyof typeof newReactions] = (newReactions[reactionType as keyof typeof newReactions] || 0) + 1;
         }
         
+        const newUserReactions = isTogglingOff
+          ? currentUserReactions.filter(r => r !== reactionType)
+          : [...currentUserReactions, reactionType];
+        
         return {
           ...post,
           reactions: newReactions,
-          userReaction: isTogglingOff ? null : reactionType,
+          userReactions: newUserReactions,
         };
       }
       return post;
@@ -296,26 +293,24 @@ export default function CommunityScreen() {
     
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      const response = await authenticatedPost<{ reactions: any; userReaction: string | null }>(
+      const response = await authenticatedPost<{ reactionCounts: any; userReactions: string[] }>(
         `/api/community/react/${postId}`,
         { reactionType }
       );
       
       console.log('[Community] ✅ Reaction toggled successfully:', response);
       
-      // Update with actual server response
+      // Update with actual server response — do NOT close picker
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
             ...post,
-            reactions: response.reactions,
-            userReaction: response.userReaction,
+            reactions: response.reactionCounts,
+            userReactions: response.userReactions || [],
           };
         }
         return post;
       }));
-      
-      setShowReactionPicker(null);
     } catch (error) {
       console.error('[Community] ❌ Failed to toggle reaction:', error);
       // Revert optimistic update on error
@@ -330,6 +325,33 @@ export default function CommunityScreen() {
         console.error('[Community] Unexpected error toggling reaction:', errorMessage);
       }
     }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    console.log('[Community] User tapped delete on post:', postId);
+    Alert.alert(
+      'Delete post?',
+      'This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => console.log('[Community] User cancelled post deletion') },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[Community] User confirmed delete for post:', postId);
+            try {
+              const { authenticatedDelete } = await import('@/utils/api');
+              await authenticatedDelete(`/api/community/posts/${postId}`);
+              console.log('[Community] ✅ Post deleted successfully:', postId);
+              setPosts(prev => prev.filter(p => p.id !== postId));
+            } catch (error) {
+              console.error('[Community] ❌ Failed to delete post:', postId, error);
+              Alert.alert('Failed to delete post.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const loadCareMessages = async () => {
@@ -694,7 +716,9 @@ export default function CommunityScreen() {
               const categoryLabel = getCategoryLabel(post.category);
               
               const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
-              const hasUserReacted = !!post.userReaction;
+              const userReactions = post.userReactions || [];
+              const isOwnPost = !!user?.id && post.userId === user.id;
+              const activeReactionBadges = (Object.keys(reactions) as Array<keyof typeof reactions>).filter(k => reactions[k] > 0);
               
               return (
                 <View key={post.id} style={[styles.postCard, { backgroundColor: cardBg }]}>
@@ -717,17 +741,32 @@ export default function CommunityScreen() {
                         </View>
                       )}
                     </View>
-                    <TouchableOpacity 
-                      style={styles.flagButton}
-                      onPress={() => handleFlagPost(post.id)}
-                    >
-                      <IconSymbol 
-                        ios_icon_name="flag"
-                        android_material_icon_name="flag"
-                        size={18}
-                        color={textSecondaryColor}
-                      />
-                    </TouchableOpacity>
+                    <View style={styles.postHeaderActions}>
+                      {isOwnPost && (
+                        <TouchableOpacity
+                          style={styles.deleteButton}
+                          onPress={() => handleDeletePost(post.id)}
+                        >
+                          <IconSymbol
+                            ios_icon_name="trash"
+                            android_material_icon_name="delete"
+                            size={18}
+                            color={colors.error || '#E53935'}
+                          />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity 
+                        style={styles.flagButton}
+                        onPress={() => handleFlagPost(post.id)}
+                      >
+                        <IconSymbol 
+                          ios_icon_name="flag"
+                          android_material_icon_name="flag"
+                          size={18}
+                          color={textSecondaryColor}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   {post.scriptureReference && (
@@ -784,34 +823,36 @@ export default function CommunityScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Reaction Section - Show user's reaction if they've reacted, otherwise show Reactions button */}
+                  {/* Reaction Section */}
                   <View style={styles.reactionSection}>
-                    {hasUserReacted ? (
-                      <View style={styles.userReactionDisplay}>
-                        <TouchableOpacity 
-                          style={[styles.reactionBadge, styles.reactionBadgeActive]}
-                          onPress={() => {
-                            console.log('[Community] User tapped their reaction badge - opening reaction picker');
-                            setShowReactionPicker(post.id);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.reactionEmoji}>
-                            {getReactionEmoji(post.userReaction!)}
-                          </Text>
-                          {reactions[post.userReaction! as keyof typeof reactions] > 0 && (
-                            <Text style={[styles.reactionCount, { color: textSecondaryColor }]}>
-                              {reactions[post.userReaction! as keyof typeof reactions]}
+                    <View style={styles.reactionBadgesRow}>
+                      {activeReactionBadges.map(reactionKey => {
+                        const isUserReaction = userReactions.includes(reactionKey);
+                        const reactionCountVal = reactions[reactionKey];
+                        const reactionEmoji = getReactionEmoji(reactionKey);
+                        return (
+                          <TouchableOpacity
+                            key={reactionKey}
+                            style={[
+                              styles.reactionBadge,
+                              isUserReaction && styles.reactionBadgeActive,
+                            ]}
+                            onPress={() => handleReact(post.id, reactionKey)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.reactionEmoji}>
+                              {reactionEmoji}
                             </Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
+                            <Text style={[styles.reactionCount, { color: isUserReaction ? colors.primary : textSecondaryColor }]}>
+                              {reactionCountVal}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                      <TouchableOpacity
                         style={styles.reactButton}
                         onPress={() => {
                           console.log('[Community] User tapped React button for post:', post.id);
-                          // Check if user is authenticated before showing reaction picker
                           if (!user?.id) {
                             console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
                             setShowAuthPrompt(true);
@@ -822,10 +863,10 @@ export default function CommunityScreen() {
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                          React
+                          +
                         </Text>
                       </TouchableOpacity>
-                    )}
+                    </View>
                   </View>
 
                   {/* Send Care Button (only for care category posts) */}
@@ -873,76 +914,41 @@ export default function CommunityScreen() {
         >
           <View style={[styles.reactionPickerModal, { backgroundColor: cardBg }]}>
             <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
-              Choose a reaction
+              Choose reactions
             </Text>
-            <View style={styles.reactionGrid}>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'praying')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🙏
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Praying
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'holding')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  💙
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Holding you
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'light')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🕯️
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Light with you
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'amen')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  ✨
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Amen
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'growing')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🌱
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Growing together
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reactionOption}
-                onPress={() => showReactionPicker && handleReact(showReactionPicker, 'peace')}
-              >
-                <Text style={styles.reactionOptionEmoji}>
-                  🕊️
-                </Text>
-                <Text style={[styles.reactionOptionLabel, { color: textColor }]}>
-                  Peace
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {(() => {
+              const pickerPost = posts.find(p => p.id === showReactionPicker);
+              const pickerUserReactions = pickerPost?.userReactions || [];
+              const reactionOptions = [
+                { type: 'praying', emoji: '🙏', label: 'Praying' },
+                { type: 'holding', emoji: '💙', label: 'Holding you' },
+                { type: 'light', emoji: '🕯️', label: 'Light with you' },
+                { type: 'amen', emoji: '✨', label: 'Amen' },
+                { type: 'growing', emoji: '🌱', label: 'Growing together' },
+                { type: 'peace', emoji: '🕊️', label: 'Peace' },
+              ];
+              return (
+                <View style={styles.reactionGrid}>
+                  {reactionOptions.map(opt => {
+                    const isActive = pickerUserReactions.includes(opt.type);
+                    return (
+                      <TouchableOpacity
+                        key={opt.type}
+                        style={[styles.reactionOption, isActive && styles.reactionOptionActive]}
+                        onPress={() => showReactionPicker && handleReact(showReactionPicker, opt.type)}
+                      >
+                        <Text style={styles.reactionOptionEmoji}>
+                          {opt.emoji}
+                        </Text>
+                        <Text style={[styles.reactionOptionLabel, { color: isActive ? colors.primary : textColor }]}>
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })()}
           </View>
         </Pressable>
       </Modal>
@@ -1370,6 +1376,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  postHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  deleteButton: {
+    padding: spacing.xs,
+  },
   flagButton: {
     padding: spacing.xs,
   },
@@ -1415,6 +1429,12 @@ const styles = StyleSheet.create({
   },
   prayLabel: {
     fontSize: typography.caption,
+  },
+  reactionBadgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   reactionSection: {
     marginTop: spacing.md,
@@ -1509,6 +1529,11 @@ const styles = StyleSheet.create({
   },
   reactionOptionEmoji: {
     fontSize: 32,
+  },
+  reactionOptionActive: {
+    backgroundColor: colors.primaryLight || '#E8F5E9',
+    borderColor: colors.primary,
+    borderWidth: 1,
   },
   reactionOptionLabel: {
     fontSize: typography.caption,
