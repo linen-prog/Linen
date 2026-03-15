@@ -1,8 +1,8 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useRootNavigationState } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -10,26 +10,9 @@ import { GradientBackground } from '@/components/GradientBackground';
 export default function LandingScreen() {
   console.log('User viewing Landing/Orientation screen');
   const router = useRouter();
-  const navigationState = useRootNavigationState();
-  // Track whether the user pressed "Begin" before navigation was ready
-  const pendingNavigate = useRef(false);
-
-  // Once navigation becomes ready, execute any deferred navigation
-  useEffect(() => {
-    if (navigationState?.key && pendingNavigate.current) {
-      console.log('[LandingScreen] Navigation now ready — executing deferred navigate to /(tabs)');
-      pendingNavigate.current = false;
-      router.replace('/(tabs)');
-    }
-  }, [navigationState?.key, router]);
 
   const handleContinue = () => {
     console.log('User tapped Begin Your Journey button - entering app as guest');
-    if (!navigationState?.key) {
-      console.log('[LandingScreen] Navigation not ready yet, deferring navigate');
-      pendingNavigate.current = true;
-      return;
-    }
     router.replace('/(tabs)');
   };
 

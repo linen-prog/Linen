@@ -2,7 +2,7 @@
 import "react-native-reanimated";
 import React, { useEffect, Component, ReactNode } from "react";
 import { useFonts } from "expo-font";
-import { Stack, useRootNavigationState } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -136,37 +136,34 @@ export const unstable_settings = {
   initialRouteName: "index", // Start at landing page - users can skip auth
 };
 
-function RootLayoutContent() {
-  const networkState = useNetworkState();
+/**
+ * RootLayoutProviders — loads fonts and sets up non-navigation providers.
+ * Must NOT call any router/navigation hooks (useRouter, useRootNavigationState,
+ * usePathname, useSegments) because the navigator has not mounted yet at this level.
+ */
+function RootLayoutProviders() {
   const { isDark } = useTheme();
-  const navigationState = useRootNavigationState();
-  const [loaded, error] = useFonts({
+  const networkState = useNetworkState();
+  const [loaded, fontError] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Initialize notification handler early in app lifecycle
-  // CRITICAL: This must run once and complete before any notification operations
+  // Initialize notification handler early — no navigation calls here
   useEffect(() => {
     let isMounted = true;
-    
     const initNotifications = async () => {
       try {
-        console.log('[RootLayout] 🚀 App starting - initializing notification handler');
+        console.log('[RootLayout] App starting - initializing notification handler');
         await initializeNotificationHandler();
         if (isMounted) {
-          console.log('[RootLayout] ✅ Notification handler ready');
+          console.log('[RootLayout] Notification handler ready');
         }
-      } catch (error) {
-        console.error('[RootLayout] ❌ Failed to initialize notifications:', error);
+      } catch (err) {
+        console.error('[RootLayout] Failed to initialize notifications:', err);
       }
     };
-    
     initNotifications();
-    
-    // Cleanup function to prevent state updates after unmount
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -176,43 +173,32 @@ function RootLayoutContent() {
   }, [loaded]);
 
   useEffect(() => {
-    if (error) {
-      console.error('❌ Font loading error:', error);
+    if (fontError) {
+      console.error('Font loading error:', fontError);
       Alert.alert(
         "Application Error",
         "An unexpected error occurred while loading fonts. Please restart the app.",
         [{ text: "OK" }]
       );
     }
-  }, [error]);
+  }, [fontError]);
 
   useEffect(() => {
-    console.log('🔗 Backend URL:', BACKEND_URL);
-    console.log('🎨 Theme mode:', isDark ? 'dark' : 'light');
-    console.log('📱 Platform:', Platform.OS);
+    console.log('Backend URL:', BACKEND_URL);
+    console.log('Theme mode:', isDark ? 'dark' : 'light');
+    console.log('Platform:', Platform.OS);
   }, [isDark]);
 
   React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
+    if (!networkState.isConnected && networkState.isInternetReachable === false) {
       Alert.alert(
-        "🔌 You are offline",
+        "You are offline",
         "You can keep using the app! Your changes will be saved locally and synced when you are back online."
       );
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
   if (!loaded) {
-    return null;
-  }
-
-  // Don't render anything until Expo Router navigation state is initialized.
-  // Any navigation call (router.push/replace) before this point causes:
-  // "Cannot read properties of undefined (reading 'route')"
-  if (!navigationState?.key) {
-    console.log('[RootLayout] Navigation state not ready yet, waiting...');
     return null;
   }
 
@@ -250,42 +236,58 @@ function RootLayoutContent() {
   return (
     <>
       <StatusBar style={statusBarStyle} animated />
-        <NavigationThemeProvider value={currentTheme}>
-          <AuthProvider>
-        <NotificationProvider>
+      <NavigationThemeProvider value={currentTheme}>
+        <AuthProvider>
+          <NotificationProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
-                <Stack>
-                  {/* Landing/Orientation screen */}
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  {/* Auth screen (optional - users can skip) */}
-                  <Stack.Screen name="auth" options={{ headerShown: false }} />
-                  {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
-                  <Stack.Screen name="check-in" options={{ headerShown: false }} />
-                  {/* Open Gift screen (intermediate animation screen) */}
-                  <Stack.Screen name="open-gift" options={{ headerShown: false }} />
-                  {/* Daily Gift screen */}
-                  <Stack.Screen name="daily-gift" options={{ headerShown: false }} />
-                  {/* Somatic Practice screen */}
-                  <Stack.Screen name="somatic-practice" options={{ headerShown: false }} />
-                  {/* Artwork Canvas screen */}
-                  <Stack.Screen name="artwork-canvas" options={{ headerShown: false }} />
-                  {/* Weekly Recap screens */}
-                  <Stack.Screen name="weekly-recap" options={{ headerShown: false }} />
-                  <Stack.Screen name="weekly-recap-detail" options={{ headerShown: false }} />
-                  <Stack.Screen name="weekly-recap-history" options={{ headerShown: false }} />
-                  <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
-                  {/* Scripture Verification (dev tool) */}
-                  <Stack.Screen name="scripture-verification" options={{ headerShown: false }} />
-                  {/* Main app with tabs */}
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                </Stack>
-                <SystemBars style={statusBarStyle} />
+                {/* RootLayoutNav is a child of GestureHandlerRootView — safe to use
+                    navigation hooks here because the Stack mounts inside this component */}
+                <RootLayoutNav statusBarStyle={statusBarStyle} />
               </GestureHandlerRootView>
             </WidgetProvider>
           </NotificationProvider>
         </AuthProvider>
-        </NavigationThemeProvider>
+      </NavigationThemeProvider>
+    </>
+  );
+}
+
+/**
+ * RootLayoutNav — renders the Stack navigator.
+ * This component is a CHILD of the provider tree, so navigation hooks are safe here.
+ * useRootNavigationState is intentionally NOT used here either — the Stack itself
+ * is the navigator root, so there is no parent navigation state to wait for.
+ */
+function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" }) {
+  return (
+    <>
+      <Stack>
+        {/* Landing/Orientation screen */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        {/* Auth screen (optional - users can skip) */}
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
+        <Stack.Screen name="check-in" options={{ headerShown: false }} />
+        {/* Open Gift screen (intermediate animation screen) */}
+        <Stack.Screen name="open-gift" options={{ headerShown: false }} />
+        {/* Daily Gift screen */}
+        <Stack.Screen name="daily-gift" options={{ headerShown: false }} />
+        {/* Somatic Practice screen */}
+        <Stack.Screen name="somatic-practice" options={{ headerShown: false }} />
+        {/* Artwork Canvas screen */}
+        <Stack.Screen name="artwork-canvas" options={{ headerShown: false }} />
+        {/* Weekly Recap screens */}
+        <Stack.Screen name="weekly-recap" options={{ headerShown: false }} />
+        <Stack.Screen name="weekly-recap-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="weekly-recap-history" options={{ headerShown: false }} />
+        <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
+        {/* Scripture Verification (dev tool) */}
+        <Stack.Screen name="scripture-verification" options={{ headerShown: false }} />
+        {/* Main app with tabs */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+      <SystemBars style={statusBarStyle} />
     </>
   );
 }
@@ -294,7 +296,7 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary>
       <ThemeProvider>
-        <RootLayoutContent />
+        <RootLayoutProviders />
       </ThemeProvider>
     </AppErrorBoundary>
   );
