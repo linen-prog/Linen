@@ -7,6 +7,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import { NotificationBell } from "@/components/NotificationBell";
 import NotificationButton from '@/components/NotificationButton';
+import { authenticatedGet } from '@/utils/api';
 
 interface PersonalizationData {
   companionTagline: string | null;
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const [firstName, setFirstName] = useState('');
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCompanionBanner, setShowCompanionBanner] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -71,6 +73,17 @@ export default function HomeScreen() {
         } catch (error) {
           console.error('🏠 [Home] Failed to load personalization data:', error);
           // Personalization is optional, continue without it
+        }
+
+        // Check if companion preferences have been set (first-time tutorial)
+        try {
+          const prefsResponse = await authenticatedGet<{ preferencesSet: boolean }>('/api/companion/preferences');
+          console.log('🏠 [Home] Companion preferences check:', prefsResponse);
+          if (isMounted && prefsResponse.preferencesSet === false) {
+            setShowCompanionBanner(true);
+          }
+        } catch (error) {
+          console.error('🏠 [Home] Failed to check companion preferences:', error);
         }
       } catch (error) {
         console.error('🏠 [Home] Failed to load user data:', error);
@@ -183,6 +196,34 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
+
+            {showCompanionBanner && (
+              <TouchableOpacity
+                style={styles.companionBanner}
+                onPress={() => {
+                  console.log('🏠 [Home] Companion banner tapped — navigating to companion-preferences');
+                  router.push('/companion-preferences');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.companionBannerLeft}>
+                  <Text style={styles.companionBannerIcon}>✨</Text>
+                  <View style={styles.companionBannerText}>
+                    <Text style={styles.companionBannerTitle}>Personalize Your AI Companion</Text>
+                    <Text style={styles.companionBannerSubtitle}>Set your tone, directness & more →</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log('🏠 [Home] Companion banner dismissed');
+                    setShowCompanionBanner(false);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.companionBannerDismiss}>✕</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.primaryActions}>
               <TouchableOpacity 
@@ -439,5 +480,43 @@ const styles = StyleSheet.create({
   secondaryCardDescription: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  companionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ecfdf5',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  companionBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  companionBannerIcon: {
+    fontSize: 20,
+  },
+  companionBannerText: {
+    flex: 1,
+  },
+  companionBannerTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.primaryDark,
+    marginBottom: 2,
+  },
+  companionBannerSubtitle: {
+    fontSize: 12,
+    color: colors.primary,
+  },
+  companionBannerDismiss: {
+    fontSize: 14,
+    color: colors.textLight,
+    paddingLeft: spacing.sm,
   },
 });

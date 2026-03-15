@@ -1,652 +1,645 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
-import { authenticatedGet, authenticatedPut } from '@/utils/api';
+import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface CompanionPreferences {
-  companionTone: string | null;
-  companionDirectness: string | null;
-  companionSpiritualIntegration: string | null;
-  companionResponseLength: string | null;
-  companionCustomPreferences: string | null;
+  tone: string;
+  directness: string;
+  spiritualIntegration: string;
+  responseLength: string;
+  customPreferences: string;
+  preferencesSet: boolean;
 }
 
-const TONE_OPTIONS = [
-  { id: 'professional_therapist', label: 'Professional Therapist', description: 'Clinical, structured, evidence-based approach', icon: '🩺' },
-  { id: 'wise_elder', label: 'Wise Elder', description: 'Gentle wisdom from lived experience', icon: '🌳' },
-  { id: 'peer_friend', label: 'Peer Friend', description: 'Warm, relatable, walking alongside you', icon: '🤝' },
-  { id: 'gentle_friend', label: 'Gentle Friend', description: 'Soft, nurturing, deeply compassionate', icon: '🕊️' },
-  { id: 'pastor', label: 'Pastor - Spiritual Guidance', description: 'Scriptural grounding, compassionate care', icon: '📖' },
+interface Option {
+  value: string;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+// ─── Option Data ──────────────────────────────────────────────────────────────
+
+const TONE_OPTIONS: Option[] = [
+  { value: 'gentle_friend', icon: '🌿', title: 'Gentle Friend', description: 'Warm, conversational, like talking with a wise friend' },
+  { value: 'compassionate_guide', icon: '🕊️', title: 'Compassionate Guide', description: 'More gentle, teaching and guiding' },
+  { value: 'contemplative', icon: '🌙', title: 'Contemplative Companion', description: 'Quieter, more spacious, using fewer words' },
+  { value: 'direct_clear', icon: '⚡', title: 'Direct & Clear', description: 'Straightforward, less metaphor, practical' },
+  { value: 'poetic', icon: '✨', title: 'Poetic & Reflective', description: 'More imagery, contemplative language, lyrical' },
 ];
 
-const DIRECTNESS_OPTIONS = [
-  { id: 'gentle_exploratory', label: 'Gentle & Exploratory', description: 'Asks questions, invites reflection', icon: '🌱' },
-  { id: 'balanced', label: 'Balanced', description: 'Mix of questions and observations', icon: '⚖️' },
-  { id: 'clear_direct', label: 'Clear & Direct', description: 'Names patterns, offers insights', icon: '🎯' },
+const DIRECTNESS_OPTIONS: Option[] = [
+  { value: 'gentle_indirect', icon: '🌱', title: 'Gentle & Indirect', description: 'More questions, less direct naming, inviting you to discover' },
+  { value: 'balanced', icon: '⚖️', title: 'Balanced', description: 'Name patterns with compassion when helpful' },
+  { value: 'direct_clear', icon: '🎯', title: 'Direct & Clear', description: 'Calls things out explicitly, names patterns directly' },
 ];
 
-const SPIRITUAL_OPTIONS = [
-  { id: 'frequent', label: 'Frequent', description: 'Regular scripture references and spiritual insights', icon: '✝️' },
-  { id: 'balanced', label: 'Balanced', description: 'Spiritual when relevant, not forced', icon: '🕊️' },
-  { id: 'minimal', label: 'Minimal', description: 'Occasional, only when deeply relevant', icon: '🌿' },
+const SPIRITUAL_OPTIONS: Option[] = [
+  { value: 'scripture_rich', icon: '📖', title: 'Scripture-Rich', description: 'More frequent Bible references woven throughout' },
+  { value: 'balanced', icon: '⚖️', title: 'Balanced Integration', description: '1-2 scripture references per conversation when relevant' },
+  { value: 'light_touch', icon: '🕯️', title: 'Light Touch', description: 'Scripture only when specifically relevant or requested' },
+  { value: 'minimal', icon: '🧘', title: 'Minimal', description: 'Focus on somatic/psychological insights, rarely use religious language' },
 ];
 
-const LENGTH_OPTIONS = [
-  { id: 'brief', label: 'Brief', description: '1-2 sentences, concise and focused', icon: '💬' },
-  { id: 'balanced', label: 'Balanced', description: '2-4 sentences, thoughtful but not overwhelming', icon: '📝' },
-  { id: 'detailed', label: 'Detailed', description: '4+ sentences, thorough and reflective', icon: '📖' },
+const LENGTH_OPTIONS: Option[] = [
+  { value: 'brief', icon: '✦', title: 'Brief & Focused', description: 'Shorter responses, 1-3 sentences typically' },
+  { value: 'concise', icon: '📝', title: 'Concise', description: 'To the point without being abrupt, 2-3 sentences' },
+  { value: 'varies', icon: '🔄', title: 'Varies', description: 'Adjusts based on context' },
+  { value: 'detailed', icon: '📚', title: 'In-Depth', description: 'Longer responses with more teaching and exploration' },
 ];
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: spacing.lg,
-    paddingBottom: 100,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  headerTitle: {
-    fontSize: typography.h1,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  headerSubtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    fontStyle: 'italic',
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  sectionDescription: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
-  optionCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  optionCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  optionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  optionIcon: {
-    fontSize: 24,
-  },
-  optionLabel: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    flex: 1,
-  },
-  optionDescription: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginLeft: 32,
-  },
-  customPreferencesCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  customPreferencesLabel: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  customPreferencesDescription: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-    lineHeight: 18,
-  },
-  textInput: {
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.body,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-  resetButton: {
-    backgroundColor: colors.border,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  resetButtonText: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-  previewCard: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  previewTitle: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  previewText: {
-    fontSize: typography.bodySmall,
-    color: colors.text,
-    lineHeight: 18,
-  },
-  confirmModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  confirmModalContent: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-  },
-  confirmModalTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  confirmModalMessage: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-  },
-  confirmModalButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  confirmModalButton: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  confirmModalButtonText: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-});
+const STEPS = [
+  { key: 'tone', question: 'How would you like me to speak?', description: 'Choose the voice and style that feels most natural and supportive for you.', options: TONE_OPTIONS },
+  { key: 'directness', question: 'How direct should I be?', description: 'Some people prefer gentle exploration; others want clear, direct observations.', options: DIRECTNESS_OPTIONS },
+  { key: 'spiritualIntegration', question: 'How much scripture integration?', description: 'Choose how often you\'d like scripture and spiritual language woven into our conversations.', options: SPIRITUAL_OPTIONS },
+  { key: 'responseLength', question: 'How much should I say?', description: 'Find the response length that feels right — brief and focused, or more expansive.', options: LENGTH_OPTIONS },
+  { key: 'customPreferences', question: 'Anything else you\'d like me to know?', description: 'Share any other preferences that would help me support you better.', options: [] },
+];
+
+const TONE_LABELS: Record<string, string> = {
+  gentle_friend: 'Gentle Friend',
+  compassionate_guide: 'Compassionate Guide',
+  contemplative: 'Contemplative',
+  direct_clear: 'Direct & Clear',
+  poetic: 'Poetic',
+};
+
+const DIRECTNESS_LABELS: Record<string, string> = {
+  gentle_indirect: 'Gentle',
+  balanced: 'Balanced',
+  direct_clear: 'Direct',
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function ProgressDots({ total, current }: { total: number; current: number }) {
+  return (
+    <View style={styles.progressDots}>
+      {Array.from({ length: total }).map((_, i) => {
+        const isActive = i <= current;
+        return (
+          <View
+            key={i}
+            style={[
+              styles.dot,
+              isActive ? styles.dotActive : styles.dotInactive,
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+function OptionCard({
+  option,
+  selected,
+  onPress,
+}: {
+  option: Option;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.optionCard, selected && styles.optionCardSelected]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.optionRow}>
+        <Text style={styles.optionIcon}>{option.icon}</Text>
+        <View style={styles.optionTextContainer}>
+          <Text style={[styles.optionTitle, selected && styles.optionTitleSelected]}>
+            {option.title}
+          </Text>
+          <Text style={styles.optionDescription}>{option.description}</Text>
+        </View>
+        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
+          {selected && <View style={styles.radioInner} />}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function CompanionPreferencesScreen() {
   const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
-  
-  const [preferences, setPreferences] = useState<CompanionPreferences>({
-    companionTone: null,
-    companionDirectness: null,
-    companionSpiritualIntegration: null,
-    companionResponseLength: null,
-    companionCustomPreferences: null,
-  });
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const [tone, setTone] = useState('gentle_friend');
+  const [directness, setDirectness] = useState('balanced');
+  const [spiritualIntegration, setSpiritualIntegration] = useState('balanced');
+  const [responseLength, setResponseLength] = useState('varies');
+  const [customPreferences, setCustomPreferences] = useState('');
+
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const MAX_CUSTOM_CHARS = 500;
 
   useEffect(() => {
-    console.log('CompanionPreferencesScreen: Loading preferences');
+    console.log('CompanionPreferences: Screen mounted, loading preferences');
     loadPreferences();
   }, []);
 
   const loadPreferences = async () => {
     try {
       setLoading(true);
-      console.log('CompanionPreferencesScreen: Fetching preferences from API');
-      const response = await authenticatedGet<any>('/api/profile');
-      console.log('CompanionPreferencesScreen: Preferences loaded:', response);
-      
-      setPreferences({
-        companionTone: response.companionTone || null,
-        companionDirectness: response.companionDirectness || null,
-        companionSpiritualIntegration: response.companionSpiritualIntegration || null,
-        companionResponseLength: response.companionResponseLength || null,
-        companionCustomPreferences: response.companionCustomPreferences || null,
-      });
+      console.log('CompanionPreferences: GET /api/companion/preferences');
+      const data = await authenticatedGet<CompanionPreferences>('/api/companion/preferences');
+      console.log('CompanionPreferences: Preferences loaded:', data);
+      if (data.tone) setTone(data.tone);
+      if (data.directness) setDirectness(data.directness);
+      if (data.spiritualIntegration) setSpiritualIntegration(data.spiritualIntegration);
+      if (data.responseLength) setResponseLength(data.responseLength);
+      if (data.customPreferences) setCustomPreferences(data.customPreferences);
     } catch (error) {
-      console.error('CompanionPreferencesScreen: Failed to load preferences -', error);
+      console.error('CompanionPreferences: Failed to load preferences:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const animateStep = (next: () => void) => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+    setTimeout(next, 150);
+  };
+
+  const handleNext = () => {
+    console.log(`CompanionPreferences: Step ${currentStep + 1} → ${currentStep + 2}, value:`, getCurrentValue());
+    animateStep(() => setCurrentStep((s) => s + 1));
+  };
+
+  const handleBack = () => {
+    console.log(`CompanionPreferences: Step ${currentStep + 1} → ${currentStep}`);
+    animateStep(() => setCurrentStep((s) => s - 1));
+  };
+
+  const handleCancel = () => {
+    console.log('CompanionPreferences: Cancel pressed, navigating back');
+    router.back();
+  };
+
   const handleSave = async () => {
-    console.log('CompanionPreferencesScreen: Saving preferences -', preferences);
+    console.log('CompanionPreferences: Save pressed — POST /api/companion/preferences', {
+      tone, directness, spiritualIntegration, responseLength, customPreferences,
+    });
     setSaving(true);
     try {
-      await authenticatedPut('/api/profile', {
-        companionTone: preferences.companionTone,
-        companionDirectness: preferences.companionDirectness,
-        companionSpiritualIntegration: preferences.companionSpiritualIntegration,
-        companionResponseLength: preferences.companionResponseLength,
-        companionCustomPreferences: preferences.companionCustomPreferences,
+      const result = await authenticatedPost('/api/companion/preferences', {
+        tone,
+        directness,
+        spiritualIntegration,
+        responseLength,
+        customPreferences: customPreferences.trim() || undefined,
       });
-      console.log('CompanionPreferencesScreen: Preferences saved successfully');
-      router.back();
+      console.log('CompanionPreferences: Preferences saved successfully:', result);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        router.back();
+      }, 800);
     } catch (error) {
-      console.error('CompanionPreferencesScreen: Failed to save preferences -', error);
+      console.error('CompanionPreferences: Failed to save preferences:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = async () => {
-    console.log('CompanionPreferencesScreen: Resetting preferences to defaults');
-    setShowResetModal(false);
-    setSaving(true);
-    try {
-      await authenticatedPut('/api/profile', {
-        companionTone: null,
-        companionDirectness: null,
-        companionSpiritualIntegration: null,
-        companionResponseLength: null,
-        companionCustomPreferences: null,
-      });
-      console.log('CompanionPreferencesScreen: Preferences reset successfully');
-      
-      setPreferences({
-        companionTone: null,
-        companionDirectness: null,
-        companionSpiritualIntegration: null,
-        companionResponseLength: null,
-        companionCustomPreferences: null,
-      });
-    } catch (error) {
-      console.error('CompanionPreferencesScreen: Failed to reset preferences -', error);
-    } finally {
-      setSaving(false);
-    }
+  const getCurrentValue = () => {
+    const step = STEPS[currentStep];
+    if (step.key === 'tone') return tone;
+    if (step.key === 'directness') return directness;
+    if (step.key === 'spiritualIntegration') return spiritualIntegration;
+    if (step.key === 'responseLength') return responseLength;
+    return customPreferences;
   };
 
-  const getPreviewText = () => {
-    const toneText = preferences.companionTone 
-      ? TONE_OPTIONS.find(o => o.id === preferences.companionTone)?.label 
-      : 'Default';
-    const directnessText = preferences.companionDirectness 
-      ? DIRECTNESS_OPTIONS.find(o => o.id === preferences.companionDirectness)?.label 
-      : 'Default';
-    const spiritualText = preferences.companionSpiritualIntegration 
-      ? SPIRITUAL_OPTIONS.find(o => o.id === preferences.companionSpiritualIntegration)?.label 
-      : 'Default';
-    const lengthText = preferences.companionResponseLength 
-      ? LENGTH_OPTIONS.find(o => o.id === preferences.companionResponseLength)?.label 
-      : 'Default';
-
-    const previewTextValue = `Your companion will respond with a ${toneText} tone, ${directnessText} directness, ${spiritualText} spiritual integration, and ${lengthText} response length.`;
-    return previewTextValue;
+  const handleOptionSelect = (value: string) => {
+    const step = STEPS[currentStep];
+    console.log(`CompanionPreferences: Selected ${step.key} = ${value}`);
+    if (step.key === 'tone') setTone(value);
+    else if (step.key === 'directness') setDirectness(value);
+    else if (step.key === 'spiritualIntegration') setSpiritualIntegration(value);
+    else if (step.key === 'responseLength') setResponseLength(value);
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Stack.Screen
-          options={{
-            title: 'Companion Preferences',
-            headerShown: true,
-            headerBackTitle: 'Back',
-          }}
-        />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading your preferences…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  const step = STEPS[currentStep];
+  const isLastStep = currentStep === STEPS.length - 1;
+  const isFirstStep = currentStep === 0;
+  const currentValue = getCurrentValue();
+  const charCount = customPreferences.length;
+  const toneLabel = TONE_LABELS[tone] || tone;
+  const directnessLabel = DIRECTNESS_LABELS[directness] || directness;
+  const subtitleText = `${toneLabel} · ${directnessLabel}`;
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <Stack.Screen
-        options={{
-          title: 'Companion Preferences',
-          headerShown: true,
-          headerBackTitle: 'Back',
-        }}
-      />
-      <KeyboardAvoidingView 
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
       >
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.contentContainer}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              Customize Your Companion
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              Shape how your AI companion responds to you. These preferences help create a more personal experience.
-            </Text>
-          </View>
-
-          {/* Tone Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Tone
-            </Text>
-            <Text style={styles.sectionDescription}>
-              How would you like your companion to speak with you?
-            </Text>
-            {TONE_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.companionTone === option.id && styles.optionCardSelected,
-                ]}
-                onPress={() => setPreferences({ ...preferences, companionTone: option.id })}
-              >
-                <View style={styles.optionHeader}>
-                  <Text style={styles.optionIcon}>
-                    {option.icon}
-                  </Text>
-                  <Text style={styles.optionLabel}>
-                    {option.label}
-                  </Text>
-                  {preferences.companionTone === option.id && (
-                    <IconSymbol 
-                      ios_icon_name="checkmark" 
-                      android_material_icon_name="check" 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  )}
-                </View>
-                <Text style={styles.optionDescription}>
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Directness Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Directness
-            </Text>
-            <Text style={styles.sectionDescription}>
-              How direct should your companion be in observations and insights?
-            </Text>
-            {DIRECTNESS_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.companionDirectness === option.id && styles.optionCardSelected,
-                ]}
-                onPress={() => setPreferences({ ...preferences, companionDirectness: option.id })}
-              >
-                <View style={styles.optionHeader}>
-                  <Text style={styles.optionIcon}>
-                    {option.icon}
-                  </Text>
-                  <Text style={styles.optionLabel}>
-                    {option.label}
-                  </Text>
-                  {preferences.companionDirectness === option.id && (
-                    <IconSymbol 
-                      ios_icon_name="checkmark" 
-                      android_material_icon_name="check" 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  )}
-                </View>
-                <Text style={styles.optionDescription}>
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Spiritual Integration Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Spiritual Integration
-            </Text>
-            <Text style={styles.sectionDescription}>
-              How often would you like scripture references and spiritual insights?
-            </Text>
-            {SPIRITUAL_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.companionSpiritualIntegration === option.id && styles.optionCardSelected,
-                ]}
-                onPress={() => setPreferences({ ...preferences, companionSpiritualIntegration: option.id })}
-              >
-                <View style={styles.optionHeader}>
-                  <Text style={styles.optionIcon}>
-                    {option.icon}
-                  </Text>
-                  <Text style={styles.optionLabel}>
-                    {option.label}
-                  </Text>
-                  {preferences.companionSpiritualIntegration === option.id && (
-                    <IconSymbol 
-                      ios_icon_name="checkmark" 
-                      android_material_icon_name="check" 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  )}
-                </View>
-                <Text style={styles.optionDescription}>
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Response Length Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Response Length
-            </Text>
-            <Text style={styles.sectionDescription}>
-              How detailed should your companion&apos;s responses be?
-            </Text>
-            {LENGTH_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.companionResponseLength === option.id && styles.optionCardSelected,
-                ]}
-                onPress={() => setPreferences({ ...preferences, companionResponseLength: option.id })}
-              >
-                <View style={styles.optionHeader}>
-                  <Text style={styles.optionIcon}>
-                    {option.icon}
-                  </Text>
-                  <Text style={styles.optionLabel}>
-                    {option.label}
-                  </Text>
-                  {preferences.companionResponseLength === option.id && (
-                    <IconSymbol 
-                      ios_icon_name="checkmark" 
-                      android_material_icon_name="check" 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  )}
-                </View>
-                <Text style={styles.optionDescription}>
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Custom Preferences Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Custom Preferences
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Any other preferences or guidance for your companion? (Optional)
-            </Text>
-            <View style={styles.customPreferencesCard}>
-              <TextInput
-                style={styles.textInput}
-                value={preferences.companionCustomPreferences || ''}
-                onChangeText={(text) => setPreferences({ ...preferences, companionCustomPreferences: text })}
-                placeholder="e.g., 'Please use more metaphors' or 'I prefer shorter responses when I'm anxious'"
-                placeholderTextColor={colors.textLight}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
-          </View>
-
-          {/* Preview */}
-          <View style={styles.previewCard}>
-            <Text style={styles.previewTitle}>
-              Preview
-            </Text>
-            <Text style={styles.previewText}>
-              {getPreviewText()}
-            </Text>
-          </View>
-
-          {/* Save Button */}
-          <TouchableOpacity 
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>
-                Save Preferences
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Reset Button */}
-          <TouchableOpacity 
-            style={styles.resetButton}
-            onPress={() => setShowResetModal(true)}
-            disabled={saving}
-          >
-            <Text style={styles.resetButtonText}>
-              Reset to Defaults
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Reset Confirmation Modal */}
-      <Modal
-        visible={showResetModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowResetModal(false)}
-      >
-        <View style={styles.confirmModalOverlay}>
-          <View style={styles.confirmModalContent}>
-            <Text style={styles.confirmModalTitle}>
-              Reset Preferences
-            </Text>
-            <Text style={styles.confirmModalMessage}>
-              Are you sure you want to reset all companion preferences to their defaults? This will clear all your customizations.
-            </Text>
-            <View style={styles.confirmModalButtons}>
-              <TouchableOpacity 
-                style={[styles.confirmModalButton, { backgroundColor: colors.border }]}
-                onPress={() => setShowResetModal(false)}
-              >
-                <Text style={[styles.confirmModalButtonText, { color: colors.text }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.confirmModalButton, { backgroundColor: colors.error }]}
-                onPress={handleReset}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
-                    Reset
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <ProgressDots total={STEPS.length} current={currentStep} />
+          <Text style={styles.stepCounter}>
+            {currentStep + 1}
+          </Text>
+          <Text style={styles.stepCounterOf}>
+            {' / '}
+          </Text>
+          <Text style={styles.stepCounter}>
+            {STEPS.length}
+          </Text>
         </View>
-      </Modal>
+
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View style={{ opacity: fadeAnim }}>
+            {/* Question header */}
+            <Text style={styles.question}>{step.question}</Text>
+            <Text style={styles.description}>{step.description}</Text>
+
+            {/* Options or custom text */}
+            {step.options.length > 0 ? (
+              <View style={styles.optionsList}>
+                {step.options.map((option) => (
+                  <OptionCard
+                    key={option.value}
+                    option={option}
+                    selected={currentValue === option.value}
+                    onPress={() => handleOptionSelect(option.value)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.customSection}>
+                <Text style={styles.customLabel}>Optional</Text>
+                <TextInput
+                  style={styles.customInput}
+                  value={customPreferences}
+                  onChangeText={(text) => {
+                    if (text.length <= MAX_CUSTOM_CHARS) {
+                      setCustomPreferences(text);
+                    }
+                  }}
+                  placeholder="e.g. I prefer concrete examples over abstract concepts. Please use gender-neutral language."
+                  placeholderTextColor={colors.textLight}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.charHint}>
+                  {charCount}
+                </Text>
+                <Text style={styles.charHintOf}>
+                  {' / '}
+                </Text>
+                <Text style={styles.charHint}>
+                  {MAX_CUSTOM_CHARS}
+                </Text>
+              </View>
+            )}
+
+            {/* Summary preview on last step */}
+            {isLastStep && (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Your selections</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Tone</Text>
+                  <Text style={styles.summaryValue}>{TONE_LABELS[tone] || tone}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Directness</Text>
+                  <Text style={styles.summaryValue}>{DIRECTNESS_LABELS[directness] || directness}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Scripture</Text>
+                  <Text style={styles.summaryValue}>{spiritualIntegration.replace('_', ' ')}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Length</Text>
+                  <Text style={styles.summaryValue}>{responseLength}</Text>
+                </View>
+              </View>
+            )}
+          </Animated.View>
+        </ScrollView>
+
+        {/* Bottom buttons */}
+        <View style={styles.bottomBar}>
+          {isFirstStep ? (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleCancel}>
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleBack}>
+              <Text style={styles.secondaryButtonText}>Back</Text>
+            </TouchableOpacity>
+          )}
+
+          {isLastStep ? (
+            <TouchableOpacity
+              style={[styles.primaryButton, saveSuccess && styles.primaryButtonSuccess]}
+              onPress={handleSave}
+              disabled={saving || saveSuccess}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : saveSuccess ? (
+                <Text style={styles.primaryButtonText}>Saved!</Text>
+              ) : (
+                <Text style={styles.primaryButtonText}>Save Preferences</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.primaryButton} onPress={handleNext}>
+              <Text style={styles.primaryButtonText}>Next</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const EMERALD_50 = '#ecfdf5';
+const EMERALD_200 = '#a7f3d0';
+const EMERALD_500 = '#10b981';
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fafaf9',
+  },
+  flex: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  loadingText: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: 2,
+  },
+  progressDots: {
+    flexDirection: 'row',
+    gap: 6,
+    marginRight: spacing.sm,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    backgroundColor: EMERALD_500,
+  },
+  dotInactive: {
+    backgroundColor: '#e7e5e4',
+  },
+  stepCounter: {
+    fontSize: typography.caption,
+    color: colors.textLight,
+    fontWeight: typography.medium,
+  },
+  stepCounterOf: {
+    fontSize: typography.caption,
+    color: colors.textLight,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  question: {
+    fontSize: 26,
+    fontWeight: typography.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    lineHeight: 34,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  description: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  optionsList: {
+    gap: 12,
+  },
+  optionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+  },
+  optionCardSelected: {
+    backgroundColor: EMERALD_50,
+    borderWidth: 2,
+    borderColor: EMERALD_200,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  optionIcon: {
+    fontSize: 22,
+    width: 30,
+    textAlign: 'center',
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  optionTitleSelected: {
+    color: colors.primaryDark,
+  },
+  optionDescription: {
+    fontSize: typography.bodySmall,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d6d3d1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: EMERALD_500,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: EMERALD_500,
+  },
+  customSection: {
+    gap: 6,
+  },
+  customLabel: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  customInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: typography.body,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+    minHeight: 120,
+    textAlignVertical: 'top',
+    lineHeight: 22,
+  },
+  charHint: {
+    fontSize: typography.caption,
+    color: colors.textLight,
+    textAlign: 'right',
+  },
+  charHintOf: {
+    fontSize: typography.caption,
+    color: colors.textLight,
+    textAlign: 'right',
+  },
+  summaryCard: {
+    backgroundColor: EMERALD_50,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: spacing.xl,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: EMERALD_200,
+  },
+  summaryTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.primary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryKey: {
+    fontSize: typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  summaryValue: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    textTransform: 'capitalize',
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#e7e5e4',
+    backgroundColor: '#fafaf9',
+  },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: EMERALD_500,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  primaryButtonSuccess: {
+    backgroundColor: colors.primary,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: '#e7e5e4',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  secondaryButtonText: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+  },
+});
