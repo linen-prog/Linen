@@ -405,7 +405,14 @@ export default function CheckInScreen() {
             text: 'View Community',
             onPress: () => {
               console.log('[CheckIn] User navigating to community page');
-              router.push('/(tabs)/community');
+              setTimeout(() => {
+                try {
+                  router.push('/(tabs)/community');
+                } catch (navError) {
+                  console.error('[CheckIn] Navigation error:', navError);
+                  router.replace('/(tabs)');
+                }
+              }, 100);
             }
           },
           {
