@@ -2,7 +2,7 @@
 import "react-native-reanimated";
 import React, { useEffect, Component, ReactNode } from "react";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useRootNavigationState } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -139,6 +139,7 @@ export const unstable_settings = {
 function RootLayoutContent() {
   const networkState = useNetworkState();
   const { isDark } = useTheme();
+  const navigationState = useRootNavigationState();
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -204,6 +205,14 @@ function RootLayoutContent() {
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
   if (!loaded) {
+    return null;
+  }
+
+  // Don't render anything until Expo Router navigation state is initialized.
+  // Any navigation call (router.push/replace) before this point causes:
+  // "Cannot read properties of undefined (reading 'route')"
+  if (!navigationState?.key) {
+    console.log('[RootLayout] Navigation state not ready yet, waiting...');
     return null;
   }
 

@@ -71,9 +71,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     ? systemColorScheme === 'dark'
     : themeMode === 'dark';
 
-  if (isLoading) {
-    return null;
-  }
+  // Don't block rendering — render children immediately with default theme.
+  // The theme will update once AsyncStorage resolves (usually <50ms).
+  // Returning null here caused the entire navigator tree to unmount/remount,
+  // which triggered "Cannot read properties of undefined (reading 'route')".
 
   return (
     <ThemeContext.Provider value={{ themeMode, isDark, setThemeMode }}>
