@@ -1,12 +1,12 @@
 
 import "react-native-reanimated";
-import React, { useEffect, Component, ReactNode } from "react";
+import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Alert, Platform, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DefaultTheme,
@@ -20,114 +20,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { BACKEND_URL } from "@/utils/api";
-import { colors, spacing, typography, borderRadius } from "@/styles/commonStyles";
+import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
 // Note: Error logging is auto-initialized via index.ts import
-
-// Error Boundary to catch React component crashes
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.error('[ErrorBoundary] Caught error:', error);
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Error details:', error, errorInfo);
-  }
-
-  handleReset = () => {
-    console.log('[ErrorBoundary] User requested app reset');
-    this.setState({ hasError: false, error: null });
-  };
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={errorStyles.container}>
-          <View style={errorStyles.content}>
-            <Text style={errorStyles.title}>Something went wrong</Text>
-            <Text style={errorStyles.message}>
-              The app encountered an unexpected error. Please try restarting.
-            </Text>
-            {this.state.error && (
-              <Text style={errorStyles.errorDetails}>
-                {this.state.error.message}
-              </Text>
-            )}
-            <TouchableOpacity 
-              style={errorStyles.button}
-              onPress={this.handleReset}
-            >
-              <Text style={errorStyles.buttonText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-const errorStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  content: {
-    alignItems: 'center',
-    maxWidth: 400,
-  },
-  title: {
-    fontSize: typography.h2,
-    fontWeight: typography.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  errorDetails: {
-    fontSize: typography.small,
-    color: colors.error,
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.full,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-  },
-});
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -140,6 +35,9 @@ export const unstable_settings = {
  * RootLayoutProviders — loads fonts and sets up non-navigation providers.
  * Must NOT call any router/navigation hooks (useRouter, useRootNavigationState,
  * usePathname, useSegments) because the navigator has not mounted yet at this level.
+ *
+ * CRITICAL: This component NEVER returns null. The Stack is always mounted.
+ * SplashScreen covers the UI while fonts load — no conditional rendering needed.
  */
 function RootLayoutProviders() {
   const { isDark } = useTheme();
@@ -166,15 +64,21 @@ function RootLayoutProviders() {
     return () => { isMounted = false; };
   }, []);
 
+  // Hide splash screen once fonts are loaded OR if there's a font error.
+  // Never block on fonts — the Stack must always stay mounted.
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (loaded || fontError) {
+      if (fontError) {
+        console.error('[RootLayout] Font loading error:', fontError);
+      }
+      SplashScreen.hideAsync().catch((err) => {
+        console.warn('[RootLayout] SplashScreen.hideAsync failed:', err);
+      });
     }
-  }, [loaded]);
+  }, [loaded, fontError]);
 
   useEffect(() => {
     if (fontError) {
-      console.error('Font loading error:', fontError);
       Alert.alert(
         "Application Error",
         "An unexpected error occurred while loading fonts. Please restart the app.",
@@ -184,12 +88,12 @@ function RootLayoutProviders() {
   }, [fontError]);
 
   useEffect(() => {
-    console.log('Backend URL:', BACKEND_URL);
-    console.log('Theme mode:', isDark ? 'dark' : 'light');
-    console.log('Platform:', Platform.OS);
+    console.log('[RootLayout] Backend URL:', BACKEND_URL);
+    console.log('[RootLayout] Theme mode:', isDark ? 'dark' : 'light');
+    console.log('[RootLayout] Platform:', Platform.OS);
   }, [isDark]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!networkState.isConnected && networkState.isInternetReachable === false) {
       Alert.alert(
         "You are offline",
@@ -229,6 +133,8 @@ function RootLayoutProviders() {
   const currentTheme = isDark ? CustomDarkTheme : CustomLightTheme;
   const statusBarStyle = isDark ? "light" : "dark";
 
+  // NEVER return null here — the Stack must always be mounted.
+  // The splash screen covers the UI while fonts are loading.
   return (
     <>
       <StatusBar style={statusBarStyle} animated />
@@ -237,8 +143,6 @@ function RootLayoutProviders() {
           <NotificationProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
-                {/* RootLayoutNav is a child of GestureHandlerRootView — safe to use
-                    navigation hooks here because the Stack mounts inside this component */}
                 <RootLayoutNav statusBarStyle={statusBarStyle} />
               </GestureHandlerRootView>
             </WidgetProvider>
@@ -250,10 +154,9 @@ function RootLayoutProviders() {
 }
 
 /**
- * RootLayoutNav — renders the Stack navigator.
+ * RootLayoutNav — renders the Stack navigator unconditionally.
  * This component is a CHILD of the provider tree, so navigation hooks are safe here.
- * useRootNavigationState is intentionally NOT used here either — the Stack itself
- * is the navigator root, so there is no parent navigation state to wait for.
+ * The Stack is NEVER wrapped in a conditional — it must always stay mounted.
  */
 function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" }) {
   return (
@@ -288,12 +191,24 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
   );
 }
 
+/**
+ * RootLayout — the root export for expo-router.
+ *
+ * Structure (outermost → innermost):
+ *   ThemeProvider (reads AsyncStorage, never returns null)
+ *     └─ RootLayoutProviders (loads fonts, sets up providers, never returns null)
+ *          └─ Stack (always mounted — NEVER conditionally rendered)
+ *
+ * There is intentionally NO ErrorBoundary wrapping the Stack at this level.
+ * An ErrorBoundary that replaces the Stack with a fallback UI causes
+ * "Cannot read properties of undefined (reading 'route')" when it resets,
+ * because expo-router loses its navigator reference. Individual screens
+ * should handle their own errors internally.
+ */
 export default function RootLayout() {
   return (
-    <AppErrorBoundary>
-      <ThemeProvider>
-        <RootLayoutProviders />
-      </ThemeProvider>
-    </AppErrorBoundary>
+    <ThemeProvider>
+      <RootLayoutProviders />
+    </ThemeProvider>
   );
 }
