@@ -200,7 +200,11 @@ export default function CompanionPreferencesScreen() {
 
   const handleCancel = () => {
     console.log('CompanionPreferences: Cancel pressed, navigating back');
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
   };
 
   const handleSave = async () => {
@@ -219,7 +223,11 @@ export default function CompanionPreferencesScreen() {
       console.log('CompanionPreferences: Preferences saved successfully:', result);
       setSaveSuccess(true);
       setTimeout(() => {
-        router.back();
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)');
+        }
       }, 800);
     } catch (error) {
       console.error('CompanionPreferences: Failed to save preferences:', error);
