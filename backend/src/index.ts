@@ -13,6 +13,7 @@ import { registerWeeklyPracticeRoutes } from './routes/weekly-practice.js';
 import { registerWeeklyRecapRoutes } from './routes/weekly-recap.js';
 import { registerProfileRoutes } from './routes/profile.js';
 import { registerAuthHealthRoutes } from './routes/auth-health.js';
+import { registerCompanionPreferencesRoutes } from './routes/companion-preferences.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -51,6 +52,7 @@ registerArtworkRoutes(app);
 registerWeeklyPracticeRoutes(app);
 registerWeeklyRecapRoutes(app);
 registerProfileRoutes(app);
+registerCompanionPreferencesRoutes(app);
 
 await app.run();
 app.logger.info('Application running');

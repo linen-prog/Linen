@@ -222,18 +222,6 @@ export async function initializeDatabase(db: any, app?: App) {
     `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS "weekly_practice_completions" (
-        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
-        "exercise_id" uuid NOT NULL REFERENCES "somatic_exercises"("id") ON DELETE CASCADE,
-        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
-        "reflection_notes" text,
-        "completed_at" timestamp NOT NULL DEFAULT now(),
-        UNIQUE("user_id", "weekly_theme_id")
-      )
-    `);
-
-    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "weekly_themes" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "week_start_date" date NOT NULL UNIQUE,
@@ -244,6 +232,18 @@ export async function initializeDatabase(db: any, app?: App) {
         "featured_exercise_id" uuid REFERENCES "somatic_exercises"("id") ON DELETE SET NULL,
         "reflection_prompt" text,
         "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "weekly_practice_completions" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "exercise_id" uuid NOT NULL REFERENCES "somatic_exercises"("id") ON DELETE CASCADE,
+        "weekly_theme_id" uuid NOT NULL REFERENCES "weekly_themes"("id") ON DELETE CASCADE,
+        "reflection_notes" text,
+        "completed_at" timestamp NOT NULL DEFAULT now(),
+        UNIQUE("user_id", "weekly_theme_id")
       )
     `);
 
@@ -405,6 +405,36 @@ export async function initializeDatabase(db: any, app?: App) {
     await db.execute(sql`
       ALTER TABLE IF EXISTS "user_profiles"
       ADD COLUMN IF NOT EXISTS "companion_name" text
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_tone" text DEFAULT 'warm' NOT NULL
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_directness" text DEFAULT 'gentle' NOT NULL
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_spiritual_integration" text DEFAULT 'moderate' NOT NULL
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_response_length" text DEFAULT 'medium' NOT NULL
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "companion_custom_preferences" text DEFAULT '' NOT NULL
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE IF EXISTS "user_profiles"
+      ADD COLUMN IF NOT EXISTS "preferences_set" boolean DEFAULT false NOT NULL
     `);
 
     // Create indexes for user_profiles

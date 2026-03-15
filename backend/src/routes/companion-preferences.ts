@@ -25,12 +25,12 @@ export function registerCompanionPreferencesRoutes(app: App) {
 
         const profile = profiles[0];
 
-        const tone = profile?.companionTone || 'gentle_friend';
-        const directness = profile?.companionDirectness || 'balanced';
-        const spiritualIntegration = profile?.companionSpiritualIntegration || 'balanced';
-        const responseLength = profile?.companionResponseLength || 'varies';
-        const customPreferences = profile?.companionCustomPreferences || null;
-        const preferencesSet = profile?.preferencesSet === 1;
+        const tone = profile?.companionTone || 'warm';
+        const directness = profile?.companionDirectness || 'gentle';
+        const spiritualIntegration = profile?.companionSpiritualIntegration || 'moderate';
+        const responseLength = profile?.companionResponseLength || 'medium';
+        const customPreferences = profile?.companionCustomPreferences || '';
+        const preferencesSet = profile?.preferencesSet ?? false;
 
         app.logger.info(
           { userId: session.user.id, preferencesSet },
@@ -97,7 +97,7 @@ export function registerCompanionPreferencesRoutes(app: App) {
           // Create new profile with defaults
           const insertData = {
             userId: session.user.id,
-            avatarType: 'default' as const,
+            avatarType: 'icon' as const,
             presenceMode: 'open' as const,
             comfortReceivingReplies: true,
             comfortReadingMore: true,
@@ -109,12 +109,12 @@ export function registerCompanionPreferencesRoutes(app: App) {
             reflectionStreak: 0,
             totalReflections: 0,
             daysInCommunity: 0,
-            companionTone: tone || 'gentle_friend',
-            companionDirectness: directness || 'balanced',
-            companionSpiritualIntegration: spiritualIntegration || 'balanced',
-            companionResponseLength: responseLength || 'varies',
-            companionCustomPreferences: customPreferences || null,
-            preferencesSet: 1,
+            companionTone: tone || 'warm',
+            companionDirectness: directness || 'gentle',
+            companionSpiritualIntegration: spiritualIntegration || 'moderate',
+            companionResponseLength: responseLength || 'medium',
+            companionCustomPreferences: customPreferences || '',
+            preferencesSet: true,
           };
 
           const [newProfile] = await app.db
@@ -126,7 +126,7 @@ export function registerCompanionPreferencesRoutes(app: App) {
         } else {
           // Update existing profile
           const updateData: Record<string, any> = {
-            preferencesSet: 1,
+            preferencesSet: true,
             updatedAt: new Date(),
           };
 
@@ -157,11 +157,11 @@ export function registerCompanionPreferencesRoutes(app: App) {
 
         return reply.send({
           success: true,
-          tone: profile.companionTone || 'gentle_friend',
-          directness: profile.companionDirectness || 'balanced',
-          spiritualIntegration: profile.companionSpiritualIntegration || 'balanced',
-          responseLength: profile.companionResponseLength || 'varies',
-          customPreferences: profile.companionCustomPreferences,
+          tone: profile.companionTone || 'warm',
+          directness: profile.companionDirectness || 'gentle',
+          spiritualIntegration: profile.companionSpiritualIntegration || 'moderate',
+          responseLength: profile.companionResponseLength || 'medium',
+          customPreferences: profile.companionCustomPreferences || '',
           preferencesSet: true,
         });
       } catch (error) {
