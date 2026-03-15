@@ -1178,15 +1178,21 @@ function AnimatedReactionBadge({
   isActive: boolean;
   onPress: () => void;
 }) {
-  const scaleAnimRef = useRef(new Animated.Value(0.6));
-  const opacityAnimRef = useRef(new Animated.Value(0));
-  const prevCount = useRef(count);
+  // Start fully visible — badges are only rendered when count > 0, so no entrance animation needed
+  const scaleAnimRef = useRef(new Animated.Value(1));
+  const opacityAnimRef = useRef(new Animated.Value(1));
+  const prevCount = useRef(0);
+  const isMounted = useRef(false);
 
   useEffect(() => {
     const scaleAnim = scaleAnimRef.current;
     const opacityAnim = opacityAnimRef.current;
-    // Entrance animation when badge first appears (count goes from 0 to >0)
-    if (prevCount.current === 0 && count > 0) {
+
+    if (!isMounted.current) {
+      // First mount: pop-in entrance animation
+      isMounted.current = true;
+      scaleAnim.setValue(0.5);
+      opacityAnim.setValue(0);
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
@@ -1196,13 +1202,26 @@ function AnimatedReactionBadge({
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 180,
           useNativeDriver: true,
         }),
       ]).start();
-    } else if (count > 0) {
-      scaleAnim.setValue(1);
-      opacityAnim.setValue(1);
+    } else if (count !== prevCount.current) {
+      // Count changed: quick bounce to signal update
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1.25,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 6,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 6,
+        }),
+      ]).start();
     }
     prevCount.current = count;
   }, [count]);
