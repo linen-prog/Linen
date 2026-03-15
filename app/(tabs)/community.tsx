@@ -157,12 +157,23 @@ export default function CommunityScreen() {
       const defaultReactions = { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
 
       type RawPost = Record<string, unknown>;
-      const mappedPosts: Post[] = (allPosts as RawPost[]).map((post) => ({
-        ...(post as Omit<Post, 'reactions' | 'userReactions' | 'createdAt'>),
-        createdAt: new Date(post.createdAt as string),
-        reactions: (post.reactionCounts ?? post.reactions ?? defaultReactions) as Post['reactions'],
-        userReactions: (post.userReactions ?? []) as string[],
-      }));
+      const mappedPosts: Post[] = (Array.isArray(allPosts) ? allPosts as RawPost[] : []).map((post) => {
+        const rawReactions = (post.reactionCounts ?? post.reactions) as Record<string, number> | null | undefined;
+        const safeReactions: Post['reactions'] = {
+          praying: Number(rawReactions?.praying ?? 0),
+          holding: Number(rawReactions?.holding ?? 0),
+          light: Number(rawReactions?.light ?? 0),
+          amen: Number(rawReactions?.amen ?? 0),
+          growing: Number(rawReactions?.growing ?? 0),
+          peace: Number(rawReactions?.peace ?? 0),
+        };
+        return {
+          ...(post as Omit<Post, 'reactions' | 'userReactions' | 'createdAt'>),
+          createdAt: new Date(post.createdAt as string),
+          reactions: safeReactions,
+          userReactions: Array.isArray(post.userReactions) ? (post.userReactions as string[]) : [],
+        };
+      });
 
       setPosts(mappedPosts);
     } catch (error) {
@@ -263,12 +274,21 @@ export default function CommunityScreen() {
       console.log('[Community] ✅ Reaction toggled successfully:', response);
       
       // Update with actual server response — do NOT close picker
+      const serverReactionCounts = response.reactionCounts || {};
+      const safeServerReactions: Post['reactions'] = {
+        praying: Number(serverReactionCounts.praying ?? 0),
+        holding: Number(serverReactionCounts.holding ?? 0),
+        light: Number(serverReactionCounts.light ?? 0),
+        amen: Number(serverReactionCounts.amen ?? 0),
+        growing: Number(serverReactionCounts.growing ?? 0),
+        peace: Number(serverReactionCounts.peace ?? 0),
+      };
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
             ...post,
-            reactions: response.reactionCounts,
-            userReactions: response.userReactions || [],
+            reactions: safeServerReactions,
+            userReactions: Array.isArray(response.userReactions) ? response.userReactions : [],
           };
         }
         return post;
@@ -677,8 +697,8 @@ export default function CommunityScreen() {
               const categoryColor = getCategoryColor(post.category);
               const categoryLabel = getCategoryLabel(post.category);
               
-              const reactions = post.reactions;
-              const userReactions = post.userReactions;
+              const reactions = post.reactions || { praying: 0, holding: 0, light: 0, amen: 0, growing: 0, peace: 0 };
+              const userReactions = post.userReactions || [];
               const isOwnPost = !!user?.id && post.userId === user.id;
               const activeReactionBadges = (Object.keys(reactions) as (keyof typeof reactions)[]).filter(k => reactions[k] > 0);
               const hasUserReacted = userReactions.length > 0;
