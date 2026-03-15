@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { autoSeedThemesIfEmpty } from '../utils/seed-themes.js';
+import { autoSeedPostReactionsIfEmpty } from '../utils/seed-reactions.js';
 import type { App } from '../index.js';
 
 /**
@@ -427,7 +428,7 @@ export async function initializeDatabase(db: any, app?: App) {
     `);
 
     await db.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS "post_reactions_post_user_unique" ON "post_reactions"("post_id", "user_id")
+      CREATE UNIQUE INDEX IF NOT EXISTS "post_reactions_post_user_type_unique" ON "post_reactions"("post_id", "user_id", "reaction_type")
     `);
 
     await db.execute(sql`
@@ -472,6 +473,8 @@ export async function initializeDatabase(db: any, app?: App) {
     // Auto-seed weekly themes if database is empty
     if (app) {
       await autoSeedThemesIfEmpty(app);
+      // Auto-seed reactions for existing posts
+      await autoSeedPostReactionsIfEmpty(db, app);
     }
   } catch (error) {
     console.error('Failed to initialize database tables:', error);

@@ -358,7 +358,6 @@ export const postReactions = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('post_reactions_post_user_unique').on(table.postId, table.userId),
     index('post_reactions_post').on(table.postId),
     index('post_reactions_user').on(table.userId),
   ]

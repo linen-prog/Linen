@@ -83,6 +83,32 @@ export function registerCommunityRoutes(app: App) {
               userHasFlagged = flag.length > 0;
             }
 
+            // Get reaction counts for this post
+            const reactions = await app.db
+              .select()
+              .from(schema.postReactions)
+              .where(eq(schema.postReactions.postId, post.id));
+
+            const reactionCounts: Record<string, number> = {
+              praying: 0,
+              holding: 0,
+              light: 0,
+              amen: 0,
+              growing: 0,
+              peace: 0,
+            };
+
+            reactions.forEach((reaction) => {
+              reactionCounts[reaction.reactionType]++;
+            });
+
+            // Get user's reactions for this post (if authenticated)
+            const userReactions = userId
+              ? reactions
+                  .filter((r) => r.userId === userId)
+                  .map((r) => r.reactionType)
+              : [];
+
             return {
               id: post.id,
               authorName: post.authorName,
@@ -97,6 +123,8 @@ export function registerCommunityRoutes(app: App) {
               userHasPrayed,
               userHasFlagged,
               artworkUrl: post.artworkUrl || null,
+              reactionCounts,
+              userReactions,
             };
           })
         );
@@ -554,53 +582,36 @@ export function registerCommunityRoutes(app: App) {
       );
 
       try {
-        // Check if user already has ANY reaction on this post (not just the same type)
+        // Check if user already has THIS SPECIFIC reaction type on this post
         const existingReaction = await app.db
           .select()
           .from(schema.postReactions)
           .where(
             and(
               eq(schema.postReactions.postId, postId as any),
-              eq(schema.postReactions.userId, userId)
+              eq(schema.postReactions.userId, userId),
+              eq(schema.postReactions.reactionType, reactionType as any)
             )
           )
           .limit(1);
 
         if (existingReaction.length > 0) {
-          const currentReactionType = existingReaction[0].reactionType;
-
-          if (currentReactionType === reactionType) {
-            // User is clicking the same reaction type → remove it (toggle off)
-            await app.db
-              .delete(schema.postReactions)
-              .where(
-                and(
-                  eq(schema.postReactions.postId, postId as any),
-                  eq(schema.postReactions.userId, userId)
-                )
-              );
-            app.logger.info(
-              { postId, userId, reactionType },
-              'Reaction removed (toggled off)'
+          // Reaction exists → delete it (toggle off)
+          await app.db
+            .delete(schema.postReactions)
+            .where(
+              and(
+                eq(schema.postReactions.postId, postId as any),
+                eq(schema.postReactions.userId, userId),
+                eq(schema.postReactions.reactionType, reactionType as any)
+              )
             );
-          } else {
-            // User is clicking a different reaction type → update to new type
-            await app.db
-              .update(schema.postReactions)
-              .set({ reactionType: reactionType as 'praying' | 'holding' | 'light' | 'amen' | 'growing' | 'peace' })
-              .where(
-                and(
-                  eq(schema.postReactions.postId, postId as any),
-                  eq(schema.postReactions.userId, userId)
-                )
-              );
-            app.logger.info(
-              { postId, userId, oldReactionType: currentReactionType, newReactionType: reactionType },
-              'Reaction updated'
-            );
-          }
+          app.logger.info(
+            { postId, userId, reactionType },
+            'Reaction removed (toggled off)'
+          );
         } else {
-          // No existing reaction → insert new one
+          // No existing reaction of this type → insert new one
           await app.db
             .insert(schema.postReactions)
             .values({
@@ -614,7 +625,7 @@ export function registerCommunityRoutes(app: App) {
           );
         }
 
-        // Get all reactions for this post
+        // Get all reactions for this post grouped by type
         const reactions = await app.db
           .select()
           .from(schema.postReactions)
@@ -634,17 +645,19 @@ export function registerCommunityRoutes(app: App) {
           reactionCounts[reaction.reactionType]++;
         });
 
-        // Get current user's reaction (if any)
-        const userReaction = reactions.find((r) => r.userId === userId)?.reactionType || null;
+        // Get all reaction types for current user on this post
+        const userReactions = reactions
+          .filter((r) => r.userId === userId)
+          .map((r) => r.reactionType);
 
         app.logger.info(
-          { postId, reactionCounts, userReaction },
+          { postId, reactionCounts, userReactions },
           'Reactions retrieved after toggle'
         );
 
         return reply.send({
-          reactions: reactionCounts,
-          userReaction,
+          reactionCounts,
+          userReactions,
         });
       } catch (error) {
         app.logger.error({ err: error, postId, userId }, 'Failed to toggle reaction');
@@ -660,14 +673,11 @@ export function registerCommunityRoutes(app: App) {
       request: FastifyRequest<{ Params: { postId: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
-      const { postId } = request.params;
-      const session = (request as any).session;
+      const session = await requireAuth(request, reply);
+      if (!session) return;
 
-      // Get user ID if authenticated (optional)
-      let userId: string | null = null;
-      if (session?.user?.id) {
-        userId = session.user.id;
-      }
+      const { postId } = request.params;
+      const userId = session.user.id;
 
       app.logger.info({ postId, userId }, 'Fetching post reactions');
 
@@ -691,24 +701,22 @@ export function registerCommunityRoutes(app: App) {
           reactionCounts[reaction.reactionType]++;
         });
 
-        // Get current user's reaction (if authenticated and has one)
-        let userReaction: string | null = null;
-        if (userId) {
-          const userReact = reactions.find((r) => r.userId === userId);
-          userReaction = userReact?.reactionType || null;
-        }
+        // Get all reaction types for current user on this post
+        const userReactions = reactions
+          .filter((r) => r.userId === userId)
+          .map((r) => r.reactionType);
 
         app.logger.info(
-          { postId, reactionCounts, userReaction },
+          { postId, reactionCounts, userReactions },
           'Post reactions retrieved'
         );
 
         return reply.send({
-          reactions: reactionCounts,
-          userReaction,
+          reactionCounts,
+          userReactions,
         });
       } catch (error) {
-        app.logger.error({ err: error, postId }, 'Failed to fetch post reactions');
+        app.logger.error({ err: error, postId, userId }, 'Failed to fetch post reactions');
         throw error;
       }
     }
