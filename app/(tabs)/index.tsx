@@ -270,9 +270,7 @@ export default function HomeScreen() {
                 <Text style={[styles.primaryCardTitle, { color: textColor }]}>
                   Check-In
                 </Text>
-                                <NotificationBell />
-                
-<Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
                   {personalization?.companionTagline || "What's on your mind?"}
                 </Text>
                 {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
