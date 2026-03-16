@@ -30,8 +30,8 @@
  * - Fetched from /api/community/my-posts endpoint
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -94,6 +94,18 @@ export default function CommunityScreen() {
   const [isLoadingCareMessages, setIsLoadingCareMessages] = useState(false);
   const [selectedCareMessage, setSelectedCareMessage] = useState<string>('');
   const [careAnonymous, setCareAnonymous] = useState(false);
+
+  // Encouragement state
+  const [showEncouragementModal, setShowEncouragementModal] = useState(false);
+  const [encouragementEntryId, setEncouragementEntryId] = useState<string | null>(null);
+  const [selectedEncouragementId, setSelectedEncouragementId] = useState<number | null>(null);
+  const [selectedEncouragement, setSelectedEncouragement] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(true);
+  const [isSendingEncouragement, setIsSendingEncouragement] = useState(false);
+  const [showEncouragementSentToast, setShowEncouragementSentToast] = useState(false);
+  const [showEncouragementCelebration, setShowEncouragementCelebration] = useState(false);
+  const [celebrationWasAnonymous, setCelebrationWasAnonymous] = useState(true);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
@@ -365,6 +377,70 @@ export default function CommunityScreen() {
       }
     } finally {
       setIsLoadingCareMessages(false);
+    }
+  };
+
+  const ENCOURAGEMENT_MESSAGES = [
+    "Your heart is heard and held.",
+    "You are not alone in what you're carrying.",
+    "May gentleness find you today.",
+    "Your feelings are valid and real.",
+    "Holy Spirit is tending to you here.",
+    "Walking alongside you with love.",
+    "Holding you with such care.",
+    "May you sense the grace beneath you.",
+  ];
+
+  const handleOpenEncouragement = (postId: string) => {
+    console.log('[Community] User tapped Send Encouragement for post:', postId);
+    if (!user) {
+      console.log('[Community] ⚠️ Guest user cannot send encouragement - showing auth prompt');
+      setShowAuthPrompt(true);
+      return;
+    }
+    setEncouragementEntryId(postId);
+    setSelectedEncouragementId(null);
+    setSelectedEncouragement('');
+    setIsAnonymous(true);
+    setShowEncouragementModal(true);
+  };
+
+  const handleSendEncouragement = async () => {
+    if (!selectedEncouragement || !encouragementEntryId) return;
+    console.log('[Community] User sending encouragement to post:', encouragementEntryId, '| message:', selectedEncouragement, '| anonymous:', isAnonymous);
+    setIsSendingEncouragement(true);
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      const responseData = await authenticatedPost(
+        `/api/community/posts/${encouragementEntryId}/encourage`,
+        { message: selectedEncouragement, isAnonymous }
+      );
+      console.log('[Community] ✅ Encouragement sent successfully:', responseData);
+      const wasAnon = isAnonymous;
+      setShowEncouragementModal(false);
+      setSelectedEncouragement('');
+      setSelectedEncouragementId(null);
+      setCelebrationWasAnonymous(wasAnon);
+      setShowEncouragementCelebration(true);
+      // Show toast
+      setShowEncouragementSentToast(true);
+      Animated.sequence([
+        Animated.timing(toastOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.delay(2400),
+        Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start(() => setShowEncouragementSentToast(false));
+    } catch (error: any) {
+      console.error('[Community] ❌ Error sending encouragement:', error);
+      const msg = error?.message || '';
+      if (msg.includes('requiresUpgrade') || msg.includes('subscription')) {
+        Alert.alert('Subscription Required', 'Sending encouragement requires a subscription.');
+      } else if (msg.includes('own')) {
+        Alert.alert('Cannot encourage your own post', 'You cannot send encouragement to yourself.');
+      } else {
+        Alert.alert("Couldn't send encouragement", 'Please try again.');
+      }
+    } finally {
+      setIsSendingEncouragement(false);
     }
   };
 
@@ -856,6 +932,25 @@ export default function CommunityScreen() {
                     </View>
                   </View>
 
+                  {/* Send Encouragement Button (only for other users' posts) */}
+                  {!isOwnPost && (
+                    <TouchableOpacity
+                      style={styles.encourageButton}
+                      onPress={() => handleOpenEncouragement(post.id)}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol
+                        ios_icon_name="heart"
+                        android_material_icon_name="favorite-border"
+                        size={18}
+                        color="#E8A0A0"
+                      />
+                      <Text style={styles.encourageButtonText}>
+                        Encourage
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   {/* Send Care Button (only for care category posts) */}
                   {post.category === 'care' && (
                     <TouchableOpacity
@@ -1007,6 +1102,186 @@ export default function CommunityScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Encouragement Toast */}
+      {showEncouragementSentToast && (
+        <Animated.View style={[styles.encouragementToast, { opacity: toastOpacity }]}>
+          <Text style={styles.encouragementToastText}>
+            Encouragement sent 🌿
+          </Text>
+        </Animated.View>
+      )}
+
+      {/* Encouragement Modal */}
+      <Modal
+        visible={showEncouragementModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          console.log('[Community] User closed encouragement modal');
+          setShowEncouragementModal(false);
+        }}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            console.log('[Community] User dismissed encouragement modal by tapping overlay');
+            setShowEncouragementModal(false);
+          }}
+        >
+          <Pressable
+            style={[styles.encouragementModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <View style={styles.encouragementModalHeader}>
+              <View style={styles.encouragementModalTitleRow}>
+                <IconSymbol
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={20}
+                  color="#E8A0A0"
+                />
+                <Text style={[styles.encouragementModalTitle, { color: textColor }]}>
+                  Send Encouragement
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[Community] User tapped X to close encouragement modal');
+                  setShowEncouragementModal(false);
+                }}
+                hitSlop={8}
+              >
+                <IconSymbol
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={22}
+                  color={textSecondaryColor}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.encouragementModalSubtitle, { color: textSecondaryColor }]}>
+              Choose a gentle message to send
+            </Text>
+
+            {/* Anonymous toggle */}
+            <TouchableOpacity
+              style={styles.anonymousToggleRow}
+              onPress={() => {
+                console.log('[Community] User toggled anonymous encouragement:', !isAnonymous);
+                setIsAnonymous(!isAnonymous);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, isAnonymous && styles.checkboxChecked]}>
+                {isAnonymous && (
+                  <IconSymbol
+                    ios_icon_name="checkmark"
+                    android_material_icon_name="check"
+                    size={14}
+                    color="#FFFFFF"
+                  />
+                )}
+              </View>
+              <Text style={[styles.anonymousToggleText, { color: textColor }]}>
+                Send anonymously
+              </Text>
+            </TouchableOpacity>
+
+            {/* Message list */}
+            <ScrollView
+              style={styles.encouragementMessagesList}
+              showsVerticalScrollIndicator={false}
+            >
+              {ENCOURAGEMENT_MESSAGES.map((msg, idx) => {
+                const isSelected = selectedEncouragementId === idx;
+                return (
+                  <EncouragementMessageOption
+                    key={idx}
+                    message={msg}
+                    isSelected={isSelected}
+                    onPress={() => {
+                      console.log('[Community] User selected encouragement message:', idx, msg);
+                      setSelectedEncouragementId(idx);
+                      setSelectedEncouragement(msg);
+                    }}
+                    textColor={textColor}
+                    bgColor={bgColor}
+                  />
+                );
+              })}
+              <View style={{ height: 150 }} />
+            </ScrollView>
+
+            {/* Send button */}
+            <TouchableOpacity
+              style={[
+                styles.sendEncouragementButton,
+                !selectedEncouragement && styles.sendEncouragementButtonDisabled,
+              ]}
+              onPress={() => {
+                console.log('[Community] User tapped Send Encouragement button');
+                handleSendEncouragement();
+              }}
+              disabled={!selectedEncouragement || isSendingEncouragement}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.sendEncouragementButtonText}>
+                {isSendingEncouragement ? 'Sending...' : 'Send Encouragement'}
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Encouragement Celebration Modal */}
+      <Modal
+        visible={showEncouragementCelebration}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEncouragementCelebration(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowEncouragementCelebration(false)}
+        >
+          <Pressable
+            style={[styles.celebrationCard, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={styles.celebrationEmoji}>
+              🌿
+            </Text>
+            <Text style={[styles.celebrationTitle, { color: textColor }]}>
+              Encouragement Sent
+            </Text>
+            {celebrationWasAnonymous && (
+              <View style={styles.celebrationAnonymousBadge}>
+                <Text style={styles.celebrationAnonymousText}>
+                  Sent anonymously
+                </Text>
+              </View>
+            )}
+            <Text style={[styles.celebrationMessage, { color: textSecondaryColor }]}>
+              Thank you for thinking of others. Your gentle words carry more weight than you know.
+            </Text>
+            <TouchableOpacity
+              style={styles.celebrationDismissButton}
+              onPress={() => {
+                console.log('[Community] User dismissed encouragement celebration');
+                setShowEncouragementCelebration(false);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.celebrationDismissText}>
+                Close
+              </Text>
+            </TouchableOpacity>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1181,6 +1456,44 @@ function ReactionPickerOption({
       </Text>
       <Text style={[styles.reactionOptionLabel, { color: isActive ? colors.primary : textColor }]}>
         {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function EncouragementMessageOption({
+  message,
+  isSelected,
+  onPress,
+  textColor,
+  bgColor,
+}: {
+  message: string;
+  isSelected: boolean;
+  onPress: () => void;
+  textColor: string;
+  bgColor: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.encouragementMessageButton,
+        { backgroundColor: isSelected ? '#FDF0F0' : bgColor, borderColor: isSelected ? '#E8A0A0' : colors.border },
+        isSelected && styles.encouragementMessageButtonSelected,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {isSelected && (
+        <Text style={styles.encouragementMessageCheckmark}>
+          ✓
+        </Text>
+      )}
+      <Text style={[
+        styles.encouragementMessageButtonText,
+        { color: isSelected ? '#C06060' : textColor, fontWeight: isSelected ? '600' : '400' },
+      ]}>
+        {message}
       </Text>
     </TouchableOpacity>
   );
@@ -1669,6 +1982,171 @@ const styles = StyleSheet.create({
   },
   sendCareButtonDisabled: {
     opacity: 0.4,
+  },
+  // Encourage button on post cards
+  encourageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginTop: spacing.xs,
+    borderRadius: borderRadius.sm,
+    backgroundColor: '#FDF0F0',
+    alignSelf: 'flex-start',
+  },
+  encourageButtonText: {
+    fontSize: 13,
+    color: '#E8A0A0',
+    fontWeight: '500',
+  },
+  // Encouragement modal
+  encouragementModal: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    maxHeight: '85%',
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  encouragementModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  encouragementModalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  encouragementModalTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
+  },
+  encouragementModalSubtitle: {
+    fontSize: typography.bodySmall,
+    marginBottom: spacing.md,
+  },
+  encouragementMessagesList: {
+    maxHeight: 320,
+    marginBottom: spacing.md,
+  },
+  encouragementMessageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  encouragementMessageButtonSelected: {
+    borderWidth: 1.5,
+  },
+  encouragementMessageCheckmark: {
+    fontSize: 14,
+    color: '#E8A0A0',
+    fontWeight: '700',
+  },
+  encouragementMessageButtonText: {
+    fontSize: typography.body,
+    lineHeight: 22,
+    flex: 1,
+  },
+  sendEncouragementButton: {
+    backgroundColor: '#E8A0A0',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  sendEncouragementButtonDisabled: {
+    backgroundColor: '#E8A0A0',
+    opacity: 0.4,
+  },
+  sendEncouragementButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semiBold,
+  },
+  // Toast
+  encouragementToast: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(50, 50, 50, 0.88)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    zIndex: 999,
+  },
+  encouragementToastText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: '500',
+  },
+  // Celebration card
+  celebrationCard: {
+    borderRadius: 20,
+    padding: spacing.xl,
+    marginHorizontal: spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F0D0D0',
+    shadowColor: '#E8A0A0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  celebrationEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.md,
+  },
+  celebrationTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.bold,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  celebrationAnonymousBadge: {
+    backgroundColor: '#FDF0F0',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    marginBottom: spacing.md,
+  },
+  celebrationAnonymousText: {
+    fontSize: typography.bodySmall,
+    color: '#C06060',
+    fontWeight: '500',
+  },
+  celebrationMessage: {
+    fontSize: typography.body,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.lg,
+  },
+  celebrationDismissButton: {
+    backgroundColor: '#E8A0A0',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  celebrationDismissText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: typography.semiBold,
   },
   sendCareButtonModalText: {
     fontSize: typography.body,
