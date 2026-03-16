@@ -111,6 +111,7 @@ export function registerCommunityRoutes(app: App) {
 
             return {
               id: post.id,
+              userId: post.userId,
               authorName: post.authorName,
               isAnonymous: post.isAnonymous,
               category: post.category,
@@ -197,6 +198,60 @@ export function registerCommunityRoutes(app: App) {
         app.logger.error(
           { err: error, userId: session.user.id, category, contentType },
           'Failed to create community post'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Delete a community post
+  app.fastify.delete(
+    '/api/community/posts/:postId',
+    async (
+      request: FastifyRequest<{ Params: { postId: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { postId } = request.params;
+
+      app.logger.info({ userId: session.user.id, postId }, 'Deleting community post');
+
+      try {
+        // Fetch the post
+        const posts = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!posts.length) {
+          app.logger.warn({ postId }, 'Post not found');
+          return reply.status(404).send({ error: 'Post not found' });
+        }
+
+        const post = posts[0];
+
+        // Verify ownership
+        if (post.userId !== session.user.id) {
+          app.logger.warn(
+            { userId: session.user.id, postId, postOwnerId: post.userId },
+            'Unauthorized post deletion attempt'
+          );
+          return reply.status(403).send({ error: 'Forbidden' });
+        }
+
+        // Delete the post
+        await app.db.delete(schema.communityPosts).where(eq(schema.communityPosts.id, postId as any));
+
+        app.logger.info({ userId: session.user.id, postId }, 'Community post deleted successfully');
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id, postId },
+          'Failed to delete community post'
         );
         throw error;
       }
@@ -313,6 +368,7 @@ export function registerCommunityRoutes(app: App) {
         // Format posts for response
         const result = posts.map((p) => ({
           id: p.id,
+          userId: p.userId,
           category: p.category,
           content: p.content,
           contentType: p.contentType,
