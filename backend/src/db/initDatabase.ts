@@ -498,6 +498,32 @@ export async function initializeDatabase(db: any, app?: App) {
       CREATE INDEX IF NOT EXISTS "care_messages_created" ON "care_messages"("created_at")
     `);
 
+    // Player notifications table (for encouragement messages)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "player_notifications" (
+        "id" SERIAL PRIMARY KEY,
+        "journal_entry_id" TEXT DEFAULT NULL,
+        "recipient_user_id" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "is_read" BOOLEAN DEFAULT FALSE,
+        "encouragement_message" TEXT DEFAULT NULL,
+        "sender_user_id" TEXT DEFAULT NULL REFERENCES "user"("id") ON DELETE SET NULL,
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "player_notifications_recipient" ON "player_notifications"("recipient_user_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "player_notifications_entry" ON "player_notifications"("journal_entry_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "player_notifications_created" ON "player_notifications"("created_at")
+    `);
+
     console.log('Database tables initialized successfully');
 
     // Auto-seed weekly themes if database is empty
