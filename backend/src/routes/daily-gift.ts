@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
 
@@ -81,7 +81,7 @@ export function registerDailyGiftRoutes(app: App) {
         return reply.status(404).send({ error: 'No content available for today' });
       }
 
-      // Check if current user has reflected (if authenticated)
+      // Check if current user has reflected today (if authenticated)
       let hasReflected = false;
       try {
         // Try to get session without requiring auth (won't throw)
@@ -93,7 +93,8 @@ export function registerDailyGiftRoutes(app: App) {
             .where(
               and(
                 eq(schema.userReflections.userId, session.user.id),
-                eq(schema.userReflections.dailyGiftId, dailyContentRecord[0].id)
+                eq(schema.userReflections.dailyGiftId, dailyContentRecord[0].id),
+                sql`DATE(${schema.userReflections.createdAt}) = CURRENT_DATE`
               )
             )
             .limit(1);
@@ -347,25 +348,30 @@ export function registerDailyGiftRoutes(app: App) {
     }
   );
 
-  // Get user's reflections
+  // Get user's reflections for today
   app.fastify.get(
     '/api/daily-gift/my-reflections',
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      app.logger.info({ userId: session.user.id }, 'Fetching user reflections');
+      app.logger.info({ userId: session.user.id }, 'Fetching user reflections for today');
 
       try {
         const reflections = await app.db
           .select()
           .from(schema.userReflections)
-          .where(eq(schema.userReflections.userId, session.user.id))
+          .where(
+            and(
+              eq(schema.userReflections.userId, session.user.id),
+              sql`DATE(${schema.userReflections.createdAt}) = CURRENT_DATE`
+            )
+          )
           .orderBy(schema.userReflections.createdAt);
 
         app.logger.info(
           { userId: session.user.id, count: reflections.length },
-          'User reflections retrieved'
+          'User reflections retrieved for today'
         );
 
         return reply.send(
