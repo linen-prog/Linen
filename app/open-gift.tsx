@@ -6,6 +6,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -13,6 +14,12 @@ import Animated, {
   withSequence,
   Easing 
 } from 'react-native-reanimated';
+
+const tabs = [
+  { name: 'home', route: '/(tabs)/' as const, icon: 'home' as const, label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'people' as const, label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'person' as const, label: 'Profile' },
+];
 
 interface GlitterParticle {
   id: number;
@@ -159,6 +166,8 @@ export default function OpenGiftScreen() {
             {tapText}
           </Text>
         </View>
+
+        <FloatingTabBar tabs={tabs} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -247,6 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingBottom: 100,
   },
   title: {
     fontSize: 32,

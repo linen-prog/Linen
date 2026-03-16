@@ -35,9 +35,9 @@ interface Prayer {
 
 
 const tabs = [
-  { name: 'home', route: '/(tabs)/(home)' as const, icon: 'home' as const, label: 'Home' },
-  { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, label: 'Community' },
-  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, label: 'Profile' },
+  { name: 'home', route: '/(tabs)/' as const, icon: 'home' as const, label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'people' as const, label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'person' as const, label: 'Profile' },
 ];
 
 export default function CheckInScreen() {
@@ -625,7 +625,7 @@ export default function CheckInScreen() {
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 160 : 0}
         >
           {messages.length === 0 ? (
             renderEmptyState()
@@ -644,7 +644,8 @@ export default function CheckInScreen() {
 
           <View style={[styles.inputContainer, { 
             backgroundColor: colors.card,
-            borderTopColor: inputBorder 
+            borderTopColor: inputBorder,
+            paddingBottom: 100,
           }]}>
             <TextInput
               style={[styles.input, { 
