@@ -1001,6 +1001,9 @@ export default function DailyGiftScreen() {
                 onPress={() => {
                   console.log('[DailyGift] User toggled share to community:', !shareToComm);
                   setShareToComm(!shareToComm);
+                  if (shareToComm) {
+                    setShareAnonymously(false);
+                  }
                 }}
                 activeOpacity={0.7}
               >
@@ -1014,6 +1017,27 @@ export default function DailyGiftScreen() {
                   {shareToggleLabel}
                 </Text>
               </TouchableOpacity>
+
+              {shareToComm && (
+                <TouchableOpacity
+                  style={styles.anonymousToggle}
+                  onPress={() => {
+                    console.log('[DailyGift] User toggled share anonymously:', !shareAnonymously);
+                    setShareAnonymously(!shareAnonymously);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    ios_icon_name={shareAnonymously ? 'checkmark.square.fill' : 'square'}
+                    android_material_icon_name={shareAnonymously ? 'check-box' : 'check-box-outline-blank'}
+                    size={24}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.anonymousToggleLabel, { color: textSecondaryColor }]}>
+                    Share anonymously
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity 
                 style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
@@ -1768,6 +1792,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  anonymousToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.xs,
+    marginTop: 4,
+  },
+  anonymousToggleLabel: {
+    fontSize: typography.body,
   },
   shareToggleLabel: {
     fontSize: 14,
