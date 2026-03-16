@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -26,6 +26,28 @@ export default function HomeScreen() {
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCompanionBanner, setShowCompanionBanner] = useState(false);
+
+  const greetingOpacity = useRef(new Animated.Value(0)).current;
+  const greetingTranslateY = useRef(new Animated.Value(14)).current;
+
+  useEffect(() => {
+    const greetingTimer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(greetingOpacity, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(greetingTranslateY, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 2000);
+
+    return () => clearTimeout(greetingTimer);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -162,9 +184,15 @@ export default function HomeScreen() {
               <Text style={[styles.appTitle, { color: colors.primary }]}>
                 Linen
               </Text>
-              <Text style={[styles.greeting, { color: colors.primary }]}>
+              <Animated.Text
+                style={[
+                  styles.greeting,
+                  { color: colors.primary },
+                  { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
+                ]}
+              >
                 {greetingText}
-              </Text>
+              </Animated.Text>
             </View>
 
             <View style={styles.streakContainer}>

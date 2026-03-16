@@ -26,36 +26,40 @@ export default function HomeScreen() {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(-12)).current;
   const greetingOpacity = useRef(new Animated.Value(0)).current;
-  const greetingTranslateY = useRef(new Animated.Value(10)).current;
+  const greetingTranslateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleTranslateY, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.delay(1200),
+    // Title animates in immediately on mount
+    Animated.parallel([
+      Animated.timing(titleOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleTranslateY, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Greeting fades + slides up after a calm 2s delay
+    const greetingTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(greetingOpacity, {
           toValue: 1,
-          duration: 700,
+          duration: 900,
           useNativeDriver: true,
         }),
         Animated.timing(greetingTranslateY, {
           toValue: 0,
-          duration: 700,
+          duration: 900,
           useNativeDriver: true,
         }),
-      ]),
-    ]).start();
+      ]).start();
+    }, 2000);
+
+    return () => clearTimeout(greetingTimer);
   }, []);
 
   const loadUserStats = useCallback(async () => {
