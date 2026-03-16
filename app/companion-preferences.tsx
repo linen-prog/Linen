@@ -90,10 +90,17 @@ const DIRECTNESS_LABELS: Record<string, string> = {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ProgressDots({ total, current }: { total: number; current: number }) {
+  const safeTotal = typeof total === 'number' && total > 0 ? total : 0;
+  const safeCurrent = typeof current === 'number' ? current : 0;
+
+  if (safeTotal === 0) {
+    return <View style={styles.progressDots} />;
+  }
+
   return (
     <View style={styles.progressDots}>
-      {Array.from({ length: total }).map((_, i) => {
-        const isActive = i <= current;
+      {Array.from({ length: safeTotal }).map((_, i) => {
+        const isActive = i <= safeCurrent;
         return (
           <View
             key={i}
