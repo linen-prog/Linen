@@ -94,20 +94,20 @@ function ProgressDots({ total, current }: { total: number; current: number }) {
   const safeCurrent = typeof current === 'number' ? current : 0;
 
   if (safeTotal === 0) {
-    return <View style={styles.progressDots} />;
+    return null;
   }
+
+  const indices = Array.from({ length: safeTotal }, (_, i) => i);
 
   return (
     <View style={styles.progressDots}>
-      {Array.from({ length: safeTotal }).map((_, i) => {
+      {indices.map((i) => {
         const isActive = i <= safeCurrent;
+        const dotStyle = isActive ? styles.dotActive : styles.dotInactive;
         return (
           <View
             key={i}
-            style={[
-              styles.dot,
-              isActive ? styles.dotActive : styles.dotInactive,
-            ]}
+            style={[styles.dot, dotStyle]}
           />
         );
       })}
