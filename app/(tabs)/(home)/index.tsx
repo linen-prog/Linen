@@ -158,15 +158,15 @@ export default function HomeScreen() {
 
           <View style={styles.streakContainer}>
             <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Check-in Streak</Text>
+              <Text style={styles.streakLabel}>Check-in</Text>
+              <Text style={styles.streakDot}>·</Text>
               <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
-              <Text style={styles.streakBest}>best: {stats?.checkInStreak || 0}</Text>
             </View>
 
             <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Reflection Streak</Text>
+              <Text style={styles.streakLabel}>Reflection</Text>
+              <Text style={styles.streakDot}>·</Text>
               <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
-              <Text style={styles.streakBest}>best: {stats?.reflectionStreak || 0}</Text>
             </View>
           </View>
 
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.xxl + 20,
+    paddingBottom: spacing.xl,
     backgroundColor: 'transparent',
     zIndex: 100,
   },
@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
+    marginBottom: 4,
   },
   notificationButtonWrapper: {
     zIndex: 101,
@@ -276,8 +277,8 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: 40,
-    marginBottom: spacing.lg,
+    marginTop: 80,
+    marginBottom: spacing.xl,
   },
   greeting: {
     fontSize: typography.h3,
@@ -293,32 +294,31 @@ const styles = StyleSheet.create({
   },
   streakCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: borderRadius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    justifyContent: 'center',
   },
   streakLabel: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  streakValue: {
-    fontSize: 32,
-    fontWeight: typography.semibold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  streakBest: {
-    fontSize: typography.caption,
+    fontSize: 11,
     fontWeight: typography.regular,
     color: colors.textLight,
+    opacity: 0.6,
+  },
+  streakDot: {
+    fontSize: 11,
+    color: colors.textLight,
+    opacity: 0.4,
+    marginHorizontal: 4,
+  },
+  streakValue: {
+    fontSize: 11,
+    fontWeight: typography.regular,
+    color: colors.textLight,
+    opacity: 0.6,
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
