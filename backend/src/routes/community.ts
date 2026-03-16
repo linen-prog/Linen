@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, or, gte, lt } from 'drizzle-orm';
+import { eq, and, desc, or, gte, lt, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
@@ -912,6 +912,167 @@ export function registerCommunityRoutes(app: App) {
         return reply.send(formattedMessages);
       } catch (error) {
         app.logger.error({ err: error, recipientId }, 'Failed to fetch care messages');
+        throw error;
+      }
+    }
+  );
+
+  // Send encouragement to a post author
+  app.fastify.post(
+    '/api/community/posts/:postId/encourage',
+    async (
+      request: FastifyRequest<{ Params: { postId: string }; Body: { message: string; isAnonymous?: boolean } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { postId } = request.params;
+      const { message, isAnonymous = false } = request.body;
+      const senderId = session.user.id;
+
+      app.logger.info(
+        { postId, senderId, messageLength: message?.length || 0, isAnonymous },
+        'Sending encouragement to post'
+      );
+
+      try {
+        // Validate message is provided
+        if (!message || typeof message !== 'string' || message.trim().length === 0) {
+          app.logger.warn({ postId, senderId }, 'Encouragement message validation failed');
+          return reply.status(400).send({ error: 'Message is required' });
+        }
+
+        // Look up the community post
+        const posts = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!posts.length) {
+          app.logger.warn({ postId }, 'Post not found for encouragement');
+          return reply.status(404).send({ error: 'Entry not found' });
+        }
+
+        const post = posts[0];
+
+        // Check subscription status (fail open if column doesn't exist)
+        try {
+          const result = await app.db.execute(sql`
+            SELECT subscription_status FROM "user" WHERE id = ${senderId}
+          `);
+
+          if (result && typeof result === 'object' && 'rows' in result && result.rows && (result.rows as any[]).length > 0) {
+            const userRow = (result.rows as any[])[0];
+            if (userRow.subscription_status) {
+              const subscriptionStatus = userRow.subscription_status as string;
+              if (subscriptionStatus !== 'active' && subscriptionStatus !== 'trialing') {
+                app.logger.warn(
+                  { senderId, subscriptionStatus },
+                  'User does not have active subscription for encouragement'
+                );
+                return reply.status(400).send({
+                  error: 'Sending encouragement requires a subscription',
+                  requiresUpgrade: true,
+                });
+              }
+            }
+          }
+        } catch (error) {
+          // Column doesn't exist or query failed, allow the request through (fail open)
+          app.logger.debug(
+            { err: error },
+            'Subscription check failed or column does not exist, allowing encouragement'
+          );
+        }
+
+        // Prevent self-encouragement
+        if (post.userId === senderId) {
+          app.logger.info({ postId, senderId }, 'User attempted to send encouragement to their own post');
+          return reply.status(400).send({
+            error: "This is your own heartfelt reflection! We're glad you created something meaningful. While you can't send encouragement to yourself here, we hope you're holding your heart gently today. 🌿",
+          });
+        }
+
+        // Insert into player_notifications
+        await app.db.execute(sql`
+          INSERT INTO "player_notifications" (
+            "journal_entry_id",
+            "recipient_user_id",
+            "is_read",
+            "encouragement_message",
+            "sender_user_id"
+          ) VALUES (
+            ${postId},
+            ${post.userId},
+            false,
+            ${message.trim()},
+            ${isAnonymous ? null : senderId}
+          )
+        `);
+
+        app.logger.info(
+          { postId, senderId, recipientId: post.userId, isAnonymous },
+          'Encouragement sent successfully'
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, postId, senderId },
+          'Failed to send encouragement'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Get encouragement notifications for authenticated user
+  app.fastify.get(
+    '/api/community/notifications',
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const recipientId = session.user.id;
+
+      app.logger.info({ recipientId }, 'Fetching encouragement notifications');
+
+      try {
+        const result = (await app.db.execute(sql`
+          SELECT
+            pn.id,
+            pn.journal_entry_id,
+            pn.recipient_user_id,
+            pn.is_read,
+            pn.encouragement_message,
+            pn.sender_user_id,
+            pn.created_at,
+            pn.updated_at,
+            cp.content,
+            cp.user_id as post_user_id
+          FROM "player_notifications" pn
+          LEFT JOIN "community_posts" cp ON pn.journal_entry_id = cp.id::text
+          WHERE pn.recipient_user_id = ${recipientId}
+            AND pn.encouragement_message IS NOT NULL
+          ORDER BY pn.created_at DESC
+          LIMIT 20
+        `)) as any;
+
+        const notifications = (result && typeof result === 'object' && 'rows' in result) ? (result.rows as any[]) : [];
+
+        app.logger.info(
+          { recipientId, count: notifications.length },
+          'Encouragement notifications retrieved'
+        );
+
+        return reply.send(notifications);
+      } catch (error) {
+        app.logger.error(
+          { err: error, recipientId },
+          'Failed to fetch encouragement notifications'
+        );
         throw error;
       }
     }
