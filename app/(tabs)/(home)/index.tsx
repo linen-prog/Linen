@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: borderRadius.sm,
-    paddingVertical: 3,
+    paddingVertical: 1,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
