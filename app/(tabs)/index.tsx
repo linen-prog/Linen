@@ -8,6 +8,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { NotificationBell } from "@/components/NotificationBell";
 import NotificationButton from '@/components/NotificationButton';
 import { authenticatedGet } from '@/utils/api';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PersonalizationData {
   companionTagline: string | null;
@@ -129,10 +130,10 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Always use light theme colors
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
+  const { isDark } = useTheme();
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
 
   const handleCheckIn = () => {
     console.log('🏠 [Home] User tapped Check-In card');
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: colors.primaryLight,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,

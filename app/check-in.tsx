@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Keyboard
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import FloatingTabBar from '@/components/FloatingTabBar';
@@ -72,13 +73,15 @@ export default function CheckInScreen() {
   const [messageShareAnonymous, setMessageShareAnonymous] = useState(false);
   const [isSharingMessage, setIsSharingMessage] = useState(false);
 
+  const { isDark } = useTheme();
+
   // Color variables for consistency
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
-  const inputBg = colors.card;
-  const inputBorder = colors.border;
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+  const inputBg = isDark ? colors.cardDark : colors.card;
+  const inputBorder = isDark ? colors.borderDark : colors.border;
 
   useEffect(() => {
     let isMounted = true;
@@ -583,7 +586,7 @@ export default function CheckInScreen() {
             title: headerTitle,
             headerBackTitle: 'Home',
             headerStyle: {
-              backgroundColor: colors.background,
+              backgroundColor: bgColor,
             },
             headerTintColor: colors.primary,
             headerRight: () => (

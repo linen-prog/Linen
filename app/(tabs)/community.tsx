@@ -38,6 +38,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Post {
   id: string;
@@ -482,10 +483,11 @@ export default function CommunityScreen() {
     }
   };
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
+  const { isDark } = useTheme();
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
 
   const tabs = [
     { id: 'feed', label: 'Feed', icon: 'favorite' as const },

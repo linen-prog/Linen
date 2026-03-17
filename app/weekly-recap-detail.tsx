@@ -7,6 +7,7 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, Touchable
 import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface WeeklyRecap {
   id: string;
@@ -38,7 +39,6 @@ interface WeeklyRecap {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: spacing.lg,
@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
   weekRange: {
     fontSize: typography.h2,
     fontWeight: typography.semibold,
-    color: colors.text,
     marginBottom: spacing.xs,
   },
   premiumBadge: {
@@ -74,7 +73,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   synthesisCard: {
-    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -84,12 +82,10 @@ const styles = StyleSheet.create({
   synthesisText: {
     fontSize: typography.body,
     fontWeight: typography.regular,
-    color: colors.text,
     lineHeight: 24,
     fontStyle: 'italic',
   },
   sectionCard: {
-    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -102,7 +98,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.h3,
     fontWeight: typography.medium,
-    color: colors.text,
     marginLeft: spacing.sm,
     flex: 1,
   },
@@ -112,7 +107,6 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: typography.body,
     fontWeight: typography.regular,
-    color: colors.text,
     lineHeight: 22,
   },
   bulletPoint: {
@@ -131,7 +125,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   visualizationCard: {
-    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -139,7 +132,6 @@ const styles = StyleSheet.create({
   visualizationTitle: {
     fontSize: typography.h4,
     fontWeight: typography.semibold,
-    color: colors.text,
     marginBottom: spacing.md,
   },
   chartContainer: {
@@ -160,12 +152,10 @@ const styles = StyleSheet.create({
   chartLabel: {
     fontSize: typography.caption,
     fontWeight: typography.regular,
-    color: colors.textSecondary,
     marginTop: spacing.xs,
   },
   chartValue: {
     fontSize: typography.caption,
-    color: colors.text,
     fontWeight: '600',
   },
 });
@@ -173,6 +163,7 @@ const styles = StyleSheet.create({
 export default function WeeklyRecapDetailScreen() {
   const { weekStartDate } = useLocalSearchParams<{ weekStartDate: string }>();
   const router = useRouter();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
 
@@ -212,9 +203,14 @@ export default function WeeklyRecapDetailScreen() {
     return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
   };
 
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -235,7 +231,7 @@ export default function WeeklyRecapDetailScreen() {
 
   if (!recap) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -248,7 +244,7 @@ export default function WeeklyRecapDetailScreen() {
           }}
         />
         <View style={styles.loadingContainer}>
-          <Text style={styles.itemText}>Recap not found</Text>
+          <Text style={[styles.itemText, { color: textColor }]}>Recap not found</Text>
         </View>
       </SafeAreaView>
     );
@@ -257,7 +253,7 @@ export default function WeeklyRecapDetailScreen() {
   const dateRangeDisplay = formatDateRange(recap.weekStartDate, recap.weekEndDate);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Weekly Recap',
@@ -269,9 +265,9 @@ export default function WeeklyRecapDetailScreen() {
           ),
         }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.weekRange}>{dateRangeDisplay}</Text>
+          <Text style={[styles.weekRange, { color: textColor }]}>{dateRangeDisplay}</Text>
           {recap.isPremium && (
             <View style={styles.premiumBadge}>
               <IconSymbol
@@ -286,14 +282,14 @@ export default function WeeklyRecapDetailScreen() {
         </View>
 
         {recap.personalSynthesis && (
-          <View style={styles.synthesisCard}>
-            <Text style={styles.synthesisText}>{recap.personalSynthesis}</Text>
+          <View style={[styles.synthesisCard, { backgroundColor: cardBg }]}>
+            <Text style={[styles.synthesisText, { color: textColor }]}>{recap.personalSynthesis}</Text>
           </View>
         )}
 
         {/* Scripture Section */}
         {(recap.scriptureSection.reflections.length > 0 || recap.scriptureSection.sharedReflections.length > 0) && (
-          <View style={styles.sectionCard}>
+          <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
             <View style={styles.sectionHeader}>
               <IconSymbol
                 ios_icon_name="book.fill"
@@ -301,14 +297,14 @@ export default function WeeklyRecapDetailScreen() {
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.sectionTitle}>Scripture</Text>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>Scripture</Text>
             </View>
             <View style={styles.sectionContent}>
               {recap.scriptureSection.reflections.map((reflection, index) => (
                 <View key={index} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{reflection}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{reflection}</Text>
                   </View>
                 </View>
               ))}
@@ -316,7 +312,7 @@ export default function WeeklyRecapDetailScreen() {
                 <View key={`shared-${index}`} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{reflection}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{reflection}</Text>
                   </View>
                 </View>
               ))}
@@ -326,7 +322,7 @@ export default function WeeklyRecapDetailScreen() {
 
         {/* Body Section */}
         {(recap.bodySection.practices.length > 0 || recap.bodySection.notes.length > 0) && (
-          <View style={styles.sectionCard}>
+          <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
             <View style={styles.sectionHeader}>
               <IconSymbol
                 ios_icon_name="figure.walk"
@@ -334,14 +330,14 @@ export default function WeeklyRecapDetailScreen() {
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.sectionTitle}>Body</Text>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>Body</Text>
             </View>
             <View style={styles.sectionContent}>
               {recap.bodySection.practices.map((practice, index) => (
                 <View key={index} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{practice}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{practice}</Text>
                   </View>
                 </View>
               ))}
@@ -349,7 +345,7 @@ export default function WeeklyRecapDetailScreen() {
                 <View key={`note-${index}`} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{note}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{note}</Text>
                   </View>
                 </View>
               ))}
@@ -359,7 +355,7 @@ export default function WeeklyRecapDetailScreen() {
 
         {/* Community Section */}
         {(recap.communitySection.checkInSummary || recap.communitySection.sharedPosts.length > 0) && (
-          <View style={styles.sectionCard}>
+          <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
             <View style={styles.sectionHeader}>
               <IconSymbol
                 ios_icon_name="person.3.fill"
@@ -367,17 +363,17 @@ export default function WeeklyRecapDetailScreen() {
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.sectionTitle}>Community</Text>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>Community</Text>
             </View>
             <View style={styles.sectionContent}>
               {recap.communitySection.checkInSummary && (
-                <Text style={styles.itemText}>{recap.communitySection.checkInSummary}</Text>
+                <Text style={[styles.itemText, { color: textColor }]}>{recap.communitySection.checkInSummary}</Text>
               )}
               {recap.communitySection.sharedPosts.map((post, index) => (
                 <View key={index} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{post}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{post}</Text>
                   </View>
                 </View>
               ))}
@@ -387,7 +383,7 @@ export default function WeeklyRecapDetailScreen() {
 
         {/* Prompting Section */}
         {recap.promptingSection.suggestions.length > 0 && (
-          <View style={styles.sectionCard}>
+          <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
             <View style={styles.sectionHeader}>
               <IconSymbol
                 ios_icon_name="lightbulb.fill"
@@ -395,14 +391,14 @@ export default function WeeklyRecapDetailScreen() {
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.sectionTitle}>For the Week Ahead</Text>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>For the Week Ahead</Text>
             </View>
             <View style={styles.sectionContent}>
               {recap.promptingSection.suggestions.map((suggestion, index) => (
                 <View key={index} style={styles.itemRow}>
                   <View style={styles.bulletPoint} />
                   <View style={styles.itemContent}>
-                    <Text style={styles.itemText}>{suggestion}</Text>
+                    <Text style={[styles.itemText, { color: textColor }]}>{suggestion}</Text>
                   </View>
                 </View>
               ))}
@@ -412,8 +408,8 @@ export default function WeeklyRecapDetailScreen() {
 
         {/* Practice Visualization (Premium) */}
         {recap.practiceVisualization && recap.practiceVisualization.weeklyData.length > 0 && (
-          <View style={styles.visualizationCard}>
-            <Text style={styles.visualizationTitle}>Practice Patterns</Text>
+          <View style={[styles.visualizationCard, { backgroundColor: cardBg }]}>
+            <Text style={[styles.visualizationTitle, { color: textColor }]}>Practice Patterns</Text>
             <View style={styles.chartContainer}>
               {recap.practiceVisualization.weeklyData.map((count, index) => {
                 const weekLabel = `W${index + 1}`;
@@ -424,9 +420,9 @@ export default function WeeklyRecapDetailScreen() {
                 return (
                   <View key={index} style={{ alignItems: 'center' }}>
                     <View style={[styles.chartBar, { height: barHeight }]}>
-                      <Text style={styles.chartValue}>{countText}</Text>
+                      <Text style={[styles.chartValue, { color: textColor }]}>{countText}</Text>
                     </View>
-                    <Text style={styles.chartLabel}>{weekLabel}</Text>
+                    <Text style={[styles.chartLabel, { color: textSecondaryColor }]}>{weekLabel}</Text>
                   </View>
                 );
               })}

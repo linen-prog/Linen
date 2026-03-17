@@ -6,6 +6,7 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
@@ -321,12 +322,13 @@ export default function DailyGiftScreen() {
     }
   };
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
-  const inputBg = colors.card;
-  const inputBorder = colors.border;
+  const { isDark } = useTheme();
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+  const inputBg = isDark ? colors.cardDark : colors.card;
+  const inputBorder = isDark ? colors.borderDark : colors.border;
 
   const handleOpenGift = () => {
     if (isOpening) {
@@ -1228,7 +1230,7 @@ export default function DailyGiftScreen() {
         onRequestClose={handleCloseSomaticCelebration}
       >
         <View style={styles.successModalOverlay}>
-          <View style={styles.successModalContent}>
+          <View style={[styles.successModalContent, { backgroundColor: cardBg }]}>
             <View style={styles.successIconCircle}>
               <IconSymbol 
                 ios_icon_name="star.fill"
@@ -1238,16 +1240,16 @@ export default function DailyGiftScreen() {
               />
             </View>
 
-            <Text style={styles.successModalTitle}>
+            <Text style={[styles.successModalTitle, { color: textColor }]}>
               Congratulations! 🎉
             </Text>
 
-            <Text style={styles.successModalMessage}>
+            <Text style={[styles.successModalMessage, { color: textSecondaryColor }]}>
               You completed your somatic invitation
             </Text>
 
-            <View style={styles.successModalNote}>
-              <Text style={styles.successModalNoteText}>
+            <View style={[styles.successModalNote, { backgroundColor: isDark ? colors.borderDark : colors.primaryLight }]}>
+              <Text style={[styles.successModalNoteText, { color: textColor }]}>
                 You took time to be present with yourself. That&apos;s a beautiful gift you&apos;ve given yourself today.
               </Text>
             </View>
@@ -1273,7 +1275,7 @@ export default function DailyGiftScreen() {
         onRequestClose={() => setShowErrorModal(false)}
       >
         <View style={styles.errorModalOverlay}>
-          <View style={styles.errorModalContent}>
+          <View style={[styles.errorModalContent, { backgroundColor: cardBg }]}>
             <IconSymbol 
               ios_icon_name="exclamationmark.triangle.fill"
               android_material_icon_name="warning"
@@ -1281,11 +1283,11 @@ export default function DailyGiftScreen() {
               color={colors.accent}
             />
 
-            <Text style={styles.errorModalTitle}>
+            <Text style={[styles.errorModalTitle, { color: textColor }]}>
               Unable to Save
             </Text>
 
-            <Text style={styles.errorModalMessage}>
+            <Text style={[styles.errorModalMessage, { color: textSecondaryColor }]}>
               {errorMessage}
             </Text>
 
@@ -1312,7 +1314,7 @@ export default function DailyGiftScreen() {
         }}
       >
         <View style={styles.successModalOverlay}>
-          <View style={styles.successModalContent}>
+          <View style={[styles.successModalContent, { backgroundColor: cardBg }]}>
             <View style={styles.successIconCircle}>
               <IconSymbol 
                 ios_icon_name="person.2.fill"
@@ -1322,16 +1324,16 @@ export default function DailyGiftScreen() {
               />
             </View>
 
-            <Text style={styles.successModalTitle}>
+            <Text style={[styles.successModalTitle, { color: textColor }]}>
               Beautiful! 🎉
             </Text>
 
-            <Text style={styles.successModalMessage}>
+            <Text style={[styles.successModalMessage, { color: textSecondaryColor }]}>
               Your reflection has been shared with the community
             </Text>
 
-            <View style={styles.successModalNote}>
-              <Text style={styles.successModalNoteText}>
+            <View style={[styles.successModalNote, { backgroundColor: isDark ? colors.borderDark : colors.primaryLight }]}>
+              <Text style={[styles.successModalNoteText, { color: textColor }]}>
                 Your words or art may be exactly what someone else needs to see today. Thank you for your courage in sharing.
               </Text>
             </View>

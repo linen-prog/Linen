@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { GradientBackground } from '@/components/GradientBackground';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
@@ -76,13 +77,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   section: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    shadowColor: colors.text,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
   synthesisText: {
     fontSize: typography.body,
     fontWeight: typography.regular,
-    color: colors.text,
     lineHeight: 24,
     fontStyle: 'italic',
   },
@@ -326,6 +325,10 @@ export default function WeeklyRecapScreen() {
   const [monthlyLoading, setMonthlyLoading] = useState(true);
   const [monthlyError, setMonthlyError] = useState(false);
   const router = useRouter();
+  const { isDark } = useTheme();
+  const cardBg = isDark ? colors.cardDark : 'rgba(255, 255, 255, 0.7)';
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
   useEffect(() => {
     loadData();
@@ -507,7 +510,7 @@ export default function WeeklyRecapScreen() {
 
           {/* Scripture Section */}
           {recap.scriptureSection && (recap.scriptureSection.reflections.length > 0 || recap.scriptureSection.sharedReflections.length > 0) && (
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: cardBg }]}>
               <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="book"
@@ -516,20 +519,20 @@ export default function WeeklyRecapScreen() {
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text style={styles.sectionTitle}>Scripture & Reflection</Text>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>Scripture & Reflection</Text>
               </View>
               {recap.scriptureSection.reflections.map((reflection, index) => (
-                <Text key={index} style={styles.itemText}>{reflection}</Text>
+                <Text key={index} style={[styles.itemText, { color: textSecondaryColor }]}>{reflection}</Text>
               ))}
               {recap.scriptureSection.sharedReflections.map((reflection, index) => (
-                <Text key={`shared-${index}`} style={styles.itemText}>{reflection}</Text>
+                <Text key={`shared-${index}`} style={[styles.itemText, { color: textSecondaryColor }]}>{reflection}</Text>
               ))}
             </View>
           )}
 
           {/* Body Section */}
           {recap.bodySection && (recap.bodySection.practices.length > 0 || recap.bodySection.notes.length > 0) && (
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: cardBg }]}>
               <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="figure.walk"
@@ -538,20 +541,20 @@ export default function WeeklyRecapScreen() {
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text style={styles.sectionTitle}>Body & Practice</Text>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>Body & Practice</Text>
               </View>
               {recap.bodySection.practices.map((practice, index) => (
-                <Text key={index} style={styles.itemText}>{practice}</Text>
+                <Text key={index} style={[styles.itemText, { color: textSecondaryColor }]}>{practice}</Text>
               ))}
               {recap.bodySection.notes.map((note, index) => (
-                <Text key={`note-${index}`} style={styles.itemText}>{note}</Text>
+                <Text key={`note-${index}`} style={[styles.itemText, { color: textSecondaryColor }]}>{note}</Text>
               ))}
             </View>
           )}
 
           {/* Community Section */}
           {recap.communitySection && (recap.communitySection.checkInSummary || recap.communitySection.sharedPosts.length > 0) && (
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: cardBg }]}>
               <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="person.3"
@@ -560,20 +563,20 @@ export default function WeeklyRecapScreen() {
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text style={styles.sectionTitle}>Community</Text>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>Community</Text>
               </View>
               {recap.communitySection.checkInSummary && (
-                <Text style={styles.itemText}>{recap.communitySection.checkInSummary}</Text>
+                <Text style={[styles.itemText, { color: textSecondaryColor }]}>{recap.communitySection.checkInSummary}</Text>
               )}
               {recap.communitySection.sharedPosts.map((post, index) => (
-                <Text key={index} style={styles.itemText}>{post}</Text>
+                <Text key={index} style={[styles.itemText, { color: textSecondaryColor }]}>{post}</Text>
               ))}
             </View>
           )}
 
           {/* Prompting Section */}
           {recap.promptingSection && recap.promptingSection.suggestions.length > 0 && (
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: cardBg }]}>
               <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="lightbulb"
@@ -582,17 +585,17 @@ export default function WeeklyRecapScreen() {
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text style={styles.sectionTitle}>Gentle Invitations</Text>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>Gentle Invitations</Text>
               </View>
               {recap.promptingSection.suggestions.map((suggestion, index) => (
-                <Text key={index} style={styles.itemText}>{suggestion}</Text>
+                <Text key={index} style={[styles.itemText, { color: textSecondaryColor }]}>{suggestion}</Text>
               ))}
             </View>
           )}
 
           {/* Personal Synthesis */}
           {recap.personalSynthesis && (
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: cardBg }]}>
               <View style={styles.sectionTitleContainer}>
                 <IconSymbol
                   ios_icon_name="heart"
@@ -601,9 +604,9 @@ export default function WeeklyRecapScreen() {
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text style={styles.sectionTitle}>A Word for You</Text>
+                <Text style={[styles.sectionTitle, { color: textColor }]}>A Word for You</Text>
               </View>
-              <Text style={styles.synthesisText}>{recap.personalSynthesis}</Text>
+              <Text style={[styles.synthesisText, { color: textColor }]}>{recap.personalSynthesis}</Text>
             </View>
           )}
 
@@ -646,7 +649,7 @@ export default function WeeklyRecapScreen() {
           </Text>
 
           {/* Monthly Summary Section */}
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: cardBg }]}>
             <View style={styles.sectionTitleContainer}>
               <IconSymbol
                 ios_icon_name="calendar.badge.clock"
@@ -655,7 +658,7 @@ export default function WeeklyRecapScreen() {
                 color={colors.primary}
                 style={styles.sectionIcon}
               />
-              <Text style={styles.sectionTitle}>Your Month in Review</Text>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>Your Month in Review</Text>
             </View>
 
             {monthlyLoading ? (

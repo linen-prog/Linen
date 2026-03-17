@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import Animated, { 
@@ -47,9 +48,10 @@ export default function OpenGiftScreen() {
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
   }));
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
+  const { isDark } = useTheme();
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
   const handleOpenGift = () => {
     if (isOpening) {

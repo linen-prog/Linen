@@ -2,6 +2,7 @@
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { authenticatedGet } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
@@ -170,8 +171,12 @@ const styles = StyleSheet.create({
 
 export default function WeeklyRecapHistoryScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [recaps, setRecaps] = useState<WeeklyRecap[]>([]);
+  const cardBg = isDark ? colors.cardDark : '#ffffff';
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
   useEffect(() => {
     loadRecapHistory();
@@ -306,7 +311,7 @@ export default function WeeklyRecapHistoryScreen() {
             return (
               <TouchableOpacity
                 key={recap.id}
-                style={styles.recapCard}
+                style={[styles.recapCard, { backgroundColor: cardBg }]}
                 onPress={() => handleRecapPress(recap.weekStartDate)}
                 activeOpacity={0.75}
               >
@@ -320,7 +325,7 @@ export default function WeeklyRecapHistoryScreen() {
                 </View>
 
                 <View style={styles.recapInfo}>
-                  <Text style={styles.recapDate}>{dateRangeDisplay}</Text>
+                  <Text style={[styles.recapDate, { color: textColor }]}>{dateRangeDisplay}</Text>
                   <View style={styles.recapMeta}>
                     {recap.isPremium && (
                       <View style={styles.premiumBadge}>
@@ -333,7 +338,7 @@ export default function WeeklyRecapHistoryScreen() {
                         <Text style={styles.premiumBadgeText}>Enhanced</Text>
                       </View>
                     )}
-                    <Text style={styles.recapTime}>{relativeTimeDisplay}</Text>
+                    <Text style={[styles.recapTime, { color: textSecondaryColor }]}>{relativeTimeDisplay}</Text>
                   </View>
                 </View>
 

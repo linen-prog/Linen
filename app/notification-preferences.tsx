@@ -20,6 +20,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { colors } from "@/styles/commonStyles";
 
 // Notification categories - customize these for your app
 const NOTIFICATION_CATEGORIES = [
@@ -45,6 +47,7 @@ const NOTIFICATION_CATEGORIES = [
 
 export default function NotificationPreferencesScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const { hasPermission, permissionDenied, isWeb, requestPermission, sendTag, deleteTag } =
     useNotifications();
 
@@ -90,18 +93,25 @@ export default function NotificationPreferencesScreen() {
     }
   };
 
+  const bgColor = isDark ? colors.backgroundDark : "#F2F2F7";
+  const cardBg = isDark ? colors.cardDark : "#fff";
+  const textColor = isDark ? colors.textDark : "#000";
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : "#8E8E93";
+  const borderColorVal = isDark ? colors.borderDark : "#E5E5EA";
+  const separatorColor = isDark ? colors.borderDark : "#F2F2F7";
+
   if (isWeb) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+        <View style={[styles.header, { backgroundColor: cardBg, borderBottomColor: borderColorVal }]}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backButton, { color: colors.primary }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Notifications</Text>
+          <Text style={[styles.title, { color: textColor }]}>Notifications</Text>
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.centeredContent}>
-          <Text style={styles.webMessage}>
+          <Text style={[styles.webMessage, { color: textSecondaryColor }]}>
             Push notifications are available in the mobile app.
           </Text>
         </View>
@@ -110,30 +120,30 @@ export default function NotificationPreferencesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+      <View style={[styles.header, { backgroundColor: cardBg, borderBottomColor: borderColorVal }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={[styles.backButton, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Notifications</Text>
+        <Text style={[styles.title, { color: textColor }]}>Notifications</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Permission Status */}
         <View style={styles.section}>
-          <View style={styles.permissionCard}>
+          <View style={[styles.permissionCard, { backgroundColor: cardBg }]}>
             <View style={styles.permissionHeader}>
               <Text style={styles.permissionIcon}>
                 {hasPermission ? "🔔" : "🔕"}
               </Text>
               <View style={styles.permissionTextContainer}>
-                <Text style={styles.permissionTitle}>
+                <Text style={[styles.permissionTitle, { color: textColor }]}>
                   {hasPermission
                     ? "Notifications Enabled"
                     : "Notifications Disabled"}
                 </Text>
-                <Text style={styles.permissionDescription}>
+                <Text style={[styles.permissionDescription, { color: textSecondaryColor }]}>
                   {hasPermission
                     ? "You'll receive push notifications"
                     : "Enable notifications to stay updated"}
@@ -142,7 +152,7 @@ export default function NotificationPreferencesScreen() {
             </View>
             {!hasPermission && (
               <TouchableOpacity
-                style={styles.enableButton}
+                style={[styles.enableButton, { backgroundColor: colors.primary }]}
                 onPress={handleEnableNotifications}
               >
                 <Text style={styles.enableButtonText}>Enable Notifications</Text>
@@ -154,12 +164,12 @@ export default function NotificationPreferencesScreen() {
         {/* Notification Categories */}
         {hasPermission && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notification Types</Text>
+            <Text style={[styles.sectionTitle, { color: textSecondaryColor }]}>Notification Types</Text>
             {NOTIFICATION_CATEGORIES.map((category) => (
-              <View key={category.key} style={styles.categoryRow}>
+              <View key={category.key} style={[styles.categoryRow, { backgroundColor: cardBg, borderBottomColor: separatorColor }]}>
                 <View style={styles.categoryText}>
-                  <Text style={styles.categoryLabel}>{category.label}</Text>
-                  <Text style={styles.categoryDescription}>
+                  <Text style={[styles.categoryLabel, { color: textColor }]}>{category.label}</Text>
+                  <Text style={[styles.categoryDescription, { color: textSecondaryColor }]}>
                     {category.description}
                   </Text>
                 </View>
@@ -168,7 +178,7 @@ export default function NotificationPreferencesScreen() {
                   onValueChange={(value) =>
                     handleCategoryToggle(category.key, value)
                   }
-                  trackColor={{ false: "#E5E5EA", true: "#34C759" }}
+                  trackColor={{ false: borderColorVal, true: colors.primary }}
                   thumbColor="#fff"
                 />
               </View>
@@ -183,7 +193,6 @@ export default function NotificationPreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
   },
   header: {
     flexDirection: "row",
@@ -191,19 +200,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
   },
   backButton: {
     fontSize: 16,
-    color: "#007AFF",
     width: 60,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000",
   },
   content: {
     flex: 1,
@@ -216,7 +221,6 @@ const styles = StyleSheet.create({
   },
   webMessage: {
     fontSize: 16,
-    color: "#8E8E93",
     textAlign: "center",
   },
   section: {
@@ -226,14 +230,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#8E8E93",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
   permissionCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -256,16 +258,13 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000",
   },
   permissionDescription: {
     fontSize: 14,
-    color: "#8E8E93",
     marginTop: 2,
   },
   enableButton: {
     marginTop: 16,
-    backgroundColor: "#007AFF",
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
@@ -279,11 +278,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F2F2F7",
   },
   categoryText: {
     flex: 1,
@@ -291,11 +288,9 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 16,
-    color: "#000",
   },
   categoryDescription: {
     fontSize: 13,
-    color: "#8E8E93",
     marginTop: 2,
   },
 });

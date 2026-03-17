@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -8,6 +8,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { storeUserData, storeBearerToken } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { BACKEND_URL } from '@/utils/api';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * AuthScreen - Simplified email-only authentication
@@ -27,8 +28,7 @@ import { BACKEND_URL } from '@/utils/api';
 export default function AuthScreen() {
   console.log('User viewing Auth screen');
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useTheme();
   const { setUserDirectly } = useAuth();
 
   const [email, setEmail] = useState('');

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Image, StyleSheet, Animated, Easing, Pressable, ImageSourcePropType } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { useRouter } from 'expo-router';
 
@@ -36,6 +37,11 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
   const router = useRouter();
+  const { isDark } = useTheme();
+  const panelBg = isDark ? colors.cardDark : '#FFFFFF';
+  const panelBorderColor = isDark ? colors.borderDark : colors.border;
+  const panelTextColor = isDark ? colors.textDark : colors.text;
+  const panelTextSecondary = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
@@ -235,10 +241,10 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
         >
           <Pressable 
             onPress={(e) => e.stopPropagation()}
-            style={styles.dropdownPanel}
+            style={[styles.dropdownPanel, { backgroundColor: panelBg, borderColor: panelBorderColor, borderWidth: 1 }]}
           >
-            <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle}>Notifications</Text>
+            <View style={[styles.dropdownHeader, { borderBottomColor: panelBorderColor }]}>
+              <Text style={[styles.dropdownTitle, { color: panelTextColor }]}>Notifications</Text>
               <View style={styles.headerActions}>
                 {notifications.length > 0 && (
                   <TouchableOpacity onPress={markAllAsRead}>
@@ -250,7 +256,7 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
                     ios_icon_name="xmark" 
                     android_material_icon_name="close" 
                     size={24} 
-                    color={colors.text}
+                    color={panelTextColor}
                   />
                 </TouchableOpacity>
               </View>
@@ -294,12 +300,12 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
               ) : (
                 <React.Fragment>
                   {notifications.map((notification, index) => {
-                    const cardBgColor = notification.read ? '#FFFFFF' : colors.accentVeryLight;
+                    const cardBgColor = notification.read ? panelBg : (isDark ? colors.borderDark : colors.accentVeryLight);
                     
                     return (
                       <TouchableOpacity
                         key={index}
-                        style={[styles.notificationCard, { backgroundColor: cardBgColor }]}
+                        style={[styles.notificationCard, { backgroundColor: cardBgColor, borderBottomColor: panelBorderColor }]}
                         onPress={() => handleNotificationClick(notification)}
                         activeOpacity={0.7}
                       >
@@ -320,8 +326,8 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
                         )}
                         
                         <View style={styles.notificationContent}>
-                          <Text style={styles.notificationText}>{notification.message}</Text>
-                          <Text style={styles.notificationTimestamp}>{notification.createdAt}</Text>
+                          <Text style={[styles.notificationText, { color: panelTextColor }]}>{notification.message}</Text>
+                          <Text style={[styles.notificationTimestamp, { color: panelTextSecondary }]}>{notification.createdAt}</Text>
                         </View>
                       </TouchableOpacity>
                     );

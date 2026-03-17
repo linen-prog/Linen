@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   productCount: {
     fontSize: 12,
-    color: "gray",
+    color: "#78716c",
   },
   rightContent: {
     flexDirection: "row",

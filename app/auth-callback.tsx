@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { Platform } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
+import { colors } from "@/styles/commonStyles";
 
 type Status = "processing" | "success" | "error";
 
 export default function AuthCallbackScreen() {
   const [status, setStatus] = useState<Status>("processing");
   const [message, setMessage] = useState("Processing authentication...");
+  const { isDark } = useTheme();
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -43,12 +46,15 @@ export default function AuthCallbackScreen() {
     }
   };
 
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+
   return (
-    <View style={styles.container}>
-      {status === "processing" && <ActivityIndicator size="large" color="#007AFF" />}
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {status === "processing" && <ActivityIndicator size="large" color={colors.primary} />}
       {status === "success" && <Text style={styles.successIcon}>✓</Text>}
       {status === "error" && <Text style={styles.errorIcon}>✗</Text>}
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.message, { color: textColor }]}>{message}</Text>
     </View>
   );
 }
@@ -59,7 +65,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
   },
   successIcon: {
     fontSize: 48,
@@ -73,6 +78,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
     textAlign: "center",
-    color: "#333",
   },
 });

@@ -3,9 +3,12 @@ import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { Platform } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { authClient } from "@/lib/auth";
+import { useTheme } from "@/contexts/ThemeContext";
+import { colors } from "@/styles/commonStyles";
 
 export default function AuthPopupScreen() {
   const { provider } = useLocalSearchParams<{ provider: string }>();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -21,10 +24,13 @@ export default function AuthPopupScreen() {
     });
   }, [provider]);
 
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#007AFF" />
-      <Text style={styles.text}>Redirecting to sign in...</Text>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.text, { color: textColor }]}>Redirecting to sign in...</Text>
     </View>
   );
 }
@@ -34,11 +40,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   text: {
     marginTop: 20,
     fontSize: 16,
-    color: "#333",
   },
 });

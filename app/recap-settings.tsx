@@ -6,6 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface RecapPreferences {
   id: string;
@@ -16,7 +17,6 @@ interface RecapPreferences {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: spacing.lg,
@@ -30,23 +30,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
     marginBottom: spacing.md,
   },
   sectionDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
+    fontSize: typography.body,
     marginBottom: spacing.lg,
     lineHeight: 22,
   },
   optionCard: {
-    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
     borderWidth: 2,
-    borderColor: 'transparent',
   },
   optionCardSelected: {
     borderColor: colors.primary,
@@ -59,12 +56,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   optionTitle: {
-    ...typography.h4,
-    color: colors.text,
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
   },
   optionDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
+    fontSize: typography.body,
     lineHeight: 20,
   },
   checkIcon: {
@@ -84,8 +80,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   infoText: {
-    ...typography.body,
-    color: colors.text,
+    fontSize: typography.body,
     flex: 1,
     marginLeft: spacing.sm,
     lineHeight: 20,
@@ -109,6 +104,7 @@ const styles = StyleSheet.create({
 
 export default function RecapSettingsScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState<RecapPreferences | null>(null);
@@ -156,9 +152,15 @@ export default function RecapSettingsScreen() {
 
   const hasChanges = preferences && selectedDay !== preferences.deliveryDay;
 
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+  const borderColorVal = isDark ? colors.borderDark : 'transparent';
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Recap Settings',
@@ -177,26 +179,26 @@ export default function RecapSettingsScreen() {
   const disabledSelected = selectedDay === 'disabled';
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Recap Settings',
           headerShown: true,
         }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Preferences</Text>
-          <Text style={styles.sectionDescription}>
+          <Text style={[styles.sectionTitle, { color: textColor }]}>Delivery Preferences</Text>
+          <Text style={[styles.sectionDescription, { color: textSecondaryColor }]}>
             Choose when you&apos;d like to receive your weekly recap. Recaps review the past week&apos;s engagement and prepare your heart for the coming week&apos;s rhythm.
           </Text>
 
           <TouchableOpacity
-            style={[styles.optionCard, sundaySelected && styles.optionCardSelected]}
+            style={[styles.optionCard, { backgroundColor: cardBg, borderColor: borderColorVal }, sundaySelected && styles.optionCardSelected]}
             onPress={() => setSelectedDay('sunday')}
           >
             <View style={styles.optionHeader}>
-              <Text style={styles.optionTitle}>Sunday Evening</Text>
+              <Text style={[styles.optionTitle, { color: textColor }]}>Sunday Evening</Text>
               {sundaySelected && (
                 <View style={styles.checkIcon}>
                   <IconSymbol
@@ -208,17 +210,17 @@ export default function RecapSettingsScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.optionDescription}>
+            <Text style={[styles.optionDescription, { color: textSecondaryColor }]}>
               Receive your recap Sunday evening at 6:00 PM, as the new week begins. This timing allows you to reflect on the past week and set intentions for the week ahead.
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.optionCard, mondaySelected && styles.optionCardSelected]}
+            style={[styles.optionCard, { backgroundColor: cardBg, borderColor: borderColorVal }, mondaySelected && styles.optionCardSelected]}
             onPress={() => setSelectedDay('monday')}
           >
             <View style={styles.optionHeader}>
-              <Text style={styles.optionTitle}>Monday Morning</Text>
+              <Text style={[styles.optionTitle, { color: textColor }]}>Monday Morning</Text>
               {mondaySelected && (
                 <View style={styles.checkIcon}>
                   <IconSymbol
@@ -230,17 +232,17 @@ export default function RecapSettingsScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.optionDescription}>
+            <Text style={[styles.optionDescription, { color: textSecondaryColor }]}>
               Receive your recap Monday morning at 8:00 AM to launch the new week. This timing helps you start fresh with insights from the previous week.
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.optionCard, disabledSelected && styles.optionCardSelected]}
+            style={[styles.optionCard, { backgroundColor: cardBg, borderColor: borderColorVal }, disabledSelected && styles.optionCardSelected]}
             onPress={() => setSelectedDay('disabled')}
           >
             <View style={styles.optionHeader}>
-              <Text style={styles.optionTitle}>Disabled</Text>
+              <Text style={[styles.optionTitle, { color: textColor }]}>Disabled</Text>
               {disabledSelected && (
                 <View style={styles.checkIcon}>
                   <IconSymbol
@@ -252,7 +254,7 @@ export default function RecapSettingsScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.optionDescription}>
+            <Text style={[styles.optionDescription, { color: textSecondaryColor }]}>
               Don&apos;t receive automated recaps. You can still view recaps on demand through your profile history.
             </Text>
           </TouchableOpacity>
@@ -264,7 +266,7 @@ export default function RecapSettingsScreen() {
               size={20}
               color={colors.primary}
             />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, { color: textColor }]}>
               Archived recaps remain accessible through profile history, allowing you to review your journey across months or years.
             </Text>
           </View>

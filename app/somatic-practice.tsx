@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedPost } from '@/utils/api';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function SomaticPracticeScreen() {
   console.log('User viewing Somatic Practice screen');
@@ -143,10 +144,11 @@ export default function SomaticPracticeScreen() {
     }
   };
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
+  const { isDark } = useTheme();
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
 
   // Format time remaining
   const minutes = Math.floor(timeRemaining / 60);
@@ -559,7 +561,7 @@ const styles = StyleSheet.create({
   completeEarlyButton: {
     paddingVertical: spacing.md,
     alignItems: 'center',
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     marginTop: spacing.md,
   },

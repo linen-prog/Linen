@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,24 +120,32 @@ function OptionCard({
   option,
   selected,
   onPress,
+  cardBg,
+  borderColorVal,
+  textColor,
+  textSecondaryColor,
 }: {
   option: Option;
   selected: boolean;
   onPress: () => void;
+  cardBg: string;
+  borderColorVal: string;
+  textColor?: string;
+  textSecondaryColor?: string;
 }) {
   return (
     <TouchableOpacity
-      style={[styles.optionCard, selected && styles.optionCardSelected]}
+      style={[styles.optionCard, { backgroundColor: cardBg, borderColor: borderColorVal }, selected && styles.optionCardSelected]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={styles.optionRow}>
         <Text style={styles.optionIcon}>{option.icon}</Text>
         <View style={styles.optionTextContainer}>
-          <Text style={[styles.optionTitle, selected && styles.optionTitleSelected]}>
+          <Text style={[styles.optionTitle, { color: textColor }, selected && styles.optionTitleSelected]}>
             {option.title}
           </Text>
-          <Text style={styles.optionDescription}>{option.description}</Text>
+          <Text style={[styles.optionDescription, { color: textSecondaryColor }]}>{option.description}</Text>
         </View>
         <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
           {selected && <View style={styles.radioInner} />}
@@ -150,6 +159,7 @@ function OptionCard({
 
 export default function CompanionPreferencesScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -254,13 +264,22 @@ export default function CompanionPreferencesScreen() {
     else if (step.key === 'responseLength') setResponseLength(value);
   };
 
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const borderColorVal = isDark ? colors.borderDark : colors.border;
+  const bottomBarBg = isDark ? colors.backgroundDark : colors.background;
+  const secondaryBtnBg = isDark ? colors.borderDark : colors.border;
+  const secondaryBtnText = isDark ? colors.textDark : colors.text;
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]} edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading your preferences…</Text>
+          <Text style={[styles.loadingText, { color: textSecondaryColor }]}>Loading your preferences…</Text>
         </View>
       </SafeAreaView>
     );
@@ -276,7 +295,7 @@ export default function CompanionPreferencesScreen() {
   const subtitleText = `${toneLabel} · ${directnessLabel}`;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={styles.flex}
@@ -304,8 +323,8 @@ export default function CompanionPreferencesScreen() {
         >
           <Animated.View style={{ opacity: fadeAnim }}>
             {/* Question header */}
-            <Text style={styles.question}>{step.question}</Text>
-            <Text style={styles.description}>{step.description}</Text>
+            <Text style={[styles.question, { color: textColor }]}>{step.question}</Text>
+            <Text style={[styles.description, { color: textSecondaryColor }]}>{step.description}</Text>
 
             {/* Options or custom text */}
             {step.options.length > 0 ? (
@@ -316,14 +335,18 @@ export default function CompanionPreferencesScreen() {
                     option={option}
                     selected={currentValue === option.value}
                     onPress={() => handleOptionSelect(option.value)}
+                    cardBg={currentValue === option.value ? (isDark ? colors.cardDark : colors.primaryLight) : cardBg}
+                    borderColorVal={borderColorVal}
+                    textColor={textColor}
+                    textSecondaryColor={textSecondaryColor}
                   />
                 ))}
               </View>
             ) : (
               <View style={styles.customSection}>
-                <Text style={styles.customLabel}>Optional</Text>
+                <Text style={[styles.customLabel, { color: textSecondaryColor }]}>Optional</Text>
                 <TextInput
-                  style={styles.customInput}
+                  style={[styles.customInput, { backgroundColor: cardBg, borderColor: borderColorVal, color: textColor }]}
                   value={customPreferences}
                   onChangeText={(text) => {
                     if (text.length <= MAX_CUSTOM_CHARS) {
@@ -331,7 +354,7 @@ export default function CompanionPreferencesScreen() {
                     }
                   }}
                   placeholder="e.g. I prefer concrete examples over abstract concepts. Please use gender-neutral language."
-                  placeholderTextColor={colors.textLight}
+                  placeholderTextColor={textSecondaryColor}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -350,23 +373,23 @@ export default function CompanionPreferencesScreen() {
 
             {/* Summary preview on last step */}
             {isLastStep && (
-              <View style={styles.summaryCard}>
+              <View style={[styles.summaryCard, { backgroundColor: isDark ? colors.cardDark : colors.primaryLight, borderColor: isDark ? colors.borderDark : colors.primaryMedium + '40' }]}>
                 <Text style={styles.summaryTitle}>Your selections</Text>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryKey}>Tone</Text>
-                  <Text style={styles.summaryValue}>{TONE_LABELS[tone] || tone}</Text>
+                  <Text style={[styles.summaryKey, { color: textSecondaryColor }]}>Tone</Text>
+                  <Text style={[styles.summaryValue, { color: textColor }]}>{TONE_LABELS[tone] || tone}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryKey}>Directness</Text>
-                  <Text style={styles.summaryValue}>{DIRECTNESS_LABELS[directness] || directness}</Text>
+                  <Text style={[styles.summaryKey, { color: textSecondaryColor }]}>Directness</Text>
+                  <Text style={[styles.summaryValue, { color: textColor }]}>{DIRECTNESS_LABELS[directness] || directness}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryKey}>Scripture</Text>
-                  <Text style={styles.summaryValue}>{spiritualIntegration.replace('_', ' ')}</Text>
+                  <Text style={[styles.summaryKey, { color: textSecondaryColor }]}>Scripture</Text>
+                  <Text style={[styles.summaryValue, { color: textColor }]}>{spiritualIntegration.replace('_', ' ')}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryKey}>Length</Text>
-                  <Text style={styles.summaryValue}>{responseLength}</Text>
+                  <Text style={[styles.summaryKey, { color: textSecondaryColor }]}>Length</Text>
+                  <Text style={[styles.summaryValue, { color: textColor }]}>{responseLength}</Text>
                 </View>
               </View>
             )}
@@ -374,14 +397,14 @@ export default function CompanionPreferencesScreen() {
         </ScrollView>
 
         {/* Bottom buttons */}
-        <View style={styles.bottomBar}>
+        <View style={[styles.bottomBar, { backgroundColor: bottomBarBg, borderTopColor: borderColorVal }]}>
           {isFirstStep ? (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleCancel}>
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: secondaryBtnBg }]} onPress={handleCancel}>
+              <Text style={[styles.secondaryButtonText, { color: secondaryBtnText }]}>Cancel</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleBack}>
-              <Text style={styles.secondaryButtonText}>Back</Text>
+            <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: secondaryBtnBg }]} onPress={handleBack}>
+              <Text style={[styles.secondaryButtonText, { color: secondaryBtnText }]}>Back</Text>
             </TouchableOpacity>
           )}
 
@@ -412,14 +435,9 @@ export default function CompanionPreferencesScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const EMERALD_50 = '#ecfdf5';
-const EMERALD_200 = '#a7f3d0';
-const EMERALD_500 = '#10b981';
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fafaf9',
   },
   flex: {
     flex: 1,
@@ -432,7 +450,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: typography.body,
-    color: colors.textSecondary,
   },
   topBar: {
     flexDirection: 'row',
@@ -454,10 +471,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dotActive: {
-    backgroundColor: EMERALD_500,
+    backgroundColor: colors.primaryMedium,
   },
   dotInactive: {
-    backgroundColor: '#e7e5e4',
+    backgroundColor: colors.border,
   },
   stepCounter: {
     fontSize: typography.caption,
@@ -476,14 +493,12 @@ const styles = StyleSheet.create({
   question: {
     fontSize: 26,
     fontWeight: typography.bold,
-    color: colors.text,
     marginBottom: spacing.sm,
     lineHeight: 34,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   description: {
     fontSize: typography.body,
-    color: colors.textSecondary,
     lineHeight: 24,
     marginBottom: spacing.xl,
   },
@@ -491,16 +506,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e7e5e4',
   },
   optionCardSelected: {
-    backgroundColor: EMERALD_50,
     borderWidth: 2,
-    borderColor: EMERALD_200,
+    borderColor: colors.primaryMedium,
   },
   optionRow: {
     flexDirection: 'row',
@@ -518,7 +530,6 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
-    color: colors.text,
     marginBottom: 2,
   },
   optionTitleSelected: {
@@ -526,7 +537,6 @@ const styles = StyleSheet.create({
   },
   optionDescription: {
     fontSize: typography.bodySmall,
-    color: colors.textSecondary,
     lineHeight: 18,
   },
   radioOuter: {
@@ -534,18 +544,18 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#d6d3d1',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioOuterSelected: {
-    borderColor: EMERALD_500,
+    borderColor: colors.primaryMedium,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: EMERALD_500,
+    backgroundColor: colors.primaryMedium,
   },
   customSection: {
     gap: 6,
@@ -557,13 +567,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   customInput: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     fontSize: typography.body,
-    color: colors.text,
     borderWidth: 1,
-    borderColor: '#e7e5e4',
     minHeight: 120,
     textAlignVertical: 'top',
     lineHeight: 22,
@@ -579,13 +586,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   summaryCard: {
-    backgroundColor: EMERALD_50,
     borderRadius: 12,
     padding: 16,
     marginTop: spacing.xl,
     gap: 8,
     borderWidth: 1,
-    borderColor: EMERALD_200,
   },
   summaryTitle: {
     fontSize: typography.bodySmall,
@@ -602,12 +607,10 @@ const styles = StyleSheet.create({
   },
   summaryKey: {
     fontSize: typography.bodySmall,
-    color: colors.textSecondary,
   },
   summaryValue: {
     fontSize: typography.bodySmall,
     fontWeight: typography.semibold,
-    color: colors.text,
     textTransform: 'capitalize',
   },
   bottomBar: {
@@ -616,12 +619,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
-    backgroundColor: '#fafaf9',
   },
   primaryButton: {
     flex: 1,
-    backgroundColor: EMERALD_500,
+    backgroundColor: colors.primaryMedium,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -638,7 +639,6 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    backgroundColor: '#e7e5e4',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -646,7 +646,6 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   secondaryButtonText: {
-    color: colors.text,
     fontSize: typography.body,
     fontWeight: typography.semibold,
   },

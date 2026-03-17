@@ -6,6 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet } from '@/utils/api';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface DailyGiftResponse {
   weeklyTheme: {
@@ -105,10 +106,11 @@ export default function ScriptureVerificationScreen() {
   const todayDayOfYear = calculateDayOfYear(now);
   const todayLiturgicalSeason = getLiturgicalSeasonForDate(now);
 
-  const bgColor = colors.background;
-  const textColor = colors.text;
-  const textSecondaryColor = colors.textSecondary;
-  const cardBg = colors.card;
+  const { isDark } = useTheme();
+  const bgColor = isDark ? colors.backgroundDark : colors.background;
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
 
   if (isLoading) {
     return (
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   headerButton: {

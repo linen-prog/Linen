@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder, Animated as RNAnimated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder, Animated as RNAnimated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Image as SvgImage, Circle, Rect, Defs, LinearGradient, Stop, Pattern } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
 import Slider from '@react-native-community/slider';
 import { IconSymbol } from '@/components/IconSymbol';
 import Animated, { 
@@ -340,8 +341,7 @@ function InteractiveSticker({
 
 export default function ArtworkCanvasScreen() {
   console.log('User viewing Artwork Canvas screen');
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useTheme();
   const router = useRouter();
 
   const [selectedBrush, setSelectedBrush] = useState<BrushType>('pencil');
