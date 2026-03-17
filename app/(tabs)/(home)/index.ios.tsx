@@ -183,7 +183,7 @@ export default function HomeScreen() {
               <IconSymbol
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={32}
+                size={22}
                 color={colors.primary}
               />
             </View>
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl + 20,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: 'transparent',
     zIndex: 100,
   },
@@ -283,8 +283,8 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: 80,
-    marginBottom: spacing.xl + 40,
+    marginTop: 32,
+    marginBottom: spacing.md,
   },
   greeting: {
     fontSize: typography.h3,
@@ -327,9 +327,9 @@ const styles = StyleSheet.create({
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -339,16 +339,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardIconContainer: {
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
   cardTitle: {
-    fontSize: typography.h3,
+    fontSize: typography.body,
     fontWeight: typography.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   cardSubtitle: {
-    fontSize: typography.bodySmall,
+    fontSize: 11,
     fontWeight: typography.regular,
     color: colors.textSecondary,
   },
