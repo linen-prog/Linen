@@ -183,14 +183,15 @@ export default function HomeScreen() {
               <IconSymbol
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={48}
+                size={32}
                 color={colors.primary}
               />
             </View>
 
-            <Text style={styles.cardTitle}>Check-In</Text>
-
-            <Text style={styles.cardSubtitle}>Dove is here for you</Text>
+            <View>
+              <Text style={styles.cardTitle}>Check-In</Text>
+              <Text style={styles.cardSubtitle}>Dove is here for you</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -202,14 +203,15 @@ export default function HomeScreen() {
               <IconSymbol
                 ios_icon_name="gift.fill"
                 android_material_icon_name="card-giftcard"
-                size={48}
+                size={32}
                 color={colors.primary}
               />
             </View>
 
-            <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-
-            <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+            <View>
+              <Text style={styles.giftCardTitle}>Open Your Gift</Text>
+              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -325,25 +327,28 @@ const styles = StyleSheet.create({
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardIconContainer: {
-    marginBottom: spacing.md,
+    marginRight: spacing.md,
   },
   cardTitle: {
-    fontSize: typography.h2,
+    fontSize: typography.h3,
     fontWeight: typography.semibold,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   cardSubtitle: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: typography.regular,
     color: colors.textSecondary,
   },
@@ -352,22 +357,25 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     borderColor: colors.accentMedium,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
     shadowColor: colors.accentDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   giftCardTitle: {
-    fontSize: typography.h2,
+    fontSize: typography.h3,
     fontWeight: typography.semibold,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   giftCardSubtitle: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: typography.regular,
     color: colors.textSecondary,
   },
