@@ -378,7 +378,11 @@ export function registerDailyGiftRoutes(app: App) {
           reflections.map((r) => ({
             id: r.id,
             dailyGiftId: r.dailyGiftId,
+            userId: r.userId,
             reflectionText: r.reflectionText,
+            shareToComm: r.shareToComm,
+            category: r.category,
+            isAnonymous: r.isAnonymous,
             createdAt: r.createdAt,
           }))
         );
