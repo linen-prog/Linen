@@ -174,16 +174,34 @@ export function registerCommunityRoutes(app: App) {
       );
 
       try {
+        // Get user display name from user_profiles, fall back to session.user.name
+        let authorName: string | null = null;
+        if (!isAnonymous) {
+          try {
+            const userProfile = await app.db
+              .select({ displayName: schema.userProfiles.displayName })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.userId, session.user.id))
+              .limit(1);
+            authorName = userProfile[0]?.displayName || session.user.name || null;
+          } catch (error) {
+            app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
+            authorName = session.user.name || null;
+          }
+        }
+
         const [post] = await app.db
           .insert(schema.communityPosts)
           .values({
             userId: session.user.id,
-            authorName: isAnonymous ? null : session.user.name,
+            authorName,
             isAnonymous,
             category: category as any,
             content,
+            prayerCount: 0,
             contentType: (contentType as any) || 'manual',
             scriptureReference: scriptureReference || null,
+            isFlagged: false,
             artworkUrl: artworkUrl || null,
           })
           .returning();
@@ -369,6 +387,8 @@ export function registerCommunityRoutes(app: App) {
         const result = posts.map((p) => ({
           id: p.id,
           userId: p.userId,
+          authorName: p.authorName,
+          isAnonymous: p.isAnonymous,
           category: p.category,
           content: p.content,
           contentType: p.contentType,
