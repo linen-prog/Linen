@@ -524,6 +524,25 @@ export async function initializeDatabase(db: any, app?: App) {
       CREATE INDEX IF NOT EXISTS "player_notifications_created" ON "player_notifications"("created_at")
     `);
 
+    // Monthly recap cache table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "monthly_recap_cache" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "year" integer NOT NULL,
+        "month" integer NOT NULL,
+        "conversation_summary" text,
+        "suggestions" jsonb,
+        "growth_highlight" text,
+        "created_at" timestamp DEFAULT NOW(),
+        UNIQUE("user_id", "year", "month")
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "monthly_recap_cache_user" ON "monthly_recap_cache"("user_id")
+    `);
+
     console.log('Database tables initialized successfully');
 
     // Auto-seed weekly themes if database is empty
