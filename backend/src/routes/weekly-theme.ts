@@ -1325,7 +1325,8 @@ export function registerWeeklyThemeRoutes(app: App) {
           );
 
           try {
-            const [newContent] = await app.db
+            // Insert with RETURNING and capture the result directly
+            const insertResult = await app.db
               .insert(schema.dailyContent)
               .values({
                 dayOfYear,
@@ -1339,16 +1340,22 @@ export function registerWeeklyThemeRoutes(app: App) {
               })
               .returning();
 
-            dailyContent = newContent;
-            app.logger.info(
-              {
-                dayOfYear,
-                contentId: dailyContent.id,
-                weeklyThemeId: dailyContent.weeklyThemeId,
-                scriptureRef: dailyScripture.ref,
-              },
-              'Daily content successfully persisted to database'
-            );
+            // Use the inserted row directly from RETURNING result
+            if (insertResult && insertResult.length > 0) {
+              dailyContent = insertResult[0];
+              app.logger.info(
+                {
+                  dayOfYear,
+                  contentId: dailyContent.id,
+                  weeklyThemeId: dailyContent.weeklyThemeId,
+                  scriptureRef: dailyScripture.ref,
+                  source: 'insert_returning',
+                },
+                'Daily content successfully persisted to database using INSERT...RETURNING'
+              );
+            } else {
+              throw new Error('INSERT...RETURNING returned empty result');
+            }
           } catch (insertError) {
             app.logger.error(
               {
@@ -1360,7 +1367,7 @@ export function registerWeeklyThemeRoutes(app: App) {
               'Failed to insert daily content - attempting fallback query'
             );
 
-            // Fallback: try to fetch again in case another process inserted it
+            // Fallback: try to fetch in case another process inserted it or recovery from race condition
             const fallbackContent = await app.db
               .select()
               .from(schema.dailyContent)
@@ -1375,7 +1382,7 @@ export function registerWeeklyThemeRoutes(app: App) {
                   contentId: dailyContent.id,
                   source: 'fallback_query',
                 },
-                'Daily content found via fallback query'
+                'Daily content found via fallback query after INSERT failed'
               );
             } else {
               app.logger.error(
