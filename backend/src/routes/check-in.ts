@@ -766,20 +766,36 @@ Write only the prayer, nothing else.`;
           await ensureGuestUserExists(app);
         }
 
-        // Get user name from session
-        const userName = session.user.name || null;
+        // Get user display name from user_profiles, fall back to session.user.name
+        let authorName: string | null = null;
+        if (!isAnonymous) {
+          try {
+            const userProfile = await app.db
+              .select({ displayName: schema.userProfiles.displayName })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.userId, session.user.id))
+              .limit(1);
+            authorName = userProfile[0]?.displayName || session.user.name || null;
+          } catch (error) {
+            app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
+            authorName = session.user.name || null;
+          }
+        }
 
         // Create community post for care request
         const [post] = await app.db
           .insert(schema.communityPosts)
           .values({
             userId: session.user.id,
-            authorName: isAnonymous ? null : userName,
+            authorName,
             isAnonymous,
             category: 'care',
             content: content.trim(),
+            prayerCount: 0,
             contentType: 'companion',
             scriptureReference: null,
+            isFlagged: false,
+            artworkUrl: null,
           })
           .returning();
 
@@ -868,20 +884,36 @@ Write only the prayer, nothing else.`;
           return reply.status(403).send({ error: 'Unauthorized' });
         }
 
-        // Get user name from session (user info is already available)
-        const userName = session.user.name || null;
+        // Get user display name from user_profiles, fall back to session.user.name
+        let authorName: string | null = null;
+        if (!isAnonymous) {
+          try {
+            const userProfile = await app.db
+              .select({ displayName: schema.userProfiles.displayName })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.userId, session.user.id))
+              .limit(1);
+            authorName = userProfile[0]?.displayName || session.user.name || null;
+          } catch (error) {
+            app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
+            authorName = session.user.name || null;
+          }
+        }
 
         // Create community post
         const [post] = await app.db
           .insert(schema.communityPosts)
           .values({
             userId: session.user.id,
-            authorName: isAnonymous ? null : userName,
+            authorName,
             isAnonymous,
-            category: category as any, // Use the category from request
+            category: category as any,
             content: prayer.content,
+            prayerCount: 0,
             contentType: 'companion',
             scriptureReference: null,
+            isFlagged: false,
+            artworkUrl: null,
           })
           .returning();
 
@@ -889,6 +921,7 @@ Write only the prayer, nothing else.`;
         await app.db
           .update(schema.conversationPrayers)
           .set({
+            isShared: true,
             sharedToCommunity: true,
             category: category as any,
           })
@@ -986,20 +1019,36 @@ Write only the prayer, nothing else.`;
           return reply.status(403).send({ error: 'Unauthorized' });
         }
 
-        // Get user name from session
-        const userName = session.user.name || null;
+        // Get user display name from user_profiles, fall back to session.user.name
+        let authorName: string | null = null;
+        if (!isAnonymous) {
+          try {
+            const userProfile = await app.db
+              .select({ displayName: schema.userProfiles.displayName })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.userId, session.user.id))
+              .limit(1);
+            authorName = userProfile[0]?.displayName || session.user.name || null;
+          } catch (error) {
+            app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
+            authorName = session.user.name || null;
+          }
+        }
 
         // Create the community post with the message content
         const [post] = await app.db
           .insert(schema.communityPosts)
           .values({
             userId: session.user.id,
-            authorName: isAnonymous ? null : userName,
+            authorName,
             isAnonymous,
             category: category as any,
             content: message.content,
+            prayerCount: 0,
             contentType: 'companion',
             scriptureReference: null,
+            isFlagged: false,
+            artworkUrl: null,
           })
           .returning();
 

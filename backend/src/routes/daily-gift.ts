@@ -277,12 +277,25 @@ export function registerDailyGiftRoutes(app: App) {
             await ensureGuestUserExists(app);
           }
 
-          // Get user name from session (user info is already available)
-          const userName = session.user.name || null;
+          // Get user display name from user_profiles, fall back to session.user.name
+          let authorName: string | null = null;
+          if (!isAnonymous) {
+            try {
+              const userProfile = await app.db
+                .select({ displayName: schema.userProfiles.displayName })
+                .from(schema.userProfiles)
+                .where(eq(schema.userProfiles.userId, session.user.id))
+                .limit(1);
+              authorName = userProfile[0]?.displayName || session.user.name || null;
+            } catch (error) {
+              app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
+              authorName = session.user.name || null;
+            }
+          }
 
           // Create community post
           app.logger.debug(
-            { userId: session.user.id, userName, isAnonymous },
+            { userId: session.user.id, authorName, isAnonymous },
             'Creating community post with author info'
           );
 
@@ -290,12 +303,15 @@ export function registerDailyGiftRoutes(app: App) {
             .insert(schema.communityPosts)
             .values({
               userId: session.user.id,
-              authorName: isAnonymous ? null : userName,
+              authorName,
               isAnonymous: isAnonymous || false,
-              category: category as any, // Use the category from request
+              category: category as any,
               content: reflectionText,
+              prayerCount: 0,
               contentType: 'daily-gift',
               scriptureReference: dailyContent[0].scriptureReference,
+              isFlagged: false,
+              artworkUrl: null,
             })
             .returning();
 

@@ -507,9 +507,15 @@ export async function initializeDatabase(db: any, app?: App) {
         "is_read" BOOLEAN DEFAULT FALSE,
         "encouragement_message" TEXT DEFAULT NULL,
         "sender_user_id" TEXT DEFAULT NULL REFERENCES "user"("id") ON DELETE SET NULL,
+        "sender_name" TEXT DEFAULT NULL,
         "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add sender_name column if it doesn't exist (migration for existing databases)
+    await db.execute(sql`
+      ALTER TABLE "player_notifications" ADD COLUMN IF NOT EXISTS "sender_name" TEXT DEFAULT NULL
     `);
 
     await db.execute(sql`
