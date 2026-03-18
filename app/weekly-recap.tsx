@@ -1,6 +1,6 @@
 
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Animated } from 'react-native';
 import { GradientBackground } from '@/components/GradientBackground';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -8,19 +8,446 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+interface MonthlySummaryData {
+  monthName: string;
+  year: number;
+  month: number;
+  totalCheckIns: number;
+  totalEntries: number;
+  totalWords: number;
+  communityPosts: number;
+  practicesCompleted: number;
+  aiConversations: number;
+  currentStreak: number;
+  topMoods: Array<{ mood: string; count: number }>;
+  topScriptures: Array<{ reference: string; count: number }>;
+  conversationSummary: string;
+  suggestions: Array<{ title: string; description: string }>;
+  growthHighlight: string;
+  hasEnoughData: boolean;
+}
 
 interface MonthlySummaryResponse {
-  summary: {
-    monthName: string;
-    mainThemes: string[];
-    emotionalJourney: string;
-    reflections: string[];
-    checkInInsights: string;
-    encouragement: string;
-  } | null;
+  summary: MonthlySummaryData | null;
   hasEnoughData: boolean;
-  message?: string;
+  message: string;
+}
+
+// Animated stat card that counts up from 0
+function AnimatedStatCard({
+  icon,
+  value,
+  label,
+  suffix,
+  isDark,
+  delay,
+}: {
+  icon: string;
+  value: number;
+  label: string;
+  suffix?: string;
+  isDark: boolean;
+  delay: number;
+}) {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [displayValue, setDisplayValue] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+
+      const duration = 800;
+      const steps = 30;
+      const stepDuration = duration / steps;
+      let currentStep = 0;
+
+      const interval = setInterval(() => {
+        currentStep += 1;
+        const progress = currentStep / steps;
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setDisplayValue(Math.round(eased * value));
+        if (currentStep >= steps) {
+          clearInterval(interval);
+          setDisplayValue(value);
+        }
+      }, stepDuration);
+
+      return () => clearInterval(interval);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  const cardBg = isDark ? 'rgba(120, 53, 15, 0.25)' : 'rgba(254, 243, 199, 0.8)';
+  const numColor = isDark ? '#fcd34d' : '#b45309';
+  const labelColor = isDark ? '#d6d3d1' : '#78716c';
+  const iconColor = isDark ? '#fbbf24' : '#d97706';
+  const suffixText = suffix ? suffix : '';
+  const displayText = String(displayValue) + suffixText;
+
+  return (
+    <Animated.View style={[monthlyStyles.statCard, { backgroundColor: cardBg, opacity: fadeAnim }]}>
+      <Text style={[monthlyStyles.statIcon, { color: iconColor }]}>{icon}</Text>
+      <Text style={[monthlyStyles.statNumber, { color: numColor }]}>{displayText}</Text>
+      <Text style={[monthlyStyles.statLabel, { color: labelColor }]}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+const monthlyStyles = StyleSheet.create({
+  outerCard: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    shadowColor: 'rgba(180, 83, 9, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  calendarIcon: {
+    marginRight: spacing.sm,
+    fontSize: 22,
+  },
+  mainTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.bold,
+  },
+  monthBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.sm,
+  },
+  monthBadgeText: {
+    fontSize: 12,
+    fontWeight: typography.semibold,
+  },
+  subtitleText: {
+    fontSize: typography.bodySmall,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  divider: {
+    height: 1,
+    marginVertical: spacing.md,
+    opacity: 0.3,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: typography.bold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  statCard: {
+    width: '47%',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  statIcon: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  statNumber: {
+    fontSize: 26,
+    fontWeight: typography.bold,
+    lineHeight: 30,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: typography.medium,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  moodsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  moodChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+    gap: 4,
+  },
+  moodName: {
+    fontSize: 13,
+    fontWeight: typography.semibold,
+  },
+  moodCount: {
+    fontSize: 11,
+    fontWeight: typography.medium,
+    opacity: 0.8,
+  },
+  growthBox: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: '#059669',
+  },
+  growthText: {
+    fontSize: typography.body,
+    lineHeight: 24,
+    fontWeight: typography.medium,
+  },
+  journeyText: {
+    fontSize: typography.body,
+    lineHeight: 26,
+    fontStyle: 'italic',
+  },
+  suggestionCard: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  suggestionTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.bold,
+    marginBottom: 4,
+  },
+  suggestionDesc: {
+    fontSize: typography.bodySmall,
+    lineHeight: 20,
+  },
+  scriptureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: spacing.sm,
+  },
+  scriptureDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#059669',
+  },
+  scriptureText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+  },
+  notEnoughBox: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  notEnoughText: {
+    fontSize: typography.bodySmall,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  loadingBox: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+  },
+  loadingLabel: {
+    fontSize: typography.bodySmall,
+    marginTop: spacing.sm,
+  },
+});
+
+function MonthlySummarySection({
+  monthlySummary,
+  monthlyLoading,
+  monthlyError,
+  isDark,
+}: {
+  monthlySummary: MonthlySummaryResponse | null;
+  monthlyLoading: boolean;
+  monthlyError: boolean;
+  isDark: boolean;
+}) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!monthlyLoading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [monthlyLoading]);
+
+  const outerBg = isDark ? 'rgba(41, 37, 36, 0.95)' : 'rgba(255, 251, 235, 0.95)';
+  const titleColor = isDark ? '#fcd34d' : '#92400e';
+  const badgeBg = isDark ? 'rgba(120, 53, 15, 0.4)' : 'rgba(253, 230, 138, 0.8)';
+  const badgeText = isDark ? '#fcd34d' : '#92400e';
+  const subtitleColor = isDark ? '#d6d3d1' : '#78716c';
+  const dividerColor = isDark ? '#44403c' : '#d6d3d1';
+  const labelColor = isDark ? '#a8a29e' : '#a8a29e';
+  const growthBg = isDark ? 'rgba(6, 78, 59, 0.3)' : 'rgba(209, 250, 229, 0.7)';
+  const growthText = isDark ? '#6ee7b7' : '#065f46';
+  const journeyColor = isDark ? '#e7e5e4' : '#44403c';
+  const suggBg = isDark ? 'rgba(120, 53, 15, 0.2)' : 'rgba(254, 243, 199, 0.7)';
+  const suggTitleColor = isDark ? '#fcd34d' : '#92400e';
+  const suggDescColor = isDark ? '#d6d3d1' : '#57534e';
+  const scriptureColor = isDark ? '#d6d3d1' : '#57534e';
+  const notEnoughBg = isDark ? 'rgba(41, 37, 36, 0.5)' : 'rgba(245, 245, 244, 0.8)';
+  const notEnoughColor = isDark ? '#a8a29e' : '#78716c';
+
+  const s = monthlySummary?.summary;
+  const hasData = monthlySummary?.hasEnoughData;
+  const message = monthlySummary?.message ?? '';
+  const monthName = s?.monthName ?? '';
+
+  const topMoodsSlice = s?.topMoods?.slice(0, 3) ?? [];
+  const topScripturesSlice = s?.topScriptures?.slice(0, 3) ?? [];
+  const suggestionsSlice = s?.suggestions?.slice(0, 4) ?? [];
+
+  const moodColors = [
+    { bg: isDark ? 'rgba(159, 18, 57, 0.35)' : 'rgba(254, 205, 211, 0.9)', text: isDark ? '#fda4af' : '#9f1239' },
+    { bg: isDark ? 'rgba(120, 53, 15, 0.35)' : 'rgba(253, 230, 138, 0.9)', text: isDark ? '#fcd34d' : '#92400e' },
+    { bg: isDark ? 'rgba(30, 58, 138, 0.35)' : 'rgba(199, 210, 254, 0.9)', text: isDark ? '#a5b4fc' : '#1e3a8a' },
+  ];
+
+  return (
+    <Animated.View style={[monthlyStyles.outerCard, { backgroundColor: outerBg, opacity: fadeAnim }]}>
+      {/* Header */}
+      <View style={monthlyStyles.headerRow}>
+        <Text style={monthlyStyles.calendarIcon}>📅</Text>
+        <Text style={[monthlyStyles.mainTitle, { color: titleColor }]}>Monthly Journey</Text>
+      </View>
+      {monthName.length > 0 && (
+        <View style={[monthlyStyles.monthBadge, { backgroundColor: badgeBg }]}>
+          <Text style={[monthlyStyles.monthBadgeText, { color: badgeText }]}>{monthName}</Text>
+        </View>
+      )}
+      {message.length > 0 && (
+        <Text style={[monthlyStyles.subtitleText, { color: subtitleColor }]}>{message}</Text>
+      )}
+
+      {/* Loading */}
+      {monthlyLoading && (
+        <View style={monthlyStyles.loadingBox}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[monthlyStyles.loadingLabel, { color: subtitleColor }]}>Gathering your month...</Text>
+        </View>
+      )}
+
+      {/* Error */}
+      {!monthlyLoading && monthlyError && (
+        <View style={[monthlyStyles.notEnoughBox, { backgroundColor: notEnoughBg }]}>
+          <Text style={[monthlyStyles.notEnoughText, { color: notEnoughColor }]}>Unable to load monthly summary. Please try again later.</Text>
+        </View>
+      )}
+
+      {/* Not enough data */}
+      {!monthlyLoading && !monthlyError && !hasData && (
+        <View style={[monthlyStyles.notEnoughBox, { backgroundColor: notEnoughBg }]}>
+          <Text style={{ fontSize: 28, marginBottom: spacing.sm }}>🌱</Text>
+          <Text style={[monthlyStyles.notEnoughText, { color: notEnoughColor }]}>{message || 'Keep journaling and checking in — your monthly insights will appear here.'}</Text>
+        </View>
+      )}
+
+      {/* Rich content */}
+      {!monthlyLoading && !monthlyError && hasData && s && (
+        <>
+          {/* Stats Grid */}
+          <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+          <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>This Month</Text>
+          <View style={monthlyStyles.statsGrid}>
+            <AnimatedStatCard icon="🙏" value={Number(s.totalCheckIns) || 0} label="Check-ins" isDark={isDark} delay={0} />
+            <AnimatedStatCard icon="📖" value={Number(s.totalEntries) || 0} label="Journal Entries" isDark={isDark} delay={80} />
+            <AnimatedStatCard icon="✍️" value={Number(s.totalWords) || 0} label="Words Written" isDark={isDark} delay={160} />
+            <AnimatedStatCard icon="🤝" value={Number(s.communityPosts) || 0} label="Community Posts" isDark={isDark} delay={240} />
+            <AnimatedStatCard icon="🌿" value={Number(s.practicesCompleted) || 0} label="Practices Done" isDark={isDark} delay={320} />
+            <AnimatedStatCard icon="🔥" value={Number(s.currentStreak) || 0} label="Day Streak" suffix=" days" isDark={isDark} delay={400} />
+          </View>
+
+          {/* Top Moods */}
+          {topMoodsSlice.length > 0 && (
+            <>
+              <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+              <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>Your Moods This Month</Text>
+              <View style={monthlyStyles.moodsRow}>
+                {topMoodsSlice.map((item, index) => {
+                  const mc = moodColors[index % moodColors.length];
+                  const moodCountText = String(item.count);
+                  return (
+                    <View key={index} style={[monthlyStyles.moodChip, { backgroundColor: mc.bg }]}>
+                      <Text style={[monthlyStyles.moodName, { color: mc.text }]}>{item.mood}</Text>
+                      <Text style={[monthlyStyles.moodCount, { color: mc.text }]}>{moodCountText}x</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          {/* Growth Highlight */}
+          {s.growthHighlight ? (
+            <>
+              <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+              <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>Growth Pattern</Text>
+              <View style={[monthlyStyles.growthBox, { backgroundColor: growthBg }]}>
+                <Text style={[monthlyStyles.growthText, { color: growthText }]}>{s.growthHighlight}</Text>
+              </View>
+            </>
+          ) : null}
+
+          {/* AI Journey Summary */}
+          {s.conversationSummary ? (
+            <>
+              <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+              <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>Your Journey This Month</Text>
+              <Text style={[monthlyStyles.journeyText, { color: journeyColor }]}>{s.conversationSummary}</Text>
+            </>
+          ) : null}
+
+          {/* Personalized Suggestions */}
+          {suggestionsSlice.length > 0 && (
+            <>
+              <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+              <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>For Next Month</Text>
+              {suggestionsSlice.map((suggestion, index) => (
+                <View key={index} style={[monthlyStyles.suggestionCard, { backgroundColor: suggBg }]}>
+                  <Text style={[monthlyStyles.suggestionTitle, { color: suggTitleColor }]}>{suggestion.title}</Text>
+                  <Text style={[monthlyStyles.suggestionDesc, { color: suggDescColor }]}>{suggestion.description}</Text>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* Top Scriptures */}
+          {topScripturesSlice.length > 0 && (
+            <>
+              <View style={[monthlyStyles.divider, { backgroundColor: dividerColor }]} />
+              <Text style={[monthlyStyles.sectionLabel, { color: labelColor }]}>Scriptures This Month</Text>
+              {topScripturesSlice.map((item, index) => (
+                <View key={index} style={monthlyStyles.scriptureItem}>
+                  <View style={monthlyStyles.scriptureDot} />
+                  <Text style={[monthlyStyles.scriptureText, { color: scriptureColor }]}>{item.reference}</Text>
+                </View>
+              ))}
+            </>
+          )}
+        </>
+      )}
+    </Animated.View>
+  );
 }
 
 interface WeeklyRecap {
@@ -338,9 +765,13 @@ export default function WeeklyRecapScreen() {
     console.log('Loading weekly recap and monthly summary');
     setLoading(true);
     setMonthlyLoading(true);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    console.log(`[Monthly] Fetching summary for ${currentYear}-${currentMonth}`);
     const [recapResult, monthlyResult] = await Promise.allSettled([
       authenticatedGet('/api/weekly-recap/current'),
-      authenticatedGet('/api/monthly-summary'),
+      authenticatedGet(`/api/monthly-summary?year=${currentYear}&month=${currentMonth}`),
     ]);
 
     if (recapResult.status === 'fulfilled') {
@@ -649,82 +1080,12 @@ export default function WeeklyRecapScreen() {
           </Text>
 
           {/* Monthly Summary Section */}
-          <View style={[styles.section, { backgroundColor: cardBg }]}>
-            <View style={styles.sectionTitleContainer}>
-              <IconSymbol
-                ios_icon_name="calendar.badge.clock"
-                android_material_icon_name="calendar-month"
-                size={24}
-                color={colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text style={[styles.sectionTitle, { color: textColor }]}>Your Month in Review</Text>
-            </View>
-
-            {monthlyLoading ? (
-              <View style={styles.monthlyLoadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : monthlyError ? (
-              <Text style={styles.monthlyError}>Unable to load monthly summary</Text>
-            ) : monthlySummary ? (
-              <>
-                {monthlySummary.summary && (
-                  <Text style={styles.monthlySubtitle}>{monthlySummary.summary.monthName}</Text>
-                )}
-                {!monthlySummary.hasEnoughData ? (
-                  <Text style={styles.monthlyNotEnough}>{monthlySummary.message}</Text>
-                ) : monthlySummary.summary ? (
-                  <>
-                    {/* Main Themes */}
-                    {monthlySummary.summary.mainThemes.length > 0 && (
-                      <>
-                        <Text style={styles.monthlySubLabel}>Main Themes</Text>
-                        <View style={styles.themesRow}>
-                          {monthlySummary.summary.mainThemes.map((theme, index) => (
-                            <View key={index} style={styles.themePill}>
-                              <Text style={styles.themePillText}>{theme}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </>
-                    )}
-
-                    {/* Emotional Journey */}
-                    {monthlySummary.summary.emotionalJourney ? (
-                      <>
-                        <Text style={styles.monthlySubLabel}>Emotional Journey</Text>
-                        <Text style={styles.monthlyParagraph}>{monthlySummary.summary.emotionalJourney}</Text>
-                      </>
-                    ) : null}
-
-                    {/* Reflections */}
-                    {monthlySummary.summary.reflections.length > 0 && (
-                      <>
-                        <Text style={styles.monthlySubLabel}>Key Reflections</Text>
-                        {monthlySummary.summary.reflections.map((reflection, index) => (
-                          <Text key={index} style={styles.monthlyBullet}>{'• '}{reflection}</Text>
-                        ))}
-                      </>
-                    )}
-
-                    {/* Check-In Insights */}
-                    {monthlySummary.summary.checkInInsights ? (
-                      <>
-                        <Text style={styles.monthlySubLabel}>Conversations with Dove</Text>
-                        <Text style={styles.monthlyParagraph}>{monthlySummary.summary.checkInInsights}</Text>
-                      </>
-                    ) : null}
-
-                    {/* Encouragement */}
-                    {monthlySummary.summary.encouragement ? (
-                      <Text style={styles.monthlyEncouragement}>{monthlySummary.summary.encouragement}</Text>
-                    ) : null}
-                  </>
-                ) : null}
-              </>
-            ) : null}
-          </View>
+          <MonthlySummarySection
+            monthlySummary={monthlySummary}
+            monthlyLoading={monthlyLoading}
+            monthlyError={monthlyError}
+            isDark={isDark}
+          />
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
