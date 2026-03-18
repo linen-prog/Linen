@@ -394,3 +394,31 @@ export const careMessages = pgTable(
     index('care_messages_created').on(table.createdAt),
   ]
 );
+
+// Monthly recap cache table
+export const monthlyRecapCache = pgTable(
+  'monthly_recap_cache',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => {
+        return { id: true } as any;
+      }, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    month: integer('month').notNull(),
+    conversationSummary: text('conversation_summary'),
+    suggestions: jsonb('suggestions').$type<Array<{ title: string; description: string }>>(),
+    growthHighlight: text('growth_highlight'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('monthly_recap_cache_user_year_month_unique').on(
+      table.userId,
+      table.year,
+      table.month
+    ),
+    index('monthly_recap_cache_user').on(table.userId),
+    index('monthly_recap_cache_created').on(table.createdAt),
+  ]
+);
