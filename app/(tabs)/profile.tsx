@@ -720,6 +720,26 @@ export default function ProfileScreen() {
             Platform.OS !== 'ios' && styles.contentContainerWithTabBar
           ]}
         >
+        {/* Back Button */}
+        <View style={styles.backRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              console.log('[Profile] User tapped back button - navigating to home');
+              router.replace('/(tabs)/(home)');
+            }}
+            hitSlop={8}
+            activeOpacity={0.7}
+          >
+            <IconSymbol
+              ios_icon_name="chevron.left"
+              android_material_icon_name="chevron-left"
+              size={24}
+              color={isDark ? '#fbbf24' : '#d97706'}
+            />
+          </TouchableOpacity>
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: isDark ? colors.textDark : colors.text }]}>
@@ -2051,6 +2071,17 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  backRow: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   safeArea: {
     flex: 1,
   },
