@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -94,39 +95,42 @@ export default function OpenGiftScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
         <Stack.Screen 
           options={{
-            headerShown: false,
+            headerShown: true,
+            title: 'Daily Gift',
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerTintColor: isDark ? '#fbbf24' : '#d97706',
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '700' as const,
+              color: isDark ? '#fbbf24' : '#92400e',
+              letterSpacing: -0.2,
+            },
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => { console.log('[OpenGift] Back button pressed'); router.back(); }}
+                style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
+              </TouchableOpacity>
+            ),
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={handleCommunityPress}
+                style={{ paddingLeft: 8 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <IconSymbol
+                  ios_icon_name="person.2"
+                  android_material_icon_name="group"
+                  size={24}
+                  color={isDark ? '#fbbf24' : '#d97706'}
+                />
+              </TouchableOpacity>
+            ),
           }}
         />
-
-        <View style={[styles.header, { backgroundColor: 'transparent' }]}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.left"
-              android_material_icon_name="arrow-back"
-              size={24}
-              color={textColor}
-            />
-          </TouchableOpacity>
-
-          <View style={styles.headerRight}>
-            <TouchableOpacity 
-              onPress={handleCommunityPress}
-              style={styles.headerButton}
-              activeOpacity={0.7}
-            >
-              <IconSymbol 
-                ios_icon_name="person.2"
-                android_material_icon_name="group"
-                size={24}
-                color={textColor}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
 
         <View style={styles.content}>
           <Text style={[styles.title, { color: textColor }]}>

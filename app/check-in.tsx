@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -589,6 +590,15 @@ export default function CheckInScreen() {
               backgroundColor: bgColor,
             },
             headerTintColor: colors.primary,
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
+                style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
+              </TouchableOpacity>
+            ),
             headerRight: () => (
               <View style={styles.headerButtons}>
                 <TouchableOpacity 
