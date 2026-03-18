@@ -14,6 +14,7 @@ import {
   scheduleDailyGiftReminderAsync,
   cancelDailyGiftReminderAsync,
 } from '@/lib/dailyGiftReminder';
+import { Calendar, ChevronRight } from 'lucide-react-native';
 
 const STORAGE_KEY = 'daily_gift_reminder_settings';
 
@@ -806,6 +807,31 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
+
+            <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('ProfileScreen: Monthly Recap row pressed, navigating to /weekly-recap');
+                router.push('/weekly-recap');
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                  <Calendar size={20} color={colors.primary} />
+                </View>
+                <View style={styles.menuItemTextContainer}>
+                  <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                    Monthly Recap
+                  </Text>
+                  <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    View your monthly journey insights
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight size={20} color={colors.textLight} />
+            </TouchableOpacity>
           </View>
         )}
 
