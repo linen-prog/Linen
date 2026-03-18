@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, gte, lt, sql, count, sum } from 'drizzle-orm';
+import { eq, and, gte, lt, sql, count } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { gateway } from '@specific-dev/framework';
@@ -11,22 +11,79 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const FALLBACK_CONVERSATION_SUMMARY = "This month you showed up for yourself in meaningful ways. Your consistency in checking in and reflecting speaks to a deepening commitment to your inner life. Each entry, each practice, each moment of honesty is a thread in the larger tapestry of your growth.";
+
 const FALLBACK_SUGGESTIONS = [
   {
-    title: 'Continue showing up',
-    description: "You've been faithful this month. Consider making it a daily rhythm.",
+    title: 'Keep showing up',
+    description: 'Your consistency this month is a gift — consider making your daily check-in a sacred ritual.',
   },
   {
-    title: 'Share your wisdom',
-    description: 'Your reflections have depth. The community would benefit from hearing more from you.',
+    title: 'Revisit your words',
+    description: 'What if you read back through your entries from this month and noticed what surprised you?',
+  },
+  {
+    title: 'Share your journey',
+    description: 'Your reflections have depth — the community would be enriched by hearing more from you.',
   },
 ];
+
+const FALLBACK_GROWTH_HIGHLIGHT = 'From beginning → Growing in faithful consistency';
+
+const SYSTEM_PROMPT = 'You are a warm, compassionate spiritual companion for the Linen app — a faith-based wellness app. You speak with gentleness, wisdom, and care. You never use clinical or prescriptive language. You celebrate small steps and honor the user\'s journey exactly as it is.';
 
 export function registerMonthlySummaryRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
 
   app.fastify.get(
     '/api/monthly-summary',
+    {
+      schema: {
+        description: 'Get monthly recap with stats and AI-generated insights',
+        tags: ['monthly-summary'],
+        querystring: {
+          type: 'object',
+          properties: {
+            year: { type: 'string' },
+            month: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              summary: {
+                type: 'object',
+                properties: {
+                  monthName: { type: 'string' },
+                  year: { type: 'integer' },
+                  month: { type: 'integer' },
+                  totalCheckIns: { type: 'integer' },
+                  totalEntries: { type: 'integer' },
+                  totalWords: { type: 'integer' },
+                  communityPosts: { type: 'integer' },
+                  practicesCompleted: { type: 'integer' },
+                  aiConversations: { type: 'integer' },
+                  currentStreak: { type: 'integer' },
+                  topMoods: { type: 'array' },
+                  topScriptures: { type: 'array' },
+                  conversationSummary: { type: 'string' },
+                  suggestions: { type: 'array' },
+                  growthHighlight: { type: 'string' },
+                  hasEnoughData: { type: 'boolean' },
+                },
+              },
+              hasEnoughData: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Querystring: { year?: string; month?: string } }>,
       reply: FastifyReply
@@ -36,8 +93,8 @@ export function registerMonthlySummaryRoutes(app: App) {
 
       const userId = session.user.id;
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth() + 1;
 
       const year = request.query.year ? parseInt(request.query.year as string) : currentYear;
       const month = request.query.month ? parseInt(request.query.month as string) : currentMonth;
@@ -54,178 +111,210 @@ export function registerMonthlySummaryRoutes(app: App) {
           return reply.status(400).send({ error: 'Cannot generate recap for a future month' });
         }
 
-        // Compute date range
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        // Compute date range: first day of month 00:00:00 UTC to last day of month 23:59:59 UTC
+        const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
         app.logger.debug(
           { userId, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
           'Date range for monthly summary'
         );
 
-        // Collect stats
-        let totalCheckIns = 0;
-        let totalEntries = 0;
-        let totalWords = 0;
-        let communityPosts = 0;
-        let practicesCompleted = 0;
-        let aiConversations = 0;
-        let currentStreak = 0;
-        let topScriptures: { reference: string; count: number }[] = [];
-        let conversationExcerpts: string[] = [];
+        // Collect stats in parallel with Promise.all
+        const [
+          totalCheckIns,
+          totalEntries,
+          totalWords,
+          communityPosts,
+          practicesCompleted,
+          currentStreak,
+          topScriptures,
+          recentConversationContent,
+        ] = await Promise.all([
+          // 1. totalCheckIns
+          (async () => {
+            try {
+              const result = await app.db
+                .select({ count: count() })
+                .from(schema.checkInConversations)
+                .where(
+                  and(
+                    eq(schema.checkInConversations.userId, userId),
+                    gte(schema.checkInConversations.createdAt, startDate),
+                    lt(schema.checkInConversations.createdAt, endDate)
+                  )
+                );
+              return result[0]?.count || 0;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch check-in count');
+              return 0;
+            }
+          })(),
 
-        // 1. Check-ins
-        try {
-          const checkInCount = await app.db
-            .select({ count: count() })
-            .from(schema.checkInConversations)
-            .where(
-              and(
-                eq(schema.checkInConversations.userId, userId),
-                gte(schema.checkInConversations.createdAt, startDate),
-                lt(schema.checkInConversations.createdAt, new Date(endDate.getTime() + 86400000))
-              )
-            );
-          totalCheckIns = checkInCount[0]?.count || 0;
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch check-in count');
-        }
+          // 2. totalEntries
+          (async () => {
+            try {
+              const result = await app.db
+                .select({ count: count() })
+                .from(schema.userReflections)
+                .where(
+                  and(
+                    eq(schema.userReflections.userId, userId),
+                    gte(schema.userReflections.createdAt, startDate),
+                    lt(schema.userReflections.createdAt, endDate)
+                  )
+                );
+              return result[0]?.count || 0;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch reflection count');
+              return 0;
+            }
+          })(),
 
-        // 2. Get current streak from user profile
-        try {
-          const profile = await app.db
-            .select({ checkInStreak: schema.userProfiles.checkInStreak })
-            .from(schema.userProfiles)
-            .where(eq(schema.userProfiles.userId, userId))
-            .limit(1);
-          currentStreak = profile[0]?.checkInStreak || 0;
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch check-in streak');
-        }
+          // 3. totalWords
+          (async () => {
+            try {
+              const reflections = await app.db
+                .select({ reflectionText: schema.userReflections.reflectionText })
+                .from(schema.userReflections)
+                .where(
+                  and(
+                    eq(schema.userReflections.userId, userId),
+                    gte(schema.userReflections.createdAt, startDate),
+                    lt(schema.userReflections.createdAt, endDate)
+                  )
+                );
 
-        // 3. Journal reflections
-        try {
-          const reflections = await app.db
-            .select({ reflectionText: schema.userReflections.reflectionText })
-            .from(schema.userReflections)
-            .where(
-              and(
-                eq(schema.userReflections.userId, userId),
-                gte(schema.userReflections.createdAt, startDate),
-                lt(schema.userReflections.createdAt, new Date(endDate.getTime() + 86400000))
-              )
-            );
-          totalEntries = reflections.length;
-          totalWords = reflections.reduce((sum, r) => {
-            const words = r.reflectionText?.split(/\s+/).length || 0;
-            return sum + words;
-          }, 0);
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch reflections');
-        }
+              let totalWords = 0;
+              for (const r of reflections) {
+                if (r.reflectionText && r.reflectionText.trim()) {
+                  const words = r.reflectionText.trim().split(/\s+/).length;
+                  totalWords += words;
+                }
+              }
+              return totalWords;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch word count');
+              return 0;
+            }
+          })(),
 
-        // 4. Community posts
-        try {
-          const postCount = await app.db
-            .select({ count: count() })
-            .from(schema.communityPosts)
-            .where(
-              and(
-                eq(schema.communityPosts.userId, userId),
-                gte(schema.communityPosts.createdAt, startDate),
-                lt(schema.communityPosts.createdAt, new Date(endDate.getTime() + 86400000))
-              )
-            );
-          communityPosts = postCount[0]?.count || 0;
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch community posts count');
-        }
+          // 4. communityPosts
+          (async () => {
+            try {
+              const result = await app.db
+                .select({ count: count() })
+                .from(schema.communityPosts)
+                .where(
+                  and(
+                    eq(schema.communityPosts.userId, userId),
+                    gte(schema.communityPosts.createdAt, startDate),
+                    lt(schema.communityPosts.createdAt, endDate)
+                  )
+                );
+              return result[0]?.count || 0;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch community posts count');
+              return 0;
+            }
+          })(),
 
-        // 5. Somatic practices
-        try {
-          const somaticCount = await app.db
-            .select({ count: count() })
-            .from(schema.somaticCompletions)
-            .where(
-              and(
-                eq(schema.somaticCompletions.userId, userId),
-                gte(schema.somaticCompletions.completedAt, startDate),
-                lt(schema.somaticCompletions.completedAt, new Date(endDate.getTime() + 86400000))
-              )
-            );
-          practicesCompleted = (somaticCount[0]?.count || 0) as number;
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch somatic completions');
-        }
+          // 5. practicesCompleted (union of somatic_completions and weekly_practice_completions)
+          (async () => {
+            try {
+              const result = await app.db.execute(sql`
+                SELECT COUNT(*) as count FROM (
+                  SELECT id FROM somatic_completions WHERE user_id = ${userId} AND completed_at >= ${startDate} AND completed_at <= ${endDate}
+                  UNION ALL
+                  SELECT id FROM weekly_practice_completions WHERE user_id = ${userId} AND completed_at >= ${startDate} AND completed_at <= ${endDate}
+                ) combined
+              `) as any;
 
-        // 6. AI Conversations
-        try {
-          const convoCount = await app.db
-            .select({ count: count() })
-            .from(schema.checkInConversations)
-            .where(
-              and(
-                eq(schema.checkInConversations.userId, userId),
-                gte(schema.checkInConversations.createdAt, startDate),
-                lt(schema.checkInConversations.createdAt, new Date(endDate.getTime() + 86400000))
-              )
-            );
-          aiConversations = convoCount[0]?.count || 0;
+              if (result && typeof result === 'object' && 'rows' in result && result.rows?.length > 0) {
+                return Number(result.rows[0].count) || 0;
+              }
+              return 0;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch practices completed count');
+              return 0;
+            }
+          })(),
 
-          // Fetch recent assistant messages for context
-          const messages = await app.db.execute(sql`
-            SELECT cim.content
-            FROM check_in_conversations cic
-            JOIN check_in_messages cim ON cim.conversation_id = cic.id
-            WHERE cic.user_id = ${userId}
-              AND cic.created_at >= ${startDate}
-              AND cic.created_at < ${new Date(endDate.getTime() + 86400000)}
-              AND cim.role = 'assistant'
-            ORDER BY cim.created_at DESC
-            LIMIT 10
-          `) as any;
+          // 6. currentStreak from user_profiles.check_in_streak
+          (async () => {
+            try {
+              const result = await app.db
+                .select({ checkInStreak: schema.userProfiles.checkInStreak })
+                .from(schema.userProfiles)
+                .where(eq(schema.userProfiles.userId, userId))
+                .limit(1);
+              return result[0]?.checkInStreak || 0;
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch check-in streak');
+              return 0;
+            }
+          })(),
 
-          if (messages && typeof messages === 'object' && 'rows' in messages) {
-            conversationExcerpts = ((messages.rows as any[]) || [])
-              .map((r: any) => r.content)
-              .filter((c: any) => c)
-              .slice(0, 10);
-          }
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch AI conversations');
-        }
+          // 7. topScriptures from community_posts
+          (async () => {
+            try {
+              const result = await app.db.execute(sql`
+                SELECT scripture_reference as reference, COUNT(*) as count
+                FROM community_posts
+                WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+                  AND scripture_reference IS NOT NULL AND trim(scripture_reference) != ''
+                GROUP BY scripture_reference
+                ORDER BY count DESC
+                LIMIT 3
+              `) as any;
 
-        // 7. Top scriptures from community posts
-        try {
-          const scriptureStats = await app.db.execute(sql`
-            SELECT scripture_reference, COUNT(*) as count
-            FROM community_posts
-            WHERE user_id = ${userId}
-              AND scripture_reference IS NOT NULL
-              AND created_at >= ${startDate}
-              AND created_at < ${new Date(endDate.getTime() + 86400000)}
-            GROUP BY scripture_reference
-            ORDER BY count DESC
-            LIMIT 3
-          `) as any;
+              if (result && typeof result === 'object' && 'rows' in result) {
+                return ((result.rows as any[]) || []).map((r: any) => ({
+                  reference: r.reference,
+                  count: Number(r.count),
+                }));
+              }
+              return [];
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch top scriptures');
+              return [];
+            }
+          })(),
 
-          if (scriptureStats && typeof scriptureStats === 'object' && 'rows' in scriptureStats) {
-            topScriptures = ((scriptureStats.rows as any[]) || []).map((r: any) => ({
-              reference: r.scripture_reference,
-              count: Number(r.count),
-            }));
-          }
-        } catch (error) {
-          app.logger.debug({ err: error }, 'Failed to fetch scriptures from community posts');
-        }
+          // 8. recentConversationContent (user messages only, up to 15)
+          (async () => {
+            try {
+              const result = await app.db.execute(sql`
+                SELECT m.content FROM check_in_messages m
+                JOIN check_in_conversations c ON m.conversation_id = c.id
+                WHERE c.user_id = ${userId} AND m.created_at >= ${startDate} AND m.created_at <= ${endDate} AND m.role = 'user'
+                ORDER BY m.created_at DESC
+                LIMIT 15
+              `) as any;
 
-        const hasEnoughData = totalCheckIns >= 1 || totalEntries >= 1;
+              if (result && typeof result === 'object' && 'rows' in result) {
+                return ((result.rows as any[]) || [])
+                  .map((r: any) => r.content)
+                  .filter((c: any) => c);
+              }
+              return [];
+            } catch (error) {
+              app.logger.debug({ err: error }, 'Failed to fetch recent conversation content');
+              return [];
+            }
+          })(),
+        ]);
+
+        const aiConversations = totalCheckIns; // Same as totalCheckIns per spec
+        const topMoods: any[] = []; // check_in_messages has NO mood column
+        const hasEnoughData = totalCheckIns >= 1;
         const monthName = `${MONTH_NAMES[month - 1]} ${year}`;
 
         // Check cache
-        let conversationSummary: string | null = null;
-        let suggestions: { title: string; description: string }[] = [];
-        let growthHighlight: string | null = null;
+        let conversationSummary: string = FALLBACK_CONVERSATION_SUMMARY;
+        let suggestions: { title: string; description: string }[] = FALLBACK_SUGGESTIONS;
+        let growthHighlight: string = FALLBACK_GROWTH_HIGHLIGHT;
+        let useCache = false;
 
         try {
           const cached = await app.db
@@ -244,54 +333,61 @@ export function registerMonthlySummaryRoutes(app: App) {
             )
             .limit(1);
 
-          if (cached.length > 0) {
+          if (cached.length > 0 && cached[0].conversationSummary) {
             conversationSummary = cached[0].conversationSummary;
             suggestions = (cached[0].suggestions as any) || FALLBACK_SUGGESTIONS;
-            growthHighlight = cached[0].growthHighlight;
+            growthHighlight = cached[0].growthHighlight || FALLBACK_GROWTH_HIGHLIGHT;
+            useCache = true;
             app.logger.debug({ userId, year, month }, 'Using cached monthly recap');
           }
         } catch (error) {
           app.logger.debug({ err: error }, 'Failed to check monthly recap cache');
         }
 
-        // Generate AI insights if not cached
-        if (!conversationSummary || !growthHighlight) {
+        // Generate AI insights if not cached AND hasEnoughData
+        if (!useCache && hasEnoughData) {
           try {
-            const excerptText = conversationExcerpts.slice(0, 10).join(' | ').substring(0, 1000);
+            const conversationExcerptText = recentConversationContent
+              .slice(0, 15)
+              .join(' | ')
+              .substring(0, 500);
 
             // Call AI in parallel
-            const [summaryResult, suggestionsResult, highlightResult] = await Promise.allSettled([
+            const aiResults = await Promise.allSettled([
               generateConversationSummary(app, {
+                monthName,
                 totalCheckIns,
                 totalEntries,
-                aiConversations,
+                totalWords,
                 communityPosts,
                 practicesCompleted,
-                excerpts: excerptText,
+                conversationContent: conversationExcerptText,
               }),
               generateSuggestions(app, {
+                monthName,
                 totalCheckIns,
                 totalEntries,
-                aiConversations,
-                communityPosts,
                 practicesCompleted,
+                conversationContent: conversationExcerptText,
               }),
               generateGrowthHighlight(app, {
+                monthName,
                 totalCheckIns,
                 totalEntries,
-                excerpts: excerptText,
+                practicesCompleted,
               }),
             ]);
 
             conversationSummary =
-              summaryResult.status === 'fulfilled'
-                ? summaryResult.value
-                : "This month was a journey of showing up for yourself and your community. Your consistency and care are noticed.";
+              aiResults[0].status === 'fulfilled' && aiResults[0].value
+                ? aiResults[0].value
+                : FALLBACK_CONVERSATION_SUMMARY;
 
-            if (suggestionsResult.status === 'fulfilled') {
+            if (aiResults[1].status === 'fulfilled' && aiResults[1].value) {
               try {
-                suggestions = JSON.parse(suggestionsResult.value);
-              } catch {
+                suggestions = JSON.parse(aiResults[1].value);
+              } catch (parseError) {
+                app.logger.debug({ err: parseError }, 'Failed to parse suggestions JSON');
                 suggestions = FALLBACK_SUGGESTIONS;
               }
             } else {
@@ -299,9 +395,9 @@ export function registerMonthlySummaryRoutes(app: App) {
             }
 
             growthHighlight =
-              highlightResult.status === 'fulfilled'
-                ? highlightResult.value
-                : 'From beginning → Growing in consistency';
+              aiResults[2].status === 'fulfilled' && aiResults[2].value
+                ? aiResults[2].value
+                : FALLBACK_GROWTH_HIGHLIGHT;
 
             // Cache the results
             try {
@@ -324,18 +420,17 @@ export function registerMonthlySummaryRoutes(app: App) {
                   },
                 });
               app.logger.info({ userId, year, month }, 'Cached monthly recap');
-            } catch (error) {
-              app.logger.debug({ err: error }, 'Failed to cache monthly recap');
+            } catch (cacheError) {
+              app.logger.debug({ err: cacheError }, 'Failed to cache monthly recap');
             }
           } catch (error) {
             app.logger.error(
               { err: error, userId, year, month },
               'Failed to generate AI insights, using fallbacks'
             );
-            conversationSummary =
-              "This month was a journey of showing up for yourself and your community. Your consistency and care are noticed.";
+            conversationSummary = FALLBACK_CONVERSATION_SUMMARY;
             suggestions = FALLBACK_SUGGESTIONS;
-            growthHighlight = 'From beginning → Growing in consistency';
+            growthHighlight = FALLBACK_GROWTH_HIGHLIGHT;
           }
         }
 
@@ -351,7 +446,7 @@ export function registerMonthlySummaryRoutes(app: App) {
             practicesCompleted,
             aiConversations,
             currentStreak,
-            topMoods: [],
+            topMoods,
             topScriptures,
             conversationSummary,
             suggestions,
@@ -361,7 +456,7 @@ export function registerMonthlySummaryRoutes(app: App) {
           hasEnoughData,
           message: hasEnoughData
             ? `Your ${monthName} recap is ready`
-            : 'Keep checking in this month to unlock your recap',
+            : 'Keep going — your recap will be ready soon',
         };
 
         app.logger.info({ userId, year, month, hasEnoughData }, 'Monthly summary retrieved');
@@ -378,20 +473,30 @@ export function registerMonthlySummaryRoutes(app: App) {
 async function generateConversationSummary(
   app: App,
   params: {
+    monthName: string;
     totalCheckIns: number;
     totalEntries: number;
-    aiConversations: number;
+    totalWords: number;
     communityPosts: number;
     practicesCompleted: number;
-    excerpts: string;
+    conversationContent: string;
   }
 ): Promise<string> {
-  const prompt = `You are a warm, compassionate spiritual companion. Based on this user's month of activity — ${params.totalCheckIns} check-ins, ${params.totalEntries} journal reflections, ${params.aiConversations} AI companion conversations, ${params.communityPosts} community posts, ${params.practicesCompleted} somatic practices completed — write a warm, insightful monthly journey summary. Identify 1-2 main themes, note recurring patterns, highlight any breakthroughs. Write in second person ('you'). Be specific but not clinical. 150-200 words. Recent conversation excerpts: ${params.excerpts}`;
+  const userPrompt = `Here is a summary of this user's spiritual journey in ${params.monthName}:
+- Check-ins completed: ${params.totalCheckIns}
+- Journal entries written: ${params.totalEntries}
+- Words written: ${params.totalWords}
+- Community posts shared: ${params.communityPosts}
+- Practices completed: ${params.practicesCompleted}
+- Recent conversation themes: ${params.conversationContent || '(no conversations this month)'}
+
+Write a warm, insightful monthly journey summary in 150-200 words. Write in second person ("you"). Identify 1-2 main themes from their activity. Note any recurring patterns. Highlight any signs of growth or consistency. Be specific but not clinical. Be encouraging without being saccharine. Do not use bullet points — write flowing prose.`;
 
   try {
     const result = await generateText({
-      model: gateway('google/gemini-3-flash'),
-      prompt,
+      model: gateway('openai/gpt-5-mini'),
+      system: SYSTEM_PROMPT,
+      prompt: userPrompt,
     });
     return result.text || '';
   } catch (error) {
@@ -403,21 +508,30 @@ async function generateConversationSummary(
 async function generateSuggestions(
   app: App,
   params: {
+    monthName: string;
     totalCheckIns: number;
     totalEntries: number;
-    aiConversations: number;
-    communityPosts: number;
     practicesCompleted: number;
+    conversationContent: string;
   }
 ): Promise<string> {
-  const prompt = `Based on this user's spiritual journey this month (stats: ${params.totalCheckIns} check-ins, ${params.totalEntries} reflections, ${params.aiConversations} AI conversations, ${params.communityPosts} community posts, ${params.practicesCompleted} practices), generate 3-4 actionable, specific suggestions for continued growth. Use invitational language ('Consider...', 'What if you...', 'Notice this month...'). Each suggestion needs a short title (2-4 words) and a 1-sentence description. Respond with ONLY valid JSON array, no markdown, no code blocks: [{"title": "...", "description": "..."}]`;
+  const userPrompt = `Based on this user's ${params.monthName} journey:
+- Check-ins: ${params.totalCheckIns}, Entries: ${params.totalEntries}, Practices: ${params.practicesCompleted}
+- Conversation themes: ${params.conversationContent || '(no conversations this month)'}
+
+Generate exactly 3 personalized suggestions for their continued growth. Use invitational language ("Consider...", "What if you...", "Notice this month...", "You might explore..."). Each suggestion must have:
+- title: 2-4 words, warm and specific
+- description: 1 sentence, actionable and personal
+
+Return ONLY valid JSON array: [{"title": "...", "description": "..."}, ...]`;
 
   try {
     const result = await generateText({
-      model: gateway('google/gemini-3-flash'),
-      prompt,
+      model: gateway('openai/gpt-5-mini'),
+      system: SYSTEM_PROMPT,
+      prompt: userPrompt,
     });
-    return result.text || JSON.stringify(FALLBACK_SUGGESTIONS);
+    return result.text || '';
   } catch (error) {
     app.logger.debug({ err: error }, 'Failed to generate suggestions');
     throw error;
@@ -427,17 +541,26 @@ async function generateSuggestions(
 async function generateGrowthHighlight(
   app: App,
   params: {
+    monthName: string;
     totalCheckIns: number;
     totalEntries: number;
-    excerpts: string;
+    practicesCompleted: number;
   }
 ): Promise<string> {
-  const prompt = `Based on these stats and conversations for this user's month (${params.totalCheckIns} check-ins, ${params.totalEntries} reflections, recent excerpts: ${params.excerpts}), identify ONE key growth pattern in 10-15 words using 'From X → To Y' format. Examples: 'From seeking answers → Finding peace in questions', 'From isolation → Reaching out for connection'. Return ONLY the highlight text, no other text, no punctuation at the end.`;
+  const userPrompt = `Based on this user's journey in ${params.monthName} (check-ins: ${params.totalCheckIns}, entries: ${params.totalEntries}, practices: ${params.practicesCompleted}), identify ONE key growth pattern or shift.
+
+Write it in "From X → To Y" format. Examples:
+- "From seeking answers → Finding peace in questions"
+- "From isolation → Reaching out for connection"
+- "From self-criticism → Gentle self-compassion"
+
+10-15 words maximum. Return ONLY the highlight text, nothing else.`;
 
   try {
     const result = await generateText({
-      model: gateway('google/gemini-3-flash'),
-      prompt,
+      model: gateway('openai/gpt-5-mini'),
+      system: SYSTEM_PROMPT,
+      prompt: userPrompt,
     });
     return result.text || '';
   } catch (error) {
