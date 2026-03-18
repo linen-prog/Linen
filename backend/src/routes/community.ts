@@ -941,18 +941,18 @@ export function registerCommunityRoutes(app: App) {
   app.fastify.post(
     '/api/community/posts/:postId/encourage',
     async (
-      request: FastifyRequest<{ Params: { postId: string }; Body: { message: string; isAnonymous?: boolean } }>,
+      request: FastifyRequest<{ Params: { postId: string }; Body: { message: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
       const { postId } = request.params;
-      const { message, isAnonymous = false } = request.body;
+      const { message } = request.body;
       const senderId = session.user.id;
 
       app.logger.info(
-        { postId, senderId, messageLength: message?.length || 0, isAnonymous },
+        { postId, senderId, messageLength: message?.length || 0 },
         'Sending encouragement to post'
       );
 
@@ -1015,29 +1015,59 @@ export function registerCommunityRoutes(app: App) {
           });
         }
 
+        // Resolve sender's display name: first try user_profiles.display_name, then fall back to user.name
+        let senderName: string | null = null;
+        try {
+          const userProfile = await app.db
+            .select({ displayName: schema.userProfiles.displayName })
+            .from(schema.userProfiles)
+            .where(eq(schema.userProfiles.userId, senderId))
+            .limit(1);
+          senderName = userProfile[0]?.displayName || null;
+
+          // If no display name in user_profiles, fall back to user.name
+          if (!senderName) {
+            const userRow = (await app.db.execute(sql`
+              SELECT name FROM "user" WHERE id = ${senderId}
+            `)) as any;
+            if (userRow && typeof userRow === 'object' && 'rows' in userRow && userRow.rows?.length > 0) {
+              senderName = userRow.rows[0].name || null;
+            }
+          }
+        } catch (error) {
+          app.logger.debug({ err: error, senderId }, 'Failed to resolve sender name');
+        }
+
         // Insert into player_notifications
-        await app.db.execute(sql`
+        const result = await app.db.execute(sql`
           INSERT INTO "player_notifications" (
             "journal_entry_id",
             "recipient_user_id",
             "is_read",
             "encouragement_message",
-            "sender_user_id"
+            "sender_user_id",
+            "sender_name"
           ) VALUES (
             ${postId},
             ${post.userId},
             false,
             ${message.trim()},
-            ${isAnonymous ? null : senderId}
+            ${senderId},
+            ${senderName}
           )
-        `);
+          RETURNING id
+        `) as any;
+
+        const notificationId = result && typeof result === 'object' && 'rows' in result && result.rows?.length > 0
+          ? result.rows[0].id
+          : null;
 
         app.logger.info(
-          { postId, senderId, recipientId: post.userId, isAnonymous },
+          { postId, senderId, recipientId: post.userId, senderName, notificationId },
           'Encouragement sent successfully'
         );
 
-        return reply.send({ success: true });
+        return reply.send({ success: true, senderName, notificationId });
       } catch (error) {
         app.logger.error(
           { err: error, postId, senderId },
@@ -1068,19 +1098,29 @@ export function registerCommunityRoutes(app: App) {
             pn.is_read,
             pn.encouragement_message,
             pn.sender_user_id,
+            pn.sender_name,
             pn.created_at,
             pn.updated_at,
             cp.content,
-            cp.user_id as post_user_id
+            cp.user_id as post_user_id,
+            u.name as fallback_sender_name
           FROM "player_notifications" pn
           LEFT JOIN "community_posts" cp ON pn.journal_entry_id = cp.id::text
+          LEFT JOIN "user" u ON pn.sender_user_id = u.id
           WHERE pn.recipient_user_id = ${recipientId}
             AND pn.encouragement_message IS NOT NULL
           ORDER BY pn.created_at DESC
           LIMIT 20
         `)) as any;
 
-        const notifications = (result && typeof result === 'object' && 'rows' in result) ? (result.rows as any[]) : [];
+        const notifications = (result && typeof result === 'object' && 'rows' in result)
+          ? (result.rows as any[]).map((row: any) => ({
+              ...row,
+              // Use sender_name if available, fall back to fallback_sender_name from user table
+              sender_name: row.sender_name || row.fallback_sender_name || null,
+              fallback_sender_name: undefined, // Remove this from response
+            }))
+          : [];
 
         app.logger.info(
           { recipientId, count: notifications.length },
