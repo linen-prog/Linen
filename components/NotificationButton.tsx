@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 
 interface Notification {
   id: string;
-  type: 'reaction' | 'feedback' | 'care_message';
+  type: 'reaction' | 'feedback' | 'care_message' | 'encouragement';
   message: string;
   createdAt: string;
   read: boolean;
@@ -326,7 +326,15 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
                         )}
                         
                         <View style={styles.notificationContent}>
-                          <Text style={[styles.notificationText, { color: panelTextColor }]}>{notification.message}</Text>
+                          {notification.type === 'encouragement' && notification.senderName ? (
+                            <Text style={[styles.notificationText, { color: panelTextColor }]}>
+                              <Text style={{ fontWeight: '600' }}>{notification.senderName}</Text>
+                              {' sent you encouragement: '}
+                              <Text style={{ fontStyle: 'italic' }}>{'\u2018'}{notification.message}{'\u2019'}</Text>
+                            </Text>
+                          ) : (
+                            <Text style={[styles.notificationText, { color: panelTextColor }]}>{notification.message}</Text>
+                          )}
                           <Text style={[styles.notificationTimestamp, { color: panelTextSecondary }]}>{notification.createdAt}</Text>
                         </View>
                       </TouchableOpacity>

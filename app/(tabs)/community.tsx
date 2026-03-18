@@ -101,11 +101,9 @@ export default function CommunityScreen() {
   const [encouragementEntryId, setEncouragementEntryId] = useState<string | null>(null);
   const [selectedEncouragementId, setSelectedEncouragementId] = useState<number | null>(null);
   const [selectedEncouragement, setSelectedEncouragement] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(true);
   const [isSendingEncouragement, setIsSendingEncouragement] = useState(false);
   const [showEncouragementSentToast, setShowEncouragementSentToast] = useState(false);
   const [showEncouragementCelebration, setShowEncouragementCelebration] = useState(false);
-  const [celebrationWasAnonymous, setCelebrationWasAnonymous] = useState(true);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -402,26 +400,23 @@ export default function CommunityScreen() {
     setEncouragementEntryId(postId);
     setSelectedEncouragementId(null);
     setSelectedEncouragement('');
-    setIsAnonymous(true);
     setShowEncouragementModal(true);
   };
 
   const handleSendEncouragement = async () => {
     if (!selectedEncouragement || !encouragementEntryId) return;
-    console.log('[Community] User sending encouragement to post:', encouragementEntryId, '| message:', selectedEncouragement, '| anonymous:', isAnonymous);
+    console.log('[Community] User sending encouragement to post:', encouragementEntryId, '| message:', selectedEncouragement);
     setIsSendingEncouragement(true);
     try {
       const { authenticatedPost } = await import('@/utils/api');
       const responseData = await authenticatedPost(
         `/api/community/posts/${encouragementEntryId}/encourage`,
-        { message: selectedEncouragement, isAnonymous }
+        { message: selectedEncouragement }
       );
       console.log('[Community] ✅ Encouragement sent successfully:', responseData);
-      const wasAnon = isAnonymous;
       setShowEncouragementModal(false);
       setSelectedEncouragement('');
       setSelectedEncouragementId(null);
-      setCelebrationWasAnonymous(wasAnon);
       setShowEncouragementCelebration(true);
       // Show toast
       setShowEncouragementSentToast(true);
@@ -1171,30 +1166,6 @@ export default function CommunityScreen() {
               Choose a gentle message to send
             </Text>
 
-            {/* Anonymous toggle */}
-            <TouchableOpacity
-              style={styles.anonymousToggleRow}
-              onPress={() => {
-                console.log('[Community] User toggled anonymous encouragement:', !isAnonymous);
-                setIsAnonymous(!isAnonymous);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.checkbox, isAnonymous && styles.checkboxChecked]}>
-                {isAnonymous && (
-                  <IconSymbol
-                    ios_icon_name="checkmark"
-                    android_material_icon_name="check"
-                    size={14}
-                    color="#FFFFFF"
-                  />
-                )}
-              </View>
-              <Text style={[styles.anonymousToggleText, { color: textColor }]}>
-                Send anonymously
-              </Text>
-            </TouchableOpacity>
-
             {/* Message list */}
             <ScrollView
               style={styles.encouragementMessagesList}
@@ -1262,13 +1233,11 @@ export default function CommunityScreen() {
             <Text style={[styles.celebrationTitle, { color: textColor }]}>
               Encouragement Sent
             </Text>
-            {celebrationWasAnonymous && (
-              <View style={styles.celebrationAnonymousBadge}>
-                <Text style={styles.celebrationAnonymousText}>
-                  Sent anonymously
-                </Text>
-              </View>
-            )}
+            <View style={styles.celebrationAnonymousBadge}>
+              <Text style={styles.celebrationAnonymousText}>
+                Sent with your name
+              </Text>
+            </View>
             <Text style={[styles.celebrationMessage, { color: textSecondaryColor }]}>
               Thank you for thinking of others. Your gentle words carry more weight than you know.
             </Text>
