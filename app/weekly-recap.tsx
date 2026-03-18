@@ -979,7 +979,7 @@ export default function WeeklyRecapScreen() {
   }
 
   const headerOptions = {
-    title: 'Recap',
+    title: 'Home',
     headerShown: true,
     headerTransparent: true,
     headerBlurEffect: 'light' as const,
