@@ -161,7 +161,22 @@ function RootLayoutProviders() {
 function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" }) {
   return (
     <>
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerTransparent: true,
+          headerBackTitle: '',
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            fontFamily: 'Georgia',
+            color: '#1c1917',
+          },
+          headerStyle: {
+            backgroundColor: 'transparent',
+          },
+        }}
+      >
         {/* Landing/Orientation screen */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
         {/* Auth screen (optional - users can skip) */}

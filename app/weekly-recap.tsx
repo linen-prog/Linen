@@ -982,14 +982,14 @@ export default function WeeklyRecapScreen() {
     title: 'Heart Threads',
     headerShown: true,
     headerTransparent: true,
-    headerBlurEffect: 'light' as const,
     headerStyle: { backgroundColor: 'transparent' },
-    headerTintColor: '#92400e',
+    headerBackTitle: '',
+    headerTintColor: '#047857',
     headerTitleStyle: {
       fontSize: 18,
-      fontWeight: '700' as const,
-      color: '#92400e',
-      letterSpacing: -0.2,
+      fontWeight: '400' as const,
+      fontFamily: 'Georgia',
+      color: '#1c1917',
     },
     headerLeft: () => (
       <TouchableOpacity
@@ -997,7 +997,7 @@ export default function WeeklyRecapScreen() {
         style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
+        <ChevronLeft size={24} color="#047857" />
       </TouchableOpacity>
     ),
   };

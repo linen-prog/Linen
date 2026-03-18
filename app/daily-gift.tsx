@@ -548,13 +548,14 @@ export default function DailyGiftScreen() {
             options={{
               headerShown: true,
               title: 'Daily Gift',
+              headerBackTitle: '',
               headerTransparent: true,
               headerStyle: { backgroundColor: 'transparent' },
-              headerTintColor: colors.primary,
+              headerTintColor: '#047857',
               headerTitleStyle: {
                 fontSize: 18,
                 fontWeight: '400' as const,
-                color: colors.primary,
+                color: '#1c1917',
                 fontFamily: 'Georgia',
               },
               headerLeft: () => (
@@ -563,7 +564,7 @@ export default function DailyGiftScreen() {
                   style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <ChevronLeft size={24} color={colors.primary} />
+                  <ChevronLeft size={24} color="#047857" />
                 </TouchableOpacity>
               ),
             }}
@@ -591,13 +592,14 @@ export default function DailyGiftScreen() {
             options={{
               headerShown: true,
               title: 'Daily Gift',
+              headerBackTitle: '',
               headerTransparent: true,
               headerStyle: { backgroundColor: 'transparent' },
-              headerTintColor: colors.primary,
+              headerTintColor: '#047857',
               headerTitleStyle: {
                 fontSize: 18,
                 fontWeight: '400' as const,
-                color: colors.primary,
+                color: '#1c1917',
                 fontFamily: 'Georgia',
               },
               headerLeft: () => (
@@ -606,7 +608,7 @@ export default function DailyGiftScreen() {
                   style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <ChevronLeft size={24} color={colors.primary} />
+                  <ChevronLeft size={24} color="#047857" />
                 </TouchableOpacity>
               ),
               headerRight: () => (
@@ -619,7 +621,7 @@ export default function DailyGiftScreen() {
                     ios_icon_name="person.2"
                     android_material_icon_name="group"
                     size={24}
-                    color={colors.primary}
+                    color="#047857"
                   />
                 </TouchableOpacity>
               ),
@@ -729,13 +731,14 @@ export default function DailyGiftScreen() {
           options={{
             headerShown: true,
             title: 'Daily Gift',
+            headerBackTitle: '',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: colors.primary,
+            headerTintColor: '#047857',
             headerTitleStyle: {
               fontSize: 18,
               fontWeight: '400' as const,
-              color: colors.primary,
+              color: '#1c1917',
               fontFamily: 'Georgia',
             },
             headerLeft: () => (
@@ -744,7 +747,7 @@ export default function DailyGiftScreen() {
                 style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <ChevronLeft size={24} color={colors.primary} />
+                <ChevronLeft size={24} color="#047857" />
               </TouchableOpacity>
             ),
             headerRight: () => (
@@ -757,7 +760,7 @@ export default function DailyGiftScreen() {
                   ios_icon_name="person.2"
                   android_material_icon_name="group"
                   size={24}
-                  color={colors.primary}
+                  color="#047857"
                 />
               </TouchableOpacity>
             ),

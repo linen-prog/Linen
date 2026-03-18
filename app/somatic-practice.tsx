@@ -184,11 +184,16 @@ export default function SomaticPracticeScreen() {
         options={{
           headerShown: true,
           title: 'Somatic Practice',
-          headerBackTitle: 'Back',
-          headerStyle: {
-            backgroundColor: bgColor,
+          headerBackTitle: '',
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            fontFamily: 'Georgia',
+            color: '#1c1917',
           },
-          headerTintColor: colors.primary,
         }}
       />
 

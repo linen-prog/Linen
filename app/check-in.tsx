@@ -585,14 +585,14 @@ export default function CheckInScreen() {
           options={{
             headerShown: true,
             title: headerTitle,
-            headerBackTitle: 'Home',
+            headerBackTitle: '',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: colors.primary,
+            headerTintColor: '#047857',
             headerTitleStyle: {
               fontSize: 18,
               fontWeight: '400' as const,
-              color: colors.primary,
+              color: '#1c1917',
               fontFamily: 'Georgia',
             },
             headerLeft: () => (
@@ -601,7 +601,7 @@ export default function CheckInScreen() {
                 style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <ChevronLeft size={24} color={colors.primary} />
+                <ChevronLeft size={24} color="#047857" />
               </TouchableOpacity>
             ),
             headerRight: () => (

@@ -160,9 +160,16 @@ export default function ThemePreviewScreen() {
         options={{
           headerShown: true,
           title: 'Choose Your Linen Theme',
-          headerStyle: { backgroundColor: currentPalette.colors.background },
-          headerTintColor: currentPalette.colors.text,
-          headerShadowVisible: false,
+          headerBackTitle: '',
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            fontFamily: 'Georgia',
+            color: '#1c1917',
+          },
         }}
       />
 

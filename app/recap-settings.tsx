@@ -165,6 +165,16 @@ export default function RecapSettingsScreen() {
           options={{
             title: 'Recap Settings',
             headerShown: true,
+            headerBackTitle: '',
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerTintColor: '#047857',
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '400' as const,
+              fontFamily: 'Georgia',
+              color: '#1c1917',
+            },
           }}
         />
         <View style={styles.loadingContainer}>
@@ -184,6 +194,16 @@ export default function RecapSettingsScreen() {
         options={{
           title: 'Recap Settings',
           headerShown: true,
+          headerBackTitle: '',
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            fontFamily: 'Georgia',
+            color: '#1c1917',
+          },
         }}
       />
       <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>

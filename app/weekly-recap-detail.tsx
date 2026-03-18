@@ -215,9 +215,19 @@ export default function WeeklyRecapDetailScreen() {
           options={{
             title: 'Weekly Recap',
             headerShown: true,
+            headerBackTitle: '',
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerTintColor: '#047857',
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '400' as const,
+              fontFamily: 'Georgia',
+              color: '#1c1917',
+            },
             headerLeft: () => (
               <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-                <ChevronLeft size={24} color={colors.primary} />
+                <ChevronLeft size={24} color="#047857" />
               </TouchableOpacity>
             ),
           }}
@@ -236,9 +246,19 @@ export default function WeeklyRecapDetailScreen() {
           options={{
             title: 'Weekly Recap',
             headerShown: true,
+            headerBackTitle: '',
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerTintColor: '#047857',
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '400' as const,
+              fontFamily: 'Georgia',
+              color: '#1c1917',
+            },
             headerLeft: () => (
               <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-                <ChevronLeft size={24} color={colors.primary} />
+                <ChevronLeft size={24} color="#047857" />
               </TouchableOpacity>
             ),
           }}
@@ -258,9 +278,19 @@ export default function WeeklyRecapDetailScreen() {
         options={{
           title: 'Weekly Recap',
           headerShown: true,
+          headerBackTitle: '',
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            fontFamily: 'Georgia',
+            color: '#1c1917',
+          },
           headerLeft: () => (
             <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-              <ChevronLeft size={24} color={colors.primary} />
+              <ChevronLeft size={24} color="#047857" />
             </TouchableOpacity>
           ),
         }}

@@ -236,10 +236,15 @@ export default function WeeklyRecapHistoryScreen() {
     title: 'Weekly History',
     headerShown: true,
     headerTransparent: true,
-    headerTintColor: YELLOW.accentDark,
-    headerTitleStyle: { fontSize: 34, fontWeight: '700' as const },
+    headerStyle: { backgroundColor: 'transparent' },
     headerBackTitle: '',
-    headerBackButtonDisplayMode: 'minimal' as const,
+    headerTintColor: '#047857',
+    headerTitleStyle: {
+      fontSize: 18,
+      fontWeight: '400' as const,
+      fontFamily: 'Georgia',
+      color: '#1c1917',
+    },
     headerLeft: () => (
       <TouchableOpacity
         onPress={() => {
@@ -248,7 +253,7 @@ export default function WeeklyRecapHistoryScreen() {
         }}
         style={{ paddingRight: 8 }}
       >
-        <ChevronLeft size={24} color={YELLOW.accentDark} />
+        <ChevronLeft size={24} color="#047857" />
       </TouchableOpacity>
     ),
   };
