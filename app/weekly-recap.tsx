@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonSecondary: {
-    backgroundColor: colors.border,
+    backgroundColor: '#92400e',
   },
   buttonText: {
     fontSize: typography.body,
@@ -1169,9 +1169,9 @@ export default function WeeklyRecapScreen() {
                 ios_icon_name="clock"
                 android_material_icon_name="history"
                 size={20}
-                color={colors.textSecondary}
+                color="#FFFFFF"
               />
-              <Text style={[styles.buttonText, styles.buttonTextSecondary]}>View History</Text>
+              <Text style={styles.buttonText}>View Weekly History</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.button}
