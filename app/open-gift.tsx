@@ -99,12 +99,12 @@ export default function OpenGiftScreen() {
             title: 'Daily Gift',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: isDark ? '#fbbf24' : '#d97706',
+            headerTintColor: colors.primary,
             headerTitleStyle: {
               fontSize: 18,
-              fontWeight: '700' as const,
-              color: isDark ? '#fbbf24' : '#92400e',
-              letterSpacing: -0.2,
+              fontWeight: '400' as const,
+              color: colors.primary,
+              fontFamily: 'Georgia',
             },
             headerLeft: () => (
               <TouchableOpacity
@@ -112,7 +112,7 @@ export default function OpenGiftScreen() {
                 style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
+                <ChevronLeft size={24} color={colors.primary} />
               </TouchableOpacity>
             ),
             headerRight: () => (
@@ -125,7 +125,7 @@ export default function OpenGiftScreen() {
                   ios_icon_name="person.2"
                   android_material_icon_name="group"
                   size={24}
-                  color={isDark ? '#fbbf24' : '#d97706'}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
             ),

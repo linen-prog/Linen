@@ -586,17 +586,22 @@ export default function CheckInScreen() {
             headerShown: true,
             title: headerTitle,
             headerBackTitle: 'Home',
-            headerStyle: {
-              backgroundColor: bgColor,
-            },
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
             headerTintColor: colors.primary,
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '400' as const,
+              color: colors.primary,
+              fontFamily: 'Georgia',
+            },
             headerLeft: () => (
               <TouchableOpacity
                 onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
                 style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
+                <ChevronLeft size={24} color={colors.primary} />
               </TouchableOpacity>
             ),
             headerRight: () => (
