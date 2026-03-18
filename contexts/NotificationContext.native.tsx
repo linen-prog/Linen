@@ -24,8 +24,19 @@ import React, {
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
-import { OneSignal, NotificationWillDisplayEvent } from "react-native-onesignal";
 import Constants from "expo-constants";
+
+// Dynamically require OneSignal to avoid crashing in Expo Go where the native
+// module is not available. All usages below are guarded by this reference.
+let OneSignal: typeof import("react-native-onesignal").OneSignal | null = null;
+type NotificationWillDisplayEvent = import("react-native-onesignal").NotificationWillDisplayEvent;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require("react-native-onesignal");
+  OneSignal = mod.OneSignal ?? null;
+} catch {
+  console.warn("[OneSignal] Native module not available (Expo Go). Push notifications will be disabled.");
+}
 
 // Import auth hook for user targeting (validated at setup time)
 import { useAuth } from "./AuthContext";
@@ -92,6 +103,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       return;
     }
 
+    if (!OneSignal) {
+      setLoading(false);
+      return;
+    }
+
     try {
       // Initialize OneSignal
       OneSignal.initialize(ONESIGNAL_APP_ID);
@@ -103,6 +119,9 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // Check current permission status
       const permissionStatus = OneSignal.Notifications.hasPermission();
       setHasPermission(permissionStatus);
+
+      // Capture ref for cleanup
+      const os = OneSignal;
 
       // Listen for notification events
       const foregroundHandler = (event: NotificationWillDisplayEvent) => {
@@ -116,18 +135,18 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           additionalData: notification.additionalData,
         });
       };
-      OneSignal.Notifications.addEventListener("foregroundWillDisplay", foregroundHandler);
+      os.Notifications.addEventListener("foregroundWillDisplay", foregroundHandler);
 
       // Listen for permission changes
       const permissionHandler = (granted: boolean) => {
         setHasPermission(granted);
         setPermissionDenied(!granted);
       };
-      OneSignal.Notifications.addEventListener("permissionChange", permissionHandler);
+      os.Notifications.addEventListener("permissionChange", permissionHandler);
 
       return () => {
-        OneSignal.Notifications.removeEventListener("foregroundWillDisplay", foregroundHandler);
-        OneSignal.Notifications.removeEventListener("permissionChange", permissionHandler);
+        os.Notifications.removeEventListener("foregroundWillDisplay", foregroundHandler);
+        os.Notifications.removeEventListener("permissionChange", permissionHandler);
       };
     } catch (error) {
       console.error("[OneSignal] Failed to initialize:", error);
@@ -139,6 +158,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Sync OneSignal external user ID with authenticated user
   useEffect(() => {
     if (isWeb || !ONESIGNAL_APP_ID) return;
+
+    if (!OneSignal) return;
 
     try {
       if (user?.id) {
