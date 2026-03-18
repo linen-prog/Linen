@@ -179,19 +179,44 @@ export default function HomeScreen() {
             onPress={handleCheckInPress}
             activeOpacity={0.7}
           >
-            <View style={styles.cardIconContainer}>
+            <View style={styles.checkInIconCircle}>
               <IconSymbol
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={22}
+                size={36}
                 color={colors.primary}
               />
             </View>
+            <Text style={styles.checkInCardTitle}>Check-In</Text>
+            <Text style={styles.checkInCardSubtitle}>What's on your heart?</Text>
+            {lastCheckInMessage ? (
+              <Text style={styles.checkInLastMessage}>{lastCheckInMessage}</Text>
+            ) : null}
+          </TouchableOpacity>
 
-            <View>
-              <Text style={styles.cardTitle}>Check-In</Text>
-              <Text style={styles.cardSubtitle}>Dove is here for you</Text>
+          <TouchableOpacity
+            style={styles.loveMessagesCard}
+            onPress={() => {
+              console.log('[Home] User tapped Love Messages button');
+              router.push('/notification-preferences');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.loveMessagesIconCircle}>
+              <IconSymbol
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={32}
+                color="#e11d48"
+              />
             </View>
+            <Text style={styles.loveMessagesTitle}>Love Messages</Text>
+            <Text style={styles.loveMessagesSubtitle}>Encouragement from the community</Text>
+            {hasLoveMessages && (
+              <View style={styles.loveMessagesBadge}>
+                <Text style={styles.loveMessagesBadgeText}>New</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -327,7 +352,7 @@ const styles = StyleSheet.create({
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: 10,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.md,
     marginBottom: 8,
     shadowColor: colors.shadow,
@@ -335,8 +360,83 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 3,
-    flexDirection: 'row',
     alignItems: 'center',
+  },
+  checkInIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.accentVeryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  checkInCardTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  checkInCardSubtitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  checkInLastMessage: {
+    fontSize: typography.bodySmall,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  loveMessagesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    marginBottom: 8,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  loveMessagesIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff1f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  loveMessagesTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  loveMessagesSubtitle: {
+    fontSize: typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  loveMessagesBadge: {
+    marginTop: spacing.sm,
+    backgroundColor: '#e11d48',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  loveMessagesBadgeText: {
+    fontSize: 11,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
   },
   cardIconContainer: {
     marginRight: spacing.sm,
