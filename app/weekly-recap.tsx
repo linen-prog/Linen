@@ -979,18 +979,25 @@ export default function WeeklyRecapScreen() {
   }
 
   const headerOptions = {
-    title: 'Home',
+    title: 'Heart Threads',
     headerShown: true,
     headerTransparent: true,
     headerBlurEffect: 'light' as const,
     headerStyle: { backgroundColor: 'transparent' },
-    headerTintColor: colors.primaryVeryDark,
+    headerTintColor: '#92400e',
+    headerTitleStyle: {
+      fontSize: 18,
+      fontWeight: '700' as const,
+      color: '#92400e',
+      letterSpacing: -0.2,
+    },
     headerLeft: () => (
       <TouchableOpacity
-        onPress={() => { console.log('Back pressed from weekly recap'); router.back(); }}
-        style={{ paddingRight: 8 }}
+        onPress={() => { console.log('[HeartThreads] Back button pressed — navigating back'); router.back(); }}
+        style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <ChevronLeft size={24} color={colors.primary} />
+        <ChevronLeft size={24} color={isDark ? '#fbbf24' : '#d97706'} />
       </TouchableOpacity>
     ),
   };
