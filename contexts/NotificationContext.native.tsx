@@ -178,6 +178,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (isWeb) return false;
 
+    if (!OneSignal) return false;
+
     try {
       const granted = await OneSignal.Notifications.requestPermission(true);
       setHasPermission(granted);
@@ -190,7 +192,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   }, []);
 
   const sendTag = useCallback((key: string, value: string) => {
-    if (isWeb) return;
+    if (isWeb || !OneSignal) return;
     try {
       OneSignal.User.addTag(key, value);
     } catch (error) {
@@ -199,7 +201,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   }, []);
 
   const deleteTag = useCallback((key: string) => {
-    if (isWeb) return;
+    if (isWeb || !OneSignal) return;
     try {
       OneSignal.User.removeTag(key);
     } catch (error) {
