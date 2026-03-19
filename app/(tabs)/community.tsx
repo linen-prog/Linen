@@ -338,8 +338,8 @@ export default function CommunityScreen() {
             console.log('[Community] User confirmed delete for post:', postId);
             try {
               const { authenticatedDelete } = await import('@/utils/api');
-              console.log('[Community] DELETE /api/posts/', postId);
-              await authenticatedDelete(`/api/posts/${postId}`);
+              console.log('[Community] DELETE /api/community/posts/', postId);
+              await authenticatedDelete(`/api/community/posts/${postId}`);
               console.log('[Community] ✅ Post deleted successfully:', postId);
               setPosts(prev => prev.filter(p => p.id !== postId));
             } catch (error) {
