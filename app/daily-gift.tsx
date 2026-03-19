@@ -813,7 +813,7 @@ export default function DailyGiftScreen() {
         </View>
       ) : (
         <ScrollView 
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: 60 }]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.themeSection}>
