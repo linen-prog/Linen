@@ -81,7 +81,7 @@ export default function OpenGiftScreen() {
 
   const handleCommunityPress = () => {
     console.log('🎁 [OpenGift] User tapped Community icon');
-    router.push('/(tabs)/community');
+    router.navigate('/(tabs)/community');
   };
 
   const titleText = 'Your Daily Gift';

@@ -605,7 +605,7 @@ export default function ProfileScreen() {
           {
             text: 'View in Community',
             onPress: () => {
-              router.push('/(tabs)/community');
+              router.navigate('/(tabs)/community');
             }
           },
           { text: 'OK', style: 'cancel' }

@@ -2839,7 +2839,7 @@ export default function ArtworkCanvasScreen() {
                 onPress={() => {
                   setShowShareSuccessModal(false);
                   router.back();
-                  router.push('/(tabs)/community');
+                  router.navigate('/(tabs)/community');
                 }}
                 activeOpacity={0.8}
               >

@@ -516,7 +516,7 @@ export default function DailyGiftScreen() {
 
   const handleCommunityPress = () => {
     console.log('[DailyGift] User tapped Community icon');
-    router.push('/(tabs)/community');
+    router.navigate('/(tabs)/community');
   };
 
   const handleRefresh = async () => {
@@ -1372,7 +1372,7 @@ export default function DailyGiftScreen() {
               style={styles.successModalButton}
               onPress={() => {
                 setShowShareSuccessModal(false);
-                router.push('/(tabs)/community');
+                router.navigate('/(tabs)/community');
               }}
               activeOpacity={0.8}
             >

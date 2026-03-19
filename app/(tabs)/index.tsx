@@ -151,7 +151,7 @@ export default function HomeScreen() {
   const handleCommunity = () => {
     console.log('🏠 [Home] User tapped Community card');
     console.log('🏠 [Home] Navigating to: /community');
-    router.push('/community');
+    router.navigate('/(tabs)/community');
   };
 
   const handleWeeklyRecap = () => {

@@ -418,7 +418,7 @@ export default function CheckInScreen() {
               console.log('[CheckIn] User navigating to community page');
               setTimeout(() => {
                 try {
-                  router.push('/(tabs)/community');
+                  router.navigate('/(tabs)/community');
                 } catch (navError) {
                   console.error('[CheckIn] Navigation error:', navError);
                   router.replace('/(tabs)');
