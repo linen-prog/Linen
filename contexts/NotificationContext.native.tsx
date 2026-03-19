@@ -119,6 +119,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // Check current permission status
       const permissionStatus = OneSignal.Notifications.hasPermission();
       setHasPermission(permissionStatus);
+      console.log("[OneSignal] Current permission status:", permissionStatus);
 
       // Capture ref for cleanup
       const os = OneSignal;
@@ -129,6 +130,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         event.getNotification().display();
 
         const notification = event.getNotification();
+        console.log("[OneSignal] Foreground notification received:", notification.title);
         setLastNotification({
           title: notification.title,
           body: notification.body,
@@ -139,10 +141,24 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
       // Listen for permission changes
       const permissionHandler = (granted: boolean) => {
+        console.log("[OneSignal] Permission changed:", granted);
         setHasPermission(granted);
         setPermissionDenied(!granted);
       };
       os.Notifications.addEventListener("permissionChange", permissionHandler);
+
+      // Proactively request permission on first launch if not yet decided.
+      // OneSignal only shows the system prompt once — subsequent calls are no-ops.
+      if (!permissionStatus) {
+        console.log("[OneSignal] Requesting notification permission on launch...");
+        os.Notifications.requestPermission(true).then((granted) => {
+          console.log("[OneSignal] Permission request result:", granted);
+          setHasPermission(granted);
+          setPermissionDenied(!granted);
+        }).catch((err) => {
+          console.warn("[OneSignal] Permission request failed:", err);
+        });
+      }
 
       return () => {
         os.Notifications.removeEventListener("foregroundWillDisplay", foregroundHandler);

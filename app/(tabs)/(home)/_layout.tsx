@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 
 export default function HomeLayout() {
@@ -7,8 +6,11 @@ export default function HomeLayout() {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: Platform.OS === 'ios', // Show header on iOS with NativeTabs, hide on Android/Web
-          title: 'Home'
+          // Always hide the native Stack header — both index.tsx and index.ios.tsx
+          // render their own full custom header with SafeAreaView edges={['top']}.
+          // On iOS TestFlight the native header was overlapping the custom header
+          // and hiding the NotificationButton (Love Messages icon).
+          headerShown: false,
         }}
       />
     </Stack>

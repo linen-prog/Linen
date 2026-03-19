@@ -203,6 +203,9 @@ export default function CommunityScreen() {
       const response = await authenticatedPost<{ prayerCount: number; userHasPrayed: boolean }>(`/api/community/pray/${postId}`, {});
       
       console.log('[Community] Prayer toggled:', response);
+      if (response.userHasPrayed) {
+        triggerPushNotification(postId, 'prayer');
+      }
       
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
@@ -283,6 +286,7 @@ export default function CommunityScreen() {
       );
       
       console.log('[Community] ✅ Reaction toggled successfully:', response);
+      triggerPushNotification(postId, 'reaction', reactionType);
       
       // Update with actual server response — do NOT close picker
       const serverReactionCounts = response.reactionCounts || {};
@@ -441,6 +445,17 @@ export default function CommunityScreen() {
     }
   };
 
+  const triggerPushNotification = async (postId: string, type: 'care_message' | 'prayer' | 'reaction', reactionType?: string) => {
+    try {
+      console.log('[Community] Triggering push notification for post:', postId, 'type:', type);
+      await authenticatedPost('/api/notifications/trigger', { postId, type, reactionType });
+      console.log('[Community] Push notification triggered successfully');
+    } catch (error: any) {
+      // Non-critical — notification failure should never block the main action
+      console.log('[Community] Push notification trigger failed (non-critical):', error?.message || error);
+    }
+  };
+
   const handleSendCare = async () => {
     if (!showCareModal || !selectedCareMessage) {
       return;
@@ -456,6 +471,7 @@ export default function CommunityScreen() {
       });
       
       console.log('[Community] ✅ Care message sent successfully:', response);
+      triggerPushNotification(showCareModal, 'care_message');
       setShowCareModal(null);
       setSelectedCareMessage('');
       setCareAnonymous(false);

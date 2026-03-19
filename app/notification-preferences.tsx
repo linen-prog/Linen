@@ -23,24 +23,30 @@ import { useNotifications } from "@/contexts/NotificationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { colors } from "@/styles/commonStyles";
 
-// Notification categories - customize these for your app
+// Notification categories for Linen
 const NOTIFICATION_CATEGORIES = [
   {
-    key: "updates",
-    label: "App Updates",
-    description: "New features and improvements",
+    key: "care_messages",
+    label: "Care Messages",
+    description: "When someone sends you a care message",
     defaultEnabled: true,
   },
   {
-    key: "promotions",
-    label: "Promotions",
-    description: "Special offers and discounts",
+    key: "prayers",
+    label: "Prayers",
+    description: "When someone prays for your post",
     defaultEnabled: true,
   },
   {
-    key: "reminders",
-    label: "Reminders",
-    description: "Activity reminders and tips",
+    key: "reactions",
+    label: "Community Reactions",
+    description: "When someone reacts to your reflection",
+    defaultEnabled: true,
+  },
+  {
+    key: "daily_gift",
+    label: "Daily Gift Reminder",
+    description: "Reminder to open your daily scripture gift",
     defaultEnabled: true,
   },
 ];
