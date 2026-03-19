@@ -118,7 +118,7 @@ export default function HomeScreen() {
 
   const handleCommunityPress = () => {
     console.log('[Home iOS] User tapped Community button');
-    router.push('/(tabs)/community');
+    router.navigate('/(tabs)/community');
   };
 
   const handleWeeklyRecapPress = () => {

@@ -189,7 +189,7 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
     // Navigate to community if it's a reaction or care message
     if ((notification.type === 'reaction' || notification.type === 'care_message') && notification.communityPostId) {
       console.log('[NotificationButton] Navigating to community for post:', notification.communityPostId);
-      router.push('/(tabs)/community');
+      router.navigate('/(tabs)/community');
     }
   }, [markNotificationAsRead, router]);
 
@@ -226,7 +226,7 @@ export default function NotificationButton({ onUnreadCountChange }: Notification
             </Animated.View>
           )}
         </View>
-        <Text style={[styles.buttonLabel, { color: textColor }]}>Love Messages</Text>
+
       </TouchableOpacity>
 
       <Modal
