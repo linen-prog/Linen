@@ -340,7 +340,7 @@ export default function CommunityScreen() {
               setPosts(prev => prev.filter(p => p.id !== postId));
             } catch (error) {
               console.error('[Community] ❌ Failed to delete post:', postId, error);
-              Alert.alert('Failed to delete post. Please try again.');
+              Alert.alert('Error', 'Failed to delete post. Please try again.');
             }
           },
         },
@@ -808,7 +808,7 @@ export default function CommunityScreen() {
                             ios_icon_name="trash"
                             android_material_icon_name="delete"
                             size={18}
-                            color={colors.error || '#E53935'}
+                            color="#9ca3af"
                           />
                         </TouchableOpacity>
                       )}
