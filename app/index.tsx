@@ -1,15 +1,48 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LandingScreen() {
-  console.log('User viewing Landing/Orientation screen');
   const router = useRouter();
+  const { user, loading } = useAuth();
+
+  // Auth guard: redirect authenticated users directly to the main app,
+  // and keep the splash screen up until the auth check resolves so there
+  // is no flash of the landing page before the redirect.
+  useEffect(() => {
+    if (loading) {
+      // Auth check still in progress — keep splash screen visible
+      SplashScreen.preventAutoHideAsync().catch(() => {});
+      return;
+    }
+
+    if (user) {
+      console.log('[LandingScreen] Existing session found, redirecting to main app');
+      router.replace('/(tabs)');
+    } else {
+      console.log('[LandingScreen] No session found, showing landing page');
+      // Let the splash screen hide naturally (fonts already loaded by _layout)
+    }
+  }, [user, loading, router]);
+
+  // While auth is resolving, render nothing — splash screen is still visible
+  if (loading) {
+    return null;
+  }
+
+  // If user is authenticated, render nothing while the redirect fires
+  if (user) {
+    return null;
+  }
+
+  console.log('User viewing Landing/Orientation screen');
 
   const handleContinue = () => {
     console.log('User tapped Begin Your Journey button - entering app as guest');

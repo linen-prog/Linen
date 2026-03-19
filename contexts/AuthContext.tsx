@@ -338,9 +338,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('[AuthContext] Signing out...');
-      // Clear local state immediately (don't wait for server)
+      // Clear local state and persisted tokens immediately
       setUser(null);
       await clearAuthTokens();
+      // Also invalidate the server-side session (fire-and-forget — don't block on it)
+      authClient.signOut().catch((err: unknown) => {
+        console.warn('[AuthContext] Server-side sign out failed (non-critical):', err);
+      });
       console.log('[AuthContext] Sign out complete');
     } catch (error) {
       console.error("[AuthContext] Sign out failed:", error);
