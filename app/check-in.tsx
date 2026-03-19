@@ -643,7 +643,7 @@ export default function CheckInScreen() {
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 160 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
           {messages.length === 0 ? (
             renderEmptyState()
@@ -675,8 +675,10 @@ export default function CheckInScreen() {
               placeholderTextColor={textSecondaryColor}
               value={inputText}
               onChangeText={setInputText}
-              multiline
               maxLength={1000}
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
+              blurOnSubmit={false}
             />
             <TouchableOpacity 
               style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
@@ -1429,7 +1431,7 @@ const styles = StyleSheet.create({
   emptyStateScrollContent: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    paddingBottom: 56,
+    paddingBottom: 0,
     flexGrow: 1,
   },
   emptyStateContainer: {
@@ -1488,7 +1490,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     gap: spacing.md,
-    paddingBottom: 120, // Add padding for FloatingTabBar + input area
+    paddingBottom: 16,
   },
   messageContainer: {
     flexDirection: 'row',
@@ -1543,7 +1545,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
@@ -1556,7 +1558,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: typography.body,
-    maxHeight: 100,
+    height: 44,
     borderWidth: 1,
   },
   sendButton: {
