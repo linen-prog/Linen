@@ -323,8 +323,8 @@ export default function CommunityScreen() {
   const handleDeletePost = async (postId: string) => {
     console.log('[Community] User tapped delete on post:', postId);
     Alert.alert(
-      'Delete post?',
-      'This cannot be undone.',
+      'Delete Post',
+      'Are you sure you want to delete this post? This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel', onPress: () => console.log('[Community] User cancelled post deletion') },
         {
@@ -334,12 +334,13 @@ export default function CommunityScreen() {
             console.log('[Community] User confirmed delete for post:', postId);
             try {
               const { authenticatedDelete } = await import('@/utils/api');
-              await authenticatedDelete(`/api/community/posts/${postId}`);
+              console.log('[Community] DELETE /api/posts/', postId);
+              await authenticatedDelete(`/api/posts/${postId}`);
               console.log('[Community] ✅ Post deleted successfully:', postId);
               setPosts(prev => prev.filter(p => p.id !== postId));
             } catch (error) {
               console.error('[Community] ❌ Failed to delete post:', postId, error);
-              Alert.alert('Failed to delete post.');
+              Alert.alert('Failed to delete post. Please try again.');
             }
           },
         },

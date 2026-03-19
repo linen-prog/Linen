@@ -194,16 +194,32 @@ export async function authenticatedPut<T = any>(
 // Authenticated DELETE request
 export async function authenticatedDelete<T = any>(
   endpoint: string
-): Promise<T> {
+): Promise<T | null> {
   const response = await makeAuthenticatedRequest(endpoint, {
     method: 'DELETE',
   });
 
   if (!response.ok) {
-    throw new Error(`DELETE ${endpoint} failed: ${response.statusText}`);
+    const errorText = await response.text().catch(() => response.statusText);
+    console.error(`[API] DELETE ${endpoint} error body:`, errorText);
+    throw new Error(`DELETE ${endpoint} failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  // 204 No Content — nothing to parse
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    return null;
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 // Public GET request (no authentication)
