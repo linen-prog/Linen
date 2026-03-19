@@ -655,15 +655,15 @@ export default function CheckInScreen() {
               keyExtractor={item => item.id}
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
+              scrollEnabled={true}
               onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-              style={{ flex: 1 }}
+              style={styles.messagesFlatList}
             />
           )}
 
           <View style={[styles.inputContainer, { 
             backgroundColor: colors.card,
             borderTopColor: inputBorder,
-            paddingBottom: 100,
           }]}>
             <TextInput
               style={[styles.input, { 
@@ -679,6 +679,7 @@ export default function CheckInScreen() {
               returnKeyType="send"
               onSubmitEditing={handleSend}
               blurOnSubmit={false}
+              multiline={false}
             />
             <TouchableOpacity 
               style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
@@ -1425,10 +1426,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  messagesFlatList: {
+    flex: 1,
+  },
   keyboardView: {
     flex: 1,
   },
   emptyStateScrollContent: {
+    paddingTop: 100,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     paddingBottom: 0,
@@ -1487,6 +1492,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   messagesList: {
+    paddingTop: 100,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     gap: spacing.md,
@@ -1544,6 +1550,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   inputContainer: {
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -1553,6 +1560,7 @@ const styles = StyleSheet.create({
     marginBottom: 80, // Add margin for FloatingTabBar
   },
   input: {
+    height: 44,
     flex: 1,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
