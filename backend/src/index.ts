@@ -15,6 +15,7 @@ import { registerProfileRoutes } from './routes/profile.js';
 import { registerAuthHealthRoutes } from './routes/auth-health.js';
 import { registerCompanionPreferencesRoutes } from './routes/companion-preferences.js';
 import { registerMonthlySummaryRoutes } from './routes/monthly-summary.js';
+import { registerNotificationsRoutes } from './routes/notifications.js';
 import { initializeDatabase } from './db/initDatabase.js';
 
 const schema = { ...appSchema, ...authSchema };
@@ -55,6 +56,7 @@ registerWeeklyRecapRoutes(app);
 registerProfileRoutes(app);
 registerCompanionPreferencesRoutes(app);
 registerMonthlySummaryRoutes(app);
+registerNotificationsRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
