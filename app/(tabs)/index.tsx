@@ -166,6 +166,17 @@ export default function HomeScreen() {
   const reflectionStreakText = `${reflectionStreak}`;
   const reflectionBestText = `best: 4`;
 
+  const isValidText = (val: string | null | undefined, minLen = 5) =>
+    typeof val === 'string' && val.trim().length > minLen;
+
+  const checkInTagline = isValidText(personalization?.companionTagline, 3)
+    ? personalization!.companionTagline!
+    : "What's on your heart?";
+  const personalizationActivity = isValidText(personalization?.recentActivity) ? personalization!.recentActivity! : null;
+  const personalizationStreak = isValidText(personalization?.streakMessage) ? personalization!.streakMessage! : null;
+  const personalizationContext = isValidText(personalization?.conversationContext) ? personalization!.conversationContext! : null;
+  const showPersonalization = !!(personalizationActivity || personalizationStreak || personalizationContext);
+
   return (
     <React.Fragment>
       <Stack.Screen
@@ -272,23 +283,23 @@ export default function HomeScreen() {
                   Check-In
                 </Text>
                 <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
-                  {personalization?.companionTagline || "What's on your mind?"}
+                  {checkInTagline}
                 </Text>
-                {(personalization?.recentActivity || personalization?.streakMessage || personalization?.conversationContext) && (
+                {showPersonalization && (
                   <View style={styles.personalizationContainer}>
-                    {personalization.recentActivity && (
+                    {personalizationActivity && (
                       <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.recentActivity}
+                        {personalizationActivity}
                       </Text>
                     )}
-                    {personalization.streakMessage && (
+                    {personalizationStreak && (
                       <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.streakMessage}
+                        {personalizationStreak}
                       </Text>
                     )}
-                    {personalization.conversationContext && (
+                    {personalizationContext && (
                       <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
-                        {personalization.conversationContext}
+                        {personalizationContext}
                       </Text>
                     )}
                   </View>
