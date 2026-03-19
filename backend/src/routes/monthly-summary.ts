@@ -255,15 +255,16 @@ export function registerMonthlySummaryRoutes(app: App) {
             }
           })(),
 
-          // 7. topScriptures from community_posts
+          // 7. topScriptures from user_reflections joined with daily_gifts (via daily_gift_id)
           (async () => {
             try {
               const result = await app.db.execute(sql`
-                SELECT scripture_reference as reference, COUNT(*) as count
-                FROM community_posts
-                WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
-                  AND scripture_reference IS NOT NULL AND trim(scripture_reference) != ''
-                GROUP BY scripture_reference
+                SELECT dg.scripture_reference as reference, COUNT(*) as count
+                FROM user_reflections ur
+                JOIN daily_content dc ON ur.daily_gift_id = dc.id
+                WHERE ur.user_id = ${userId} AND ur.created_at >= ${startDate} AND ur.created_at <= ${endDate}
+                  AND dc.scripture_reference IS NOT NULL AND trim(dc.scripture_reference) != ''
+                GROUP BY dc.scripture_reference
                 ORDER BY count DESC
                 LIMIT 3
               `) as any;
@@ -307,7 +308,12 @@ export function registerMonthlySummaryRoutes(app: App) {
 
         const aiConversations = totalCheckIns; // Same as totalCheckIns per spec
         const topMoods: any[] = []; // check_in_messages has NO mood column
-        const hasEnoughData = totalCheckIns >= 1;
+
+        // hasEnoughData is true if user has ANY activity OR if it's a past month
+        const isPastMonth = year < currentYear || (year === currentYear && month < currentMonth);
+        const hasAnyActivity = totalCheckIns >= 1 || totalEntries >= 1 || communityPosts >= 1 || practicesCompleted >= 1;
+        const hasEnoughData = isPastMonth || hasAnyActivity;
+
         const monthName = `${MONTH_NAMES[month - 1]} ${year}`;
 
         // Check cache
