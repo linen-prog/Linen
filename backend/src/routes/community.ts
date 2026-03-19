@@ -1137,4 +1137,114 @@ export function registerCommunityRoutes(app: App) {
       }
     }
   );
+
+  // Delete a community post (authenticated user only, must own the post)
+  app.fastify.delete(
+    '/api/posts/:id',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { id: postId } = request.params;
+      const userId = session.user.id;
+
+      app.logger.info(
+        { postId, userId },
+        'Attempting to delete community post'
+      );
+
+      try {
+        // Look up the post
+        const posts = await app.db
+          .select()
+          .from(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any))
+          .limit(1);
+
+        if (!posts.length) {
+          app.logger.warn({ postId }, 'Post not found for deletion');
+          return reply.status(404).send({ error: 'Post not found' });
+        }
+
+        const post = posts[0];
+
+        // Check ownership
+        if (post.userId !== userId) {
+          app.logger.warn(
+            { postId, userId, ownerId: post.userId },
+            'User attempted to delete post they do not own'
+          );
+          return reply.status(403).send({ error: 'Forbidden' });
+        }
+
+        // Cascade delete related rows to avoid foreign key constraint violations
+        app.logger.debug(
+          { postId },
+          'Deleting related rows (care_messages, community_prayers, flagged_posts, post_reactions)'
+        );
+
+        // Delete care messages for this post
+        try {
+          await app.db
+            .delete(schema.careMessages)
+            .where(eq(schema.careMessages.postId, postId as any));
+          app.logger.debug({ postId }, 'Care messages deleted');
+        } catch (error) {
+          app.logger.debug({ err: error, postId }, 'Error deleting care messages (may not exist)');
+        }
+
+        // Delete community prayers for this post
+        try {
+          await app.db
+            .delete(schema.communityPrayers)
+            .where(eq(schema.communityPrayers.postId, postId as any));
+          app.logger.debug({ postId }, 'Community prayers deleted');
+        } catch (error) {
+          app.logger.debug({ err: error, postId }, 'Error deleting community prayers (may not exist)');
+        }
+
+        // Delete flagged posts for this post
+        try {
+          await app.db
+            .delete(schema.flaggedPosts)
+            .where(eq(schema.flaggedPosts.postId, postId as any));
+          app.logger.debug({ postId }, 'Flagged posts deleted');
+        } catch (error) {
+          app.logger.debug({ err: error, postId }, 'Error deleting flagged posts (may not exist)');
+        }
+
+        // Delete post reactions for this post
+        try {
+          await app.db
+            .delete(schema.postReactions)
+            .where(eq(schema.postReactions.postId, postId as any));
+          app.logger.debug({ postId }, 'Post reactions deleted');
+        } catch (error) {
+          app.logger.debug({ err: error, postId }, 'Error deleting post reactions (may not exist)');
+        }
+
+        // Delete the post itself
+        app.logger.debug({ postId }, 'Deleting community post');
+        await app.db
+          .delete(schema.communityPosts)
+          .where(eq(schema.communityPosts.id, postId as any));
+
+        app.logger.info(
+          { postId, userId },
+          'Community post deleted successfully'
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, postId, userId },
+          'Failed to delete community post'
+        );
+        throw error;
+      }
+    }
+  );
 }
