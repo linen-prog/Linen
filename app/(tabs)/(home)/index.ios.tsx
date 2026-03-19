@@ -195,31 +195,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.loveMessagesCard}
-            onPress={() => {
-              console.log('[Home iOS] User tapped Love Messages button');
-              router.push('/notification-preferences');
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.loveMessagesIconCircle}>
-              <IconSymbol
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={32}
-                color="#e11d48"
-              />
-            </View>
-            <Text style={styles.loveMessagesTitle}>Love Messages</Text>
-            <Text style={styles.loveMessagesSubtitle}>Encouragement from the community</Text>
-            {hasLoveMessages && (
-              <View style={styles.loveMessagesBadge}>
-                <Text style={styles.loveMessagesBadgeText}>New</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={styles.giftCard}
             onPress={handleOpenGiftPress}
             activeOpacity={0.7}

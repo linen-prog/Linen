@@ -553,26 +553,6 @@ export default function CommunityScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-        {/* Back Button */}
-        <View style={styles.backRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              console.log('[Community] User tapped back button - navigating to home');
-              router.replace('/(tabs)/(home)');
-            }}
-            hitSlop={8}
-            activeOpacity={0.7}
-          >
-            <IconSymbol
-              ios_icon_name="chevron.left"
-              android_material_icon_name="chevron-left"
-              size={24}
-              color={isDark ? '#fbbf24' : '#d97706'}
-            />
-          </TouchableOpacity>
-        </View>
-
         {/* Header Message */}
         <View style={styles.headerMessage}>
           <Text style={styles.headerMessageText}>
