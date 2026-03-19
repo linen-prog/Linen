@@ -645,21 +645,22 @@ export default function CheckInScreen() {
           style={styles.keyboardView}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          {messages.length === 0 ? (
-            renderEmptyState()
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              contentContainerStyle={styles.messagesList}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={true}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-              style={styles.messagesFlatList}
-            />
-          )}
+          <View style={styles.messagesArea}>
+            {messages.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.messagesList}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={true}
+                style={styles.messagesFlatList}
+              />
+            )}
+          </View>
 
           <View style={[styles.inputContainer, { 
             backgroundColor: colors.card,
@@ -1426,11 +1427,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  messagesArea: {
+    flex: 1,
+    minHeight: 0,
+  },
   messagesFlatList: {
     flex: 1,
   },
   keyboardView: {
     flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
   },
   emptyStateScrollContent: {
     paddingTop: 100,
