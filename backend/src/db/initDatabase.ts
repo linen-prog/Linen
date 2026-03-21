@@ -557,6 +557,56 @@ export async function initializeDatabase(db: any, app?: App) {
       // Auto-seed reactions for existing posts
       await autoSeedPostReactionsIfEmpty(db, app);
     }
+
+    // Seed test community post with artwork_url
+    try {
+      const seedUserId = 'seed-user-001';
+      const seedTimestamp = new Date();
+
+      // Use raw SQL to insert with ON CONFLICT DO NOTHING
+      await db.execute(sql`
+        INSERT INTO "community_posts" (
+          "id",
+          "user_id",
+          "author_name",
+          "is_anonymous",
+          "category",
+          "content",
+          "prayer_count",
+          "content_type",
+          "scripture_reference",
+          "is_flagged",
+          "created_at",
+          "artwork_url"
+        ) VALUES (
+          gen_random_uuid(),
+          ${seedUserId},
+          'Seed User',
+          false,
+          'reflection',
+          'This is a seed post to verify artwork_url storage.',
+          0,
+          'artwork',
+          NULL,
+          false,
+          ${seedTimestamp},
+          'https://picsum.photos/seed/linen-artwork/800/600'
+        )
+        ON CONFLICT DO NOTHING
+      `);
+
+      app?.logger.info({}, 'Seed community post inserted');
+
+      // Query and log results to confirm
+      const results = await db.execute(sql`
+        SELECT id, user_id, artwork_url FROM community_posts WHERE artwork_url IS NOT NULL LIMIT 5
+      `);
+
+      app?.logger.info({ results }, 'Community posts with artwork_url');
+    } catch (error) {
+      app?.logger.warn({ err: error }, 'Failed to seed community post data');
+      // Don't throw - this is optional seed data
+    }
   } catch (error) {
     console.error('Failed to initialize database tables:', error);
     throw error;

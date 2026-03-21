@@ -7,42 +7,37 @@ import { createGuestAwareAuth } from '../utils/guest-auth.js';
 export function registerCommunityRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
 
-  // Get community posts by category and optional contentType filter
+  // Get community posts where is_flagged = false
   app.fastify.get(
     '/api/community/posts',
     {
       schema: {
-        description: 'Get community posts by category and optional content type filter',
+        description: 'Get community posts where is_flagged = false',
         tags: ['community'],
-        querystring: {
-          type: 'object',
-          properties: {
-            category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], default: 'feed', description: 'Post category' },
-            contentType: { type: 'string', enum: ['companion', 'daily-gift', 'somatic', 'manual'], description: 'Filter by content type' },
-          },
-        },
         response: {
           200: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                userId: { type: 'string' },
-                authorName: { type: ['string', 'null'] },
-                isAnonymous: { type: 'boolean' },
-                category: { type: 'string' },
-                content: { type: 'string' },
-                contentType: { type: 'string' },
-                scriptureReference: { type: ['string', 'null'] },
-                prayerCount: { type: 'integer' },
-                isFlagged: { type: 'boolean' },
-                createdAt: { type: 'string', format: 'date-time' },
-                artworkUrl: { type: ['string', 'null'] },
-                userHasPrayed: { type: 'boolean' },
-                userHasFlagged: { type: 'boolean' },
-                reactionCounts: { type: 'object' },
-                userReactions: { type: 'array', items: { type: 'string' } },
+            type: 'object',
+            properties: {
+              posts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    userId: { type: 'string' },
+                    authorName: { type: ['string', 'null'] },
+                    isAnonymous: { type: 'boolean' },
+                    category: { type: 'string' },
+                    content: { type: 'string' },
+                    prayerCount: { type: 'integer' },
+                    contentType: { type: 'string' },
+                    scriptureReference: { type: ['string', 'null'] },
+                    isFlagged: { type: 'boolean' },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    artworkUrl: { type: ['string', 'null'] },
+                    hasPrayed: { type: 'boolean' },
+                  },
+                },
               },
             },
           },
@@ -54,7 +49,7 @@ export function registerCommunityRoutes(app: App) {
       },
     },
     async (
-      request: FastifyRequest<{ Querystring: { category?: string; contentType?: string } }>,
+      request: FastifyRequest,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
@@ -63,28 +58,13 @@ export function registerCommunityRoutes(app: App) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const { category = 'feed', contentType } = request.query;
-      const validCategory = (category as string) as 'feed' | 'wisdom' | 'care' | 'prayers';
-      const validContentType = contentType
-        ? (contentType as string) as 'companion' | 'daily-gift' | 'somatic' | 'manual'
-        : undefined;
-
       app.logger.info(
-        { userId: session.user.id, category: validCategory, contentType: validContentType },
+        { userId: session.user.id },
         'Fetching community posts'
       );
 
       try {
-        const whereConditions = [
-          eq(schema.communityPosts.category, validCategory),
-          eq(schema.communityPosts.isFlagged, false),
-        ];
-
-        if (validContentType) {
-          whereConditions.push(eq(schema.communityPosts.contentType, validContentType));
-        }
-
-        let posts = await app.db
+        const posts = await app.db
           .select({
             id: schema.communityPosts.id,
             userId: schema.communityPosts.userId,
@@ -92,25 +72,23 @@ export function registerCommunityRoutes(app: App) {
             isAnonymous: schema.communityPosts.isAnonymous,
             category: schema.communityPosts.category,
             content: schema.communityPosts.content,
+            prayerCount: schema.communityPosts.prayerCount,
             contentType: schema.communityPosts.contentType,
             scriptureReference: schema.communityPosts.scriptureReference,
-            prayerCount: schema.communityPosts.prayerCount,
             isFlagged: schema.communityPosts.isFlagged,
             createdAt: schema.communityPosts.createdAt,
             artworkUrl: schema.communityPosts.artworkUrl,
           })
           .from(schema.communityPosts)
-          .where(and(...whereConditions))
+          .where(eq(schema.communityPosts.isFlagged, false))
           .orderBy(desc(schema.communityPosts.createdAt))
           .limit(50);
 
         const userId = session.user.id;
 
-        // For each post, check if current user has prayed and get artwork for somatic posts
         const result = await Promise.all(
           posts.map(async (post) => {
-            let userHasPrayed = false;
-            let userHasFlagged = false;
+            let hasPrayed = false;
 
             if (userId) {
               const prayer = await app.db
@@ -124,47 +102,8 @@ export function registerCommunityRoutes(app: App) {
                 )
                 .limit(1);
 
-              userHasPrayed = prayer.length > 0;
-
-              const flag = await app.db
-                .select()
-                .from(schema.flaggedPosts)
-                .where(
-                  and(
-                    eq(schema.flaggedPosts.postId, post.id),
-                    eq(schema.flaggedPosts.userId, userId)
-                  )
-                )
-                .limit(1);
-
-              userHasFlagged = flag.length > 0;
+              hasPrayed = prayer.length > 0;
             }
-
-            // Get reaction counts for this post
-            const reactions = await app.db
-              .select()
-              .from(schema.postReactions)
-              .where(eq(schema.postReactions.postId, post.id));
-
-            const reactionCounts: Record<string, number> = {
-              praying: 0,
-              holding: 0,
-              light: 0,
-              amen: 0,
-              growing: 0,
-              peace: 0,
-            };
-
-            reactions.forEach((reaction) => {
-              reactionCounts[reaction.reactionType]++;
-            });
-
-            // Get user's reactions for this post (if authenticated)
-            const userReactions = userId
-              ? reactions
-                  .filter((r) => r.userId === userId)
-                  .map((r) => r.reactionType)
-              : [];
 
             return {
               id: post.id,
@@ -173,29 +112,26 @@ export function registerCommunityRoutes(app: App) {
               isAnonymous: post.isAnonymous,
               category: post.category,
               content: post.content,
+              prayerCount: post.prayerCount,
               contentType: post.contentType,
               scriptureReference: post.scriptureReference,
-              prayerCount: post.prayerCount,
               isFlagged: post.isFlagged,
               createdAt: post.createdAt,
-              userHasPrayed,
-              userHasFlagged,
               artworkUrl: post.artworkUrl || null,
-              reactionCounts,
-              userReactions,
+              hasPrayed,
             };
           })
         );
 
         app.logger.info(
-          { category: validCategory, contentType: validContentType, count: result.length },
+          { count: result.length },
           'Community posts retrieved'
         );
 
-        return reply.send(result);
+        return reply.send({ posts: result });
       } catch (error) {
         app.logger.error(
-          { err: error, category: validCategory, contentType: validContentType },
+          { err: error, userId: session.user.id },
           'Failed to fetch community posts'
         );
         throw error;
@@ -223,10 +159,21 @@ export function registerCommunityRoutes(app: App) {
           },
         },
         response: {
-          200: {
+          201: {
             type: 'object',
             properties: {
-              postId: { type: 'string', format: 'uuid' },
+              id: { type: 'string', format: 'uuid' },
+              userId: { type: 'string' },
+              authorName: { type: ['string', 'null'] },
+              isAnonymous: { type: 'boolean' },
+              category: { type: 'string' },
+              content: { type: 'string' },
+              prayerCount: { type: 'integer' },
+              contentType: { type: 'string' },
+              scriptureReference: { type: ['string', 'null'] },
+              isFlagged: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' },
+              artworkUrl: { type: ['string', 'null'] },
             },
           },
           400: {
@@ -268,20 +215,9 @@ export function registerCommunityRoutes(app: App) {
       );
 
       try {
-        // Get user display name from user_profiles, fall back to session.user.name
         let authorName: string | null = null;
         if (!isAnonymous) {
-          try {
-            const userProfile = await app.db
-              .select({ displayName: schema.userProfiles.displayName })
-              .from(schema.userProfiles)
-              .where(eq(schema.userProfiles.userId, session.user.id))
-              .limit(1);
-            authorName = userProfile[0]?.displayName || session.user.name || null;
-          } catch (error) {
-            app.logger.debug({ err: error, userId: session.user.id }, 'Failed to fetch user profile display name');
-            authorName = session.user.name || null;
-          }
+          authorName = session.user.name || null;
         }
 
         const [post] = await app.db
@@ -305,7 +241,20 @@ export function registerCommunityRoutes(app: App) {
           'Community post created'
         );
 
-        return reply.send({ postId: post.id });
+        return reply.status(201).send({
+          id: post.id,
+          userId: post.userId,
+          authorName: post.authorName,
+          isAnonymous: post.isAnonymous,
+          category: post.category,
+          content: post.content,
+          prayerCount: post.prayerCount,
+          contentType: post.contentType,
+          scriptureReference: post.scriptureReference,
+          isFlagged: post.isFlagged,
+          createdAt: post.createdAt,
+          artworkUrl: post.artworkUrl || null,
+        });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id, category, contentType },
@@ -470,22 +419,28 @@ export function registerCommunityRoutes(app: App) {
         tags: ['community'],
         response: {
           200: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                userId: { type: 'string' },
-                authorName: { type: ['string', 'null'] },
-                isAnonymous: { type: 'boolean' },
-                category: { type: 'string' },
-                content: { type: 'string' },
-                contentType: { type: 'string' },
-                scriptureReference: { type: ['string', 'null'] },
-                prayerCount: { type: 'integer' },
-                isFlagged: { type: 'boolean' },
-                createdAt: { type: 'string', format: 'date-time' },
-                artworkUrl: { type: ['string', 'null'] },
+            type: 'object',
+            properties: {
+              posts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    userId: { type: 'string' },
+                    authorName: { type: ['string', 'null'] },
+                    isAnonymous: { type: 'boolean' },
+                    category: { type: 'string' },
+                    content: { type: 'string' },
+                    prayerCount: { type: 'integer' },
+                    contentType: { type: 'string' },
+                    scriptureReference: { type: ['string', 'null'] },
+                    isFlagged: { type: 'boolean' },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    artworkUrl: { type: ['string', 'null'] },
+                    hasPrayed: { type: 'boolean' },
+                  },
+                },
               },
             },
           },
@@ -514,9 +469,9 @@ export function registerCommunityRoutes(app: App) {
             isAnonymous: schema.communityPosts.isAnonymous,
             category: schema.communityPosts.category,
             content: schema.communityPosts.content,
+            prayerCount: schema.communityPosts.prayerCount,
             contentType: schema.communityPosts.contentType,
             scriptureReference: schema.communityPosts.scriptureReference,
-            prayerCount: schema.communityPosts.prayerCount,
             isFlagged: schema.communityPosts.isFlagged,
             createdAt: schema.communityPosts.createdAt,
             artworkUrl: schema.communityPosts.artworkUrl,
@@ -525,28 +480,51 @@ export function registerCommunityRoutes(app: App) {
           .where(eq(schema.communityPosts.userId, session.user.id))
           .orderBy(desc(schema.communityPosts.createdAt));
 
-        // Format posts for response
-        const result = posts.map((p) => ({
-          id: p.id,
-          userId: p.userId,
-          authorName: p.authorName,
-          isAnonymous: p.isAnonymous,
-          category: p.category,
-          content: p.content,
-          contentType: p.contentType,
-          scriptureReference: p.scriptureReference,
-          prayerCount: p.prayerCount,
-          isFlagged: p.isFlagged,
-          createdAt: p.createdAt,
-          artworkUrl: p.artworkUrl || null,
-        }));
+        const userId = session.user.id;
+
+        const result = await Promise.all(
+          posts.map(async (p) => {
+            let hasPrayed = false;
+
+            if (userId) {
+              const prayer = await app.db
+                .select()
+                .from(schema.communityPrayers)
+                .where(
+                  and(
+                    eq(schema.communityPrayers.postId, p.id),
+                    eq(schema.communityPrayers.userId, userId)
+                  )
+                )
+                .limit(1);
+
+              hasPrayed = prayer.length > 0;
+            }
+
+            return {
+              id: p.id,
+              userId: p.userId,
+              authorName: p.authorName,
+              isAnonymous: p.isAnonymous,
+              category: p.category,
+              content: p.content,
+              prayerCount: p.prayerCount,
+              contentType: p.contentType,
+              scriptureReference: p.scriptureReference,
+              isFlagged: p.isFlagged,
+              createdAt: p.createdAt,
+              artworkUrl: p.artworkUrl || null,
+              hasPrayed,
+            };
+          })
+        );
 
         app.logger.info(
           { userId: session.user.id, count: result.length },
           'User community posts retrieved'
         );
 
-        return reply.send(result);
+        return reply.send({ posts: result });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id },

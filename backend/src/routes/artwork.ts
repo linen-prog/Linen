@@ -261,9 +261,7 @@ export function registerArtworkRoutes(app: App) {
           200: {
             type: 'object',
             properties: {
-              url: { type: 'string', description: 'Signed URL for accessing the uploaded image' },
-              filename: { type: 'string', description: 'Original filename' },
-              key: { type: 'string', description: 'Storage key for the uploaded file' },
+              url: { type: 'string', description: 'Public URL of the uploaded file' },
             },
           },
           400: {
@@ -291,35 +289,19 @@ export function registerArtworkRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Uploading artwork photo');
 
       try {
-        // Try to get file from "photo" field first, then fall back to "image"
-        let data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
+        // Accept multipart field named "photo"
+        const data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
 
-        if (!data) {
-          // If no file found, try to get multiple files and look for "photo" or "image" field
-          try {
-            const files = await request.files({ limits: { fileSize: 10 * 1024 * 1024 } });
-            data = null;
-            for await (const file of files) {
-              if (file.fieldname === 'photo' || file.fieldname === 'image') {
-                data = file;
-                break;
-              }
-            }
-          } catch {
-            // If files() doesn't work, data remains null
-          }
-        }
-
-        if (!data) {
-          app.logger.warn({ userId: session.user.id }, 'No file provided in photo or image field');
-          return reply.status(400).send({ error: 'No file provided. Upload photo or image field' });
+        if (!data || data.fieldname !== 'photo') {
+          app.logger.warn({ userId: session.user.id, fieldname: data?.fieldname }, 'No file provided in photo field');
+          return reply.status(400).send({ error: 'No file provided in photo field' });
         }
 
         // Validate file is an image
         const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'];
         if (!validMimeTypes.includes(data.mimetype)) {
           app.logger.warn(
-            { userId: session.user.id, mimetype: data.mimetype, fieldname: data.fieldname },
+            { userId: session.user.id, mimetype: data.mimetype },
             'Invalid file type'
           );
           return reply.status(400).send({
@@ -335,10 +317,9 @@ export function registerArtworkRoutes(app: App) {
           return reply.status(413).send({ error: 'File too large (max 10MB)' });
         }
 
-        // Generate storage key with UUID-based filename
-        const extension = data.filename.split('.').pop() || 'jpg';
-        const uniqueId = randomUUID();
-        const storageKey = `artwork-photos/${session.user.id}/${uniqueId}.${extension}`;
+        // Generate storage key: artwork-photos/{userId}/{Date.now()}-{originalFilename}
+        const timestamp = Date.now();
+        const storageKey = `artwork-photos/${session.user.id}/${timestamp}-${data.filename}`;
 
         // Upload to storage
         const uploadedKey = await app.storage.upload(storageKey, buffer);
