@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { captureRef } from 'react-native-view-shot';
 import Svg, { Path, Image as SvgImage, Circle, Rect, Defs, LinearGradient, Stop, Pattern } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -390,6 +391,7 @@ export default function ArtworkCanvasScreen() {
   const [selectedPalette, setSelectedPalette] = useState<ColorPalette | null>(null);
 
   const canvasRef = useRef<View>(null);
+  const viewShotRef = useRef<View>(null);
   const currentStrokeRef = useRef<DrawingStroke | null>(null);
   const hasLoadedRef = useRef(false);
   const photoPositionRef = useRef({ x: 0, y: 0 });
@@ -1221,72 +1223,92 @@ export default function ArtworkCanvasScreen() {
   };
 
   const handleShareToCommunity = async () => {
-    console.log('[Canvas] 🚀 User sharing artwork to community', { category: shareCategory, anonymous: shareAnonymous });
-    console.log('[Canvas] 🚀 Current backgroundImage state:', backgroundImage);
+    console.log('[Canvas] 🚀 User tapped Share to Community button', { category: shareCategory, anonymous: shareAnonymous });
     setIsSharing(true);
 
     try {
-      const artworkData = JSON.stringify({ 
-        strokes, 
-        backgroundImage,
-        backgroundPattern,
-        photoPosition,
-        photoScale,
-        brushType: selectedBrush,
-        brushSize,
-        color: selectedColor,
-        stickers,
-        savedAt: new Date().toISOString(),
-      });
-      
-      console.log('[Canvas] 📦 Saving artwork with photoUrls:', backgroundImage ? [backgroundImage] : []);
-      
-      // Save the artwork first
-      const savedArtwork = await authenticatedPost<{ id: string; photoUrls: string[] }>('/api/artwork/save', {
-        artworkData,
-        photoUrls: backgroundImage ? [backgroundImage] : [],
-      });
+      // Step 1: Capture the canvas as a PNG image
+      console.log('[Canvas] 📸 Capturing canvas with react-native-view-shot...');
+      let capturedUri: string | null = null;
 
-      console.log('[Canvas] ✅ Artwork saved before sharing:', savedArtwork);
-      console.log('[Canvas] 📸 savedArtwork.photoUrls:', savedArtwork.photoUrls);
-      console.log('[Canvas] 📸 savedArtwork.photoUrls length:', savedArtwork.photoUrls ? savedArtwork.photoUrls.length : 0);
+      if (Platform.OS !== 'web' && viewShotRef.current) {
+        capturedUri = await captureRef(viewShotRef, {
+          format: 'png',
+          quality: 0.9,
+          result: 'tmpfile',
+        });
+        console.log('[Canvas] ✅ Canvas captured at:', capturedUri);
+      } else {
+        console.log('[Canvas] ⚠️ Web platform or no ref — skipping canvas capture');
+      }
 
-      // Determine the artwork URL to share
-      // Priority: 1. photoUrls from saved artwork, 2. backgroundImage state
-      const artworkUrlToShare = (savedArtwork.photoUrls && savedArtwork.photoUrls.length > 0) 
-        ? savedArtwork.photoUrls[0] 
-        : backgroundImage;
-      
-      console.log('[Canvas] 🎨 FINAL artworkUrlToShare:', artworkUrlToShare);
-      console.log('[Canvas] 🎨 artworkUrlToShare type:', typeof artworkUrlToShare);
-      console.log('[Canvas] 🎨 artworkUrlToShare length:', artworkUrlToShare ? artworkUrlToShare.length : 0);
+      // Step 2: Upload the captured image to the backend
+      let artworkUrl: string | null = null;
 
-      // Share to community with ONLY the artwork URL, no text content
+      if (capturedUri) {
+        console.log('[Canvas] 📤 Uploading captured canvas image to /api/artwork/upload-photo...');
+        const { BACKEND_URL } = await import('@/utils/api');
+        const { getBearerToken } = await import('@/lib/auth');
+        const bearerToken = await getBearerToken();
+
+        const formData = new FormData();
+        const fileName = `canvas-${Date.now()}.png`;
+
+        formData.append('photo', {
+          uri: capturedUri,
+          type: 'image/png',
+          name: fileName,
+        } as any);
+
+        const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
+          method: 'POST',
+          headers: {
+            ...(bearerToken ? { 'Authorization': `Bearer ${bearerToken}` } : {}),
+          },
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('[Canvas] ❌ Upload failed:', uploadResponse.status, errorText);
+          throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
+        }
+
+        const uploadResult = await uploadResponse.json() as { url: string };
+        artworkUrl = uploadResult.url;
+        console.log('[Canvas] ✅ Canvas image uploaded successfully:', artworkUrl);
+      } else {
+        // Fallback: use backgroundImage if no capture was possible
+        artworkUrl = backgroundImage;
+        console.log('[Canvas] ⚠️ Using backgroundImage as fallback artworkUrl:', artworkUrl);
+      }
+
+      // Step 3: Post to community
       console.log('[Canvas] 📤 Posting to community with payload:', {
         content: '',
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
-        artworkUrl: artworkUrlToShare,
+        artworkUrl,
       });
-      
+
       await authenticatedPost('/api/community/post', {
-        content: '', // Empty string - no text, just artwork
+        content: '',
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
-        artworkUrl: artworkUrlToShare,
+        artworkUrl,
       });
 
       console.log('[Canvas] ✅ Artwork shared to community successfully');
       setIsSharing(false);
       setShowShareModal(false);
       setShowPostSaveModal(false);
-      
+
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       // Show celebratory success modal
       setShowShareSuccessModal(true);
     } catch (error) {
@@ -1753,7 +1775,7 @@ export default function ArtworkCanvasScreen() {
           {/* Canvas Area */}
           <View 
             style={[styles.canvasContainer, { backgroundColor: '#FFFFFF' }]}
-            ref={canvasRef}
+            ref={(r) => { (canvasRef as React.MutableRefObject<View | null>).current = r; (viewShotRef as React.MutableRefObject<View | null>).current = r; }}
             onLayout={(event) => {
               const { x, y, width, height } = event.nativeEvent.layout;
               console.log('[Canvas] Layout updated:', { x, y, width, height });

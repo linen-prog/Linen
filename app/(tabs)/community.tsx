@@ -31,7 +31,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -104,6 +104,7 @@ export default function CommunityScreen() {
   const [isSendingEncouragement, setIsSendingEncouragement] = useState(false);
   const [showEncouragementSentToast, setShowEncouragementSentToast] = useState(false);
   const [showEncouragementCelebration, setShowEncouragementCelebration] = useState(false);
+  const [fullscreenArtworkUrl, setFullscreenArtworkUrl] = useState<string | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -851,23 +852,27 @@ export default function CommunityScreen() {
                   )}
 
                   {post.artworkUrl && post.artworkUrl.trim().length > 0 && (
-                    <View style={styles.artworkImageContainer}>
-                      {console.log('[Community] 🖼️ Rendering artwork image for post:', post.id, 'URL:', post.artworkUrl)}
-                      <Image 
-                        source={{ uri: post.artworkUrl }}
-                        style={styles.artworkImage}
-                        resizeMode="cover"
-                        onError={(error) => {
-                          console.error('[Community] ❌ Failed to load artwork image for post:', post.id);
-                          console.error('[Community] ❌ Artwork URL:', post.artworkUrl);
-                          console.error('[Community] ❌ Error:', error.nativeEvent.error);
-                        }}
-                        onLoad={() => {
-                          console.log('[Community] ✅ Artwork image loaded successfully for post:', post.id);
-                          console.log('[Community] ✅ Artwork URL:', post.artworkUrl);
-                        }}
-                      />
-                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => {
+                        console.log('[Community] User tapped artwork image for post:', post.id, 'URL:', post.artworkUrl);
+                        setFullscreenArtworkUrl(post.artworkUrl ?? null);
+                      }}
+                    >
+                      <View style={styles.artworkImageContainer}>
+                        <Image
+                          source={{ uri: post.artworkUrl }}
+                          style={styles.artworkImage}
+                          resizeMode="cover"
+                          onError={(error) => {
+                            console.error('[Community] ❌ Failed to load artwork image for post:', post.id, 'Error:', error.nativeEvent.error);
+                          }}
+                          onLoad={() => {
+                            console.log('[Community] ✅ Artwork image loaded for post:', post.id);
+                          }}
+                        />
+                      </View>
+                    </TouchableOpacity>
                   )}
 
                   {post.content && post.content.trim().length > 0 && (
@@ -1226,6 +1231,45 @@ export default function CommunityScreen() {
               <Text style={styles.sendEncouragementButtonText}>
                 {isSendingEncouragement ? 'Sending...' : 'Send Encouragement'}
               </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Fullscreen Artwork Modal */}
+      <Modal
+        visible={fullscreenArtworkUrl !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          console.log('[Community] User closed fullscreen artwork modal');
+          setFullscreenArtworkUrl(null);
+        }}
+      >
+        <Pressable
+          style={styles.fullscreenArtworkOverlay}
+          onPress={() => {
+            console.log('[Community] User dismissed fullscreen artwork by tapping overlay');
+            setFullscreenArtworkUrl(null);
+          }}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.fullscreenArtworkContainer}>
+            {fullscreenArtworkUrl && (
+              <Image
+                source={{ uri: fullscreenArtworkUrl }}
+                style={styles.fullscreenArtworkImage}
+                resizeMode="contain"
+              />
+            )}
+            <TouchableOpacity
+              style={styles.fullscreenArtworkClose}
+              onPress={() => {
+                console.log('[Community] User tapped close on fullscreen artwork');
+                setFullscreenArtworkUrl(null);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fullscreenArtworkCloseText}>✕</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -2239,6 +2283,43 @@ const styles = StyleSheet.create({
   authPromptButtonTextSecondary: {
     fontSize: typography.body,
     fontWeight: typography.medium,
+  },
+  careMessageContext: {
+    fontSize: typography.caption,
+    fontStyle: 'italic',
+    opacity: 0.7,
+  },
+  fullscreenArtworkOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenArtworkContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenArtworkImage: {
+    width: '100%',
+    height: '80%',
+  },
+  fullscreenArtworkClose: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenArtworkCloseText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600' as const,
   },
   signInButton: {
     borderRadius: borderRadius.full,
