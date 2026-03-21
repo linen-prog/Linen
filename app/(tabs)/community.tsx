@@ -828,17 +828,19 @@ export default function CommunityScreen() {
                           />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity 
-                        style={styles.flagButton}
-                        onPress={() => handleFlagPost(post.id)}
-                      >
-                        <IconSymbol 
-                          ios_icon_name="flag"
-                          android_material_icon_name="flag"
-                          size={18}
-                          color={textSecondaryColor}
-                        />
-                      </TouchableOpacity>
+                      {!isOwnPost && (
+                        <TouchableOpacity 
+                          style={styles.flagButton}
+                          onPress={() => handleFlagPost(post.id)}
+                        >
+                          <IconSymbol 
+                            ios_icon_name="flag"
+                            android_material_icon_name="flag"
+                            size={18}
+                            color={textSecondaryColor}
+                          />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
 
