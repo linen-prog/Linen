@@ -18,9 +18,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const tabs = [
-  { name: 'home', route: '/(tabs)/' as const, icon: 'home' as const, label: 'Home' },
-  { name: 'community', route: '/(tabs)/community' as const, icon: 'people' as const, label: 'Community' },
-  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'person' as const, label: 'Profile' },
+  { name: 'home', route: '/(tabs)/' as const, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as const, icon: 'people' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as const, icon: 'person' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
 ];
 
 interface GlitterParticle {
