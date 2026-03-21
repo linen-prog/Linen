@@ -46,7 +46,7 @@ export function registerArtworkRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) {
         app.logger.warn({}, 'Unauthorized access to artwork endpoint');
-        return;
+        return reply.status(401).send({ error: 'Unauthorized' });
       }
 
       app.logger.info({ userId: session.user.id }, 'Fetching current artwork');
@@ -142,7 +142,10 @@ export function registerArtworkRoutes(app: App) {
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized artwork save attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       const { artworkData, photoUrls = [] } = request.body;
 
@@ -255,7 +258,6 @@ export function registerArtworkRoutes(app: App) {
       schema: {
         description: 'Upload an artwork photo to S3 storage',
         tags: ['artwork'],
-        consumes: ['multipart/form-data'],
         response: {
           200: {
             type: 'object',
@@ -282,7 +284,10 @@ export function registerArtworkRoutes(app: App) {
     },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized artwork photo upload attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       app.logger.info({ userId: session.user.id }, 'Uploading artwork photo');
 
