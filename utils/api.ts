@@ -50,7 +50,7 @@ async function getGuestToken(): Promise<string> {
 }
 
 // Helper function to get the appropriate auth token
-async function getAuthToken(): Promise<string> {
+export async function getAuthToken(): Promise<string> {
   // First, try to get Better Auth bearer token (for authenticated users)
   const bearerToken = await getBearerToken();
   

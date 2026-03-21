@@ -978,9 +978,9 @@ export default function ArtworkCanvasScreen() {
           if (Platform.OS === 'web') {
             const response = await fetch(fileUri);
             const blob = await response.blob();
-            formData.append('image', blob, fileName);
+            formData.append('photo', blob, fileName);
           } else {
-            formData.append('image', {
+            formData.append('photo', {
               uri: fileUri,
               type: fileType,
               name: fileName,
@@ -1263,10 +1263,9 @@ export default function ArtworkCanvasScreen() {
 
       if (capturedUri) {
         console.log('[Canvas] 📤 Uploading captured canvas image to /api/artwork/upload-photo...');
-        const { BACKEND_URL } = await import('@/utils/api');
-        const { getBearerToken } = await import('@/lib/auth');
-        const token = await getBearerToken();
-        console.log('[Canvas] 🔑 Bearer token retrieved:', token ? 'present' : 'missing');
+        const { BACKEND_URL, getAuthToken } = await import('@/utils/api');
+        const token = await getAuthToken();
+        console.log('[Canvas] 🔑 Auth token retrieved:', token ? 'present' : 'missing');
 
         const formData = new FormData();
         formData.append('photo', {
