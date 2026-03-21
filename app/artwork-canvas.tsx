@@ -10,6 +10,7 @@ import { captureRef } from 'react-native-view-shot';
 import Svg, { Path, Image as SvgImage, Circle, Rect, Defs, LinearGradient, Stop, Pattern } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import Slider from '@react-native-community/slider';
 import { IconSymbol } from '@/components/IconSymbol';
 import Animated, { 
@@ -344,6 +345,15 @@ export default function ArtworkCanvasScreen() {
   console.log('User viewing Artwork Canvas screen');
   const { isDark } = useTheme();
   const router = useRouter();
+  const { isSubscribed, loading: subLoading } = useSubscription();
+
+  useEffect(() => {
+    if (subLoading) return;
+    if (!isSubscribed) {
+      console.log('[ArtworkCanvas] User not subscribed — redirecting to paywall');
+      router.replace('/paywall');
+    }
+  }, [isSubscribed, subLoading, router]);
 
   const [selectedBrush, setSelectedBrush] = useState<BrushType>('pencil');
   const [brushSize, setBrushSize] = useState(5);

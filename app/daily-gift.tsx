@@ -11,6 +11,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -89,6 +90,7 @@ export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
   const router = useRouter();
+  const { isSubscribed, loading: subLoading } = useSubscription();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
   const [hasReflected, setHasReflected] = useState(false);
@@ -334,6 +336,12 @@ export default function DailyGiftScreen() {
   const handleOpenGift = () => {
     if (isOpening) {
       console.log('[DailyGift] Already opening, ignoring tap');
+      return;
+    }
+
+    if (!isSubscribed) {
+      console.log('[DailyGift] User not subscribed — redirecting to paywall on gift open');
+      router.replace('/paywall');
       return;
     }
 

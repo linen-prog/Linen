@@ -39,6 +39,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface Post {
   id: string;
@@ -84,7 +85,16 @@ export default function CommunityScreen() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const { isSubscribed, loading: subLoading } = useSubscription();
   const [selectedTab, setSelectedTab] = useState('feed');
+
+  useEffect(() => {
+    if (subLoading) return;
+    if (!isSubscribed) {
+      console.log('[Community] User not subscribed — redirecting to paywall');
+      router.replace('/paywall');
+    }
+  }, [isSubscribed, subLoading, router]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });

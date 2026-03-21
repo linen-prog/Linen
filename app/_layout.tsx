@@ -1,6 +1,6 @@
 
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,10 +16,12 @@ import {
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { BACKEND_URL } from "@/utils/api";
+import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
 // Note: Error logging is auto-initialized via index.ts import
@@ -140,6 +142,8 @@ function RootLayoutProviders() {
       <StatusBar style={statusBarStyle} animated />
       <NavigationThemeProvider value={currentTheme}>
         <AuthProvider>
+        <SubscriptionProvider>
+          <SubscriptionRedirect />
           <NotificationProvider>
             <WidgetProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
@@ -147,6 +151,7 @@ function RootLayoutProviders() {
               </GestureHandlerRootView>
             </WidgetProvider>
           </NotificationProvider>
+        </SubscriptionProvider>
         </AuthProvider>
       </NavigationThemeProvider>
     </>
@@ -161,6 +166,7 @@ function RootLayoutProviders() {
 function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" }) {
   return (
     <>
+
       <Stack
         screenOptions={{
           headerTransparent: true,
@@ -178,6 +184,8 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
         }}
       >
         {/* Landing/Orientation screen */}
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+
         <Stack.Screen name="index" options={{ headerShown: false }} />
         {/* Auth screen (optional - users can skip) */}
         <Stack.Screen name="auth" options={{ headerShown: false }} />
@@ -220,6 +228,51 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
  * because expo-router loses its navigator reference. Individual screens
  * should handle their own errors internally.
  */
+
+function SubscriptionRedirect() {
+  const { isSubscribed, loading } = useSubscription();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (loading || authLoading) return;
+    const onAuthScreen = pathname === "/auth";
+    if (onAuthScreen) return;
+    if (!user) {
+      router.replace("/auth");
+      return;
+    }
+    const onOnboarding = pathname.startsWith("/onboarding");
+    if (onOnboarding) return;
+
+    let cancelled = false;
+    isOnboardingComplete().then((done) => {
+      if (cancelled) return;
+      if (!done) {
+        router.replace("/onboarding");
+        return;
+      }
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    }).catch(() => {
+      if (cancelled) return;
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSubscribed, loading, authLoading, pathname, user]);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <ThemeProvider>

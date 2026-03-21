@@ -25,21 +25,20 @@ import React, {
 } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import { useAuth } from "./AuthContext";
 
-// Dynamically require OneSignal to avoid crashing in Expo Go where the native
+// Dynamically import OneSignal to avoid crashing in Expo Go where the native
 // module is not available. All usages below are guarded by this reference.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 let OneSignal: typeof import("react-native-onesignal").OneSignal | null = null;
 type NotificationWillDisplayEvent = import("react-native-onesignal").NotificationWillDisplayEvent;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = require("react-native-onesignal");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require("react-native-onesignal") as { OneSignal?: typeof OneSignal };
   OneSignal = mod.OneSignal ?? null;
 } catch {
   console.warn("[OneSignal] Native module not available (Expo Go). Push notifications will be disabled.");
 }
-
-// Import auth hook for user targeting (validated at setup time)
-import { useAuth } from "./AuthContext";
 
 // Read App ID from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};

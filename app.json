@@ -69,7 +69,13 @@
     "extra": {
       "router": {},
       "backendUrl": "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev",
-      "oneSignalAppId": "96468dbf-fc22-4e5d-8815-0b34ed040738"
+      "oneSignalAppId": "96468dbf-fc22-4e5d-8815-0b34ed040738",
+      "revenueCatApiKeyIos": "appl_NvLOtwHxKbKNYtCKqhlqBFPgNJu",
+      "revenueCatApiKeyAndroid": "goog_PqbjuOVisTecnJCkYlQGHVweOiF",
+      "revenueCatEntitlementId": "premium_access",
+      "nativelyProjectId": "200f1d08-5d41-43dc-a5ee-60fe312d4fa5",
+      "revenueCatTestApiKeyIos": "test_cDQjcywPqhAJcvmMsYYvCBqGpvR",
+      "revenueCatTestApiKeyAndroid": "test_cDQjcywPqhAJcvmMsYYvCBqGpvR"
     },
     "privacyPolicyUrl": "https://ts4lxkyubgrt4.mocha.app/privacy",
     "description": "A gentle space for reflection, prayer, and embodied awareness. Linen provides a faith-rooted, non-clinical environment for spiritual reflection, daily scripture-based gifts, and supportive community connection.",

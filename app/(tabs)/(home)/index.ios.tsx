@@ -60,6 +60,7 @@ export default function HomeScreen() {
     }, 2000);
 
     return () => clearTimeout(greetingTimer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserStats = useCallback(async () => {

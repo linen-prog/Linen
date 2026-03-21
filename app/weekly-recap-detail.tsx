@@ -8,6 +8,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface WeeklyRecap {
   id: string;
@@ -164,14 +165,21 @@ export default function WeeklyRecapDetailScreen() {
   const { weekStartDate } = useLocalSearchParams<{ weekStartDate: string }>();
   const router = useRouter();
   const { isDark } = useTheme();
+  const { isSubscribed, loading: subLoading } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
 
   useEffect(() => {
+    if (subLoading) return;
+    if (!isSubscribed) {
+      console.log('[WeeklyRecapDetail] User not subscribed — redirecting to paywall');
+      router.replace('/paywall');
+      return;
+    }
     if (weekStartDate) {
       loadRecap();
     }
-  }, [weekStartDate]);
+  }, [weekStartDate, isSubscribed, subLoading, router]);
 
   const loadRecap = async () => {
     console.log('Loading recap for week:', weekStartDate);

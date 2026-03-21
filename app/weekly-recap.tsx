@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -32,10 +33,10 @@ interface MonthlySummaryData {
   practicesCompleted: number;
   aiConversations: number;
   currentStreak: number;
-  topMoods: Array<{ mood: string; count: number }>;
-  topScriptures: Array<{ reference: string; count: number }>;
+  topMoods: { mood: string; count: number }[];
+  topScriptures: { reference: string; count: number }[];
   conversationSummary: string;
-  suggestions: Array<{ title: string; description: string }>;
+  suggestions: { title: string; description: string }[];
   growthHighlight: string;
   hasEnoughData: boolean;
 }
@@ -93,6 +94,7 @@ function AnimatedStatCard({
       return () => clearInterval(interval);
     }, delay);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, delay]);
 
   const cardBg = isDark ? 'rgba(120, 53, 15, 0.22)' : 'rgba(254, 243, 199, 0.85)';
@@ -136,6 +138,7 @@ function SkeletonCard({ isDark }: { isDark: boolean }) {
     );
     anim.start();
     return () => anim.stop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const bg = isDark ? 'rgba(68, 64, 60, 0.6)' : 'rgba(214, 211, 209, 0.5)';
@@ -159,6 +162,7 @@ function FadeInView({ delay, children }: { delay: number; children: React.ReactN
       ]).start();
     }, delay);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [delay]);
 
   return (
@@ -934,6 +938,15 @@ export default function WeeklyRecapScreen() {
   const [generating, setGenerating] = useState(false);
   const router = useRouter();
   const { isDark } = useTheme();
+  const { isSubscribed, loading: subLoading } = useSubscription();
+
+  useEffect(() => {
+    if (subLoading) return;
+    if (!isSubscribed) {
+      console.log('[WeeklyRecap] User not subscribed — redirecting to paywall');
+      router.replace('/paywall');
+    }
+  }, [isSubscribed, subLoading, router]);
   const cardBg = isDark ? colors.cardDark : 'rgba(255, 255, 255, 0.7)';
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
