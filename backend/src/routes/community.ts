@@ -53,6 +53,12 @@ export function registerCommunityRoutes(app: App) {
       request: FastifyRequest<{ Querystring: { category?: string; contentType?: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized community posts fetch attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
       const { category = 'feed', contentType } = request.query;
       const validCategory = (category as string) as 'feed' | 'wisdom' | 'care' | 'prayers';
       const validContentType = contentType
@@ -60,12 +66,15 @@ export function registerCommunityRoutes(app: App) {
         : undefined;
 
       app.logger.info(
-        { category: validCategory, contentType: validContentType },
+        { userId: session.user.id, category: validCategory, contentType: validContentType },
         'Fetching community posts'
       );
 
       try {
-        const whereConditions = [eq(schema.communityPosts.category, validCategory)];
+        const whereConditions = [
+          eq(schema.communityPosts.category, validCategory),
+          eq(schema.communityPosts.isFlagged, false),
+        ];
 
         if (validContentType) {
           whereConditions.push(eq(schema.communityPosts.contentType, validContentType));
@@ -75,52 +84,42 @@ export function registerCommunityRoutes(app: App) {
           .select()
           .from(schema.communityPosts)
           .where(and(...whereConditions))
-          .orderBy(desc(schema.communityPosts.createdAt));
+          .orderBy(desc(schema.communityPosts.createdAt))
+          .limit(50);
 
-        // Get user ID if authenticated (without requiring auth)
-        let userId: string | null = null;
-        try {
-          const session = (request as any).session;
-          if (session?.user?.id) {
-            userId = session.user.id;
-          }
-        } catch {
-          // User not authenticated
-        }
+        const userId = session.user.id;
 
-        // For each post, check if current user has prayed and get artwork for somatic posts
+        // For each post, check if current user has prayed and get reaction data
         const result = await Promise.all(
           posts.map(async (post) => {
             let userHasPrayed = false;
             let userHasFlagged = false;
 
-            if (userId) {
-              const prayer = await app.db
-                .select()
-                .from(schema.communityPrayers)
-                .where(
-                  and(
-                    eq(schema.communityPrayers.postId, post.id),
-                    eq(schema.communityPrayers.userId, userId)
-                  )
+            const prayer = await app.db
+              .select()
+              .from(schema.communityPrayers)
+              .where(
+                and(
+                  eq(schema.communityPrayers.postId, post.id),
+                  eq(schema.communityPrayers.userId, userId)
                 )
-                .limit(1);
+              )
+              .limit(1);
 
-              userHasPrayed = prayer.length > 0;
+            userHasPrayed = prayer.length > 0;
 
-              const flag = await app.db
-                .select()
-                .from(schema.flaggedPosts)
-                .where(
-                  and(
-                    eq(schema.flaggedPosts.postId, post.id),
-                    eq(schema.flaggedPosts.userId, userId)
-                  )
+            const flag = await app.db
+              .select()
+              .from(schema.flaggedPosts)
+              .where(
+                and(
+                  eq(schema.flaggedPosts.postId, post.id),
+                  eq(schema.flaggedPosts.userId, userId)
                 )
-                .limit(1);
+              )
+              .limit(1);
 
-              userHasFlagged = flag.length > 0;
-            }
+            userHasFlagged = flag.length > 0;
 
             // Get reaction counts for this post
             const reactions = await app.db
@@ -141,12 +140,10 @@ export function registerCommunityRoutes(app: App) {
               reactionCounts[reaction.reactionType]++;
             });
 
-            // Get user's reactions for this post (if authenticated)
-            const userReactions = userId
-              ? reactions
-                  .filter((r) => r.userId === userId)
-                  .map((r) => r.reactionType)
-              : [];
+            // Get user's reactions for this post
+            const userReactions = reactions
+              .filter((r) => r.userId === userId)
+              .map((r) => r.reactionType);
 
             return {
               id: post.id,
@@ -170,14 +167,14 @@ export function registerCommunityRoutes(app: App) {
         );
 
         app.logger.info(
-          { category: validCategory, contentType: validContentType, count: result.length },
+          { userId: session.user.id, category: validCategory, contentType: validContentType, count: result.length },
           'Community posts retrieved'
         );
 
         return reply.send(result);
       } catch (error) {
         app.logger.error(
-          { err: error, category: validCategory, contentType: validContentType },
+          { err: error, userId: session.user.id, category: validCategory, contentType: validContentType },
           'Failed to fetch community posts'
         );
         throw error;
@@ -236,7 +233,10 @@ export function registerCommunityRoutes(app: App) {
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized community post creation attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       const { category, content, isAnonymous, contentType = 'manual', scriptureReference, artworkUrl } =
         request.body;
@@ -477,7 +477,10 @@ export function registerCommunityRoutes(app: App) {
     },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized user community posts fetch attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       app.logger.info({ userId: session.user.id }, 'Fetching user community posts');
 
