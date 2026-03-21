@@ -1,7 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
@@ -264,6 +263,8 @@ export function registerArtworkRoutes(app: App) {
             type: 'object',
             properties: {
               url: { type: 'string', description: 'Signed URL for accessing the uploaded image' },
+              filename: { type: 'string', description: 'Original filename' },
+              key: { type: 'string', description: 'Storage key for the uploaded file' },
             },
           },
           400: {
@@ -291,43 +292,23 @@ export function registerArtworkRoutes(app: App) {
       app.logger.info({ userId: session.user.id }, 'Uploading artwork photo');
 
       try {
-        // Try to get file from "photo" field first, then fall back to "image"
-        let data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
+        // Get the file from multipart form data with 10MB size limit
+        const data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
 
         if (!data) {
-          // If "photo" field not found, try with "image" field name
-          // Note: request.file() without field name gets the first file
-          // We need to try alternative approach for fallback
-          try {
-            // For now, we'll check if there's any form field available
-            const files = await request.files({ limits: { fileSize: 10 * 1024 * 1024 } });
-            data = null;
-            for await (const file of files) {
-              // Accept both "photo" and "image" field names
-              if (file.fieldname === 'photo' || file.fieldname === 'image') {
-                data = file;
-                break;
-              }
-            }
-          } catch {
-            // Fallback silently if files() doesn't work
-          }
-        }
-
-        if (!data) {
-          app.logger.warn({ userId: session.user.id }, 'No file provided in photo or image field');
-          return reply.status(400).send({ error: 'No file provided. Please upload a photo or image.' });
+          app.logger.warn({ userId: session.user.id }, 'No file provided');
+          return reply.status(400).send({ error: 'No file provided' });
         }
 
         // Validate file is an image
-        const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'];
+        const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif'];
         if (!validMimeTypes.includes(data.mimetype)) {
           app.logger.warn(
-            { userId: session.user.id, mimetype: data.mimetype, fieldname: data.fieldname },
+            { userId: session.user.id, mimetype: data.mimetype },
             'Invalid file type'
           );
           return reply.status(400).send({
-            error: 'Invalid file type. Supported: JPG, PNG, HEIC, WebP',
+            error: 'Invalid file type. Supported: JPG, PNG, HEIC',
           });
         }
 
@@ -339,10 +320,9 @@ export function registerArtworkRoutes(app: App) {
           return reply.status(413).send({ error: 'File too large (max 10MB)' });
         }
 
-        // Generate storage key with UUID-based filename
+        // Generate storage key
         const extension = data.filename.split('.').pop() || 'jpg';
-        const uniqueId = randomUUID();
-        const storageKey = `artwork-photos/${session.user.id}/${uniqueId}.${extension}`;
+        const storageKey = `artwork/${session.user.id}/${Date.now()}-${data.filename}`;
 
         // Upload to storage
         const uploadedKey = await app.storage.upload(storageKey, buffer);
@@ -355,7 +335,11 @@ export function registerArtworkRoutes(app: App) {
           'Artwork photo uploaded successfully'
         );
 
-        return reply.send({ url });
+        return reply.send({
+          url,
+          filename: data.filename,
+          key: uploadedKey,
+        });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id },
