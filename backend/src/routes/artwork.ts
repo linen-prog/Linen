@@ -1,6 +1,7 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 
@@ -282,28 +283,47 @@ export function registerArtworkRoutes(app: App) {
     },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized artwork photo upload attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       app.logger.info({ userId: session.user.id }, 'Uploading artwork photo');
 
       try {
-        // Get the file from multipart form data with 10MB size limit
-        const data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
+        // Try to get file from "photo" field first, then fall back to "image"
+        let data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
 
         if (!data) {
-          app.logger.warn({ userId: session.user.id }, 'No file provided');
-          return reply.status(400).send({ error: 'No file provided' });
+          // If no file found, try to get multiple files and look for "photo" or "image" field
+          try {
+            const files = await request.files({ limits: { fileSize: 10 * 1024 * 1024 } });
+            data = null;
+            for await (const file of files) {
+              if (file.fieldname === 'photo' || file.fieldname === 'image') {
+                data = file;
+                break;
+              }
+            }
+          } catch {
+            // If files() doesn't work, data remains null
+          }
+        }
+
+        if (!data) {
+          app.logger.warn({ userId: session.user.id }, 'No file provided in photo or image field');
+          return reply.status(400).send({ error: 'No file provided. Upload photo or image field' });
         }
 
         // Validate file is an image
-        const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif'];
+        const validMimeTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'];
         if (!validMimeTypes.includes(data.mimetype)) {
           app.logger.warn(
-            { userId: session.user.id, mimetype: data.mimetype },
+            { userId: session.user.id, mimetype: data.mimetype, fieldname: data.fieldname },
             'Invalid file type'
           );
           return reply.status(400).send({
-            error: 'Invalid file type. Supported: JPG, PNG, HEIC',
+            error: 'Invalid file type. Supported: JPG, PNG, HEIC, WebP',
           });
         }
 
@@ -315,9 +335,10 @@ export function registerArtworkRoutes(app: App) {
           return reply.status(413).send({ error: 'File too large (max 10MB)' });
         }
 
-        // Generate storage key
+        // Generate storage key with UUID-based filename
         const extension = data.filename.split('.').pop() || 'jpg';
-        const storageKey = `artwork/${session.user.id}/${Date.now()}-${data.filename}`;
+        const uniqueId = randomUUID();
+        const storageKey = `artwork-photos/${session.user.id}/${uniqueId}.${extension}`;
 
         // Upload to storage
         const uploadedKey = await app.storage.upload(storageKey, buffer);
@@ -330,11 +351,7 @@ export function registerArtworkRoutes(app: App) {
           'Artwork photo uploaded successfully'
         );
 
-        return reply.send({
-          url,
-          filename: data.filename,
-          key: uploadedKey,
-        });
+        return reply.send({ url });
       } catch (error) {
         app.logger.error(
           { err: error, userId: session.user.id },
