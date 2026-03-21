@@ -23,6 +23,25 @@ export function registerArtworkRoutes(app: App) {
   // Get current artwork for user
   app.fastify.get(
     '/api/artwork/current',
+    {
+      schema: {
+        description: 'Get current artwork for authenticated user',
+        tags: ['artwork'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              artworkData: { type: 'string' },
+              backgroundImage: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) {
@@ -83,6 +102,39 @@ export function registerArtworkRoutes(app: App) {
   // Save/update artwork
   app.fastify.post(
     '/api/artwork/save',
+    {
+      schema: {
+        description: 'Save or update artwork for authenticated user',
+        tags: ['artwork'],
+        body: {
+          type: 'object',
+          required: ['artworkData'],
+          properties: {
+            artworkData: { type: 'string', description: 'SVG or artwork data as string' },
+            photoUrls: { type: 'array', items: { type: 'string' }, description: 'Array of photo URLs for background images' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              artworkData: { type: 'string' },
+              photoUrls: { type: 'array', items: { type: 'string' } },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: { artworkData: string; photoUrls?: string[] };
@@ -199,6 +251,35 @@ export function registerArtworkRoutes(app: App) {
   // Upload photo
   app.fastify.post(
     '/api/artwork/upload-photo',
+    {
+      schema: {
+        description: 'Upload an artwork photo to S3 storage',
+        tags: ['artwork'],
+        consumes: ['multipart/form-data'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              url: { type: 'string', description: 'Signed URL for accessing the uploaded image' },
+              filename: { type: 'string', description: 'Original filename' },
+              key: { type: 'string', description: 'Storage key for the uploaded file' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          413: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;

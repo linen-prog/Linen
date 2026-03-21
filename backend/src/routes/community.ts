@@ -10,6 +10,45 @@ export function registerCommunityRoutes(app: App) {
   // Get community posts by category and optional contentType filter
   app.fastify.get(
     '/api/community/posts',
+    {
+      schema: {
+        description: 'Get community posts by category and optional content type filter',
+        tags: ['community'],
+        querystring: {
+          type: 'object',
+          properties: {
+            category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], default: 'feed', description: 'Post category' },
+            contentType: { type: 'string', enum: ['companion', 'daily-gift', 'somatic', 'manual'], description: 'Filter by content type' },
+          },
+        },
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                userId: { type: 'string' },
+                authorName: { type: ['string', 'null'] },
+                isAnonymous: { type: 'boolean' },
+                category: { type: 'string' },
+                content: { type: 'string' },
+                contentType: { type: 'string' },
+                scriptureReference: { type: ['string', 'null'] },
+                prayerCount: { type: 'integer' },
+                isFlagged: { type: 'boolean' },
+                createdAt: { type: 'string', format: 'date-time' },
+                artworkUrl: { type: ['string', 'null'] },
+                userHasPrayed: { type: 'boolean' },
+                userHasFlagged: { type: 'boolean' },
+                reactionCounts: { type: 'object' },
+                userReactions: { type: 'array', items: { type: 'string' } },
+              },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Querystring: { category?: string; contentType?: string } }>,
       reply: FastifyReply
@@ -149,6 +188,40 @@ export function registerCommunityRoutes(app: App) {
   // Create a community post
   app.fastify.post(
     '/api/community/post',
+    {
+      schema: {
+        description: 'Create a community post',
+        tags: ['community'],
+        body: {
+          type: 'object',
+          required: ['category', 'content', 'isAnonymous'],
+          properties: {
+            category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], description: 'Post category' },
+            content: { type: 'string', description: 'Post content' },
+            isAnonymous: { type: 'boolean', description: 'Whether to post anonymously' },
+            contentType: { type: 'string', enum: ['companion', 'daily-gift', 'somatic', 'manual'], description: 'Type of content' },
+            scriptureReference: { type: 'string', description: 'Scripture reference if applicable' },
+            artworkUrl: { type: 'string', description: 'URL to artwork image' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              postId: { type: 'string', format: 'uuid' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: {
@@ -370,6 +443,38 @@ export function registerCommunityRoutes(app: App) {
   // Get user's community posts
   app.fastify.get(
     '/api/community/my-posts',
+    {
+      schema: {
+        description: 'Get authenticated user\'s community posts',
+        tags: ['community'],
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                userId: { type: 'string' },
+                authorName: { type: ['string', 'null'] },
+                isAnonymous: { type: 'boolean' },
+                category: { type: 'string' },
+                content: { type: 'string' },
+                contentType: { type: 'string' },
+                scriptureReference: { type: ['string', 'null'] },
+                prayerCount: { type: 'integer' },
+                isFlagged: { type: 'boolean' },
+                createdAt: { type: 'string', format: 'date-time' },
+                artworkUrl: { type: ['string', 'null'] },
+              },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
