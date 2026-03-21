@@ -253,13 +253,20 @@ function SubscriptionRedirect() {
         router.replace("/onboarding");
         return;
       }
+      // In DEV mode, never hard-redirect to paywall — RevenueCat native module
+      // is unavailable in Expo Go so isSubscribed stays false forever, which
+      // would permanently lock developers out of the app.
+      if (__DEV__) return;
+
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
       if (!isSubscribed) {
+        console.log('[SubscriptionRedirect] No active subscription — redirecting to paywall');
         router.replace("/paywall");
       }
     }).catch(() => {
       if (cancelled) return;
+      if (__DEV__) return;
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
       if (!isSubscribed) {

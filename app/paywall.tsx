@@ -274,6 +274,18 @@ export default function PaywallScreen() {
         <View style={[styles.floatingOrb, styles.orb3]} />
 
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+          {/* Close / Maybe later button — always visible so users are never hard-locked */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              console.log('[Paywall] User tapped Maybe later — navigating to tabs');
+              router.replace("/(tabs)/(home)");
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -772,6 +784,25 @@ const styles = StyleSheet.create({
     color: "#78716c",
     textAlign: "center",
     lineHeight: 16,
+  },
+
+  // Close / Maybe later button
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 20,
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(87, 83, 78, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: "#57534e",
+    fontWeight: "600",
   },
 
   // Web mock purchase dialog (View-based, since Alert.alert with multiple buttons fails on web)
