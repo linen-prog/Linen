@@ -46,6 +46,10 @@ export function registerCommunityRoutes(app: App) {
               },
             },
           },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
         },
       },
     },
@@ -53,6 +57,12 @@ export function registerCommunityRoutes(app: App) {
       request: FastifyRequest<{ Querystring: { category?: string; contentType?: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized community posts fetch attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
       const { category = 'feed', contentType } = request.query;
       const validCategory = (category as string) as 'feed' | 'wisdom' | 'care' | 'prayers';
       const validContentType = contentType
@@ -60,33 +70,41 @@ export function registerCommunityRoutes(app: App) {
         : undefined;
 
       app.logger.info(
-        { category: validCategory, contentType: validContentType },
+        { userId: session.user.id, category: validCategory, contentType: validContentType },
         'Fetching community posts'
       );
 
       try {
-        const whereConditions = [eq(schema.communityPosts.category, validCategory)];
+        const whereConditions = [
+          eq(schema.communityPosts.category, validCategory),
+          eq(schema.communityPosts.isFlagged, false),
+        ];
 
         if (validContentType) {
           whereConditions.push(eq(schema.communityPosts.contentType, validContentType));
         }
 
         let posts = await app.db
-          .select()
+          .select({
+            id: schema.communityPosts.id,
+            userId: schema.communityPosts.userId,
+            authorName: schema.communityPosts.authorName,
+            isAnonymous: schema.communityPosts.isAnonymous,
+            category: schema.communityPosts.category,
+            content: schema.communityPosts.content,
+            contentType: schema.communityPosts.contentType,
+            scriptureReference: schema.communityPosts.scriptureReference,
+            prayerCount: schema.communityPosts.prayerCount,
+            isFlagged: schema.communityPosts.isFlagged,
+            createdAt: schema.communityPosts.createdAt,
+            artworkUrl: schema.communityPosts.artworkUrl,
+          })
           .from(schema.communityPosts)
           .where(and(...whereConditions))
-          .orderBy(desc(schema.communityPosts.createdAt));
+          .orderBy(desc(schema.communityPosts.createdAt))
+          .limit(50);
 
-        // Get user ID if authenticated (without requiring auth)
-        let userId: string | null = null;
-        try {
-          const session = (request as any).session;
-          if (session?.user?.id) {
-            userId = session.user.id;
-          }
-        } catch {
-          // User not authenticated
-        }
+        const userId = session.user.id;
 
         // For each post, check if current user has prayed and get artwork for somatic posts
         const result = await Promise.all(
@@ -477,13 +495,29 @@ export function registerCommunityRoutes(app: App) {
     },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized user community posts fetch attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       app.logger.info({ userId: session.user.id }, 'Fetching user community posts');
 
       try {
         const posts = await app.db
-          .select()
+          .select({
+            id: schema.communityPosts.id,
+            userId: schema.communityPosts.userId,
+            authorName: schema.communityPosts.authorName,
+            isAnonymous: schema.communityPosts.isAnonymous,
+            category: schema.communityPosts.category,
+            content: schema.communityPosts.content,
+            contentType: schema.communityPosts.contentType,
+            scriptureReference: schema.communityPosts.scriptureReference,
+            prayerCount: schema.communityPosts.prayerCount,
+            isFlagged: schema.communityPosts.isFlagged,
+            createdAt: schema.communityPosts.createdAt,
+            artworkUrl: schema.communityPosts.artworkUrl,
+          })
           .from(schema.communityPosts)
           .where(eq(schema.communityPosts.userId, session.user.id))
           .orderBy(desc(schema.communityPosts.createdAt));
