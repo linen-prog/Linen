@@ -254,7 +254,10 @@ export function registerCommunityRoutes(app: App) {
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        app.logger.warn({}, 'Unauthorized community post creation attempt');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
       const { category, content, isAnonymous, contentType = 'manual', scriptureReference, artworkUrl } =
         request.body;
