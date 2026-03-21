@@ -568,6 +568,12 @@ export default function ArtworkCanvasScreen() {
             console.log('[Canvas] Setting background image:', response.backgroundImage);
             setBackgroundImage(response.backgroundImage);
           }
+          if (!response.artworkData) {
+            console.log('[Canvas] No artworkData in response, starting with blank canvas');
+            setIsLoading(false);
+            hasLoadedRef.current = true;
+            return;
+          }
           try {
             const parsed = JSON.parse(response.artworkData);
             console.log('[Canvas] Parsed artwork data:', parsed);
