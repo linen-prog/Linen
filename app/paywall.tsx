@@ -51,11 +51,11 @@ const FEATURES = [
   },
 ];
 
-// App color palette
+// Customize: Your app's colors
 const colors = {
-  primary: "#047857",
-  success: "#047857",
-  warning: "#fbbf24",
+  primary: "#007AFF",
+  success: "#34C759",
+  warning: "#FF9500",
 };
 
 export default function PaywallScreen() {
@@ -166,7 +166,7 @@ export default function PaywallScreen() {
     return (
       <View style={styles.subscribedContainer}>
         <LinearGradient
-          colors={["#fef3c7", "#fafaf9", "#ecfdf5"]}
+          colors={["#667EEA", "#764BA2", "#f093fb"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.subscribedGradient}
@@ -228,10 +228,10 @@ export default function PaywallScreen() {
 
   // Feature icon background colors (rotating by index)
   const featureIconColors = [
-    "rgba(4, 120, 87, 0.12)",    // Emerald
-    "rgba(251, 191, 36, 0.15)",  // Amber
-    "rgba(87, 83, 78, 0.1)",     // Stone
-    "rgba(4, 120, 87, 0.12)",    // Emerald
+    "rgba(255, 215, 0, 0.25)",   // Gold
+    "rgba(76, 217, 100, 0.25)",  // Green
+    "rgba(255, 149, 0, 0.25)",   // Orange
+    "rgba(90, 200, 250, 0.25)",  // Blue
   ];
 
   // Loading state
@@ -239,7 +239,7 @@ export default function PaywallScreen() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#fef3c7", "#fafaf9", "#ecfdf5"]}
+          colors={["#667EEA", "#764BA2", "#f093fb"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -251,7 +251,7 @@ export default function PaywallScreen() {
 
           <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
             <View style={styles.centeredContainer}>
-              <ActivityIndicator size="large" color="#047857" />
+              <ActivityIndicator size="large" color="#fff" />
               <Text style={styles.loadingText}>Loading...</Text>
             </View>
           </SafeAreaView>
@@ -263,7 +263,7 @@ export default function PaywallScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#fef3c7", "#fafaf9", "#ecfdf5"]}
+        colors={["#667EEA", "#764BA2", "#f093fb"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
@@ -274,18 +274,6 @@ export default function PaywallScreen() {
         <View style={[styles.floatingOrb, styles.orb3]} />
 
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-          {/* Close / Maybe later button — always visible so users are never hard-locked */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => {
-              console.log('[Paywall] User tapped Maybe later — navigating to tabs');
-              router.replace("/(tabs)/(home)");
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -402,7 +390,7 @@ export default function PaywallScreen() {
                   disabled={!selectedPackage || webMockState === "processing"}
                 >
                   {webMockState === "processing" ? (
-                    <ActivityIndicator color="#047857" />
+                    <ActivityIndicator color="#764BA2" />
                   ) : (
                     <Text style={styles.primaryButtonText}>
                       {selectedPackage
@@ -419,7 +407,7 @@ export default function PaywallScreen() {
                   disabled={restoring}
                 >
                   {restoring ? (
-                    <ActivityIndicator size="small" color="#047857" />
+                    <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <Text style={styles.secondaryButtonText}>
                       Restore Purchases
@@ -442,7 +430,7 @@ export default function PaywallScreen() {
                   disabled={!selectedPackage || purchasing}
                 >
                   {purchasing ? (
-                    <ActivityIndicator color="#047857" />
+                    <ActivityIndicator color="#764BA2" />
                   ) : (
                     <Text style={styles.primaryButtonText}>
                       {selectedPackage
@@ -461,7 +449,7 @@ export default function PaywallScreen() {
                   disabled={restoring}
                 >
                   {restoring ? (
-                    <ActivityIndicator size="small" color="#047857" />
+                    <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
                   )}
@@ -513,7 +501,7 @@ Price: ${selectedPackage?.product.priceString || "N/A"}`}
                     router.replace("/(tabs)/(home)");
                   }}
                 >
-                  <Text style={[styles.webDialogButtonText, { color: "#047857" }]}>
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
                     Test Valid Purchase
                   </Text>
                 </TouchableOpacity>
@@ -522,7 +510,7 @@ Price: ${selectedPackage?.product.priceString || "N/A"}`}
                   style={styles.webDialogButton}
                   onPress={() => setWebMockDialogState("hidden")}
                 >
-                  <Text style={[styles.webDialogButtonText, { color: "#57534e" }]}>
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -539,7 +527,7 @@ Price: ${selectedPackage?.product.priceString || "N/A"}`}
                   style={styles.webDialogButton}
                   onPress={() => setWebMockDialogState("hidden")}
                 >
-                  <Text style={[styles.webDialogButtonText, { color: "#047857" }]}>
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
                     OK
                   </Text>
                 </TouchableOpacity>
@@ -575,7 +563,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.85)",
     marginTop: 16,
   },
   scrollView: {
@@ -591,7 +579,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   premiumBadge: {
-    backgroundColor: "rgba(4, 120, 87, 0.12)",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -600,34 +588,32 @@ const styles = StyleSheet.create({
   premiumBadgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#047857",
+    color: "#fff",
     letterSpacing: 1.5,
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#1c1917",
+    color: "#fff",
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.85)",
     textAlign: "center",
     marginTop: 8,
   },
   featuresCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     width: "100%",
-    borderWidth: 1,
-    borderColor: "rgba(4, 120, 87, 0.15)",
   },
   featuresCardTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.7)",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 16,
@@ -655,11 +641,11 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1c1917",
+    color: "#fff",
   },
   featureDescription: {
     fontSize: 14,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.75)",
     marginTop: 2,
   },
   packagesContainer: {
@@ -670,15 +656,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e7e5e4",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
     width: "100%",
   },
   packageCardSelected: {
-    borderColor: "#047857",
+    borderColor: "#fff",
     borderWidth: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   selectedIndicator: {
     position: "absolute",
@@ -686,7 +672,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: "#047857",
+    backgroundColor: "#fff",
   },
   packageHeader: {
     flexDirection: "row",
@@ -696,30 +682,30 @@ const styles = StyleSheet.create({
   packageTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1c1917",
+    color: "#fff",
   },
   checkmarkCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(4, 120, 87, 0.12)",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     justifyContent: "center",
     alignItems: "center",
   },
   checkmark: {
     fontSize: 14,
-    color: "#047857",
+    color: "#fff",
     fontWeight: "bold",
   },
   packagePrice: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1c1917",
+    color: "#fff",
     marginTop: 8,
   },
   packageDescription: {
     fontSize: 14,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.75)",
     marginTop: 4,
   },
   noPackagesContainer: {
@@ -728,7 +714,7 @@ const styles = StyleSheet.create({
   },
   noPackagesText: {
     fontSize: 16,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.85)",
     textAlign: "center",
   },
   devMockButton: {
@@ -737,12 +723,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(4, 120, 87, 0.3)",
+    borderColor: "rgba(255, 255, 255, 0.4)",
     borderStyle: "dashed",
     alignItems: "center",
   },
   devMockButtonText: {
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.7)",
     fontSize: 13,
     textAlign: "center",
   },
@@ -753,18 +739,18 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   primaryButton: {
-    backgroundColor: "#047857",
+    backgroundColor: "#fff",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
-    shadowColor: "#047857",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: "#764BA2",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -777,32 +763,13 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 16,
-    color: "#047857",
+    color: "rgba(255, 255, 255, 0.9)",
   },
   legalText: {
     fontSize: 11,
-    color: "#78716c",
+    color: "rgba(255, 255, 255, 0.6)",
     textAlign: "center",
     lineHeight: 16,
-  },
-
-  // Close / Maybe later button
-  closeButton: {
-    position: "absolute",
-    top: 16,
-    right: 20,
-    zIndex: 20,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(87, 83, 78, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: "#57534e",
-    fontWeight: "600",
   },
 
   // Web mock purchase dialog (View-based, since Alert.alert with multiple buttons fails on web)
@@ -818,7 +785,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   webDialogBox: {
-    backgroundColor: "#fafaf9",
+    backgroundColor: "#f2f2f7",
     borderRadius: 14,
     width: "85%",
     maxWidth: 400,
@@ -827,7 +794,7 @@ const styles = StyleSheet.create({
   webDialogTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#1c1917",
+    color: "#000",
     textAlign: "center",
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -835,7 +802,7 @@ const styles = StyleSheet.create({
   },
   webDialogBody: {
     fontSize: 13,
-    color: "#57534e",
+    color: "#000",
     textAlign: "center",
     paddingHorizontal: 16,
     paddingBottom: 20,
@@ -843,7 +810,7 @@ const styles = StyleSheet.create({
   },
   webDialogDivider: {
     height: 1,
-    backgroundColor: "rgba(0,0,0,0.08)",
+    backgroundColor: "rgba(0,0,0,0.15)",
   },
   webDialogButton: {
     paddingVertical: 14,
@@ -870,7 +837,7 @@ const styles = StyleSheet.create({
   floatingOrb: {
     position: "absolute",
     borderRadius: 999,
-    backgroundColor: "rgba(4, 120, 87, 0.06)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   orb1: {
     width: 200,
@@ -898,13 +865,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(4, 120, 87, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
   subscribedCloseText: {
     fontSize: 18,
-    color: "#047857",
+    color: "#fff",
     fontWeight: "600",
   },
   subscribedContent: {
@@ -922,7 +889,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "rgba(4, 120, 87, 0.08)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     top: -20,
     left: -20,
   },
@@ -930,7 +897,7 @@ const styles = StyleSheet.create({
     fontSize: 80,
   },
   proMemberBadge: {
-    backgroundColor: "rgba(4, 120, 87, 0.12)",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -939,21 +906,37 @@ const styles = StyleSheet.create({
   proMemberText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#047857",
+    color: "#fff",
     letterSpacing: 1.5,
   },
   subscribedTitle: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#1c1917",
+    color: "#fff",
     textAlign: "center",
     marginBottom: 8,
   },
   subscribedSubtitle: {
     fontSize: 16,
-    color: "#57534e",
+    color: "rgba(255, 255, 255, 0.85)",
     textAlign: "center",
     marginBottom: 32,
+  },
+  featuresCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    padding: 20,
+    width: "100%",
+    marginBottom: 32,
+  },
+  featuresCardTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.7)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 16,
+    textAlign: "center",
   },
   featureCheckRow: {
     flexDirection: "row",
@@ -964,19 +947,19 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(4, 120, 87, 0.12)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   checkMark: {
     fontSize: 14,
-    color: "#047857",
+    color: "#fff",
     fontWeight: "bold",
   },
   featureCheckText: {
     fontSize: 16,
-    color: "#1c1917",
+    color: "#fff",
     fontWeight: "500",
   },
   exploreButton: {
@@ -985,13 +968,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   exploreButtonInner: {
-    backgroundColor: "#047857",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingVertical: 18,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 16,
   },
   exploreButtonText: {
-    color: "#ffffff",
+    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
   },
