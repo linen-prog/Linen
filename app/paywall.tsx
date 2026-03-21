@@ -96,7 +96,7 @@ export default function PaywallScreen() {
       const success = await purchasePackage(selectedPackage);
       if (success) {
         Alert.alert("Welcome!", "Thank you for your purchase.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") },
+          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
         ]);
       }
     } catch (error: any) {
@@ -113,7 +113,7 @@ export default function PaywallScreen() {
       const restored = await restorePurchases();
       if (restored) {
         Alert.alert("Restored!", "Your subscription has been restored.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") },
+          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
         ]);
       } else {
         Alert.alert(
@@ -129,7 +129,7 @@ export default function PaywallScreen() {
   };
 
   const handleClose = () => {
-    router.replace("/(tabs)");
+    router.replace("/(tabs)/(home)");
   };
 
   // Handle web mock purchase (replicates RevenueCat test store flow for web preview)
@@ -365,7 +365,7 @@ export default function PaywallScreen() {
                     style={styles.devMockButton}
                     onPress={async () => {
                       await mockNativePurchase();
-                      router.replace("/(tabs)");
+                      router.replace("/(tabs)/(home)");
                     }}
                   >
                     <Text style={styles.devMockButtonText}>Dev: Simulate Purchase</Text>
@@ -498,7 +498,7 @@ Price: ${selectedPackage?.product.priceString || "N/A"}`}
                   onPress={() => {
                     setWebMockDialogState("hidden");
                     mockWebPurchase();
-                    router.replace("/(tabs)");
+                    router.replace("/(tabs)/(home)");
                   }}
                 >
                   <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>

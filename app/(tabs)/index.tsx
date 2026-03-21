@@ -1,67 +1,37 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Animated,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { GradientBackground } from '@/components/GradientBackground';
-import { IconSymbol } from '@/components/IconSymbol';
-import NotificationButton from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { useAuth } from '@/contexts/AuthContext';
+import { IconSymbol } from '@/components/IconSymbol';
+import { GradientBackground } from '@/components/GradientBackground';
+import { NotificationBell } from "@/components/NotificationBell";
+import NotificationButton from '@/components/NotificationButton';
 import { authenticatedGet } from '@/utils/api';
-
-interface UserStats {
-  checkInStreak: number;
-  reflectionStreak: number;
-  bestCheckInStreak: number;
-  bestReflectionStreak: number;
-  // legacy field names
-  checkInBest?: number;
-  reflectionBest?: number;
-  displayName?: string;
-}
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PersonalizationData {
-  companionMessage?: string;
-  companionName?: string;
-  lastCheckInSummary?: string;
-  suggestedAction?: string;
+  companionTagline: string | null;
+  recentActivity: string | null;
+  streakMessage: string | null;
+  conversationContext: string | null;
 }
 
 export default function HomeScreen() {
+  console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
-  const { user } = useAuth();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
-  const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
-  const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
 
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(-12)).current;
+  const [checkInStreak, setCheckInStreak] = useState(0);
+  const [reflectionStreak, setReflectionStreak] = useState(0);
+  const [firstName, setFirstName] = useState('');
+  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showCompanionBanner, setShowCompanionBanner] = useState(false);
+
   const greetingOpacity = useRef(new Animated.Value(0)).current;
   const greetingTranslateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(titleOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(titleTranslateY, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     const greetingTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(greetingOpacity, {
@@ -75,286 +45,341 @@ export default function HomeScreen() {
           useNativeDriver: true,
         }),
       ]).start();
-    }, 300);
+    }, 2000);
 
     return () => clearTimeout(greetingTimer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadUserStats = useCallback(async () => {
-    try {
-      console.log('[Home] Loading user stats from /api/profile/stats...');
-      const data = await authenticatedGet<UserStats>('/api/profile/stats');
-      setStats(data);
-      console.log('[Home] Loaded user stats:', data);
-    } catch (error: any) {
-      console.log('[Home] Error loading stats:', error?.message || error);
-      setStats({
-        checkInStreak: 0,
-        reflectionStreak: 0,
-        bestCheckInStreak: 0,
-        bestReflectionStreak: 0,
-        displayName: user?.name || 'friend',
-      });
-    }
-  }, [user?.name]);
-
-  const loadPersonalization = useCallback(async () => {
-    try {
-      console.log('[Home] Loading personalization data from /api/check-in/personalization...');
-      const data = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
-      setPersonalization(data);
-      console.log('[Home] Loaded personalization data:', data);
-    } catch (error: any) {
-      console.log('[Home] Error loading personalization:', error?.message || error);
-    }
-  }, []);
-
-  const loadLastCheckIn = useCallback(async () => {
-    try {
-      console.log('[Home] Loading last check-in message...');
-      const data = await authenticatedGet<{ lastMessage?: string }>('/api/check-in/last-message');
-      if (data.lastMessage) {
-        setLastCheckInMessage(data.lastMessage);
-        console.log('[Home] Loaded last check-in message');
-      }
-    } catch (error: any) {
-      console.log('[Home] Error loading last check-in:', error?.message || error);
-    }
-  }, []);
-
   useEffect(() => {
-    console.log('[Home] Component mounted');
-    loadUserStats();
-    loadPersonalization();
-    loadLastCheckIn();
-  }, [loadUserStats, loadPersonalization, loadLastCheckIn]);
+    let isMounted = true;
 
-  const handleUnreadCountChange = (count: number) => {
-    console.log('[Home] Love messages count changed:', count);
-    setHasLoveMessages(count > 0);
-  };
+    const loadUserData = async () => {
+      try {
+        console.log('🏠 [Home] Loading user data...');
+        
+        // Fetch user info from auth context
+        const { getUserData } = await import('@/lib/auth');
+        const userData = await getUserData();
+        console.log('🏠 [Home] User data loaded from storage:', userData);
+        
+        if (!isMounted) {
+          console.log('🏠 [Home] Component unmounted, skipping state updates');
+          return;
+        }
+        
+        // Extract first name from the user's name field
+        const userName = userData?.name || '';
+        const extractedFirstName = userName.split(' ')[0] || 'Friend';
+        setFirstName(extractedFirstName);
 
-  const rawName = stats?.displayName || user?.name || '';
-  const firstName = rawName.split(' ')[0] || 'friend';
-  const greetingName = firstName || 'friend';
-  const greetingText = `Peace to you, ${greetingName}.`;
+        // Fetch streaks
+        const { authenticatedGet } = await import('@/utils/api');
+        const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
+        console.log('🏠 [Home] Streaks loaded:', streaksResponse);
+        
+        if (!isMounted) {
+          console.log('🏠 [Home] Component unmounted, skipping state updates');
+          return;
+        }
+        
+        setCheckInStreak(streaksResponse.checkInStreak);
+        setReflectionStreak(streaksResponse.reflectionStreak);
 
-  const checkInStreakVal = stats?.checkInStreak ?? 0;
-  const reflectionStreakVal = stats?.reflectionStreak ?? 0;
-  const checkInBestVal = stats?.bestCheckInStreak ?? stats?.checkInBest ?? 0;
-  const reflectionBestVal = stats?.bestReflectionStreak ?? stats?.reflectionBest ?? 0;
+        // Fetch personalization data for AI companion
+        try {
+          const personalizationResponse = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
+          console.log('🏠 [Home] Personalization data loaded:', personalizationResponse);
+          
+          if (isMounted) {
+            setPersonalization(personalizationResponse);
+          }
+        } catch (error) {
+          console.error('🏠 [Home] Failed to load personalization data:', error);
+          // Personalization is optional, continue without it
+        }
 
-  const checkInStreakDisplay = String(checkInStreakVal);
-  const reflectionStreakDisplay = String(reflectionStreakVal);
-  const checkInBestDisplay = `best: ${checkInBestVal}`;
-  const reflectionBestDisplay = `best: ${reflectionBestVal}`;
+        // Check if companion preferences have been set (first-time tutorial)
+        try {
+          const prefsResponse = await authenticatedGet<{ preferencesSet: boolean }>('/api/companion/preferences');
+          console.log('🏠 [Home] Companion preferences check:', prefsResponse);
+          if (isMounted && prefsResponse.preferencesSet === false) {
+            setShowCompanionBanner(true);
+          }
+        } catch (error) {
+          console.error('🏠 [Home] Failed to check companion preferences:', error);
+        }
+      } catch (error) {
+        console.error('🏠 [Home] Failed to load user data:', error);
+        // Use defaults on error
+        if (isMounted) {
+          setFirstName('Friend');
+          setCheckInStreak(0);
+          setReflectionStreak(0);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const companionMessage = personalization?.companionMessage || '';
-  const companionName = personalization?.companionName || 'Your Companion';
-  const hasCompanionMessage = companionMessage.length > 0;
+    loadUserData();
 
-  const handleCheckInPress = () => {
-    console.log('[Home] User tapped Check-In card');
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const { isDark } = useTheme();
+  const textColor = isDark ? colors.textDark : colors.text;
+  const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+
+  const handleCheckIn = () => {
+    console.log('🏠 [Home] User tapped Check-In card');
+    console.log('🏠 [Home] Navigating to: /check-in');
     router.push('/check-in');
   };
 
-  const handleOpenGiftPress = () => {
-    console.log('[Home] User tapped Open Your Gift card');
+  const handleDailyGift = () => {
+    console.log('🏠 [Home] User tapped Daily Gift card');
+    console.log('🏠 [Home] Navigating directly to: /daily-gift');
     router.push('/daily-gift');
+    console.log('🏠 [Home] router.push() called for /daily-gift');
   };
 
-  const handleCommunityPress = () => {
-    console.log('[Home] User tapped Community card');
+  const handleCommunity = () => {
+    console.log('🏠 [Home] User tapped Community card');
+    console.log('🏠 [Home] Navigating to: /community');
     router.navigate('/(tabs)/community');
   };
 
-  const handleWeeklyRecapPress = () => {
-    console.log('[Home] User tapped Weekly Recap card');
+  const handleWeeklyRecap = () => {
+    console.log('🏠 [Home] User tapped Weekly Recap card');
+    console.log('🏠 [Home] Navigating to: /weekly-recap');
     router.push('/weekly-recap');
   };
 
-  const handleCompanionBannerPress = () => {
-    console.log('[Home] User tapped Companion banner');
-    router.push('/check-in');
-  };
+  const greetingText = 'Peace to you, friend.';
+  const checkInStreakText = `${checkInStreak}`;
+  const checkInBestText = `best: 2`;
+  const reflectionStreakText = `${reflectionStreak}`;
+  const reflectionBestText = `best: 4`;
 
-  console.log('[Home] Rendering');
+  const isValidText = (val: string | null | undefined, minLen = 5) =>
+    typeof val === 'string' && val.trim().length > minLen;
+
+  const checkInTagline = isValidText(personalization?.companionTagline, 3)
+    ? personalization!.companionTagline!
+    : "What's on your heart?";
+  const personalizationActivity = isValidText(personalization?.recentActivity) ? personalization!.recentActivity! : null;
+  const personalizationStreak = isValidText(personalization?.streakMessage) ? personalization!.streakMessage! : null;
+  const personalizationContext = isValidText(personalization?.conversationContext) ? personalization!.conversationContext! : null;
+  const showPersonalization = !!(personalizationActivity || personalizationStreak || personalizationContext);
 
   return (
-    <GradientBackground>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Animated.Text
-            style={[
-              styles.appTitle,
-              { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] },
-            ]}
+    <React.Fragment>
+      <Stack.Screen
+        options={{
+          title: '',
+          headerShown: true,
+          headerRight: () => <NotificationButton />,
+        }}
+      />
+      <GradientBackground>
+        <View style={styles.container}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            Linen
-          </Animated.Text>
-          <View style={styles.notificationButtonWrapper}>
-            <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
-          </View>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Greeting */}
-          <Animated.Text
-            style={[
-              styles.greeting,
-              { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
-            ]}
-          >
-            {greetingText}
-          </Animated.Text>
-
-          {/* Streak row */}
-          <View style={styles.streakRow}>
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Check-In Streak</Text>
-              <View style={styles.streakValueRow}>
-                <Text style={styles.streakNumber}>{checkInStreakDisplay}</Text>
-                <Text style={styles.streakBest}>{checkInBestDisplay}</Text>
-              </View>
+            <View style={styles.header}>
+              <Text style={[styles.appTitle, { color: colors.primary }]}>
+                Linen
+              </Text>
+              <Animated.Text
+                style={[
+                  styles.greeting,
+                  { color: colors.primary },
+                  { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
+                ]}
+              >
+                {greetingText}
+              </Animated.Text>
             </View>
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Reflection Streak</Text>
-              <View style={styles.streakValueRow}>
-                <Text style={styles.streakNumber}>{reflectionStreakDisplay}</Text>
-                <Text style={styles.streakBest}>{reflectionBestDisplay}</Text>
-              </View>
-            </View>
-          </View>
 
-          {/* Companion banner (optional) */}
-          {hasCompanionMessage ? (
-            <TouchableOpacity
-              style={styles.companionBanner}
-              onPress={handleCompanionBannerPress}
-              activeOpacity={0.8}
-            >
-              <View style={styles.companionIconCircle}>
-                <IconSymbol
-                  ios_icon_name="person.fill"
-                  android_material_icon_name="person"
-                  size={20}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={styles.companionTextContainer}>
-                <Text style={styles.companionName}>{companionName}</Text>
-                <Text style={styles.companionMessage} numberOfLines={2}>
-                  {companionMessage}
+            <View style={styles.streakContainer}>
+              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                  Check-In Streak
                 </Text>
+                <View style={styles.streakRow}>
+                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                    {checkInStreakText}
+                  </Text>
+                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                    {checkInBestText}
+                  </Text>
+                </View>
               </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron-right"
-                size={16}
-                color={colors.textLight}
-              />
-            </TouchableOpacity>
-          ) : null}
 
-          {/* Check-In card */}
-          <TouchableOpacity
-            style={styles.primaryCard}
-            onPress={handleCheckInPress}
-            activeOpacity={0.75}
-          >
-            <View style={styles.checkInIconCircle}>
-              <IconSymbol
-                ios_icon_name="message.fill"
-                android_material_icon_name="chat"
-                size={32}
-                color={colors.primary}
-              />
+              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
+                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
+                  Reflection Streak
+                </Text>
+                <View style={styles.streakRow}>
+                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
+                    {reflectionStreakText}
+                  </Text>
+                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
+                    {reflectionBestText}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.primaryCardTitle}>Check-In</Text>
-            <Text style={styles.primaryCardSubtitle}>What's on your heart?</Text>
-            {lastCheckInMessage ? (
-              <Text style={styles.lastMessage}>{lastCheckInMessage}</Text>
-            ) : null}
-          </TouchableOpacity>
 
-          {/* Open Your Gift card */}
-          <TouchableOpacity
-            style={styles.primaryCard}
-            onPress={handleOpenGiftPress}
-            activeOpacity={0.75}
-          >
-            <View style={styles.giftIconCircle}>
-              <IconSymbol
-                ios_icon_name="gift.fill"
-                android_material_icon_name="card-giftcard"
-                size={32}
-                color="#F59E0B"
-              />
-            </View>
-            <Text style={styles.primaryCardTitle}>Open Your Gift</Text>
-            <Text style={styles.primaryCardSubtitle}>Daily scripture reflection</Text>
-          </TouchableOpacity>
+            {showCompanionBanner && (
+              <TouchableOpacity
+                style={styles.companionBanner}
+                onPress={() => {
+                  console.log('🏠 [Home] Companion banner tapped — navigating to companion-preferences');
+                  router.push('/companion-preferences');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.companionBannerLeft}>
+                  <Text style={styles.companionBannerIcon}>✨</Text>
+                  <View style={styles.companionBannerText}>
+                    <Text style={styles.companionBannerTitle}>Personalize Your AI Companion</Text>
+                    <Text style={styles.companionBannerSubtitle}>Set your tone, directness & more →</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log('🏠 [Home] Companion banner dismissed');
+                    setShowCompanionBanner(false);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.companionBannerDismiss}>✕</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
-          {/* Weekly Recap card */}
-          <TouchableOpacity
-            style={styles.secondaryCard}
-            onPress={handleWeeklyRecapPress}
-            activeOpacity={0.75}
-          >
-            <View style={styles.secondaryCardIcon}>
-              <IconSymbol
-                ios_icon_name="calendar"
-                android_material_icon_name="calendar-today"
-                size={24}
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.secondaryCardText}>
-              <Text style={styles.secondaryCardTitle}>Weekly Recap</Text>
-              <Text style={styles.secondaryCardSubtitle}>Review your week</Text>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={16}
-              color={colors.textLight}
-            />
-          </TouchableOpacity>
+            <View style={styles.primaryActions}>
+              <TouchableOpacity 
+                style={[styles.primaryCard, { backgroundColor: cardBg }]}
+                onPress={handleCheckIn}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.primaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <IconSymbol 
+                    ios_icon_name="message.fill"
+                    android_material_icon_name="chat"
+                    size={40}
+                    color={colors.primary}
+                  />
+                </View>
+                <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                  Check-In
+                </Text>
+                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                  {checkInTagline}
+                </Text>
+                {showPersonalization && (
+                  <View style={styles.personalizationContainer}>
+                    {personalizationActivity && (
+                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                        {personalizationActivity}
+                      </Text>
+                    )}
+                    {personalizationStreak && (
+                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                        {personalizationStreak}
+                      </Text>
+                    )}
+                    {personalizationContext && (
+                      <Text style={[styles.personalizationText, { color: textSecondaryColor }]}>
+                        {personalizationContext}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </TouchableOpacity>
 
-          {/* Community card */}
-          <TouchableOpacity
-            style={styles.secondaryCard}
-            onPress={handleCommunityPress}
-            activeOpacity={0.75}
-          >
-            <View style={styles.secondaryCardIcon}>
-              <IconSymbol
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
-                size={24}
-                color={colors.primary}
-              />
+              <TouchableOpacity 
+                style={[styles.primaryCard, { backgroundColor: cardBg }]}
+                onPress={handleDailyGift}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.primaryIconContainer, { backgroundColor: colors.accent + '15' }]}>
+                  <IconSymbol 
+                    ios_icon_name="gift.fill"
+                    android_material_icon_name="card-giftcard"
+                    size={40}
+                    color={colors.accent}
+                  />
+                </View>
+                <Text style={[styles.primaryCardTitle, { color: textColor }]}>
+                  Open Your Gift
+                </Text>
+                <Text style={[styles.primaryCardDescription, { color: textSecondaryColor }]}>
+                  Daily scripture reflection
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.secondaryCardText}>
-              <Text style={styles.secondaryCardTitle}>Community</Text>
-              <Text style={styles.secondaryCardSubtitle}>Connect with others</Text>
+
+            <View style={styles.secondaryActions}>
+              <TouchableOpacity 
+                style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+                onPress={handleCommunity}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.secondaryIconContainer, { backgroundColor: colors.prayer + '15' }]}>
+                  <IconSymbol 
+                    ios_icon_name="person.3.fill"
+                    android_material_icon_name="group"
+                    size={24}
+                    color={colors.prayer}
+                  />
+                </View>
+                <View style={styles.secondaryCardContent}>
+                  <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                    Community
+                  </Text>
+                  <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                    Share your reflections
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.secondaryCard, { backgroundColor: cardBg }]}
+                onPress={handleWeeklyRecap}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.secondaryIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <IconSymbol 
+                    ios_icon_name="calendar"
+                    android_material_icon_name="calendar-today"
+                    size={24}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={styles.secondaryCardContent}>
+                  <Text style={[styles.secondaryCardTitle, { color: textColor }]}>
+                    Heart Threads
+                  </Text>
+                  <Text style={[styles.secondaryCardDescription, { color: textSecondaryColor }]}>
+                    See your journey this week
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={16}
-              color={colors.textLight}
-            />
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </GradientBackground>
+          </ScrollView>
+        </View>
+      </GradientBackground>
+    </React.Fragment>
   );
 }
 
@@ -362,207 +387,175 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
-    paddingBottom: 0,
-    backgroundColor: 'transparent',
-    zIndex: 100,
-  },
-  appTitle: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: '#2D5016',
-    fontFamily: typography.fontFamilySerif,
-    letterSpacing: -0.5,
-  },
-  notificationButtonWrapper: {
-    zIndex: 101,
-  },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl * 2,
+  },
+  header: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  appTitle: {
+    fontSize: typography.h2 * 2,
+    fontWeight: typography.bold,
   },
   greeting: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2D5016',
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
+    fontSize: typography.h2,
+    fontWeight: typography.semibold,
   },
-  // Streak row
-  streakRow: {
+  streakContainer: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: spacing.md,
+    gap: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
   },
   streakCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    shadowColor: 'rgba(0,0,0,0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 2,
+    padding: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   streakLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginBottom: 6,
+    fontWeight: typography.regular,
+    marginBottom: spacing.xs,
   },
-  streakValueRow: {
+  streakRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 6,
+    gap: spacing.xs,
   },
   streakNumber: {
     fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    lineHeight: 32,
+    fontWeight: typography.bold,
   },
   streakBest: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.textLight,
+    fontSize: 12,
+    fontWeight: typography.regular,
   },
-  // Companion banner
-  companionBanner: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: 'rgba(0,0,0,0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 2,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primaryMedium,
+  primaryActions: {
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
   },
-  companionIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-  },
-  companionTextContainer: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  companionName: {
-    fontSize: typography.caption,
-    fontWeight: typography.semibold,
-    color: colors.primary,
-    marginBottom: 2,
-  },
-  companionMessage: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  // Primary cards (Check-In, Open Your Gift)
   primaryCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: 36,
-    paddingHorizontal: spacing.lg,
-    marginBottom: 12,
+    padding: spacing.xl,
     alignItems: 'center',
-    shadowColor: 'rgba(0,0,0,0.08)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 3,
+    minHeight: 180,
+    justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  checkInIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#E8F5EE',
+  primaryIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-  },
-  giftIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   primaryCardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: typography.bold,
+    marginBottom: spacing.xs,
     textAlign: 'center',
   },
-  primaryCardSubtitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.textSecondary,
+  primaryCardDescription: {
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 20,
   },
-  lastMessage: {
-    fontSize: typography.bodySmall,
+  personalizationContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border + '40',
+    width: '100%',
+    gap: spacing.xs,
+  },
+  personalizationText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
     fontStyle: 'italic',
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
   },
-  // Secondary cards (Weekly Recap, Community)
+  secondaryActions: {
+    gap: spacing.md,
+  },
   secondaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    paddingVertical: 14,
-    paddingHorizontal: spacing.md,
-    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: 'rgba(0,0,0,0.06)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  secondaryCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primaryLight,
+  secondaryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  secondaryCardText: {
+  secondaryCardContent: {
     flex: 1,
   },
   secondaryCardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 16,
+    fontWeight: typography.semibold,
     marginBottom: 2,
   },
-  secondaryCardSubtitle: {
+  secondaryCardDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  companionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  companionBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  companionBannerIcon: {
+    fontSize: 20,
+  },
+  companionBannerText: {
+    flex: 1,
+  },
+  companionBannerTitle: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.primaryDark,
+    marginBottom: 2,
+  },
+  companionBannerSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
-    color: colors.textSecondary,
+    color: colors.primary,
+  },
+  companionBannerDismiss: {
+    fontSize: 14,
+    color: colors.textLight,
+    paddingLeft: spacing.sm,
   },
 });

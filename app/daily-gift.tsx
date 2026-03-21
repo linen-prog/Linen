@@ -81,7 +81,7 @@ interface GlitterParticle {
 }
 
 const tabs = [
-  { name: 'home', route: '/(tabs)' as const, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
+  { name: 'home', route: '/(tabs)/(home)' as const, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
   { name: 'community', route: '/(tabs)/community' as const, icon: 'group' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
   { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
 ];
