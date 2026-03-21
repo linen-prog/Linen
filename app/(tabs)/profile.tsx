@@ -726,7 +726,7 @@ export default function ProfileScreen() {
             style={styles.backButton}
             onPress={() => {
               console.log('[Profile] User tapped back button - navigating to home');
-              router.replace('/(tabs)/(home)');
+              router.replace('/(tabs)');
             }}
             hitSlop={8}
             activeOpacity={0.7}
