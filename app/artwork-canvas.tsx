@@ -1265,21 +1265,21 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] 📤 Uploading captured canvas image to /api/artwork/upload-photo...');
         const { BACKEND_URL } = await import('@/utils/api');
         const { getBearerToken } = await import('@/lib/auth');
-        const bearerToken = await getBearerToken();
+        const token = await getBearerToken();
+        console.log('[Canvas] 🔑 Bearer token retrieved:', token ? 'present' : 'missing');
 
         const formData = new FormData();
-        const fileName = `canvas-${Date.now()}.png`;
-
         formData.append('photo', {
           uri: capturedUri,
           type: 'image/png',
-          name: fileName,
+          name: 'artwork.png',
         } as any);
 
+        console.log('[Canvas] 📦 FormData built with field "photo", sending request...');
         const uploadResponse = await fetch(`${BACKEND_URL}/api/artwork/upload-photo`, {
           method: 'POST',
           headers: {
-            ...(bearerToken ? { 'Authorization': `Bearer ${bearerToken}` } : {}),
+            Authorization: `Bearer ${token}`,
           },
           body: formData,
         });
