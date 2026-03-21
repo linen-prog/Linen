@@ -20,8 +20,11 @@ import { authenticatedGet } from '@/utils/api';
 interface UserStats {
   checkInStreak: number;
   reflectionStreak: number;
-  checkInBest: number;
-  reflectionBest: number;
+  bestCheckInStreak: number;
+  bestReflectionStreak: number;
+  // legacy field names
+  checkInBest?: number;
+  reflectionBest?: number;
   displayName?: string;
 }
 
@@ -72,7 +75,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
         }),
       ]).start();
-    }, 2000);
+    }, 300);
 
     return () => clearTimeout(greetingTimer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,7 +83,7 @@ export default function HomeScreen() {
 
   const loadUserStats = useCallback(async () => {
     try {
-      console.log('[Home] Loading user stats...');
+      console.log('[Home] Loading user stats from /api/profile/stats...');
       const data = await authenticatedGet<UserStats>('/api/profile/stats');
       setStats(data);
       console.log('[Home] Loaded user stats:', data);
@@ -89,8 +92,8 @@ export default function HomeScreen() {
       setStats({
         checkInStreak: 0,
         reflectionStreak: 0,
-        checkInBest: 0,
-        reflectionBest: 0,
+        bestCheckInStreak: 0,
+        bestReflectionStreak: 0,
         displayName: user?.name || 'friend',
       });
     }
@@ -104,7 +107,6 @@ export default function HomeScreen() {
       console.log('[Home] Loaded personalization data:', data);
     } catch (error: any) {
       console.log('[Home] Error loading personalization:', error?.message || error);
-      // Fail silently — not critical
     }
   }, []);
 
@@ -122,46 +124,53 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    console.log('🏠 [Home] Component mounted');
+    console.log('[Home] Component mounted');
     loadUserStats();
     loadPersonalization();
     loadLastCheckIn();
   }, [loadUserStats, loadPersonalization, loadLastCheckIn]);
 
   const handleUnreadCountChange = (count: number) => {
-    console.log('🏠 [Home] Love messages count changed:', count);
+    console.log('[Home] Love messages count changed:', count);
     setHasLoveMessages(count > 0);
   };
 
-  const displayName = stats?.displayName || user?.name || 'Friend';
-  const greetingText = `Peace to you, ${displayName}`;
+  const rawName = stats?.displayName || user?.name || '';
+  const firstName = rawName.split(' ')[0] || 'friend';
+  const greetingName = firstName || 'friend';
+  const greetingText = `Peace to you, ${greetingName}.`;
 
-  const checkInStreakVal = stats?.checkInStreak || 0;
-  const reflectionStreakVal = stats?.reflectionStreak || 0;
-  const checkInBestVal = stats?.checkInBest || 0;
-  const reflectionBestVal = stats?.reflectionBest || 0;
+  const checkInStreakVal = stats?.checkInStreak ?? 0;
+  const reflectionStreakVal = stats?.reflectionStreak ?? 0;
+  const checkInBestVal = stats?.bestCheckInStreak ?? stats?.checkInBest ?? 0;
+  const reflectionBestVal = stats?.bestReflectionStreak ?? stats?.reflectionBest ?? 0;
+
+  const checkInStreakDisplay = String(checkInStreakVal);
+  const reflectionStreakDisplay = String(reflectionStreakVal);
+  const checkInBestDisplay = `best: ${checkInBestVal}`;
+  const reflectionBestDisplay = `best: ${reflectionBestVal}`;
 
   const companionMessage = personalization?.companionMessage || '';
   const companionName = personalization?.companionName || 'Your Companion';
   const hasCompanionMessage = companionMessage.length > 0;
 
   const handleCheckInPress = () => {
-    console.log('[Home] User tapped Check-In button');
+    console.log('[Home] User tapped Check-In card');
     router.push('/check-in');
   };
 
   const handleOpenGiftPress = () => {
-    console.log('[Home] User tapped Open Your Gift button');
+    console.log('[Home] User tapped Open Your Gift card');
     router.push('/daily-gift');
   };
 
   const handleCommunityPress = () => {
-    console.log('[Home] User tapped Community button');
+    console.log('[Home] User tapped Community card');
     router.navigate('/(tabs)/community');
   };
 
   const handleWeeklyRecapPress = () => {
-    console.log('[Home] User tapped Weekly Recap button');
+    console.log('[Home] User tapped Weekly Recap card');
     router.push('/weekly-recap');
   };
 
@@ -170,16 +179,13 @@ export default function HomeScreen() {
     router.push('/check-in');
   };
 
-  console.log('🏠 [Home] RENDERING');
+  console.log('[Home] Rendering');
 
   return (
     <GradientBackground>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Header */}
         <View style={styles.header}>
           <Animated.Text
             style={[
@@ -198,49 +204,35 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.greetingContainer}>
-            <Animated.Text
-              style={[
-                styles.greeting,
-                { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
-              ]}
-            >
-              {greetingText}
-            </Animated.Text>
-          </View>
+          {/* Greeting */}
+          <Animated.Text
+            style={[
+              styles.greeting,
+              { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
+            ]}
+          >
+            {greetingText}
+          </Animated.Text>
 
           {/* Streak row */}
-          <View style={styles.streakContainer}>
+          <View style={styles.streakRow}>
             <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Check-in</Text>
-              <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{checkInStreakVal}</Text>
-              {checkInBestVal > 0 ? (
-                <Text style={styles.streakBest}>
-                  {' best '}
-                </Text>
-              ) : null}
-              {checkInBestVal > 0 ? (
-                <Text style={styles.streakBestValue}>{checkInBestVal}</Text>
-              ) : null}
+              <Text style={styles.streakLabel}>Check-In Streak</Text>
+              <View style={styles.streakValueRow}>
+                <Text style={styles.streakNumber}>{checkInStreakDisplay}</Text>
+                <Text style={styles.streakBest}>{checkInBestDisplay}</Text>
+              </View>
             </View>
-
             <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Reflection</Text>
-              <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{reflectionStreakVal}</Text>
-              {reflectionBestVal > 0 ? (
-                <Text style={styles.streakBest}>
-                  {' best '}
-                </Text>
-              ) : null}
-              {reflectionBestVal > 0 ? (
-                <Text style={styles.streakBestValue}>{reflectionBestVal}</Text>
-              ) : null}
+              <Text style={styles.streakLabel}>Reflection Streak</Text>
+              <View style={styles.streakValueRow}>
+                <Text style={styles.streakNumber}>{reflectionStreakDisplay}</Text>
+                <Text style={styles.streakBest}>{reflectionBestDisplay}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Companion banner */}
+          {/* Companion banner (optional) */}
           {hasCompanionMessage ? (
             <TouchableOpacity
               style={styles.companionBanner}
@@ -270,79 +262,95 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ) : null}
 
-          {/* Primary card — Check-In */}
+          {/* Check-In card */}
           <TouchableOpacity
-            style={styles.checkInCard}
+            style={styles.primaryCard}
             onPress={handleCheckInPress}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
             <View style={styles.checkInIconCircle}>
               <IconSymbol
                 ios_icon_name="message.fill"
                 android_material_icon_name="chat"
-                size={36}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={styles.checkInCardTitle}>Check-In</Text>
-            <Text style={styles.checkInCardSubtitle}>What's on your heart?</Text>
-            {lastCheckInMessage ? (
-              <Text style={styles.checkInLastMessage}>{lastCheckInMessage}</Text>
-            ) : null}
-          </TouchableOpacity>
-
-          {/* Secondary card grid */}
-          <View style={styles.secondaryGrid}>
-            <TouchableOpacity
-              style={[styles.secondaryCard, styles.giftCard]}
-              onPress={handleOpenGiftPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardIconContainer}>
-                <IconSymbol
-                  ios_icon_name="gift.fill"
-                  android_material_icon_name="card-giftcard"
-                  size={28}
-                  color={colors.primary}
-                />
-              </View>
-              <Text style={styles.secondaryCardTitle}>Open Your Gift</Text>
-              <Text style={styles.secondaryCardSubtitle}>Daily scripture reflection</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.secondaryCard, styles.weeklyRecapCard]}
-              onPress={handleWeeklyRecapPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardIconContainer}>
-                <IconSymbol
-                  ios_icon_name="calendar"
-                  android_material_icon_name="calendar-today"
-                  size={28}
-                  color={colors.primary}
-                />
-              </View>
-              <Text style={styles.secondaryCardTitle}>Weekly Recap</Text>
-              <Text style={styles.secondaryCardSubtitle}>Review your week</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Community card */}
-          <TouchableOpacity
-            style={styles.communityCard}
-            onPress={handleCommunityPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.communityIconContainer}>
-              <IconSymbol
-                ios_icon_name="heart.fill"
-                android_material_icon_name="favorite"
                 size={32}
                 color={colors.primary}
               />
             </View>
-            <Text style={styles.communityCardTitle}>Community</Text>
+            <Text style={styles.primaryCardTitle}>Check-In</Text>
+            <Text style={styles.primaryCardSubtitle}>What's on your heart?</Text>
+            {lastCheckInMessage ? (
+              <Text style={styles.lastMessage}>{lastCheckInMessage}</Text>
+            ) : null}
+          </TouchableOpacity>
+
+          {/* Open Your Gift card */}
+          <TouchableOpacity
+            style={styles.primaryCard}
+            onPress={handleOpenGiftPress}
+            activeOpacity={0.75}
+          >
+            <View style={styles.giftIconCircle}>
+              <IconSymbol
+                ios_icon_name="gift.fill"
+                android_material_icon_name="card-giftcard"
+                size={32}
+                color="#F59E0B"
+              />
+            </View>
+            <Text style={styles.primaryCardTitle}>Open Your Gift</Text>
+            <Text style={styles.primaryCardSubtitle}>Daily scripture reflection</Text>
+          </TouchableOpacity>
+
+          {/* Weekly Recap card */}
+          <TouchableOpacity
+            style={styles.secondaryCard}
+            onPress={handleWeeklyRecapPress}
+            activeOpacity={0.75}
+          >
+            <View style={styles.secondaryCardIcon}>
+              <IconSymbol
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar-today"
+                size={24}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.secondaryCardText}>
+              <Text style={styles.secondaryCardTitle}>Weekly Recap</Text>
+              <Text style={styles.secondaryCardSubtitle}>Review your week</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={16}
+              color={colors.textLight}
+            />
+          </TouchableOpacity>
+
+          {/* Community card */}
+          <TouchableOpacity
+            style={styles.secondaryCard}
+            onPress={handleCommunityPress}
+            activeOpacity={0.75}
+          >
+            <View style={styles.secondaryCardIcon}>
+              <IconSymbol
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={24}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.secondaryCardText}>
+              <Text style={styles.secondaryCardTitle}>Community</Text>
+              <Text style={styles.secondaryCardSubtitle}>Connect with others</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={16}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -359,17 +367,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
+    paddingBottom: 0,
     backgroundColor: 'transparent',
     zIndex: 100,
   },
   appTitle: {
-    fontSize: 32,
-    fontWeight: typography.regular,
-    color: colors.primary,
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#2D5016',
     fontFamily: typography.fontFamilySerif,
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   notificationButtonWrapper: {
     zIndex: 101,
@@ -378,71 +386,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  greetingContainer: {
-    alignItems: 'flex-start',
-    marginTop: 12,
-    marginBottom: 8,
-  },
   greeting: {
-    fontSize: 16,
-    fontWeight: typography.regular,
-    color: colors.primary,
-    fontFamily: typography.fontFamilySerif,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#2D5016',
+    marginTop: spacing.xs,
+    marginBottom: spacing.md,
   },
-  streakContainer: {
+  // Streak row
+  streakRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    gap: 6,
+    gap: 10,
+    marginBottom: spacing.md,
   },
   streakCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: borderRadius.sm,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.55,
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    shadowColor: 'rgba(0,0,0,0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   streakLabel: {
-    fontSize: 10,
-    fontWeight: typography.regular,
-    color: colors.textLight,
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginBottom: 6,
   },
-  streakDot: {
-    fontSize: 10,
-    color: colors.textLight,
-    marginHorizontal: 3,
+  streakValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
   },
-  streakValue: {
-    fontSize: 10,
-    fontWeight: typography.semibold,
-    color: colors.textLight,
+  streakNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    lineHeight: 32,
   },
   streakBest: {
-    fontSize: 9,
+    fontSize: 13,
+    fontWeight: '400',
     color: colors.textLight,
-    opacity: 0.7,
   },
-  streakBestValue: {
-    fontSize: 9,
-    fontWeight: typography.semibold,
-    color: colors.textLight,
-    opacity: 0.7,
-  },
+  // Companion banner
   companionBanner: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    marginBottom: 10,
+    marginBottom: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.shadow,
+    shadowColor: 'rgba(0,0,0,0.08)',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 6,
     elevation: 2,
     borderLeftWidth: 3,
@@ -472,42 +474,52 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  checkInCard: {
+  // Primary cards (Check-In, Open Your Gift)
+  primaryCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    marginBottom: 10,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 3,
+    paddingVertical: 36,
+    paddingHorizontal: spacing.lg,
+    marginBottom: 12,
     alignItems: 'center',
+    shadowColor: 'rgba(0,0,0,0.08)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   checkInIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.accentVeryLight,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E8F5EE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
-  checkInCardTitle: {
-    fontSize: typography.h2,
-    fontWeight: typography.semibold,
+  giftIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  primaryCardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
     textAlign: 'center',
   },
-  checkInCardSubtitle: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
+  primaryCardSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  checkInLastMessage: {
+  lastMessage: {
     fontSize: typography.bodySmall,
     fontStyle: 'italic',
     color: colors.textSecondary,
@@ -515,63 +527,42 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  secondaryGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
-  },
+  // Secondary cards (Weekly Recap, Community)
   secondaryCard: {
-    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    marginBottom: 10,
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.shadow,
+    shadowColor: 'rgba(0,0,0,0.06)',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 1,
+    shadowRadius: 6,
     elevation: 2,
   },
-  giftCard: {
-    borderWidth: 2,
-    borderColor: colors.accentMedium,
+  secondaryCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
-  weeklyRecapCard: {},
-  cardIconContainer: {
-    marginBottom: spacing.sm,
+  secondaryCardText: {
+    flex: 1,
   },
   secondaryCardTitle: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.semibold,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.text,
-    textAlign: 'center',
     marginBottom: 2,
   },
   secondaryCardSubtitle: {
-    fontSize: 11,
-    fontWeight: typography.regular,
+    fontSize: 12,
+    fontWeight: '400',
     color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  communityCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  communityIconContainer: {
-    marginRight: spacing.md,
-  },
-  communityCardTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
   },
 });
