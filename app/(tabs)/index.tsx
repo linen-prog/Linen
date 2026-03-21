@@ -1,8 +1,15 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
 import NotificationButton from '@/components/NotificationButton';
@@ -13,13 +20,23 @@ import { authenticatedGet } from '@/utils/api';
 interface UserStats {
   checkInStreak: number;
   reflectionStreak: number;
+  checkInBest: number;
+  reflectionBest: number;
   displayName?: string;
+}
+
+interface PersonalizationData {
+  companionMessage?: string;
+  companionName?: string;
+  lastCheckInSummary?: string;
+  suggestedAction?: string;
 }
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
   const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
 
@@ -29,7 +46,6 @@ export default function HomeScreen() {
   const greetingTranslateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    // Title animates in immediately on mount
     Animated.parallel([
       Animated.timing(titleOpacity, {
         toValue: 1,
@@ -43,7 +59,6 @@ export default function HomeScreen() {
       }),
     ]).start();
 
-    // Greeting fades + slides up after a calm 2s delay
     const greetingTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(greetingOpacity, {
@@ -74,12 +89,26 @@ export default function HomeScreen() {
       setStats({
         checkInStreak: 0,
         reflectionStreak: 0,
+        checkInBest: 0,
+        reflectionBest: 0,
         displayName: user?.name || 'friend',
       });
     }
   }, [user?.name]);
 
-  const loadLastCheckIn = async () => {
+  const loadPersonalization = useCallback(async () => {
+    try {
+      console.log('[Home] Loading personalization data from /api/check-in/personalization...');
+      const data = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
+      setPersonalization(data);
+      console.log('[Home] Loaded personalization data:', data);
+    } catch (error: any) {
+      console.log('[Home] Error loading personalization:', error?.message || error);
+      // Fail silently — not critical
+    }
+  }, []);
+
+  const loadLastCheckIn = useCallback(async () => {
     try {
       console.log('[Home] Loading last check-in message...');
       const data = await authenticatedGet<{ lastMessage?: string }>('/api/check-in/last-message');
@@ -89,15 +118,15 @@ export default function HomeScreen() {
       }
     } catch (error: any) {
       console.log('[Home] Error loading last check-in:', error?.message || error);
-      // Fail silently - not critical for home screen
     }
-  };
+  }, []);
 
   useEffect(() => {
-    console.log('🏠 [Home] Component mounted - NotificationButton should be visible');
+    console.log('🏠 [Home] Component mounted');
     loadUserStats();
+    loadPersonalization();
     loadLastCheckIn();
-  }, [loadUserStats]);
+  }, [loadUserStats, loadPersonalization, loadLastCheckIn]);
 
   const handleUnreadCountChange = (count: number) => {
     console.log('🏠 [Home] Love messages count changed:', count);
@@ -106,6 +135,15 @@ export default function HomeScreen() {
 
   const displayName = stats?.displayName || user?.name || 'Friend';
   const greetingText = `Peace to you, ${displayName}`;
+
+  const checkInStreakVal = stats?.checkInStreak || 0;
+  const reflectionStreakVal = stats?.reflectionStreak || 0;
+  const checkInBestVal = stats?.checkInBest || 0;
+  const reflectionBestVal = stats?.reflectionBest || 0;
+
+  const companionMessage = personalization?.companionMessage || '';
+  const companionName = personalization?.companionName || 'Your Companion';
+  const hasCompanionMessage = companionMessage.length > 0;
 
   const handleCheckInPress = () => {
     console.log('[Home] User tapped Check-In button');
@@ -127,10 +165,20 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
-  console.log('🏠 [Home] RENDERING - About to render NotificationButton');
+  const handleCompanionBannerPress = () => {
+    console.log('[Home] User tapped Companion banner');
+    router.push('/check-in');
+  };
+
+  console.log('🏠 [Home] RENDERING');
 
   return (
     <GradientBackground>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Animated.Text
@@ -161,20 +209,68 @@ export default function HomeScreen() {
             </Animated.Text>
           </View>
 
+          {/* Streak row */}
           <View style={styles.streakContainer}>
             <View style={styles.streakCard}>
               <Text style={styles.streakLabel}>Check-in</Text>
               <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
+              <Text style={styles.streakValue}>{checkInStreakVal}</Text>
+              {checkInBestVal > 0 ? (
+                <Text style={styles.streakBest}>
+                  {' best '}
+                </Text>
+              ) : null}
+              {checkInBestVal > 0 ? (
+                <Text style={styles.streakBestValue}>{checkInBestVal}</Text>
+              ) : null}
             </View>
 
             <View style={styles.streakCard}>
               <Text style={styles.streakLabel}>Reflection</Text>
               <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
+              <Text style={styles.streakValue}>{reflectionStreakVal}</Text>
+              {reflectionBestVal > 0 ? (
+                <Text style={styles.streakBest}>
+                  {' best '}
+                </Text>
+              ) : null}
+              {reflectionBestVal > 0 ? (
+                <Text style={styles.streakBestValue}>{reflectionBestVal}</Text>
+              ) : null}
             </View>
           </View>
 
+          {/* Companion banner */}
+          {hasCompanionMessage ? (
+            <TouchableOpacity
+              style={styles.companionBanner}
+              onPress={handleCompanionBannerPress}
+              activeOpacity={0.8}
+            >
+              <View style={styles.companionIconCircle}>
+                <IconSymbol
+                  ios_icon_name="person.fill"
+                  android_material_icon_name="person"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.companionTextContainer}>
+                <Text style={styles.companionName}>{companionName}</Text>
+                <Text style={styles.companionMessage} numberOfLines={2}>
+                  {companionMessage}
+                </Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={16}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+          ) : null}
+
+          {/* Primary card — Check-In */}
           <TouchableOpacity
             style={styles.checkInCard}
             onPress={handleCheckInPress}
@@ -195,43 +291,44 @@ export default function HomeScreen() {
             ) : null}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.giftCard}
-            onPress={handleOpenGiftPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.cardIconContainer}>
-              <IconSymbol
-                ios_icon_name="gift.fill"
-                android_material_icon_name="card-giftcard"
-                size={32}
-                color={colors.primary}
-              />
-            </View>
+          {/* Secondary card grid */}
+          <View style={styles.secondaryGrid}>
+            <TouchableOpacity
+              style={[styles.secondaryCard, styles.giftCard]}
+              onPress={handleOpenGiftPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardIconContainer}>
+                <IconSymbol
+                  ios_icon_name="gift.fill"
+                  android_material_icon_name="card-giftcard"
+                  size={28}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.secondaryCardTitle}>Open Your Gift</Text>
+              <Text style={styles.secondaryCardSubtitle}>Daily scripture reflection</Text>
+            </TouchableOpacity>
 
-            <View>
-              <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryCard, styles.weeklyRecapCard]}
+              onPress={handleWeeklyRecapPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardIconContainer}>
+                <IconSymbol
+                  ios_icon_name="calendar"
+                  android_material_icon_name="calendar-today"
+                  size={28}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.secondaryCardTitle}>Weekly Recap</Text>
+              <Text style={styles.secondaryCardSubtitle}>Review your week</Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.weeklyRecapCard}
-            onPress={handleWeeklyRecapPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.weeklyRecapIconContainer}>
-              <IconSymbol
-                ios_icon_name="calendar"
-                android_material_icon_name="calendar-today"
-                size={24}
-                color={colors.primary}
-              />
-            </View>
-
-            <Text style={styles.weeklyRecapTitle}>Weekly Recap</Text>
-          </TouchableOpacity>
-
+          {/* Community card */}
           <TouchableOpacity
             style={styles.communityCard}
             onPress={handleCommunityPress}
@@ -245,7 +342,6 @@ export default function HomeScreen() {
                 color={colors.primary}
               />
             </View>
-
             <Text style={styles.communityCardTitle}>Community</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -296,19 +392,19 @@ const styles = StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
     gap: 6,
   },
   streakCard: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: borderRadius.sm,
-    paddingVertical: 1,
+    paddingVertical: 2,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.47,
+    opacity: 0.55,
   },
   streakLabel: {
     fontSize: 10,
@@ -322,15 +418,66 @@ const styles = StyleSheet.create({
   },
   streakValue: {
     fontSize: 10,
-    fontWeight: typography.regular,
+    fontWeight: typography.semibold,
     color: colors.textLight,
+  },
+  streakBest: {
+    fontSize: 9,
+    color: colors.textLight,
+    opacity: 0.7,
+  },
+  streakBestValue: {
+    fontSize: 9,
+    fontWeight: typography.semibold,
+    color: colors.textLight,
+    opacity: 0.7,
+  },
+  companionBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primaryMedium,
+  },
+  companionIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  companionTextContainer: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  companionName: {
+    fontSize: typography.caption,
+    fontWeight: typography.semibold,
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  companionMessage: {
+    fontSize: typography.bodySmall,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.md,
-    marginBottom: 8,
+    marginBottom: 10,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -368,113 +515,44 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  loveMessagesCard: {
+  secondaryGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  secondaryCard: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    marginBottom: 8,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
-    alignItems: 'center',
-  },
-  loveMessagesIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#fff1f2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  loveMessagesTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  loveMessagesSubtitle: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  loveMessagesBadge: {
-    marginTop: spacing.sm,
-    backgroundColor: '#e11d48',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-  },
-  loveMessagesBadgeText: {
-    fontSize: 11,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
-  cardIconContainer: {
-    marginRight: spacing.sm,
-  },
-  cardTitle: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: 1,
-  },
-  cardSubtitle: {
-    fontSize: 11,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
   },
   giftCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
     borderWidth: 2,
     borderColor: colors.accentMedium,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
-    marginBottom: 8,
-    shadowColor: colors.accentDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  giftCardTitle: {
-    fontSize: typography.body,
+  weeklyRecapCard: {},
+  cardIconContainer: {
+    marginBottom: spacing.sm,
+  },
+  secondaryCardTitle: {
+    fontSize: typography.bodySmall,
     fontWeight: typography.semibold,
     color: colors.text,
+    textAlign: 'center',
     marginBottom: 2,
   },
-  giftCardSubtitle: {
-    fontSize: typography.bodySmall,
+  secondaryCardSubtitle: {
+    fontSize: 11,
     fontWeight: typography.regular,
     color: colors.textSecondary,
-  },
-  weeklyRecapCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  weeklyRecapIconContainer: {
-    marginRight: spacing.md,
-  },
-  weeklyRecapTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
+    textAlign: 'center',
   },
   communityCard: {
     backgroundColor: '#FFFFFF',
