@@ -1034,37 +1034,42 @@ export default function WeeklyRecapScreen() {
       <GradientBackground>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <Stack.Screen options={headerOptions} />
-          <View style={styles.emptyContainer}>
-            <IconSymbol
-              ios_icon_name="calendar"
-              android_material_icon_name="calendar-today"
-              size={64}
-              color={colors.primary}
-            />
-            <Text style={styles.emptyTitle}>No Recap Yet</Text>
-            <Text style={styles.emptyDescription}>
-              Generate your weekly recap to see a gentle reflection on your week of prayer, presence, and community.
-            </Text>
-            <TouchableOpacity
-              style={styles.generateButton}
-              onPress={handleGenerateRecap}
-              disabled={generating}
-            >
-              {generating ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <IconSymbol
-                    ios_icon_name="sparkles"
-                    android_material_icon_name="auto-awesome"
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.generateButtonText}>Generate Recap</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+            <View style={styles.emptyContainer}>
+              <IconSymbol
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar-today"
+                size={64}
+                color={colors.primary}
+              />
+              <Text style={styles.emptyTitle}>No Recap Yet</Text>
+              <Text style={styles.emptyDescription}>
+                Generate your weekly recap to see a gentle reflection on your week of prayer, presence, and community.
+              </Text>
+              <TouchableOpacity
+                style={styles.generateButton}
+                onPress={handleGenerateRecap}
+                disabled={generating}
+              >
+                {generating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <IconSymbol
+                      ios_icon_name="sparkles"
+                      android_material_icon_name="auto-awesome"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.generateButtonText}>Generate Recap</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Monthly Summary is always shown, even without a weekly recap */}
+            <MonthlySummarySection isDark={isDark} />
+          </ScrollView>
         </SafeAreaView>
       </GradientBackground>
     );
