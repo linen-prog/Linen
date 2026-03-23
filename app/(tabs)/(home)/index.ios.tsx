@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const titleTranslateY = useRef(new Animated.Value(-12)).current;
   const greetingOpacity = useRef(new Animated.Value(0)).current;
   const greetingTranslateY = useRef(new Animated.Value(14)).current;
+  const checkInCardOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -58,7 +59,18 @@ export default function HomeScreen() {
       ]).start();
     }, 2000);
 
-    return () => clearTimeout(greetingTimer);
+    const checkInTimer = setTimeout(() => {
+      Animated.timing(checkInCardOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
+    }, 300);
+
+    return () => {
+      clearTimeout(greetingTimer);
+      clearTimeout(checkInTimer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -164,7 +176,17 @@ export default function HomeScreen() {
             >
               {greetingText}
             </Animated.Text>
+            <Animated.Text
+              style={[
+                styles.greetingSubtitle,
+                { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
+              ]}
+            >
+              {"I'm glad you're here today."}
+            </Animated.Text>
           </View>
+
+          <Text style={styles.presenceCue}>{"Take a breath before you begin"}</Text>
 
           {/* Love Messages card */}
           <TouchableOpacity
@@ -178,7 +200,6 @@ export default function HomeScreen() {
               </View>
               <View style={styles.loveMessagesTextBlock}>
                 <Text style={styles.loveMessagesTitle}>Messages</Text>
-
               </View>
             </View>
             {unreadCount > 0 && (
@@ -188,25 +209,27 @@ export default function HomeScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.checkInCard}
-            onPress={handleCheckInPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checkInIconCircle}>
-              <IconSymbol
-                ios_icon_name="message.fill"
-                android_material_icon_name="chat"
-                size={36}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={styles.checkInCardTitle}>Check-In</Text>
-            <Text style={styles.checkInCardSubtitle}>What's on your heart?</Text>
-            {lastCheckInMessage ? (
-              <Text style={styles.checkInLastMessage}>{lastCheckInMessage}</Text>
-            ) : null}
-          </TouchableOpacity>
+          <Animated.View style={{ opacity: checkInCardOpacity }}>
+            <TouchableOpacity
+              style={styles.checkInCard}
+              onPress={handleCheckInPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.checkInIconCircle}>
+                <IconSymbol
+                  ios_icon_name="message.fill"
+                  android_material_icon_name="chat"
+                  size={36}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.checkInCardTitle}>Check-In</Text>
+              <Text style={styles.checkInCardSubtitle}>What's on your heart?</Text>
+              {lastCheckInMessage ? (
+                <Text style={styles.checkInLastMessage}>{lastCheckInMessage}</Text>
+              ) : null}
+            </TouchableOpacity>
+          </Animated.View>
 
           <TouchableOpacity
             style={styles.giftCard}
@@ -302,7 +325,7 @@ const styles = StyleSheet.create({
   greetingContainer: {
     alignItems: 'flex-start',
     marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   greeting: {
     fontSize: 16,
@@ -310,21 +333,39 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
   },
+  greetingSubtitle: {
+    fontSize: 15,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    color: colors.primary,
+    fontFamily: typography.fontFamilySerif,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+  presenceCue: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    opacity: 0.5,
+    textAlign: 'center',
+    marginTop: 14,
+    marginBottom: 20,
+  },
   loveMessagesCard: {
     backgroundColor: '#FFFBF5',
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 18,
     paddingHorizontal: spacing.md,
-    marginBottom: 8,
+    marginBottom: 16,
     shadowColor: '#92400e',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
     elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#fde68a',
   },
   loveMessagesLeft: {
@@ -346,7 +387,7 @@ const styles = StyleSheet.create({
   },
   loveMessagesTitle: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: colors.text,
     fontFamily: typography.fontFamilySerif,
     marginBottom: 2,
@@ -367,20 +408,20 @@ const styles = StyleSheet.create({
   },
   loveMessagesBadgeText: {
     fontSize: 11,
-    fontWeight: typography.semibold,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    marginBottom: 8,
+    paddingVertical: spacing.xl + 6,
+    paddingHorizontal: spacing.md + 4,
+    marginBottom: 16,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
+    elevation: 5,
     alignItems: 'center',
   },
   checkInIconCircle: {
@@ -394,14 +435,14 @@ const styles = StyleSheet.create({
   },
   checkInCardTitle: {
     fontSize: typography.h2,
-    fontWeight: typography.semibold,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
     textAlign: 'center',
   },
   checkInCardSubtitle: {
     fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
+    fontWeight: '400',
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -419,69 +460,71 @@ const styles = StyleSheet.create({
   giftCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    borderWidth: 2,
+    borderWidth: 0.5,
     borderColor: colors.accentMedium,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
-    marginBottom: 8,
+    paddingVertical: 16,
+    paddingHorizontal: spacing.md + 4,
+    marginBottom: 16,
     shadowColor: colors.accentDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 4,
     flexDirection: 'row',
     alignItems: 'center',
   },
   giftCardTitle: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: colors.text,
     marginBottom: 2,
   },
   giftCardSubtitle: {
     fontSize: typography.bodySmall,
-    fontWeight: typography.regular,
+    fontWeight: '400',
     color: colors.textSecondary,
   },
   weeklyRecapCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    paddingVertical: spacing.lg + 4,
+    paddingHorizontal: spacing.lg + 4,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg + 8,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
   },
   weeklyRecapIconContainer: {
     marginRight: spacing.md,
   },
   weeklyRecapTitle: {
     fontSize: typography.h3,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: colors.text,
   },
   communityCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    paddingVertical: spacing.lg + 4,
+    paddingHorizontal: spacing.lg + 4,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
   },
   communityIconContainer: {
     marginRight: spacing.md,
   },
   communityCardTitle: {
     fontSize: typography.h3,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: colors.text,
   },
 });
