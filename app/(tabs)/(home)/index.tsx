@@ -192,8 +192,8 @@ export default function HomeScreen() {
             <View style={styles.loveMessagesLeft}>
               <View style={styles.loveMessagesIconCircle}>
                 <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
                   size={22}
                   color="#d97706"
                 />
