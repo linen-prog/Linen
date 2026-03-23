@@ -95,8 +95,6 @@ export default function DailyGiftScreen() {
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
   const [hasReflected, setHasReflected] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
-  const [shareToComm, setShareToComm] = useState(false);
-  const [shareAnonymously, setShareAnonymously] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGift, setIsLoadingGift] = useState(true);
 
@@ -112,15 +110,10 @@ export default function DailyGiftScreen() {
   const [somaticTimeRemaining, setSomaticTimeRemaining] = useState(60);
   const [showSomaticCelebration, setShowSomaticCelebration] = useState(false);
 
-  const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('feed');
-
-  const [responseMode, setResponseMode] = useState<'text' | 'create' | 'voice'>('text');
-
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
   
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showShareSuccessModal, setShowShareSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -382,16 +375,10 @@ export default function DailyGiftScreen() {
     const requestData = {
       dailyGiftId: dailyGiftResponse.dailyContent.id,
       reflectionText: reflectionText.trim(),
-      shareToComm,
-      category: shareCategory,
-      isAnonymous: shareAnonymously,
     };
 
     console.log(`[DailyGift] ${saveTimestamp} - Preparing to save reflection:`, { 
       reflectionTextLength: reflectionText.trim().length,
-      shareToComm,
-      shareAnonymously,
-      responseMode,
       selectedMoods,
       selectedSensations,
       dailyContentId: dailyGiftResponse.dailyContent.id,
@@ -408,12 +395,6 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${saveTimestamp} - Reflection saved successfully:`, response);
       setIsLoading(false);
       setHasReflected(true);
-      
-      // Show success modal if shared to community
-      if (shareToComm) {
-        console.log(`[DailyGift] ${saveTimestamp} - Showing share success modal`);
-        setShowShareSuccessModal(true);
-      }
     } catch (error: any) {
       const errorTimestamp = new Date().toISOString();
       // Use console.log for user-facing errors to avoid error overlay
@@ -507,32 +488,6 @@ export default function DailyGiftScreen() {
     setSelectedSensations(prev => 
       prev.includes(sensation) ? prev.filter(s => s !== sensation) : [...prev, sensation]
     );
-  };
-
-  const handleResponseModeSelect = (mode: 'text' | 'create' | 'voice') => {
-    console.log('[DailyGift] User selected response mode:', mode);
-    setResponseMode(mode);
-    
-    if (mode === 'create') {
-      const scriptureRef = dailyGiftResponse?.dailyContent?.scriptureReference ?? '';
-      const scriptureText = dailyGiftResponse?.dailyContent?.scriptureText ?? '';
-      const themeTitle = dailyGiftResponse?.weeklyTheme?.themeTitle ?? '';
-      const reflectionPrompt = dailyGiftResponse?.dailyContent?.reflectionQuestion ?? '';
-      console.log('[DailyGift] Navigating to artwork-canvas with context:', { scriptureRef, scriptureText: scriptureText.substring(0, 60), themeTitle });
-      router.push({
-        pathname: '/artwork-canvas',
-        params: {
-          scriptureReference: scriptureRef,
-          scriptureText,
-          themeTitle,
-          reflectionPrompt,
-        },
-      });
-    }
-    
-    if (mode === 'voice') {
-      console.log('[DailyGift] Voice recording not yet implemented');
-    }
   };
 
   const handleCommunityPress = () => {
@@ -701,12 +656,10 @@ export default function DailyGiftScreen() {
   const completedText = 'Your reflection has been saved. Return tomorrow for a new gift.';
   const reflectionTitle = 'Your Reflection';
   const reflectionPlaceholder = 'Write openly in your own words today...';
-  const shareToggleLabel = 'Share with community';
   const moodTagsTitle = 'How are you feeling?';
   const sensationTagsTitle = 'How is your body?';
   const moodTagsSubtitle = 'Optional';
   const sensationTagsSubtitle = 'Optional';
-  const responseModeTitle = 'How would you like to respond?';
 
   const beginButtonText = 'Begin Practice';
   const skipButtonText = 'Skip';
@@ -958,139 +911,20 @@ export default function DailyGiftScreen() {
                 {reflectionTitle}
               </Text>
 
-              <Text style={[styles.sectionTitle, { color: textColor }]}>
-                {responseModeTitle}
-              </Text>
-              <View style={styles.responseModeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.responseModeButton,
-                    { borderColor: inputBorder },
-                    responseMode === 'text' && styles.responseModeButtonSelected
-                  ]}
-                  onPress={() => handleResponseModeSelect('text')}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="text.alignleft"
-                    android_material_icon_name="text-fields"
-                    size={24}
-                    color={responseMode === 'text' ? colors.primary : textSecondaryColor}
-                  />
-                  <Text style={[
-                    styles.responseModeText,
-                    { color: responseMode === 'text' ? colors.primary : textSecondaryColor }
-                  ]}>
-                    Text
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.responseModeButton,
-                    { borderColor: inputBorder },
-                    responseMode === 'create' && styles.responseModeButtonSelected
-                  ]}
-                  onPress={() => handleResponseModeSelect('create')}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="paintbrush.fill"
-                    android_material_icon_name="brush"
-                    size={24}
-                    color={responseMode === 'create' ? colors.primary : textSecondaryColor}
-                  />
-                  <Text style={[
-                    styles.responseModeText,
-                    { color: responseMode === 'create' ? colors.primary : textSecondaryColor }
-                  ]}>
-                    Create
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.responseModeButton,
-                    { borderColor: inputBorder },
-                    responseMode === 'voice' && styles.responseModeButtonSelected
-                  ]}
-                  onPress={() => handleResponseModeSelect('voice')}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="mic.fill"
-                    android_material_icon_name="mic"
-                    size={24}
-                    color={responseMode === 'voice' ? colors.primary : textSecondaryColor}
-                  />
-                  <Text style={[
-                    styles.responseModeText,
-                    { color: responseMode === 'voice' ? colors.primary : textSecondaryColor }
-                  ]}>
-                    Voice
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {responseMode === 'text' && (
-                <TextInput
-                  style={[styles.reflectionInput, { 
-                    backgroundColor: inputBg,
-                    borderColor: inputBorder,
-                    color: textColor 
-                  }]}
-                  placeholder={reflectionPlaceholder}
-                  placeholderTextColor={textSecondaryColor}
-                  value={reflectionText}
-                  onChangeText={setReflectionText}
-                  multiline
-                  numberOfLines={6}
-                  textAlignVertical="top"
-                />
-              )}
-
-              <TouchableOpacity 
-                style={styles.shareToggle}
-                onPress={() => {
-                  console.log('[DailyGift] User toggled share to community:', !shareToComm);
-                  setShareToComm(!shareToComm);
-                  if (shareToComm) {
-                    setShareAnonymously(false);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <IconSymbol 
-                  ios_icon_name={shareToComm ? 'checkmark.square.fill' : 'square'}
-                  android_material_icon_name={shareToComm ? 'check-box' : 'check-box-outline-blank'}
-                  size={24}
-                  color={colors.primary}
-                />
-                <Text style={[styles.shareToggleLabel, { color: textColor }]}>
-                  {shareToggleLabel}
-                </Text>
-              </TouchableOpacity>
-
-              {shareToComm && (
-                <TouchableOpacity
-                  style={styles.anonymousToggle}
-                  onPress={() => {
-                    console.log('[DailyGift] User toggled share anonymously:', !shareAnonymously);
-                    setShareAnonymously(!shareAnonymously);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol
-                    ios_icon_name={shareAnonymously ? 'checkmark.square.fill' : 'square'}
-                    android_material_icon_name={shareAnonymously ? 'check-box' : 'check-box-outline-blank'}
-                    size={24}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.anonymousToggleLabel, { color: textSecondaryColor }]}>
-                    Share anonymously
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TextInput
+                style={[styles.reflectionInput, { 
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                  color: textColor 
+                }]}
+                placeholder={reflectionPlaceholder}
+                placeholderTextColor={textSecondaryColor}
+                value={reflectionText}
+                onChangeText={setReflectionText}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
 
               <TouchableOpacity 
                 style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
