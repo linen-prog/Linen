@@ -263,6 +263,16 @@ export default function PaywallScreen() {
     router.replace("/(tabs)/(home)");
   };
 
+  const handleDevBypass = async () => {
+    console.log("[Paywall][DEV] Dev bypass tapped — simulating subscription");
+    if (isWeb) {
+      mockWebPurchase();
+    } else {
+      await mockNativePurchase();
+    }
+    router.replace("/(tabs)/(home)");
+  };
+
   const handleWebMockPurchase = async () => {
     if (!selectedPackage) return;
     console.log("[Paywall] Web mock purchase initiated:", selectedPackage.identifier);
@@ -480,6 +490,17 @@ export default function PaywallScreen() {
           entering={FadeInDown.delay(600).duration(400)}
           style={[styles.bottomActions, { borderTopColor: borderCol, backgroundColor: isDark ? colors.backgroundDark + "F0" : colors.background + "F0" }]}
         >
+          {/* DEV-only bypass — stripped from production builds automatically */}
+          {__DEV__ && (
+            <Pressable
+              onPress={handleDevBypass}
+              style={[styles.devBypassButton, { borderColor: isDark ? colors.borderDark : colors.border }]}
+            >
+              <Text style={[styles.devBypassText, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                🛠 Skip (Dev)
+              </Text>
+            </Pressable>
+          )}
           {isWeb ? (
             <>
               <Pressable
@@ -793,6 +814,19 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  // Dev bypass
+  devBypassButton: {
+    paddingVertical: spacing.sm,
+    alignItems: "center",
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  devBypassText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
   },
 
   // No packages
