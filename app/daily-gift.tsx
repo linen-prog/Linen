@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert, ActionSheetIOS, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
-import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { authenticatedGet } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import Animated, { 
@@ -19,6 +19,10 @@ import Animated, {
   withSequence,
   Easing 
 } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WeeklyTheme {
   id: string;
@@ -86,11 +90,19 @@ const tabs = [
   { name: 'profile', route: '/(tabs)/profile' as const, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
 ];
 
+interface Attachment {
+  uri: string;
+  name: string;
+  mimeType: string;
+  isImage: boolean;
+}
+
 export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
   const router = useRouter();
   const { isSubscribed, loading: subLoading } = useSubscription();
+  const { session } = useAuth();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
   const [hasReflected, setHasReflected] = useState(false);
@@ -116,6 +128,8 @@ export default function DailyGiftScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [showAttachmentSheet, setShowAttachmentSheet] = useState(false);
 
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
@@ -348,6 +362,105 @@ export default function DailyGiftScreen() {
     }, 1200);
   };
 
+  const requestCameraPermission = async (): Promise<boolean> => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera Permission Required',
+        'Please allow camera access in Settings to take a photo.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const requestMediaLibraryPermission = async (): Promise<boolean> => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Photo Library Permission Required',
+        'Please allow photo library access in Settings to choose a photo.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const handleTakePhoto = async () => {
+    console.log('[DailyGift] User tapped Take Photo');
+    const granted = await requestCameraPermission();
+    if (!granted) return;
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    console.log('[DailyGift] Camera result:', { cancelled: result.canceled });
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const fileName = asset.fileName || `photo_${Date.now()}.jpg`;
+      setAttachment({ uri: asset.uri, name: fileName, mimeType: asset.mimeType || 'image/jpeg', isImage: true });
+      console.log('[DailyGift] Photo attached:', fileName);
+    }
+  };
+
+  const handleChooseFromLibrary = async () => {
+    console.log('[DailyGift] User tapped Choose from Library');
+    const granted = await requestMediaLibraryPermission();
+    if (!granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    console.log('[DailyGift] Library result:', { cancelled: result.canceled });
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const fileName = asset.fileName || `image_${Date.now()}.jpg`;
+      setAttachment({ uri: asset.uri, name: fileName, mimeType: asset.mimeType || 'image/jpeg', isImage: true });
+      console.log('[DailyGift] Image attached:', fileName);
+    }
+  };
+
+  const handleChooseFile = async () => {
+    console.log('[DailyGift] User tapped Choose File');
+    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+    console.log('[DailyGift] Document picker result:', { cancelled: result.canceled });
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || 'application/octet-stream';
+      const isImage = mimeType.startsWith('image/');
+      setAttachment({ uri: asset.uri, name: asset.name, mimeType, isImage });
+      console.log('[DailyGift] File attached:', asset.name);
+    }
+  };
+
+  const handleAttachmentPress = () => {
+    console.log('[DailyGift] User tapped attachment button');
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library', 'Choose File'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleTakePhoto();
+          else if (buttonIndex === 2) handleChooseFromLibrary();
+          else if (buttonIndex === 3) handleChooseFile();
+        }
+      );
+    } else {
+      setShowAttachmentSheet(true);
+    }
+  };
+
+  const handleRemoveAttachment = () => {
+    console.log('[DailyGift] User removed attachment');
+    setAttachment(null);
+  };
+
   const handleSaveReflection = async () => {
     const saveTimestamp = new Date().toISOString();
     console.log(`[DailyGift] ${saveTimestamp} - handleSaveReflection called`);
@@ -372,50 +485,87 @@ export default function DailyGiftScreen() {
       return;
     }
 
-    const requestData = {
-      dailyGiftId: dailyGiftResponse.dailyContent.id,
-      reflectionText: reflectionText.trim(),
-    };
-
     console.log(`[DailyGift] ${saveTimestamp} - Preparing to save reflection:`, { 
       reflectionTextLength: reflectionText.trim().length,
       selectedMoods,
       selectedSensations,
       dailyContentId: dailyGiftResponse.dailyContent.id,
-      requestData
+      hasAttachment: !!attachment,
+      attachmentName: attachment?.name,
     });
     
     setIsLoading(true);
 
     try {
-      console.log(`[DailyGift] ${saveTimestamp} - Calling authenticatedPost to /api/daily-gift/reflect...`);
-      
-      const response = await authenticatedPost<{ reflectionId: string; postId?: string }>('/api/daily-gift/reflect', requestData);
+      let response: { reflectionId: string; postId?: string };
+
+      if (attachment) {
+        console.log(`[DailyGift] ${saveTimestamp} - Uploading with attachment via multipart/form-data`);
+        const formData = new FormData();
+        formData.append('dailyGiftId', dailyGiftResponse.dailyContent.id);
+        formData.append('reflectionText', reflectionText.trim());
+        formData.append('attachment', { uri: attachment.uri, name: attachment.name, type: attachment.mimeType } as any);
+
+        const backendUrl = 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev';
+        const token = (session as any)?.token || (session as any)?.session?.token;
+        const headers: Record<string, string> = { 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        console.log(`[DailyGift] ${saveTimestamp} - POST ${backendUrl}/api/daily-gift/reflect (multipart)`);
+        const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.log(`[DailyGift] ${saveTimestamp} - Upload failed (${res.status}):`, errText);
+          throw new Error(`Server error ${res.status}`);
+        }
+        response = await res.json();
+      } else {
+        console.log(`[DailyGift] ${saveTimestamp} - Saving reflection (JSON) to /api/daily-gift/reflect`);
+        const backendUrl = 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev';
+        const token = (session as any)?.token || (session as any)?.session?.token;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ dailyGiftId: dailyGiftResponse.dailyContent.id, reflectionText: reflectionText.trim() }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.log(`[DailyGift] ${saveTimestamp} - Save failed (${res.status}):`, errText);
+          throw new Error(`Server error ${res.status}`);
+        }
+        response = await res.json();
+      }
       
       console.log(`[DailyGift] ${saveTimestamp} - Reflection saved successfully:`, response);
       setIsLoading(false);
       setHasReflected(true);
+      setAttachment(null);
     } catch (error: any) {
       const errorTimestamp = new Date().toISOString();
-      // Use console.log for user-facing errors to avoid error overlay
       console.log(`[DailyGift] ${errorTimestamp} - Failed to save reflection:`, error);
       console.log(`[DailyGift] ${errorTimestamp} - Error details:`, {
         type: typeof error,
         name: error?.name,
         message: error?.message,
-        requestData
       });
       setIsLoading(false);
       
-      // Create a user-friendly error message
       let userMessage = 'We\'re having trouble saving your reflection right now. ';
       
-      // Check if it's the foreign key constraint error
       if (error?.message && error.message.includes('foreign key constraint')) {
         userMessage = 'The daily gift is still being prepared. Please wait a moment and try again.';
       } else if (error?.message && error.message.includes('body stream already read')) {
         userMessage = 'There was a connection issue. Please try saving your reflection again.';
-      } else if (error?.status === 500) {
+      } else if (error?.message && error.message.includes('Server error 500')) {
         userMessage = 'The server is processing your request. Please try again in a moment.';
       } else if (error?.message) {
         userMessage += error.message;
@@ -926,28 +1076,76 @@ export default function DailyGiftScreen() {
                 textAlignVertical="top"
               />
 
-              <TouchableOpacity 
-                style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
-                onPress={() => {
-                  const buttonPressTimestamp = new Date().toISOString();
-                  console.log(`[DailyGift] ${buttonPressTimestamp} - Save button pressed`);
-                  console.log(`[DailyGift] ${buttonPressTimestamp} - Button state:`, {
-                    hasReflectionText: !!reflectionText.trim(),
-                    reflectionTextLength: reflectionText.trim().length,
-                    isLoading,
-                    isDisabled: !reflectionText.trim() || isLoading,
-                    hasDailyContent: !!dailyGiftResponse?.dailyContent,
-                    dailyContentId: dailyGiftResponse?.dailyContent?.id
-                  });
-                  handleSaveReflection();
-                }}
-                disabled={!reflectionText.trim() || isLoading}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.saveButtonText}>
-                  {saveButtonText}
-                </Text>
-              </TouchableOpacity>
+              {/* Attachment button row */}
+              <View style={styles.attachmentRow}>
+                <TouchableOpacity
+                  style={[styles.attachmentButton, { borderColor: inputBorder }]}
+                  onPress={handleAttachmentPress}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="attach" size={18} color={textSecondaryColor} />
+                  <Text style={[styles.attachmentButtonText, { color: textSecondaryColor }]}>
+                    Add attachment
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Attachment preview */}
+              {attachment && (
+                <View style={[styles.attachmentPreview, { borderColor: inputBorder, backgroundColor: inputBg }]}>
+                  {attachment.isImage ? (
+                    <Image
+                      source={{ uri: attachment.uri }}
+                      style={styles.attachmentThumbnail}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.fileIconContainer, { backgroundColor: colors.primaryLight || '#e6f4f0' }]}>
+                      <Ionicons name="document-outline" size={28} color={colors.primary} />
+                    </View>
+                  )}
+                  <Text style={[styles.attachmentName, { color: textColor }]} numberOfLines={1}>
+                    {attachment.name}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.removeAttachmentButton}
+                    onPress={handleRemoveAttachment}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={textSecondaryColor} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View style={styles.saveRow}>
+                <TouchableOpacity 
+                  style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
+                  onPress={() => {
+                    const buttonPressTimestamp = new Date().toISOString();
+                    console.log(`[DailyGift] ${buttonPressTimestamp} - Save button pressed`);
+                    console.log(`[DailyGift] ${buttonPressTimestamp} - Button state:`, {
+                      hasReflectionText: !!reflectionText.trim(),
+                      reflectionTextLength: reflectionText.trim().length,
+                      isLoading,
+                      isDisabled: !reflectionText.trim() || isLoading,
+                      hasDailyContent: !!dailyGiftResponse?.dailyContent,
+                      dailyContentId: dailyGiftResponse?.dailyContent?.id,
+                      hasAttachment: !!attachment,
+                    });
+                    handleSaveReflection();
+                  }}
+                  disabled={!reflectionText.trim() || isLoading}
+                  activeOpacity={0.8}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>
+                      {saveButtonText}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
 
               <Text style={[styles.sectionTitle, { color: textColor, marginTop: spacing.lg }]}>
                 {moodTagsTitle}
@@ -1190,6 +1388,66 @@ export default function DailyGiftScreen() {
       </Modal>
 
 
+
+      {/* Android Attachment Action Sheet */}
+      <Modal
+        visible={showAttachmentSheet}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAttachmentSheet(false)}
+      >
+        <TouchableOpacity
+          style={styles.sheetOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAttachmentSheet(false)}
+        >
+          <View style={[styles.sheetContainer, { backgroundColor: cardBg }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: inputBorder }]} />
+            <Text style={[styles.sheetTitle, { color: textSecondaryColor }]}>
+              Add Attachment
+            </Text>
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={() => { setShowAttachmentSheet(false); setTimeout(handleTakePhoto, 300); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="camera-outline" size={22} color={colors.primary} />
+              <Text style={[styles.sheetOptionText, { color: textColor }]}>
+                Take Photo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={() => { setShowAttachmentSheet(false); setTimeout(handleChooseFromLibrary, 300); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="image-outline" size={22} color={colors.primary} />
+              <Text style={[styles.sheetOptionText, { color: textColor }]}>
+                Choose from Library
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={() => { setShowAttachmentSheet(false); setTimeout(handleChooseFile, 300); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="document-outline" size={22} color={colors.primary} />
+              <Text style={[styles.sheetOptionText, { color: textColor }]}>
+                Choose File
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sheetCancelButton, { borderColor: inputBorder }]}
+              onPress={() => { console.log('[DailyGift] Attachment sheet cancelled'); setShowAttachmentSheet(false); }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.sheetCancelText, { color: textSecondaryColor }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Floating Tab Bar */}
       <FloatingTabBar tabs={tabs} />
@@ -1655,6 +1913,103 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     opacity: 0.4,
+  },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  attachmentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+  },
+  attachmentButtonText: {
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  attachmentPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+  attachmentThumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  fileIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  removeAttachmentButton: {
+    padding: 2,
+  },
+  saveRow: {
+    marginTop: spacing.md,
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    paddingHorizontal: spacing.lg,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: spacing.md,
+  },
+  sheetTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  sheetOptionText: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  sheetCancelButton: {
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    paddingTop: spacing.md,
+    alignItems: 'center',
+  },
+  sheetCancelText: {
+    fontSize: 16,
+    fontWeight: '400',
   },
   saveButtonText: {
     fontSize: 14,
