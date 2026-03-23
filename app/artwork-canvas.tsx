@@ -652,11 +652,11 @@ export default function ArtworkCanvasScreen() {
         
         achievementScale.value = withSequence(
           withSpring(1, { damping: 8 }),
-          withTiming(0, { duration: 300, delay: 6000 })
+          withTiming(0, { duration: 300, delay: 9000 })
         );
         achievementOpacity.value = withSequence(
           withTiming(1, { duration: 200 }),
-          withTiming(0, { duration: 300, delay: 6000 })
+          withTiming(0, { duration: 300, delay: 9000 })
         );
         
         if (Platform.OS !== 'web') {
@@ -665,7 +665,7 @@ export default function ArtworkCanvasScreen() {
         
         setTimeout(() => {
           setShowAchievement(false);
-        }, 6300);
+        }, 9300);
       }
     }
   }, [strokeCount]);
