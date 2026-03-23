@@ -1034,7 +1034,7 @@ export default function DailyGiftScreen() {
               </Text>
               
               <Text style={[styles.scriptureQuote, { color: textColor }]}>
-                &ldquo;{scriptureDisplay}&rdquo;
+                {'\u201C'}{scriptureDisplay}{'\u201D'}
               </Text>
               
               <Text style={[styles.scripturePrompt, { color: textSecondaryColor }]}>
@@ -1271,7 +1271,7 @@ export default function DailyGiftScreen() {
             </View>
 
             <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
-              Take a moment to notice your body. There&apos;s no right or wrong way to do this.
+              {"Take a moment to notice your body. There's no right or wrong way to do this."}
             </Text>
 
             <View style={[styles.modalSteps, { backgroundColor: colors.background }]}>
@@ -1290,7 +1290,7 @@ export default function DailyGiftScreen() {
             </View>
 
             <Text style={[styles.modalNote, { color: textSecondaryColor }]}>
-              When you&apos;re ready, you can return to your reflection.
+              {"When you're ready, you can return to your reflection."}
             </Text>
 
             <TouchableOpacity
@@ -1334,7 +1334,7 @@ export default function DailyGiftScreen() {
 
             <View style={[styles.successModalNote, { backgroundColor: isDark ? colors.borderDark : colors.primaryLight }]}>
               <Text style={[styles.successModalNoteText, { color: textColor }]}>
-                You took time to be present with yourself. That&apos;s a beautiful gift you&apos;ve given yourself today.
+                {"You took time to be present with yourself. That's a beautiful gift you've given yourself today."}
               </Text>
             </View>
 

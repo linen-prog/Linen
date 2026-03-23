@@ -115,7 +115,7 @@ export async function scheduleDailyGiftReminderAsync(
         body: "Open Linen to receive today's gift.",
         sound: true,
       },
-      trigger: { hour, minute, repeats: true },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
     });
 
     console.log('[DailyGiftReminder] ✅ Daily gift reminder scheduled with ID:', id, 'for', hour, ':', minute);

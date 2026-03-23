@@ -244,7 +244,7 @@ export default function CheckInScreen() {
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: 'I apologize, but I&apos;m having trouble responding right now. Please try again in a moment.',
+        content: "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
         createdAt: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -535,7 +535,7 @@ export default function CheckInScreen() {
           </Text>
           
           <Text style={[styles.emptyStateSubtitle, { color: textSecondaryColor }]}>
-            I&apos;m here to listen with compassion and gentle presence. Share what&apos;s on your heart—your joys, struggles, questions, or simply what you&apos;re noticing in this moment.
+            {"I'm here to listen with compassion and gentle presence. Share what's on your heart—your joys, struggles, questions, or simply what you're noticing in this moment."}
           </Text>
 
           <View style={styles.guidanceContainer}>
@@ -543,22 +543,22 @@ export default function CheckInScreen() {
               What to expect:
             </Text>
             <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              • I&apos;ll help you notice what&apos;s happening in your body
+              {"• I'll help you notice what's happening in your body"}
             </Text>
             <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              • We&apos;ll explore sensations, emotions, and patterns together
+              {"• We'll explore sensations, emotions, and patterns together"}
             </Text>
             <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
               • Scripture and prayer may weave naturally into our conversation
             </Text>
             <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              • I&apos;m not here to fix or advise, but to witness and companion
+              {"• I'm not here to fix or advise, but to witness and companion"}
             </Text>
           </View>
           
           <View style={styles.disclaimerContainer}>
             <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
-              This is not therapy or medical care. If you&apos;re in crisis, please reach out to 988 Lifeline or text HOME to 741741.
+              {"This is not therapy or medical care. If you're in crisis, please reach out to 988 Lifeline or text HOME to 741741."}
             </Text>
           </View>
         </View>
@@ -719,12 +719,12 @@ export default function CheckInScreen() {
                   color={colors.primary}
                 />
                 <Text style={[styles.modalTitle, { color: textColor }]}>
-                  You&apos;re Not Alone
+                  {"You're Not Alone"}
                 </Text>
               </View>
               
               <Text style={[styles.modalText, { color: textColor }]}>
-                It sounds like you&apos;re going through something really difficult. Please know that support is available right now.
+                {"It sounds like you're going through something really difficult. Please know that support is available right now."}
               </Text>
 
               <View style={styles.crisisButtons}>
@@ -797,7 +797,7 @@ export default function CheckInScreen() {
               </View>
               
               <Text style={[styles.modalText, { color: textSecondaryColor }]}>
-                I can craft a prayer from our conversation—something short, honest, and rooted in what you&apos;ve shared. It will be written in your own voice, naming what&apos;s real for you right now.
+                {"I can craft a prayer from our conversation—something short, honest, and rooted in what you've shared. It will be written in your own voice, naming what's real for you right now."}
               </Text>
               
               <TouchableOpacity 
@@ -1381,7 +1381,7 @@ export default function CheckInScreen() {
                   color={colors.primary}
                 />
                 <Text style={[styles.anonymousLabel, { color: textColor }]}>
-                  Share anonymously (don&apos;t show my name)
+                  {"Share anonymously (don't show my name)"}
                 </Text>
               </TouchableOpacity>
 

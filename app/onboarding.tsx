@@ -62,9 +62,14 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     if (!selectedOption) return;
+    console.log('[Onboarding] User tapped Continue', { step: currentStep, option: selectedOption, isLastStep });
 
     if (isLastStep) {
-      await completeOnboarding();
+      try {
+        await completeOnboarding();
+      } catch (err) {
+        console.error('[Onboarding] Failed to save onboarding completion:', err);
+      }
       router.replace("/paywall");
     } else {
       if (isAnimating.current) return;

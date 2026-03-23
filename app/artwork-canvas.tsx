@@ -581,7 +581,8 @@ export default function ArtworkCanvasScreen() {
         clearInterval(particleTimerRef.current);
       }
     };
-  }, [particles.length > 0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [particles.length]);
 
   useEffect(() => {
     if (hasLoadedRef.current) {

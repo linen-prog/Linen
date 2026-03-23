@@ -173,6 +173,11 @@ export default function SomaticPracticeScreen() {
     return 300; // Default 5 minutes
   }, [duration]);
 
+  const handleTimerComplete = useCallback(() => {
+    console.log('[SomaticPractice] Timer completed');
+    setShowCelebration(true);
+  }, []);
+
   // Timer effect
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -196,11 +201,6 @@ export default function SomaticPracticeScreen() {
       }
     };
   }, [isTimerRunning, timeRemaining, handleTimerComplete]);
-
-  const handleTimerComplete = useCallback(() => {
-    console.log('[SomaticPractice] Timer completed');
-    setShowCelebration(true);
-  }, []);
 
   const handleStartPractice = () => {
     console.log('[SomaticPractice] User started practice');

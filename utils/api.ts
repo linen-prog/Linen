@@ -185,10 +185,22 @@ export async function authenticatedPut<T = any>(
   });
 
   if (!response.ok) {
-    throw new Error(`PUT ${endpoint} failed: ${response.statusText}`);
+    const errorText = await response.text().catch(() => response.statusText);
+    console.error(`[API] PUT ${endpoint} error body:`, errorText);
+    throw new Error(`PUT ${endpoint} failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    return null as unknown as T;
+  }
+
+  try {
+    return await response.json();
+  } catch (parseError) {
+    console.error(`[API] PUT ${endpoint} JSON parse error:`, parseError);
+    throw new Error(`PUT ${endpoint} failed to parse JSON response`);
+  }
 }
 
 // Authenticated DELETE request

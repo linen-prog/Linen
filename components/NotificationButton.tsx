@@ -295,7 +295,7 @@ const NotificationButton = forwardRef<NotificationButtonHandle, NotificationButt
                     />
                     <Text style={styles.emptyStateText}>No new notifications</Text>
                     <Text style={styles.emptyStateSubtext}>
-                      You&apos;ll see love messages here when someone reacts to your posts
+                      {"You'll see love messages here when someone reacts to your posts"}
                     </Text>
                   </View>
                 ) : (

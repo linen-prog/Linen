@@ -1739,7 +1739,7 @@ export default function ProfileScreen() {
               <View style={styles.toggleItem}>
                 <View style={styles.toggleItemLeft}>
                   <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
-                    I&apos;m okay receiving replies
+                    {"I'm okay receiving replies"}
                   </Text>
                 </View>
                 <Switch
@@ -1767,7 +1767,7 @@ export default function ProfileScreen() {
               <View style={styles.toggleItem}>
                 <View style={styles.toggleItemLeft}>
                   <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
-                    I&apos;m open to support messages
+                    {"I'm open to support messages"}
                   </Text>
                 </View>
                 <Switch
@@ -1781,7 +1781,7 @@ export default function ProfileScreen() {
               <View style={styles.toggleItem}>
                 <View style={styles.toggleItemLeft}>
                   <Text style={[styles.toggleItemLabel, { color: colors.text }]}>
-                    Please don&apos;t tag me in discussions
+                    {"Please don't tag me in discussions"}
                   </Text>
                 </View>
                 <Switch

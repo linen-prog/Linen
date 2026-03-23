@@ -210,7 +210,7 @@ export default function RecapSettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: textColor }]}>Delivery Preferences</Text>
           <Text style={[styles.sectionDescription, { color: textSecondaryColor }]}>
-            Choose when you&apos;d like to receive your weekly recap. Recaps review the past week&apos;s engagement and prepare your heart for the coming week&apos;s rhythm.
+            {"Choose when you'd like to receive your weekly recap. Recaps review the past week's engagement and prepare your heart for the coming week's rhythm."}
           </Text>
 
           <TouchableOpacity
@@ -275,7 +275,7 @@ export default function RecapSettingsScreen() {
               )}
             </View>
             <Text style={[styles.optionDescription, { color: textSecondaryColor }]}>
-              Don&apos;t receive automated recaps. You can still view recaps on demand through your profile history.
+              {"Don't receive automated recaps. You can still view recaps on demand through your profile history."}
             </Text>
           </TouchableOpacity>
 
