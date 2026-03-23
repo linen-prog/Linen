@@ -516,7 +516,8 @@ export default function CommunityScreen() {
   const triggerPushNotification = async (postId: string, type: 'care_message' | 'prayer' | 'reaction', reactionType?: string) => {
     try {
       console.log('[Community] Triggering push notification for post:', postId, 'type:', type);
-      await authenticatedPost('/api/notifications/trigger', { postId, type, reactionType });
+      const { authenticatedPost: authPost } = await import('@/utils/api');
+      await authPost('/api/notifications/trigger', { postId, type, reactionType });
       console.log('[Community] Push notification triggered successfully');
     } catch (error: any) {
       // Non-critical — notification failure should never block the main action

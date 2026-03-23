@@ -1324,13 +1324,20 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] ⚠️ Using backgroundImage as fallback artworkUrl:', artworkUrl);
       }
 
-      // Step 3: Post to community
+      // Step 3: Warn if no image could be captured (web or missing ref)
+      if (!artworkUrl) {
+        console.warn('[Canvas] ⚠️ No artworkUrl available — post will have no image');
+      }
+
+      // Step 4: Post to community
       // Build share content from available context — prefer full verse text over just the reference
-      const shareContent = contextScriptureText
+      const rawShareContent = contextScriptureText
         ? `${contextThemeTitle ? contextThemeTitle + ' — ' : ''}"${contextScriptureText}" — ${contextScriptureReference}`
         : contextScriptureReference
           ? `${contextThemeTitle ? contextThemeTitle + ' — ' : ''}${contextScriptureReference}`
           : contextThemeTitle || contextReflectionPrompt || '';
+      // Ensure content is never empty — backend may silently drop posts with no content
+      const shareContent = rawShareContent.trim() || 'Artwork from my creative practice';
       console.log('[Canvas] Share content built:', shareContent.substring(0, 100));
 
       console.log('[Canvas] 📤 Posting to community with payload:', {
@@ -1346,7 +1353,7 @@ export default function ArtworkCanvasScreen() {
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
-        artworkUrl,
+        artworkUrl: artworkUrl ?? null,
       });
 
       console.log('[Canvas] ✅ Artwork shared to community successfully');
