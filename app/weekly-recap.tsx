@@ -92,13 +92,14 @@ function AnimatedStatCard({
         }
       }, stepDuration);
       return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, delay);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, delay]);
 
-  const cardBg = isDark ? 'rgba(120, 53, 15, 0.22)' : 'rgba(254, 243, 199, 0.85)';
-  const cardBorder = isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(217, 119, 6, 0.12)';
+  const cardBg = isDark ? 'rgba(120, 53, 15, 0.15)' : 'rgba(254, 243, 199, 0.6)';
+  const cardBorder = isDark ? 'rgba(251, 191, 36, 0.08)' : 'rgba(217, 119, 6, 0.08)';
   const numColor = isDark ? '#fcd34d' : '#b45309';
   const labelColor = isDark ? '#d6d3d1' : '#78716c';
   const iconColor = isDark ? '#fbbf24' : '#d97706';
@@ -200,8 +201,6 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
       );
       console.log('[MonthlySummary] Loaded:', JSON.stringify(data));
       const summary = data.summary ?? null;
-      // hasEnoughData may live at the top level OR inside the summary object.
-      // A non-null summary with any check-in data is also treated as sufficient.
       const enoughData =
         data.hasEnoughData ??
         summary?.hasEnoughData ??
@@ -244,32 +243,32 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
     (selectedYear === currentYear && selectedMonth >= currentMonth);
 
   // Derived colors
-  const outerBg = isDark ? 'rgba(28, 25, 23, 0.97)' : 'rgba(255, 251, 235, 0.97)';
-  const outerBorder = isDark ? 'rgba(120, 53, 15, 0.3)' : 'rgba(217, 119, 6, 0.15)';
+  const outerBg = isDark ? 'rgba(28, 25, 23, 0.85)' : 'rgba(255, 251, 235, 0.75)';
+  const outerBorder = isDark ? 'rgba(120, 53, 15, 0.15)' : 'rgba(217, 119, 6, 0.08)';
   const titleColor = isDark ? '#fcd34d' : '#92400e';
   const subtitleColor = isDark ? '#a8a29e' : '#78716c';
   const labelColor = isDark ? '#78716c' : '#a8a29e';
-  const dividerColor = isDark ? 'rgba(68, 64, 60, 0.6)' : 'rgba(214, 211, 209, 0.5)';
-  const navBg = isDark ? 'rgba(68, 64, 60, 0.5)' : 'rgba(245, 245, 244, 0.8)';
-  const navBorder = isDark ? 'rgba(120, 53, 15, 0.3)' : 'rgba(214, 211, 209, 0.8)';
+  const dividerColor = isDark ? 'rgba(68, 64, 60, 0.4)' : 'rgba(214, 211, 209, 0.35)';
+  const navBg = isDark ? 'rgba(41, 37, 36, 0.4)' : 'rgba(255, 255, 255, 0.5)';
+  const navBorder = isDark ? 'rgba(120, 53, 15, 0.15)' : 'rgba(214, 211, 209, 0.5)';
   const navMonthColor = isDark ? '#e7e5e4' : '#292524';
   const arrowColor = isDark ? '#fbbf24' : '#d97706';
   const arrowDisabledColor = isDark ? 'rgba(120, 100, 60, 0.3)' : 'rgba(214, 211, 209, 0.6)';
-  const growthBg = isDark ? 'rgba(6, 78, 59, 0.25)' : 'rgba(209, 250, 229, 0.65)';
+  const growthBg = isDark ? 'rgba(6, 78, 59, 0.2)' : 'rgba(209, 250, 229, 0.5)';
   const growthBorder = '#059669';
   const growthTextColor = isDark ? '#6ee7b7' : '#065f46';
   const growthArrowColor = isDark ? '#fbbf24' : '#d97706';
-  const journeyBg = isDark ? 'rgba(41, 37, 36, 0.6)' : 'rgba(254, 252, 243, 0.9)';
-  const journeyBorder = isDark ? 'rgba(120, 53, 15, 0.25)' : 'rgba(217, 119, 6, 0.12)';
+  const journeyBg = isDark ? 'rgba(41, 37, 36, 0.5)' : 'rgba(254, 252, 243, 0.8)';
+  const journeyBorder = isDark ? 'rgba(120, 53, 15, 0.12)' : 'rgba(217, 119, 6, 0.08)';
   const journeyColor = isDark ? '#e7e5e4' : '#44403c';
-  const suggBg = isDark ? 'rgba(120, 53, 15, 0.18)' : 'rgba(254, 243, 199, 0.75)';
-  const suggBorder = isDark ? 'rgba(251, 191, 36, 0.12)' : 'rgba(217, 119, 6, 0.1)';
+  const suggBg = isDark ? 'rgba(120, 53, 15, 0.12)' : 'rgba(254, 243, 199, 0.6)';
+  const suggBorder = isDark ? 'rgba(251, 191, 36, 0.08)' : 'rgba(217, 119, 6, 0.07)';
   const suggTitleColor = isDark ? '#fcd34d' : '#92400e';
   const suggDescColor = isDark ? '#d6d3d1' : '#57534e';
   const scriptureColor = isDark ? '#d6d3d1' : '#57534e';
   const scriptureDotColor = isDark ? '#fbbf24' : '#d97706';
-  const notEnoughBg = isDark ? 'rgba(41, 37, 36, 0.5)' : 'rgba(254, 243, 199, 0.5)';
-  const notEnoughBorder = isDark ? 'rgba(120, 53, 15, 0.3)' : 'rgba(217, 119, 6, 0.15)';
+  const notEnoughBg = isDark ? 'rgba(41, 37, 36, 0.4)' : 'rgba(254, 243, 199, 0.4)';
+  const notEnoughBorder = isDark ? 'rgba(120, 53, 15, 0.15)' : 'rgba(217, 119, 6, 0.1)';
   const notEnoughTextColor = isDark ? '#a8a29e' : '#78716c';
   const errorBg = isDark ? 'rgba(41, 37, 36, 0.5)' : 'rgba(254, 242, 242, 0.8)';
   const errorBorder = isDark ? 'rgba(185, 28, 28, 0.3)' : 'rgba(252, 165, 165, 0.5)';
@@ -288,7 +287,6 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
   const topScripturesSlice = s?.topScriptures?.slice(0, 3) ?? [];
   const suggestionsSlice = s?.suggestions?.slice(0, 4) ?? [];
 
-  // Month name display
   const MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -299,7 +297,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
     <View style={[mStyles.outerCard, { backgroundColor: outerBg, borderColor: outerBorder }]}>
       {/* ── Section header ── */}
       <View style={mStyles.sectionHeaderRow}>
-        <Text style={[mStyles.mainTitle, { color: titleColor }]}>Monthly Journey</Text>
+        <Text style={[mStyles.mainTitle, { color: titleColor }]}>This Month</Text>
       </View>
 
       {/* ── Month navigator ── */}
@@ -347,7 +345,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             style={[mStyles.retryButton, { backgroundColor: retryBg }]}
             onPress={() => { console.log('[MonthlySummary] Retry pressed'); fetchMonthly(selectedYear, selectedMonth); }}
           >
-            <Text style={[mStyles.retryText, { color: retryTextColor }]}>Retry</Text>
+            <Text style={[mStyles.retryText, { color: retryTextColor }]}>Try again</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -356,9 +354,9 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
       {!monthlyLoading && !monthlyError && !hasEnoughData && (
         <View style={[mStyles.stateCard, { backgroundColor: notEnoughBg, borderColor: notEnoughBorder }]}>
           <Sparkles size={28} color={isDark ? '#fbbf24' : '#d97706'} />
-          <Text style={[mStyles.stateTitle, { color: titleColor }]}>Your recap is growing</Text>
+          <Text style={[mStyles.stateTitle, { color: titleColor }]}>Still unfolding</Text>
           <Text style={[mStyles.stateBody, { color: notEnoughTextColor }]}>
-            Complete a few check-ins this month and your personalized recap will appear here.
+            Come back after a few check-ins and something gentle will appear here.
           </Text>
         </View>
       )}
@@ -369,7 +367,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
           {/* Stats grid */}
           <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
           <FadeInView delay={0}>
-            <Text style={[mStyles.sectionLabel, { color: labelColor }]}>This Month</Text>
+            <Text style={[mStyles.sectionLabel, { color: labelColor }]}>A quiet look at this month</Text>
             <View style={mStyles.statsGrid}>
               <AnimatedStatCard icon={Heart} value={Number(s.totalCheckIns) || 0} label="Check-ins" isDark={isDark} delay={0} />
               <AnimatedStatCard icon={BookOpen} value={Number(s.totalEntries) || 0} label="Journal Entries" isDark={isDark} delay={80} />
@@ -382,8 +380,8 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
                 formatValue={(v) => v.toLocaleString()}
               />
               <AnimatedStatCard icon={Users} value={Number(s.communityPosts) || 0} label="Community Posts" isDark={isDark} delay={240} />
-              <AnimatedStatCard icon={Leaf} value={Number(s.practicesCompleted) || 0} label="Practices Done" isDark={isDark} delay={320} />
-              <AnimatedStatCard icon={Flame} value={Number(s.currentStreak) || 0} label="Day Streak" suffix=" days" isDark={isDark} delay={400} />
+              <AnimatedStatCard icon={Leaf} value={Number(s.practicesCompleted) || 0} label="Practices" isDark={isDark} delay={320} />
+              <AnimatedStatCard icon={Flame} value={Number(s.currentStreak) || 0} label="Days in a row" suffix=" days" isDark={isDark} delay={400} />
             </View>
           </FadeInView>
 
@@ -392,7 +390,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             <>
               <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
               <FadeInView delay={100}>
-                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Your Moods This Month</Text>
+                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>What you've been feeling</Text>
                 <View style={mStyles.moodsRow}>
                   {topMoodsSlice.map((item, index) => {
                     const mc = moodColors[index % moodColors.length];
@@ -415,12 +413,12 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             </>
           )}
 
-          {/* Growth Highlight */}
+          {/* Reflection Highlight (formerly Growth Pattern) */}
           {s.growthHighlight ? (
             <>
               <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
               <FadeInView delay={200}>
-                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Growth Pattern</Text>
+                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Something noticed</Text>
                 <View style={[mStyles.growthBox, { backgroundColor: growthBg, borderLeftColor: growthBorder }]}>
                   <Text style={[mStyles.growthText, { color: growthTextColor }]}>
                     {s.growthHighlight.replace(/→/g, '').trim()}
@@ -438,7 +436,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             <>
               <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
               <FadeInView delay={250}>
-                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Your Journey This Month</Text>
+                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>What's been unfolding</Text>
                 <View style={[mStyles.journeyCard, { backgroundColor: journeyBg, borderColor: journeyBorder }]}>
                   <Text style={[mStyles.journeyText, { color: journeyColor }]}>{s.conversationSummary}</Text>
                 </View>
@@ -446,12 +444,12 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             </>
           ) : null}
 
-          {/* Personalized Suggestions */}
+          {/* Gentle Invitations (formerly Personalized Suggestions) */}
           {suggestionsSlice.length > 0 && (
             <>
               <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
               <FadeInView delay={300}>
-                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>For Next Month</Text>
+                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Gentle invitations</Text>
                 {suggestionsSlice.map((suggestion, index) => (
                   <FadeInView key={index} delay={300 + index * 80}>
                     <View style={[mStyles.suggestionCard, { backgroundColor: suggBg, borderColor: suggBorder }]}>
@@ -474,7 +472,7 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
             <>
               <View style={[mStyles.divider, { backgroundColor: dividerColor }]} />
               <FadeInView delay={400}>
-                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Scriptures This Month</Text>
+                <Text style={[mStyles.sectionLabel, { color: labelColor }]}>Scriptures this month</Text>
                 {topScripturesSlice.map((item, index) => (
                   <View key={index} style={mStyles.scriptureItem}>
                     <View style={[mStyles.scriptureDot, { backgroundColor: scriptureDotColor }]} />
@@ -494,15 +492,15 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
 
 const mStyles = StyleSheet.create({
   outerCard: {
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 32,
     borderWidth: 1,
-    shadowColor: 'rgba(180, 83, 9, 0.12)',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: 'rgba(180, 83, 9, 0.06)',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -510,26 +508,26 @@ const mStyles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   mainTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: spacing.md,
   },
   navArrow: {
     padding: 4,
   },
   navMonthText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 0.1,
   },
   subtitleText: {
@@ -547,16 +545,16 @@ const mStyles = StyleSheet.create({
     borderRadius: 12,
   },
   stateCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: spacing.lg,
+    padding: 24,
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
   stateTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
   },
   stateBody: {
@@ -572,17 +570,17 @@ const mStyles = StyleSheet.create({
   },
   retryText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   divider: {
     height: 1,
-    marginVertical: spacing.md,
-    opacity: 0.5,
+    marginVertical: 20,
+    opacity: 0.4,
   },
   sectionLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.4,
+    fontWeight: '600',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
@@ -593,9 +591,9 @@ const mStyles = StyleSheet.create({
   },
   statCard: {
     width: '47%',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: spacing.md,
+    padding: 16,
     alignItems: 'center',
     gap: 4,
   },
@@ -606,17 +604,17 @@ const mStyles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: '700',
     lineHeight: 30,
   },
   statSuffix: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     lineHeight: 20,
   },
   statLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '400',
     textAlign: 'center',
   },
   moodsRow: {
@@ -627,49 +625,49 @@ const mStyles = StyleSheet.create({
   moodChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     gap: 2,
   },
   moodName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   moodCount: {
     fontSize: 12,
-    fontWeight: '500',
-    opacity: 0.85,
+    fontWeight: '400',
+    opacity: 0.75,
   },
   growthBox: {
-    borderRadius: 12,
-    padding: spacing.md,
-    borderLeftWidth: 3,
+    borderRadius: 14,
+    padding: 18,
+    borderLeftWidth: 2,
   },
   growthText: {
     fontSize: 15,
-    lineHeight: 24,
-    fontWeight: '500',
+    lineHeight: 26,
+    fontWeight: '400',
   },
   growthArrow: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     marginTop: 4,
   },
   journeyCard: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: spacing.md,
+    padding: 20,
   },
   journeyText: {
     fontSize: 15,
-    lineHeight: 26,
+    lineHeight: 28,
     fontStyle: 'italic',
   },
   suggestionCard: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: spacing.md,
+    padding: 18,
     marginBottom: spacing.sm,
   },
   suggestionInner: {
@@ -682,8 +680,8 @@ const mStyles = StyleSheet.create({
   },
   suggestionTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 3,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   suggestionDesc: {
     fontSize: 13,
@@ -692,17 +690,18 @@ const mStyles = StyleSheet.create({
   scriptureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
     gap: spacing.sm,
   },
   scriptureDot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 3,
+    opacity: 0.7,
   },
   scriptureText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
   },
 });
 
@@ -763,9 +762,9 @@ function formatDateRange(start: string, end: string): string {
   const endDay = endDate.getDate();
   const year = endDate.getFullYear();
   if (startMonth === endMonth) {
-    return `${startMonth} ${startDay} - ${endDay}, ${year}`;
+    return `${startMonth} ${startDay} – ${endDay}, ${year}`;
   }
-  return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
 }
 
 // ─── Weekly Recap screen styles ───────────────────────────────────────────────
@@ -780,31 +779,56 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: 60,
   },
   header: {
     marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    marginBottom: 36,
+    alignItems: 'center',
   },
   title: {
-    fontSize: typography.h1,
-    fontWeight: typography.semibold,
+    fontSize: 30,
+    fontWeight: '300',
     color: colors.primaryVeryDark,
-    marginBottom: spacing.xs,
+    marginBottom: 8,
+    letterSpacing: -0.3,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
   },
   dateRange: {
-    fontSize: typography.body,
-    fontWeight: typography.regular,
+    fontSize: 13,
+    fontWeight: '400',
     color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  anchorLine: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    opacity: 0.65,
+    marginTop: 6,
+  },
+  calmSubLine: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    opacity: 0.6,
+    lineHeight: 18,
+    marginTop: 12,
+    paddingHorizontal: spacing.xl,
   },
   section: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    borderRadius: 20,
+    padding: 22,
+    marginBottom: 24,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 2,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
@@ -824,7 +848,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   emptyText: {
     fontSize: typography.body,
@@ -835,18 +859,19 @@ const styles = StyleSheet.create({
   synthesisText: {
     fontSize: typography.body,
     fontWeight: typography.regular,
-    lineHeight: 24,
+    lineHeight: 28,
     fontStyle: 'italic',
   },
   buttonContainer: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: 8,
+    marginBottom: 8,
   },
   button: {
     flex: 1,
     backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.full,
     alignItems: 'center',
@@ -854,12 +879,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     shadowColor: colors.primaryVeryDark,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   buttonSecondary: {
-    backgroundColor: '#FDE68A',
+    backgroundColor: 'rgba(253, 230, 138, 0.7)',
   },
   buttonText: {
     fontSize: typography.body,
@@ -869,7 +894,7 @@ const styles = StyleSheet.create({
   },
   buttonTextHistory: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: '#78350f',
     marginLeft: spacing.sm,
   },
@@ -886,20 +911,24 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     color: colors.textSecondary,
     marginTop: spacing.md,
+    fontStyle: 'italic',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    paddingTop: 48,
+    paddingBottom: 48,
   },
   emptyTitle: {
     fontSize: typography.h2,
-    fontWeight: typography.semibold,
+    fontWeight: '400',
     color: colors.primaryDark,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     textAlign: 'center',
+    fontFamily: 'Georgia',
   },
   emptyDescription: {
     fontSize: typography.body,
@@ -907,34 +936,38 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
+    lineHeight: 24,
+    paddingHorizontal: spacing.md,
   },
   generateButton: {
     backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
     paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.primaryVeryDark,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   generateButtonText: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: '500',
     color: '#FFFFFF',
     marginLeft: spacing.sm,
   },
-  reflectionNote: {
-    fontSize: 14,
+  noticeNote: {
+    fontSize: 12,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
-    lineHeight: 22,
+    marginTop: 20,
+    marginBottom: 32,
+    lineHeight: 20,
+    fontStyle: 'italic',
+    opacity: 0.7,
   },
 });
 
@@ -955,7 +988,8 @@ export default function WeeklyRecapScreen() {
       router.replace('/paywall');
     }
   }, [isSubscribed, subLoading, router]);
-  const cardBg = isDark ? colors.cardDark : 'rgba(255, 255, 255, 0.7)';
+
+  const cardBg = isDark ? colors.cardDark : 'rgba(255, 255, 255, 0.55)';
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
@@ -966,12 +1000,12 @@ export default function WeeklyRecapScreen() {
   async function loadCurrentRecap() {
     try {
       setLoading(true);
-      console.log('Loading current weekly recap');
+      console.log('[WeeklyRecap] Loading current weekly recap');
       const response = await authenticatedGet('/api/weekly-recap/current');
-      console.log('Weekly recap loaded:', response);
+      console.log('[WeeklyRecap] Weekly recap loaded:', response);
       setRecap(response);
     } catch (error) {
-      console.error('Error loading weekly recap:', error);
+      console.error('[WeeklyRecap] Error loading weekly recap:', error);
       setRecap(null);
     } finally {
       setLoading(false);
@@ -981,21 +1015,21 @@ export default function WeeklyRecapScreen() {
   async function handleGenerateRecap() {
     try {
       setGenerating(true);
-      console.log('Generating weekly recap');
+      console.log('[WeeklyRecap] Generating weekly recap');
       const response = await authenticatedPost('/api/weekly-recap/generate', {});
-      console.log('Weekly recap generated:', response);
+      console.log('[WeeklyRecap] Weekly recap generated:', response);
       setRecap(response);
-      Alert.alert('Success', 'Your weekly recap has been generated');
+      Alert.alert('Ready', 'Your reflection is ready.');
     } catch (error) {
-      console.error('Error generating recap:', error);
-      Alert.alert('Error', 'Failed to generate weekly recap. Please try again.');
+      console.error('[WeeklyRecap] Error generating recap:', error);
+      Alert.alert('Something went wrong', 'We couldn\'t prepare your reflection. Please try again.');
     } finally {
       setGenerating(false);
     }
   }
 
   function handleViewHistory() {
-    console.log('Navigating to weekly recap history');
+    console.log('[WeeklyRecap] "See Your Week" pressed — navigating to weekly recap history');
     router.push('/weekly-recap-history');
   }
 
@@ -1030,7 +1064,7 @@ export default function WeeklyRecapScreen() {
           <Stack.Screen options={headerOptions} />
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading your recap...</Text>
+            <Text style={styles.loadingText}>Gathering your week...</Text>
           </View>
         </SafeAreaView>
       </GradientBackground>
@@ -1047,16 +1081,16 @@ export default function WeeklyRecapScreen() {
               <IconSymbol
                 ios_icon_name="calendar"
                 android_material_icon_name="calendar-today"
-                size={64}
+                size={56}
                 color={colors.primary}
               />
-              <Text style={styles.emptyTitle}>No Recap Yet</Text>
+              <Text style={styles.emptyTitle}>Nothing here yet</Text>
               <Text style={styles.emptyDescription}>
-                Generate your weekly recap to see a gentle reflection on your week of prayer, presence, and community.
+                When you're ready, we'll gently gather what's been unfolding in your week.
               </Text>
               <TouchableOpacity
                 style={styles.generateButton}
-                onPress={handleGenerateRecap}
+                onPress={() => { console.log('[WeeklyRecap] "Begin reflection" pressed'); handleGenerateRecap(); }}
                 disabled={generating}
               >
                 {generating ? (
@@ -1069,7 +1103,7 @@ export default function WeeklyRecapScreen() {
                       size={20}
                       color="#FFFFFF"
                     />
-                    <Text style={styles.generateButtonText}>Generate Recap</Text>
+                    <Text style={styles.generateButtonText}>Begin reflection</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -1090,11 +1124,17 @@ export default function WeeklyRecapScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Stack.Screen options={headerOptions} />
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+
+          {/* ── Header ── */}
           <View style={styles.header}>
-            <Text style={styles.title}>Your Journey in Review</Text>
+            <Text style={styles.title}>A Look Back</Text>
             {dateRangeText.length > 0 && (
               <Text style={styles.dateRange}>{dateRangeText}</Text>
             )}
+            <Text style={styles.anchorLine}>There's nothing to measure here.</Text>
+            <Text style={styles.calmSubLine}>
+              {"A gentle reflection of what\u2019s been unfolding this week.\nJust noticing, not judging."}
+            </Text>
           </View>
 
           {/* Scripture Section */}
@@ -1104,7 +1144,7 @@ export default function WeeklyRecapScreen() {
                 <IconSymbol
                   ios_icon_name="book"
                   android_material_icon_name="menu-book"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
@@ -1126,7 +1166,7 @@ export default function WeeklyRecapScreen() {
                 <IconSymbol
                   ios_icon_name="figure.walk"
                   android_material_icon_name="directions-walk"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
@@ -1148,7 +1188,7 @@ export default function WeeklyRecapScreen() {
                 <IconSymbol
                   ios_icon_name="person.3"
                   android_material_icon_name="group"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
@@ -1170,7 +1210,7 @@ export default function WeeklyRecapScreen() {
                 <IconSymbol
                   ios_icon_name="lightbulb"
                   android_material_icon_name="lightbulb"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
@@ -1189,7 +1229,7 @@ export default function WeeklyRecapScreen() {
                 <IconSymbol
                   ios_icon_name="heart"
                   android_material_icon_name="favorite"
-                  size={24}
+                  size={22}
                   color={colors.primary}
                   style={styles.sectionIcon}
                 />
@@ -1199,22 +1239,23 @@ export default function WeeklyRecapScreen() {
             </View>
           )}
 
+          {/* Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.buttonSecondary]}
-              onPress={handleViewHistory}
+              onPress={() => { console.log('[WeeklyRecap] "See Your Week" button pressed'); handleViewHistory(); }}
             >
               <IconSymbol
                 ios_icon_name="clock"
                 android_material_icon_name="history"
-                size={20}
+                size={18}
                 color="#78350f"
               />
-              <Text style={styles.buttonTextHistory}>View Weekly History</Text>
+              <Text style={styles.buttonTextHistory}>See Your Week</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.button}
-              onPress={handleGenerateRecap}
+              onPress={() => { console.log('[WeeklyRecap] "Revisit" button pressed'); handleGenerateRecap(); }}
               disabled={generating}
             >
               {generating ? (
@@ -1224,21 +1265,22 @@ export default function WeeklyRecapScreen() {
                   <IconSymbol
                     ios_icon_name="arrow.clockwise"
                     android_material_icon_name="refresh"
-                    size={20}
+                    size={18}
                     color="#FFFFFF"
                   />
-                  <Text style={styles.buttonText}>Regenerate</Text>
+                  <Text style={styles.buttonText}>Revisit</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.reflectionNote}>
-            Tracking your progress helps you grow and develop. Sometimes we need to look back to move forward. This summary shows your week in review — a reflection of your journey, your moments of peace, and the steps you've taken. You'll also find personalized suggestions to guide and inspire you in the week ahead.
+          <Text style={styles.noticeNote}>
+            This isn't about progress — just noticing.
           </Text>
 
           {/* Monthly Summary Section */}
           <MonthlySummarySection isDark={isDark} />
+
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
