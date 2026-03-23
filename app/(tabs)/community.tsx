@@ -180,7 +180,8 @@ export default function CommunityScreen() {
 
       type RawPost = Record<string, unknown>;
       const mappedPosts: Post[] = (Array.isArray(allPosts) ? allPosts as RawPost[] : []).map((post) => {
-        const rawReactions = (post.reactionCounts ?? post.reactions) as Record<string, number> | null | undefined;
+        // Support both camelCase and snake_case field names from the backend
+        const rawReactions = (post.reactionCounts ?? post.reaction_counts ?? post.reactions) as Record<string, number> | null | undefined;
         const safeReactions: Post['reactions'] = {
           praying: Number(rawReactions?.praying ?? 0),
           holding: Number(rawReactions?.holding ?? 0),
@@ -189,11 +190,57 @@ export default function CommunityScreen() {
           growing: Number(rawReactions?.growing ?? 0),
           peace: Number(rawReactions?.peace ?? 0),
         };
+
+        // Resolve author name — backend may return authorName or author_name
+        const rawAuthorName = (post.authorName ?? post.author_name) as string | null | undefined;
+        const authorName = (rawAuthorName && String(rawAuthorName) !== 'undefined') ? String(rawAuthorName) : null;
+
+        // Resolve boolean flags — backend may use camelCase or snake_case
+        const isAnonymous = Boolean(post.isAnonymous ?? post.is_anonymous ?? false);
+        const userHasPrayed = Boolean(post.userHasPrayed ?? post.user_has_prayed ?? false);
+        const isFlagged = Boolean(post.isFlagged ?? post.is_flagged ?? false);
+
+        // Resolve counts
+        const prayerCount = Number(post.prayerCount ?? post.prayer_count ?? 0);
+
+        // Resolve string/optional fields
+        const contentType = (post.contentType ?? post.content_type) as Post['contentType'] | undefined;
+        const scriptureReference = (post.scriptureReference ?? post.scripture_reference) as string | undefined;
+        const userId = (post.userId ?? post.user_id) as string | undefined;
+        const artworkUrl = (post.artworkUrl ?? post.artwork_url) as string | null | undefined;
+
+        // Resolve content — guard against undefined rendering as the string "undefined"
+        const rawContent = post.content as string | null | undefined;
+        const content = (rawContent && String(rawContent) !== 'undefined') ? String(rawContent) : '';
+
+        console.log('[Community] Mapping post:', {
+          id: post.id,
+          authorName,
+          isAnonymous,
+          content: content.substring(0, 60),
+          artworkUrl,
+        });
+
         return {
-          ...(post as Omit<Post, 'reactions' | 'userReactions' | 'createdAt'>),
+          id: String(post.id ?? ''),
+          category: String(post.category ?? 'feed'),
+          content,
+          authorName,
+          isAnonymous,
+          userHasPrayed,
+          isFlagged,
+          prayerCount,
+          contentType,
+          scriptureReference,
+          userId,
+          artworkUrl: artworkUrl ?? null,
           createdAt: new Date(post.createdAt as string),
           reactions: safeReactions,
-          userReactions: Array.isArray(post.userReactions) ? (post.userReactions as string[]) : [],
+          userReactions: Array.isArray(post.userReactions)
+            ? (post.userReactions as string[])
+            : Array.isArray(post.user_reactions)
+              ? (post.user_reactions as string[])
+              : [],
         };
       });
 
