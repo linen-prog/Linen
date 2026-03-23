@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
-import NotificationButton from '@/components/NotificationButton';
+import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
@@ -21,7 +21,9 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
-  const [hasLoveMessages, setHasLoveMessages] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const notificationRef = useRef<NotificationButtonHandle>(null);
 
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(-12)).current;
@@ -29,7 +31,6 @@ export default function HomeScreen() {
   const greetingTranslateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    // Title animates in immediately on mount
     Animated.parallel([
       Animated.timing(titleOpacity, {
         toValue: 1,
@@ -43,7 +44,6 @@ export default function HomeScreen() {
       }),
     ]).start();
 
-    // Greeting fades + slides up after a calm 2s delay
     const greetingTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(greetingOpacity, {
@@ -89,23 +89,28 @@ export default function HomeScreen() {
       }
     } catch (error: any) {
       console.log('[Home] Error loading last check-in:', error?.message || error);
-      // Fail silently - not critical for home screen
     }
   };
 
   useEffect(() => {
-    console.log('🏠 [Home] Component mounted - NotificationButton should be visible');
+    console.log('🏠 [Home] Component mounted');
     loadUserStats();
     loadLastCheckIn();
   }, [loadUserStats]);
 
   const handleUnreadCountChange = (count: number) => {
     console.log('🏠 [Home] Love messages count changed:', count);
-    setHasLoveMessages(count > 0);
+    setUnreadCount(count);
+  };
+
+  const handleLoveMessagesPress = () => {
+    console.log('[Home] User tapped Love Messages card');
+    notificationRef.current?.open();
   };
 
   const displayName = stats?.displayName || user?.name || 'Friend';
   const greetingText = `Peace to you, ${displayName}`;
+  const unreadCountDisplay = unreadCount > 9 ? '9+' : String(unreadCount);
 
   const handleCheckInPress = () => {
     console.log('[Home] User tapped Check-In button');
@@ -127,11 +132,17 @@ export default function HomeScreen() {
     router.push('/weekly-recap');
   };
 
-  console.log('🏠 [Home] RENDERING - About to render NotificationButton');
-
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Hidden NotificationButton — provides modal + polling logic */}
+        <View style={styles.hiddenNotificationButton}>
+          <NotificationButton
+            ref={notificationRef}
+            onUnreadCountChange={handleUnreadCountChange}
+          />
+        </View>
+
         <View style={styles.header}>
           <Animated.Text
             style={[
@@ -141,9 +152,6 @@ export default function HomeScreen() {
           >
             Linen
           </Animated.Text>
-          <View style={styles.notificationButtonWrapper}>
-            <NotificationButton onUnreadCountChange={handleUnreadCountChange} />
-          </View>
         </View>
 
         <ScrollView
@@ -174,6 +182,33 @@ export default function HomeScreen() {
               <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
             </View>
           </View>
+
+          {/* Love Messages card */}
+          <TouchableOpacity
+            style={styles.loveMessagesCard}
+            onPress={handleLoveMessagesPress}
+            activeOpacity={0.75}
+          >
+            <View style={styles.loveMessagesLeft}>
+              <View style={styles.loveMessagesIconCircle}>
+                <IconSymbol
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={22}
+                  color="#d97706"
+                />
+              </View>
+              <View style={styles.loveMessagesTextBlock}>
+                <Text style={styles.loveMessagesTitle}>Love Messages</Text>
+                <Text style={styles.loveMessagesSubtitle}>Reactions & care from your community</Text>
+              </View>
+            </View>
+            {unreadCount > 0 && (
+              <View style={styles.loveMessagesBadge}>
+                <Text style={styles.loveMessagesBadgeText}>{unreadCountDisplay}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.checkInCard}
@@ -258,6 +293,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  hiddenNotificationButton: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    overflow: 'hidden',
+    opacity: 0,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -274,9 +316,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
     marginBottom: 4,
-  },
-  notificationButtonWrapper: {
-    zIndex: 101,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
@@ -325,6 +364,66 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     color: colors.textLight,
   },
+  loveMessagesCard: {
+    backgroundColor: '#FFFBF5',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    marginBottom: 8,
+    shadowColor: '#92400e',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  loveMessagesLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  loveMessagesIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  loveMessagesTextBlock: {
+    flex: 1,
+  },
+  loveMessagesTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    fontFamily: typography.fontFamilySerif,
+    marginBottom: 2,
+  },
+  loveMessagesSubtitle: {
+    fontSize: typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  loveMessagesBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e11d48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    marginLeft: spacing.sm,
+  },
+  loveMessagesBadgeText: {
+    fontSize: 11,
+    fontWeight: typography.semibold,
+    color: '#FFFFFF',
+  },
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
@@ -368,65 +467,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  loveMessagesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    marginBottom: 8,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-    alignItems: 'center',
-  },
-  loveMessagesIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#fff1f2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  loveMessagesTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  loveMessagesSubtitle: {
-    fontSize: typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  loveMessagesBadge: {
-    marginTop: spacing.sm,
-    backgroundColor: '#e11d48',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-  },
-  loveMessagesBadgeText: {
-    fontSize: 11,
-    fontWeight: typography.semibold,
-    color: '#FFFFFF',
-  },
   cardIconContainer: {
     marginRight: spacing.sm,
-  },
-  cardTitle: {
-    fontSize: typography.body,
-    fontWeight: typography.semibold,
-    color: colors.text,
-    marginBottom: 1,
-  },
-  cardSubtitle: {
-    fontSize: 11,
-    fontWeight: typography.regular,
-    color: colors.textSecondary,
   },
   giftCard: {
     backgroundColor: '#FFFFFF',
