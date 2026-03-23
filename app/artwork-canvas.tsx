@@ -1266,25 +1266,42 @@ export default function ArtworkCanvasScreen() {
 
   const handleShareToCommunity = async () => {
     console.log('[Canvas] 🚀 User tapped Share to Community button', { category: shareCategory, anonymous: shareAnonymous });
+
+    // Step 1: Dismiss the share modal FIRST so it doesn't appear in the canvas capture.
+    // We snapshot the share options before closing so they aren't lost.
+    const captureCategory = shareCategory;
+    const captureAnonymous = shareAnonymous;
+    setShowShareModal(false);
+    setShowPostSaveModal(false);
     setIsSharing(true);
 
+    // Wait two animation frames for the modal to fully unmount before capturing.
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    // Extra 150 ms safety buffer for slower devices
+    await new Promise<void>(resolve => setTimeout(resolve, 150));
+
     try {
-      // Step 1: Capture the canvas as a PNG image
+      // Step 2: Capture the canvas as a PNG image (modal is now dismissed)
       console.log('[Canvas] 📸 Capturing canvas with react-native-view-shot...');
       let capturedUri: string | null = null;
 
       if (Platform.OS !== 'web' && viewShotRef.current) {
-        capturedUri = await captureRef(viewShotRef, {
-          format: 'png',
-          quality: 0.9,
-          result: 'tmpfile',
-        });
-        console.log('[Canvas] ✅ Canvas captured at:', capturedUri);
+        try {
+          capturedUri = await captureRef(viewShotRef, {
+            format: 'png',
+            quality: 0.9,
+            result: 'tmpfile',
+          });
+          console.log('[Canvas] ✅ Canvas captured at:', capturedUri);
+        } catch (captureError) {
+          console.error('[Canvas] ❌ captureRef failed:', captureError);
+          capturedUri = null;
+        }
       } else {
         console.log('[Canvas] ⚠️ Web platform or no ref — skipping canvas capture');
       }
 
-      // Step 2: Upload the captured image to the backend
+      // Step 3: Upload the captured image to the backend
       let artworkUrl: string | null = null;
 
       if (capturedUri) {
@@ -1297,7 +1314,7 @@ export default function ArtworkCanvasScreen() {
         formData.append('photo', {
           uri: capturedUri,
           type: 'image/png',
-          name: 'artwork.png',
+          name: `artwork-${Date.now()}.png`,
         } as any);
 
         console.log('[Canvas] 📦 FormData built with field "photo", sending request...');
@@ -1324,12 +1341,12 @@ export default function ArtworkCanvasScreen() {
         console.log('[Canvas] ⚠️ Using backgroundImage as fallback artworkUrl:', artworkUrl);
       }
 
-      // Step 3: Warn if no image could be captured (web or missing ref)
+      // Step 4: Warn if no image could be captured (web or missing ref)
       if (!artworkUrl) {
         console.warn('[Canvas] ⚠️ No artworkUrl available — post will have no image');
       }
 
-      // Step 4: Post to community
+      // Step 5: Post to community
       // Build share content from available context — prefer full verse text over just the reference
       const rawShareContent = contextScriptureText
         ? `${contextThemeTitle ? contextThemeTitle + ' — ' : ''}"${contextScriptureText}" — ${contextScriptureReference}`
@@ -1340,26 +1357,27 @@ export default function ArtworkCanvasScreen() {
       const shareContent = rawShareContent.trim() || 'Artwork from my creative practice';
       console.log('[Canvas] Share content built:', shareContent.substring(0, 100));
 
+      // Capture artworkUrl into a local const so TypeScript knows it can't change
+      const finalArtworkUrl = artworkUrl;
+
       console.log('[Canvas] 📤 Posting to community with payload:', {
         content: shareContent,
-        category: shareCategory,
-        isAnonymous: shareAnonymous,
+        category: captureCategory,
+        isAnonymous: captureAnonymous,
         contentType: 'somatic',
-        artworkUrl,
+        artworkUrl: finalArtworkUrl,
       });
 
       await authenticatedPost('/api/community/post', {
         content: shareContent,
-        category: shareCategory,
-        isAnonymous: shareAnonymous,
+        category: captureCategory,
+        isAnonymous: captureAnonymous,
         contentType: 'somatic',
-        artworkUrl: artworkUrl ?? null,
+        artworkUrl: finalArtworkUrl,
       });
 
       console.log('[Canvas] ✅ Artwork shared to community successfully');
       setIsSharing(false);
-      setShowShareModal(false);
-      setShowPostSaveModal(false);
 
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
