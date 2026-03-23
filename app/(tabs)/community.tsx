@@ -30,11 +30,12 @@
  * - Fetched from /api/community/my-posts endpoint
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
@@ -126,6 +127,15 @@ export default function CommunityScreen() {
     loadPosts(selectedTab);
     loadStats();
   }, [selectedTab, user]);
+
+  // Reload posts every time the screen comes into focus (e.g. after sharing artwork)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Community] Screen focused — refreshing posts for tab:', selectedTab);
+      loadPosts(selectedTab);
+      loadStats();
+    }, [selectedTab])
+  );
 
   const loadStats = async () => {
     try {
