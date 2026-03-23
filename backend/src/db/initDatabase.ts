@@ -137,7 +137,9 @@ export async function initializeDatabase(db: any, app?: App) {
     await db.execute(sql`
       ALTER TABLE IF EXISTS "user_reflections"
       ADD COLUMN IF NOT EXISTS "category" text,
-      ADD COLUMN IF NOT EXISTS "is_anonymous" boolean DEFAULT false
+      ADD COLUMN IF NOT EXISTS "is_anonymous" boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "moods" jsonb,
+      ADD COLUMN IF NOT EXISTS "sensations" jsonb
     `);
 
     // Fix foreign key constraint to reference daily_content instead of daily_gifts
