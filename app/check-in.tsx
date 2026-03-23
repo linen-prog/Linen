@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -75,6 +75,7 @@ export default function CheckInScreen() {
   const [isSharingMessage, setIsSharingMessage] = useState(false);
 
   const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Color variables for consistency
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -665,6 +666,7 @@ export default function CheckInScreen() {
           <View style={[styles.inputContainer, { 
             backgroundColor: colors.card,
             borderTopColor: inputBorder,
+            paddingBottom: insets.bottom + 8,
           }]}>
             <TextInput
               style={[styles.input, { 
