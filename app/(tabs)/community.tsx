@@ -572,15 +572,14 @@ export default function CommunityScreen() {
   const cardBg = isDark ? colors.cardDark : colors.card;
 
   const tabs = [
-    { id: 'feed', label: 'Feed', icon: 'favorite' as const },
+    { id: 'feed', label: 'All', icon: 'favorite' as const },
     { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
     { id: 'care', label: 'Care', icon: 'chat' as const },
     { id: 'prayers', label: 'Prayers', icon: 'church' as const },
     { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
   ];
 
-  const sharedTodayText = `${stats.sharedToday}`;
-  const liftedInPrayerText = `${stats.liftedInPrayer}`;
+
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -642,7 +641,7 @@ export default function CommunityScreen() {
         {/* Header Message */}
         <View style={styles.headerMessage}>
           <Text style={styles.headerMessageText}>
-            ✨ You are not alone in this journey
+            You are not alone here
           </Text>
         </View>
 
@@ -652,35 +651,11 @@ export default function CommunityScreen() {
             Community
           </Text>
           <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-            A gentle space where hearts meet, prayers are lifted, and encouragement flows freely
+            A place to share, receive, and be held
           </Text>
-        </View>
-
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.statItem}>
-            <View style={styles.statDot} />
-            <Text style={[styles.statNumber, { color: textColor }]}>
-              {sharedTodayText}
-            </Text>
-            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
-              shared today
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <IconSymbol 
-              ios_icon_name="heart.fill"
-              android_material_icon_name="favorite"
-              size={16}
-              color={colors.prayer}
-            />
-            <Text style={[styles.statNumber, { color: textColor }]}>
-              {liftedInPrayerText}
-            </Text>
-            <Text style={[styles.statLabel, { color: textSecondaryColor }]}>
-              lifted in prayer
-            </Text>
-          </View>
+          <Text style={[styles.guidingLine, { color: textSecondaryColor }]}>
+            Read slowly. You don't have to take it all in.
+          </Text>
         </View>
 
         {/* Tabs Section */}
@@ -728,10 +703,10 @@ export default function CommunityScreen() {
         <View style={styles.careMessage}>
           <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
             {selectedTab === 'my-shared' 
-              ? 'Your shared reflections and prayers ✨'
+              ? 'Your shared reflections and prayers'
               : selectedTab === 'feed'
-              ? 'All shared reflections, wisdom, care, and prayers from the community ✨'
-              : 'Each reflection below is held with care and prayer ✨'
+              ? 'Shared reflections and care from this space'
+              : 'Each reflection below is held with care and prayer'
             }
           </Text>
         </View>
@@ -839,21 +814,18 @@ export default function CommunityScreen() {
               />
               <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
                 {selectedTab === 'my-shared' 
-                  ? 'You haven\'t shared anything yet'
-                  : 'No posts yet in this category'
+                  ? 'Your reflections will appear here when you share them'
+                  : 'This space will fill with shared hearts'
                 }
               </Text>
               <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
-                {selectedTab === 'my-shared'
-                  ? 'Share from your check-ins, daily gifts, or practices'
-                  : 'Share from your check-ins, daily gifts, or practices'
-                }
+                You're welcome to simply be here
               </Text>
             </View>
           ) : (
             posts.map(post => {
               const authorDisplay = post.isAnonymous ? 'Anonymous' : (post.authorName || 'You');
-              const prayerCountText = `${post.prayerCount}`;
+
               const categoryColor = getCategoryColor(post.category);
               const categoryLabel = getCategoryLabel(post.category);
               
@@ -961,14 +933,9 @@ export default function CommunityScreen() {
                         size={22}
                         color={post.userHasPrayed ? colors.prayer : textSecondaryColor}
                       />
-                      <View style={styles.prayTextContainer}>
-                        <Text style={[styles.prayCount, { color: textColor }]}>
-                          {prayerCountText}
-                        </Text>
-                        <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
-                          Held in Prayer
-                        </Text>
-                      </View>
+                      <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
+                        Held in prayer
+                      </Text>
                     </TouchableOpacity>
                   </View>
 
@@ -977,9 +944,7 @@ export default function CommunityScreen() {
                     <View style={styles.reactionBadgesRow}>
                       {activeReactionBadges.map(reactionKey => {
                         const isUserReaction = userReactions.includes(reactionKey);
-                        const reactionCountVal = reactions[reactionKey];
                         const reactionEmoji = getReactionEmoji(reactionKey);
-                        const countText = `${reactionCountVal}`;
                         return (
                           <TouchableOpacity
                             key={reactionKey}
@@ -991,9 +956,6 @@ export default function CommunityScreen() {
                             activeOpacity={0.7}
                           >
                             <Text style={styles.reactionEmoji}>{reactionEmoji}</Text>
-                            <Text style={[styles.reactionCount, { color: isUserReaction ? colors.primary : colors.textSecondary }]}>
-                              {countText}
-                            </Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -1012,10 +974,10 @@ export default function CommunityScreen() {
                           activeOpacity={0.7}
                         >
                           <Text style={styles.reactButtonEmoji}>
-                            😊
+                            🤍
                           </Text>
                           <Text style={[styles.reactButtonText, { color: textSecondaryColor }]}>
-                            React
+                            Send care
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -1679,12 +1641,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerMessage: {
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? 48 : spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  guidingLine: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 24,
+    opacity: 0.7,
   },
   headerMessageText: {
+    fontSize: 13,
+    color: '#8B7355',
+    backgroundColor: 'rgba(139, 115, 85, 0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  _oldHeaderMessageTextUnused_FINAL: {
     fontSize: typography.bodySmall,
     color: colors.primary,
     backgroundColor: colors.primaryLight || '#E8F5E9',
@@ -1794,7 +1777,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   postCard: {
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+
+  postHeader: {
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 0.5,
+    shadowColor: borderRadius.lg,
     padding: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -1862,6 +1860,11 @@ const styles = StyleSheet.create({
     aspectRatio: undefined,
   },
   postContent: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 14,
+  },
+  _postContent_old_removed: {
     fontSize: typography.body,
     lineHeight: 26,
     marginBottom: spacing.md,

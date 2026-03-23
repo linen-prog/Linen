@@ -125,6 +125,9 @@ export default function DailyGiftScreen() {
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
   
+  const [shareToCommunity, setShareToCommunity] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -512,6 +515,12 @@ export default function DailyGiftScreen() {
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         console.log(`[DailyGift] ${saveTimestamp} - POST ${backendUrl}/api/daily-gift/reflect (multipart)`);
+        formData.append('selectedMoods', JSON.stringify(selectedMoods));
+        formData.append('selectedSensations', JSON.stringify(selectedSensations));
+        formData.append('shareToCommunity', String(shareToCommunity));
+        formData.append('isAnonymous', String(isAnonymous));
+
+        console.log(`[DailyGift] ${saveTimestamp} - Appended share fields:`, { shareToCommunity, isAnonymous });
         const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
           method: 'POST',
           headers,
@@ -534,7 +543,14 @@ export default function DailyGiftScreen() {
         const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ dailyGiftId: dailyGiftResponse.dailyContent.id, reflectionText: reflectionText.trim() }),
+          body: JSON.stringify({
+            dailyGiftId: dailyGiftResponse.dailyContent.id,
+            reflectionText: reflectionText.trim(),
+            selectedMoods,
+            selectedSensations,
+            shareToCommunity,
+            isAnonymous,
+          }),
         });
 
         if (!res.ok) {
@@ -549,6 +565,8 @@ export default function DailyGiftScreen() {
       setIsLoading(false);
       setHasReflected(true);
       setAttachment(null);
+      setShareToCommunity(false);
+      setIsAnonymous(false);
     } catch (error: any) {
       const errorTimestamp = new Date().toISOString();
       console.log(`[DailyGift] ${errorTimestamp} - Failed to save reflection:`, error);
@@ -1122,6 +1140,44 @@ export default function DailyGiftScreen() {
                 </View>
               )}
 
+              {/* Share with Community toggle */}
+              <View style={styles.shareToggleRow}>
+                <View style={styles.shareToggleLeft}>
+                  <Ionicons name="people-outline" size={18} color={textSecondaryColor} />
+                  <Text style={styles.shareToggleLabel}>Share with community</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log('[DailyGift] Share with community toggled:', !shareToCommunity);
+                    setShareToCommunity(prev => !prev);
+                  }}
+                  style={[styles.toggleTrack, shareToCommunity && styles.toggleTrackActive]}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.toggleThumb, shareToCommunity && styles.toggleThumbActive]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Anonymous toggle — only shown when sharing */}
+              {shareToCommunity && (
+                <View style={[styles.shareToggleRow, { marginTop: 8 }]}>
+                  <View style={styles.shareToggleLeft}>
+                    <Ionicons name="eye-off-outline" size={18} color={textSecondaryColor} />
+                    <Text style={styles.shareToggleLabel}>Post anonymously</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log('[DailyGift] Post anonymously toggled:', !isAnonymous);
+                      setIsAnonymous(prev => !prev);
+                    }}
+                    style={[styles.toggleTrack, isAnonymous && styles.toggleTrackActive]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.toggleThumb, isAnonymous && styles.toggleThumbActive]} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <View style={styles.saveRow}>
                 <TouchableOpacity 
                   style={[styles.saveButton, (!reflectionText.trim() || isLoading) && styles.saveButtonDisabled]}
@@ -1642,7 +1698,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic' as const,
     color: '#9ca3af',
-    marginTop: 8,
+    marginTop: 32,
     marginBottom: 28,
     opacity: 0.85,
   },
@@ -1755,6 +1811,7 @@ const styles = StyleSheet.create({
   },
 
   dailyScriptureSection: {
+    marginTop: 16,
     gap: spacing.sm,
   },
   dailyThemeTitleRow: {
@@ -1897,6 +1954,43 @@ const styles = StyleSheet.create({
     minHeight: 120,
     borderWidth: 1,
     marginBottom: spacing.md,
+  },
+  shareToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  shareToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleTrackActive: {
+    backgroundColor: colors.primary,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
   },
   shareToggle: {
     flexDirection: 'row',
