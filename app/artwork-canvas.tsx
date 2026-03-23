@@ -438,7 +438,12 @@ export default function ArtworkCanvasScreen() {
   const celebrationOpacity = useSharedValue(0);
   const achievementScale = useSharedValue(0);
   const achievementOpacity = useSharedValue(0);
+  const encouragementOpacity = useSharedValue(0);
   const promptOpacity = useSharedValue(1);
+
+  const encouragementAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: encouragementOpacity.value,
+  }));
   const cursorScale = useSharedValue(0);
   const paletteButtonScale = useSharedValue(1);
 
@@ -668,11 +673,11 @@ export default function ArtworkCanvasScreen() {
         
         achievementScale.value = withSequence(
           withSpring(1, { damping: 8 }),
-          withTiming(0, { duration: 300, delay: 9000 })
+          withTiming(0, { duration: 600, delay: 5500 })
         );
         achievementOpacity.value = withSequence(
-          withTiming(1, { duration: 200 }),
-          withTiming(0, { duration: 300, delay: 9000 })
+          withTiming(1, { duration: 300 }),
+          withTiming(0, { duration: 600, delay: 5500 })
         );
         
         if (Platform.OS !== 'web') {
@@ -681,7 +686,7 @@ export default function ArtworkCanvasScreen() {
         
         setTimeout(() => {
           setShowAchievement(false);
-        }, 9300);
+        }, 6400);
       }
     }
   }, [strokeCount]);
@@ -693,6 +698,11 @@ export default function ArtworkCanvasScreen() {
       const randomMessage = ENCOURAGING_MESSAGES[Math.floor(Math.random() * ENCOURAGING_MESSAGES.length)];
       setEncouragementMessage(randomMessage);
       setShowEncouragement(true);
+      encouragementOpacity.value = withSequence(
+        withTiming(1, { duration: 400 }),
+        withTiming(1, { duration: 5600 }),
+        withTiming(0, { duration: 800 })
+      );
       
       // Haptic feedback for encouragement
       if (Platform.OS !== 'web') {
@@ -701,7 +711,7 @@ export default function ArtworkCanvasScreen() {
       
       setTimeout(() => {
         setShowEncouragement(false);
-      }, 4000);
+      }, 6800);
     }
   }, [strokeCount]);
 
@@ -1781,7 +1791,7 @@ export default function ArtworkCanvasScreen() {
           {/* Encouragement Message */}
           {showEncouragement && (
             <Animated.View 
-              style={[styles.encouragementBanner, { backgroundColor: colors.primary }]}
+              style={[styles.encouragementBanner, { backgroundColor: colors.primary }, encouragementAnimatedStyle]}
               entering={undefined}
               exiting={undefined}
             >

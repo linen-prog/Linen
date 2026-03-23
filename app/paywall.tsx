@@ -225,7 +225,7 @@ export default function PaywallScreen() {
       if (success) {
         console.log("[Paywall] Purchase succeeded:", selectedPackage.identifier);
         Alert.alert("Welcome!", "Thank you for your purchase.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
+          { text: "OK", onPress: () => router.replace("/(tabs)") },
         ]);
       }
     } catch (error: any) {
@@ -244,7 +244,7 @@ export default function PaywallScreen() {
       if (restored) {
         console.log("[Paywall] Restore succeeded");
         Alert.alert("Restored!", "Your subscription has been restored.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
+          { text: "OK", onPress: () => router.replace("/(tabs)") },
         ]);
       } else {
         console.log("[Paywall] Restore: no purchases found");
@@ -260,7 +260,7 @@ export default function PaywallScreen() {
 
   const handleClose = () => {
     console.log("[Paywall] Close tapped");
-    router.replace("/(tabs)/(home)");
+    router.replace("/(tabs)");
   };
 
   const handleDevBypass = async () => {
@@ -270,7 +270,7 @@ export default function PaywallScreen() {
     } else {
       await mockNativePurchase();
     }
-    router.replace("/(tabs)/(home)");
+    router.replace("/(tabs)");
   };
 
   const handleWebMockPurchase = async () => {
@@ -470,7 +470,7 @@ export default function PaywallScreen() {
                   onPress={async () => {
                     console.log("[Paywall] Dev: simulate purchase tapped");
                     await mockNativePurchase();
-                    router.replace("/(tabs)/(home)");
+                    router.replace("/(tabs)");
                   }}
                 >
                   <Text style={[styles.devButtonText, { color: textSecond }]}>
@@ -606,7 +606,7 @@ export default function PaywallScreen() {
                     console.log("[Paywall] Web mock: valid purchase");
                     setWebMockDialogState("hidden");
                     mockWebPurchase();
-                    router.replace("/(tabs)/(home)");
+                    router.replace("/(tabs)");
                   }}
                 >
                   <Text style={[styles.dialogButtonText, { color: colors.primary }]}>
