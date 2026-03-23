@@ -272,7 +272,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.loveMessagesTextBlock}>
                   <Text style={styles.loveMessagesTitle}>Support & Care</Text>
-                  <Text style={styles.loveMessagesSubtitle}>Reactions & care from your community</Text>
+
                 </View>
               </View>
               {unreadCount > 0 && (
