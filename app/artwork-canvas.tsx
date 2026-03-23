@@ -673,11 +673,11 @@ export default function ArtworkCanvasScreen() {
         
         achievementScale.value = withSequence(
           withSpring(1, { damping: 8 }),
-          withTiming(0, { duration: 600, delay: 5500 })
+          withTiming(0, { duration: 800, delay: 9200 })
         );
         achievementOpacity.value = withSequence(
           withTiming(1, { duration: 300 }),
-          withTiming(0, { duration: 600, delay: 5500 })
+          withTiming(0, { duration: 800, delay: 9200 })
         );
         
         if (Platform.OS !== 'web') {
@@ -686,7 +686,7 @@ export default function ArtworkCanvasScreen() {
         
         setTimeout(() => {
           setShowAchievement(false);
-        }, 6400);
+        }, 10300);
       }
     }
   }, [strokeCount]);
@@ -700,7 +700,7 @@ export default function ArtworkCanvasScreen() {
       setShowEncouragement(true);
       encouragementOpacity.value = withSequence(
         withTiming(1, { duration: 400 }),
-        withTiming(1, { duration: 5600 }),
+        withTiming(1, { duration: 9000 }),
         withTiming(0, { duration: 800 })
       );
       
@@ -711,7 +711,7 @@ export default function ArtworkCanvasScreen() {
       
       setTimeout(() => {
         setShowEncouragement(false);
-      }, 6800);
+      }, 10200);
     }
   }, [strokeCount]);
 
@@ -1798,7 +1798,7 @@ export default function ArtworkCanvasScreen() {
           {/* Encouragement Message */}
           {showEncouragement && (
             <Animated.View 
-              style={[styles.encouragementBanner, { backgroundColor: colors.primary }, encouragementAnimatedStyle]}
+              style={[styles.encouragementBanner, { backgroundColor: '#d1fae5' }, encouragementAnimatedStyle]}
               entering={undefined}
               exiting={undefined}
             >
@@ -1810,7 +1810,7 @@ export default function ArtworkCanvasScreen() {
 
           {/* Achievement Notification */}
           {showAchievement && currentAchievement && (
-            <Animated.View style={[styles.achievementBanner, { backgroundColor: colors.accent }, achievementStyle]}>
+            <Animated.View style={[styles.achievementBanner, { backgroundColor: '#d1fae5' }, achievementStyle]}>
               <IconSymbol 
                 ios_icon_name={currentAchievement.icon}
                 android_material_icon_name={currentAchievement.materialIcon}
@@ -3040,7 +3040,7 @@ const styles = StyleSheet.create({
   encouragementText: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
-    color: '#FFFFFF',
+    color: '#065f46',
   },
   achievementBanner: {
     position: 'absolute',
@@ -3066,12 +3066,12 @@ const styles = StyleSheet.create({
   achievementTitle: {
     fontSize: typography.h4,
     fontWeight: typography.bold,
-    color: '#FFFFFF',
+    color: '#065f46',
     marginBottom: spacing.xs / 2,
   },
   achievementMessage: {
     fontSize: typography.bodySmall,
-    color: '#FFFFFF',
+    color: '#065f46',
     opacity: 0.95,
   },
   celebrationOverlay: {
