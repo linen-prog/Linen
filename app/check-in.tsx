@@ -525,7 +525,7 @@ export default function CheckInScreen() {
             <IconSymbol 
               ios_icon_name="heart.text.square.fill"
               android_material_icon_name="favorite"
-              size={72}
+              size={64}
               color={colors.primary}
             />
           </View>
@@ -533,29 +533,31 @@ export default function CheckInScreen() {
           <Text style={[styles.emptyStateTitle, { color: textColor }]}>
             A gentle space for reflection
           </Text>
-          
-          <Text style={[styles.emptyStateSubtitle, { color: textSecondaryColor }]}>
-            {"I'm here to listen with compassion and gentle presence. Share what's on your heart—your joys, struggles, questions, or simply what you're noticing in this moment."}
-          </Text>
 
-          <View style={styles.guidanceContainer}>
-            <Text style={[styles.guidanceTitle, { color: textColor }]}>
-              What to expect:
+          <View style={styles.groundingLines}>
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              {"I'm here with you."}
             </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• I'll help you notice what's happening in your body"}
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              {"You can share whatever is on your heart."}
             </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• We'll explore sensations, emotions, and patterns together"}
-            </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              • Scripture and prayer may weave naturally into our conversation
-            </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• I'm not here to fix or advise, but to witness and companion"}
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              {"There's no right way to begin."}
             </Text>
           </View>
-          
+
+          <View style={styles.softLines}>
+            <Text style={[styles.softLine, { color: textSecondaryColor }]}>
+              {"We'll move gently, at your pace."}
+            </Text>
+            <Text style={[styles.softLine, { color: textSecondaryColor }]}>
+              {"I'm here to be with you, not to fix you."}
+            </Text>
+            <Text style={[styles.softLine, { color: textSecondaryColor }]}>
+              {"You don't have to figure anything out here."}
+            </Text>
+          </View>
+
           <View style={styles.disclaimerContainer}>
             <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
               {"This is not therapy or medical care. If you're in crisis, please reach out to 988 Lifeline or text HOME to 741741."}
@@ -1471,6 +1473,32 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     textAlign: 'center',
     marginBottom: spacing.md,
+  },
+  groundingLines: {
+    width: '100%',
+    marginBottom: 36,
+    paddingHorizontal: spacing.md,
+    gap: 20,
+  },
+  groundingLine: {
+    fontSize: 17,
+    lineHeight: 26,
+    textAlign: 'center' as const,
+    fontFamily: 'Georgia',
+    letterSpacing: 0.1,
+  },
+  softLines: {
+    width: '100%',
+    marginBottom: 36,
+    paddingHorizontal: spacing.lg,
+    gap: 14,
+  },
+  softLine: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center' as const,
+    opacity: 0.7,
+    letterSpacing: 0.1,
   },
   emptyStateSubtitle: {
     fontSize: typography.body,
