@@ -217,7 +217,8 @@ export default function CommunityScreen() {
         const contentType = (post.contentType ?? post.content_type) as Post['contentType'] | undefined;
         const scriptureReference = (post.scriptureReference ?? post.scripture_reference) as string | undefined;
         const userId = (post.userId ?? post.user_id) as string | undefined;
-        const artworkUrl = (post.artworkUrl ?? post.artwork_url) as string | null | undefined;
+        // Support all possible field names the backend may use for the artwork image URL
+        const artworkUrl = (post.artworkUrl ?? post.artwork_url ?? post.imageUrl ?? post.image_url ?? post.artworkImageUrl ?? post.artwork_image_url) as string | null | undefined;
 
         // Resolve content — guard against undefined rendering as the string "undefined"
         const rawContent = post.content as string | null | undefined;
