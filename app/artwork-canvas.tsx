@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Dimensions, ActivityIndicator, Platform, PanResponder, Animated as RNAnimated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
@@ -346,6 +346,22 @@ export default function ArtworkCanvasScreen() {
   const { isDark } = useTheme();
   const router = useRouter();
   const { isSubscribed, loading: subLoading } = useSubscription();
+  const params = useLocalSearchParams<{
+    scriptureReference?: string;
+    scriptureText?: string;
+    themeTitle?: string;
+    reflectionPrompt?: string;
+  }>();
+  // Guard against Expo Router serializing undefined as the literal string "undefined"
+  const rawScriptureReference = Array.isArray(params.scriptureReference) ? params.scriptureReference[0] : params.scriptureReference;
+  const rawScriptureText = Array.isArray(params.scriptureText) ? params.scriptureText[0] : params.scriptureText;
+  const rawThemeTitle = Array.isArray(params.themeTitle) ? params.themeTitle[0] : params.themeTitle;
+  const rawReflectionPrompt = Array.isArray(params.reflectionPrompt) ? params.reflectionPrompt[0] : params.reflectionPrompt;
+  const contextScriptureReference = (rawScriptureReference && rawScriptureReference !== 'undefined') ? rawScriptureReference : '';
+  const contextScriptureText = (rawScriptureText && rawScriptureText !== 'undefined') ? rawScriptureText : '';
+  const contextThemeTitle = (rawThemeTitle && rawThemeTitle !== 'undefined') ? rawThemeTitle : '';
+  const contextReflectionPrompt = (rawReflectionPrompt && rawReflectionPrompt !== 'undefined') ? rawReflectionPrompt : '';
+  console.log('[ArtworkCanvas] Received params:', { contextScriptureReference, contextScriptureText: contextScriptureText.substring(0, 60), contextThemeTitle, contextReflectionPrompt });
 
   useEffect(() => {
     if (subLoading) return;
@@ -1299,8 +1315,16 @@ export default function ArtworkCanvasScreen() {
       }
 
       // Step 3: Post to community
+      // Build share content from available context — prefer full verse text over just the reference
+      const shareContent = contextScriptureText
+        ? `${contextThemeTitle ? contextThemeTitle + ' — ' : ''}"${contextScriptureText}" — ${contextScriptureReference}`
+        : contextScriptureReference
+          ? `${contextThemeTitle ? contextThemeTitle + ' — ' : ''}${contextScriptureReference}`
+          : contextThemeTitle || contextReflectionPrompt || '';
+      console.log('[Canvas] Share content built:', shareContent.substring(0, 100));
+
       console.log('[Canvas] 📤 Posting to community with payload:', {
-        content: '',
+        content: shareContent,
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',
@@ -1308,7 +1332,7 @@ export default function ArtworkCanvasScreen() {
       });
 
       await authenticatedPost('/api/community/post', {
-        content: '',
+        content: shareContent,
         category: shareCategory,
         isAnonymous: shareAnonymous,
         contentType: 'somatic',

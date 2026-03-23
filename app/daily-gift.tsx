@@ -514,7 +514,20 @@ export default function DailyGiftScreen() {
     setResponseMode(mode);
     
     if (mode === 'create') {
-      router.push('/artwork-canvas');
+      const scriptureRef = dailyGiftResponse?.dailyContent?.scriptureReference ?? '';
+      const scriptureText = dailyGiftResponse?.dailyContent?.scriptureText ?? '';
+      const themeTitle = dailyGiftResponse?.weeklyTheme?.themeTitle ?? '';
+      const reflectionPrompt = dailyGiftResponse?.dailyContent?.reflectionQuestion ?? '';
+      console.log('[DailyGift] Navigating to artwork-canvas with context:', { scriptureRef, scriptureText: scriptureText.substring(0, 60), themeTitle });
+      router.push({
+        pathname: '/artwork-canvas',
+        params: {
+          scriptureReference: scriptureRef,
+          scriptureText,
+          themeTitle,
+          reflectionPrompt,
+        },
+      });
     }
     
     if (mode === 'voice') {
