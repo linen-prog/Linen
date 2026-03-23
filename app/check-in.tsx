@@ -639,38 +639,39 @@ export default function CheckInScreen() {
           ),
         }}
       />
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
-      >
-        <View style={styles.messagesArea}>
-          {messages.length === 0 ? (
-            renderEmptyState()
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              contentContainerStyle={styles.messagesList}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={true}
-              style={styles.messagesFlatList}
-              onContentSizeChange={() => {
-                if (flatListRef.current) {
-                  flatListRef.current.scrollToEnd({ animated: true });
-                }
-              }}
-            />
-          )}
-        </View>
+      <View style={{ flex: 1 }}>
+        <KeyboardAvoidingView 
+          behavior="padding"
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
+        >
+          <View style={{ flex: 1 }}>
+            {messages.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.messagesList}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={true}
+                style={{ flex: 1 }}
+                onContentSizeChange={() => {
+                  if (flatListRef.current) {
+                    flatListRef.current.scrollToEnd({ animated: true });
+                  }
+                }}
+              />
+            )}
+          </View>
 
-        <View style={[styles.inputContainer, { 
-          backgroundColor: colors.card,
-          borderTopColor: inputBorder,
-          paddingBottom: insets.bottom + 8,
-        }]}>
+          <View style={[styles.inputContainer, { 
+            backgroundColor: colors.card,
+            borderTopColor: inputBorder,
+            paddingBottom: insets.bottom + 8,
+          }]}>
             <TextInput
               style={[styles.input, { 
                 backgroundColor: inputBg,
@@ -701,6 +702,7 @@ export default function CheckInScreen() {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+      </View>
 
         {/* Crisis Resources Modal */}
         <Modal
