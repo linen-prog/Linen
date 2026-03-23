@@ -196,7 +196,7 @@ export default function HomeScreen() {
                 Peace to you, friend.
               </Text>
               <Text style={[styles.welcomeLine2, { color: textSecondaryColor }]}>
-                I'm glad you're here today.
+                you made it back
               </Text>
             </Animated.View>
 
