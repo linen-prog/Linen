@@ -198,9 +198,17 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
       const data: MonthlySummaryResponse = await authenticatedGet(
         `/api/monthly-summary?year=${year}&month=${month}`
       );
-      console.log('[MonthlySummary] Loaded:', data);
-      setMonthlySummary(data.summary ?? null);
-      setHasEnoughData(data.hasEnoughData ?? false);
+      console.log('[MonthlySummary] Loaded:', JSON.stringify(data));
+      const summary = data.summary ?? null;
+      // hasEnoughData may live at the top level OR inside the summary object.
+      // A non-null summary with any check-in data is also treated as sufficient.
+      const enoughData =
+        data.hasEnoughData ??
+        summary?.hasEnoughData ??
+        (summary !== null && (Number(summary.totalCheckIns) > 0 || Number(summary.totalEntries) > 0));
+      console.log('[MonthlySummary] hasEnoughData resolved to:', enoughData, '| summary:', summary);
+      setMonthlySummary(summary);
+      setHasEnoughData(Boolean(enoughData));
       setMonthlyMessage(data.message ?? '');
     } catch (err: any) {
       console.error('[MonthlySummary] Error:', err);
