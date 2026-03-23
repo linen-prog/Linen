@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
+import { Ionicons } from '@expo/vector-icons';
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
@@ -191,15 +192,10 @@ export default function HomeScreen() {
           >
             <View style={styles.loveMessagesLeft}>
               <View style={styles.loveMessagesIconCircle}>
-                <IconSymbol
-                  ios_icon_name="heart.fill"
-                  android_material_icon_name="favorite"
-                  size={22}
-                  color="#d97706"
-                />
+                <Ionicons name="sparkles" size={22} color="#d97706" />
               </View>
               <View style={styles.loveMessagesTextBlock}>
-                <Text style={styles.loveMessagesTitle}>Reactions & Care from Community</Text>
+                <Text style={styles.loveMessagesTitle}>Messages</Text>
                 <Text style={styles.loveMessagesSubtitle}>Reactions & care from your community</Text>
               </View>
             </View>
