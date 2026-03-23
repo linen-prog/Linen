@@ -1698,7 +1698,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic' as const,
     color: '#9ca3af',
-    marginTop: 8,
+    marginTop: 32,
     marginBottom: 28,
     opacity: 0.85,
   },
@@ -1811,6 +1811,7 @@ const styles = StyleSheet.create({
   },
 
   dailyScriptureSection: {
+    marginTop: 16,
     gap: spacing.sm,
   },
   dailyThemeTitleRow: {
