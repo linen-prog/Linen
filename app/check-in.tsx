@@ -581,93 +581,96 @@ export default function CheckInScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
-        <Stack.Screen 
-          options={{
-            headerShown: true,
-            title: headerTitle,
-            headerBackTitle: '',
-            headerTransparent: true,
-            headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: '#047857',
-            headerTitleStyle: {
-              fontSize: 18,
-              fontWeight: '400' as const,
-              color: '#1c1917',
-              fontFamily: 'Georgia',
-            },
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
-                style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      <Stack.Screen 
+        options={{
+          headerShown: true,
+          title: headerTitle,
+          headerBackTitle: '',
+          headerTransparent: true,
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: '#047857',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '400' as const,
+            color: '#1c1917',
+            fontFamily: 'Georgia',
+          },
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
+              style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ChevronLeft size={24} color="#047857" />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <View style={styles.headerButtons}>
+              <TouchableOpacity 
+                onPress={handlePrayerIconPress}
+                style={styles.headerButtonContainer}
+                disabled={isGeneratingPrayer}
               >
-                <ChevronLeft size={24} color="#047857" />
+                <IconSymbol 
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={24}
+                  color={prayerIconColor}
+                />
+                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                  Prayer
+                </Text>
               </TouchableOpacity>
-            ),
-            headerRight: () => (
-              <View style={styles.headerButtons}>
-                <TouchableOpacity 
-                  onPress={handlePrayerIconPress}
-                  style={styles.headerButtonContainer}
-                  disabled={isGeneratingPrayer}
-                >
-                  <IconSymbol 
-                    ios_icon_name="hands.sparkles"
-                    android_material_icon_name="auto-awesome"
-                    size={24}
-                    color={prayerIconColor}
-                  />
-                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                    Prayer
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={handleRequestCare}
-                  style={styles.headerButtonContainer}
-                >
-                  <IconSymbol 
-                    ios_icon_name="heart.fill"
-                    android_material_icon_name="favorite"
-                    size={24}
-                    color={careIconColor}
-                  />
-                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                    Care
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ),
-          }}
-        />
-        
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
-          <View style={styles.messagesArea}>
-            {messages.length === 0 ? (
-              renderEmptyState()
-            ) : (
-              <FlatList
-                ref={flatListRef}
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.messagesList}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={true}
-                style={styles.messagesFlatList}
-              />
-            )}
-          </View>
+              <TouchableOpacity 
+                onPress={handleRequestCare}
+                style={styles.headerButtonContainer}
+              >
+                <IconSymbol 
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={24}
+                  color={careIconColor}
+                />
+                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                  Care
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ),
+        }}
+      />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
+      >
+        <View style={styles.messagesArea}>
+          {messages.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.messagesList}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={true}
+              style={styles.messagesFlatList}
+              onContentSizeChange={() => {
+                if (flatListRef.current) {
+                  flatListRef.current.scrollToEnd({ animated: true });
+                }
+              }}
+            />
+          )}
+        </View>
 
-          <View style={[styles.inputContainer, { 
-            backgroundColor: colors.card,
-            borderTopColor: inputBorder,
-            paddingBottom: insets.bottom + 8,
-          }]}>
+        <View style={[styles.inputContainer, { 
+          backgroundColor: colors.card,
+          borderTopColor: inputBorder,
+          paddingBottom: insets.bottom + 8,
+        }]}>
             <TextInput
               style={[styles.input, { 
                 backgroundColor: inputBg,
@@ -1420,13 +1423,13 @@ export default function CheckInScreen() {
 
         {/* Floating Tab Bar */}
 
-      </SafeAreaView>
     </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     flex: 1,
   },
   messagesArea: {
