@@ -1189,55 +1189,7 @@ export default function DailyGiftScreen() {
         </View>
       </Modal>
 
-      {/* Share Success Modal */}
-      <Modal
-        visible={showShareSuccessModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
-          setShowShareSuccessModal(false);
-        }}
-      >
-        <View style={styles.successModalOverlay}>
-          <View style={[styles.successModalContent, { backgroundColor: cardBg }]}>
-            <View style={styles.successIconCircle}>
-              <IconSymbol 
-                ios_icon_name="person.2.fill"
-                android_material_icon_name="group"
-                size={48}
-                color="#FFFFFF"
-              />
-            </View>
 
-            <Text style={[styles.successModalTitle, { color: textColor }]}>
-              Beautiful! 🎉
-            </Text>
-
-            <Text style={[styles.successModalMessage, { color: textSecondaryColor }]}>
-              Your reflection has been shared with the community
-            </Text>
-
-            <View style={[styles.successModalNote, { backgroundColor: isDark ? colors.borderDark : colors.primaryLight }]}>
-              <Text style={[styles.successModalNoteText, { color: textColor }]}>
-                Your words or art may be exactly what someone else needs to see today. Thank you for your courage in sharing.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.successModalButton}
-              onPress={() => {
-                setShowShareSuccessModal(false);
-                router.navigate('/(tabs)/community');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.successModalButtonText}>
-                Continue
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Floating Tab Bar */}
       <FloatingTabBar tabs={tabs} />
