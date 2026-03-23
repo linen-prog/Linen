@@ -1079,13 +1079,14 @@ export default function DailyGiftScreen() {
               {/* Attachment button row */}
               <View style={styles.attachmentRow}>
                 <TouchableOpacity
-                  style={[styles.attachmentButton, { borderColor: inputBorder }]}
                   onPress={handleAttachmentPress}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
-                  <Ionicons name="attach" size={18} color={textSecondaryColor} />
-                  <Text style={[styles.attachmentButtonText, { color: textSecondaryColor }]}>
-                    Add attachment
+                  <Text style={[styles.attachmentLinkText, { color: textSecondaryColor }]}>
+                    Prefer to write on paper or create art?{' '}
+                    <Text style={styles.attachmentLinkUnderline}>
+                      Upload here
+                    </Text>
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1918,6 +1919,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: spacing.sm,
+  },
+  attachmentLinkText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    lineHeight: 18,
+  },
+  attachmentLinkUnderline: {
+    textDecorationLine: 'underline',
+    fontStyle: 'italic',
   },
   attachmentButton: {
     flexDirection: 'row',
