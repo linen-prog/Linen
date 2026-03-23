@@ -919,7 +919,7 @@ export default function CommunityScreen() {
                     </Text>
                   )}
 
-                  {post.artworkUrl && post.artworkUrl.trim().length > 0 && (
+                  {!!post.artworkUrl && typeof post.artworkUrl === 'string' && post.artworkUrl.trim().length > 0 && (
                     <TouchableOpacity
                       activeOpacity={0.9}
                       onPress={() => {
@@ -929,14 +929,14 @@ export default function CommunityScreen() {
                     >
                       <View style={styles.artworkImageContainer}>
                         <Image
-                          source={{ uri: post.artworkUrl }}
+                          source={{ uri: String(post.artworkUrl) }}
                           style={styles.artworkImage}
                           resizeMode="cover"
                           onError={(error) => {
-                            console.error('[Community] ❌ Failed to load artwork image for post:', post.id, 'Error:', error.nativeEvent.error);
+                            console.error('[Community] ❌ Failed to load artwork image for post:', post.id, 'URL:', post.artworkUrl, 'Error:', error.nativeEvent.error);
                           }}
                           onLoad={() => {
-                            console.log('[Community] ✅ Artwork image loaded for post:', post.id);
+                            console.log('[Community] ✅ Artwork image loaded successfully for post:', post.id, 'URL:', post.artworkUrl);
                           }}
                         />
                       </View>
@@ -1857,8 +1857,8 @@ const styles = StyleSheet.create({
   },
   artworkImage: {
     width: '100%',
-    height: undefined,
-    aspectRatio: 1,
+    height: 240,
+    aspectRatio: undefined,
   },
   postContent: {
     fontSize: typography.body,

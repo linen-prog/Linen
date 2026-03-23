@@ -19,6 +19,7 @@ import Animated, {
   withSpring,
   withSequence,
   withTiming,
+  withDelay,
   withRepeat,
   Easing,
   interpolate,
@@ -673,11 +674,11 @@ export default function ArtworkCanvasScreen() {
         
         achievementScale.value = withSequence(
           withSpring(1, { damping: 8 }),
-          withTiming(0, { duration: 800, delay: 9200 })
+          withDelay(4700, withTiming(0, { duration: 800 }))
         );
         achievementOpacity.value = withSequence(
           withTiming(1, { duration: 300 }),
-          withTiming(0, { duration: 800, delay: 9200 })
+          withDelay(4700, withTiming(0, { duration: 800 }))
         );
         
         if (Platform.OS !== 'web') {
@@ -686,7 +687,7 @@ export default function ArtworkCanvasScreen() {
         
         setTimeout(() => {
           setShowAchievement(false);
-        }, 10300);
+        }, 5800);
       }
     }
   }, [strokeCount]);
