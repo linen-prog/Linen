@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Animate
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { Ionicons } from '@expo/vector-icons';
 import { GradientBackground } from '@/components/GradientBackground';
 import { NotificationBell } from "@/components/NotificationBell";
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
@@ -263,15 +264,10 @@ export default function HomeScreen() {
             >
               <View style={styles.loveMessagesLeft}>
                 <View style={styles.loveMessagesIconCircle}>
-                  <IconSymbol
-                    ios_icon_name="heart.fill"
-                    android_material_icon_name="favorite"
-                    size={22}
-                    color="#d97706"
-                  />
+                  <Ionicons name="sparkles" size={22} color="#d97706" />
                 </View>
                 <View style={styles.loveMessagesTextBlock}>
-                  <Text style={styles.loveMessagesTitle}>Reactions & Care from Community</Text>
+                  <Text style={styles.loveMessagesTitle}>Messages</Text>
 
                 </View>
               </View>
