@@ -791,7 +791,7 @@ export default function DailyGiftScreen() {
   const scriptureDisplay = dailyContent.scriptureText;
   const referenceDisplay = dailyContent.scriptureReference;
   const reflectionPromptDisplay = dailyContent.reflectionQuestion;
-  const saveButtonText = isLoading ? 'Saving...' : 'Save';
+  const saveButtonText = isLoading ? 'Holding...' : 'Hold this';
 
   const liturgicalSeasonDisplay = dailyGiftResponse.weeklyTheme.liturgicalSeason.toUpperCase();
   const themeTitleDisplay = dailyGiftResponse.weeklyTheme.themeTitle;
@@ -805,25 +805,25 @@ export default function DailyGiftScreen() {
   const completedTitle = 'Reflection Saved';
   const completedText = 'Your reflection has been saved. Return tomorrow for a new gift.';
   const reflectionTitle = 'Your Reflection';
-  const reflectionPlaceholder = 'Write openly in your own words today...';
-  const moodTagsTitle = 'How are you feeling?';
-  const sensationTagsTitle = 'How is your body?';
+  const reflectionPlaceholder = 'You can write here if you\'d like...';
+  const moodTagsTitle = 'If it helps, you can name it';
+  const sensationTagsTitle = 'What do you notice in your body?';
   const moodTagsSubtitle = 'Optional';
   const sensationTagsSubtitle = 'Optional';
 
   const beginButtonText = 'Begin Practice';
-  const skipButtonText = 'Skip';
+  const skipButtonText = 'Not right now';
 
   const giftTitleText = 'Your Daily Gift';
   const giftSubtitleText = 'A word for your heart today';
   const tapText = 'Tap to open';
 
   const invitationLabel = 'SOMATIC INVITATION';
-  const invitationText = 'You are invited to practice';
+  const invitationText = 'A gentle invitation';
 
   const somaticPromptDisplay = dailyContent.somaticPrompt || '';
   const hasSomaticPrompt = !!dailyContent.somaticPrompt;
-  const tryButtonText = 'Try';
+  const tryButtonText = 'Begin';
 
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
   const dayTitleDisplay = dailyContent.dayTitle || dayTitles[dailyContent.dayOfWeek] || 'Reflection';
@@ -958,7 +958,7 @@ export default function DailyGiftScreen() {
             </View>
             
             <Text style={[styles.themeDescription, { color: textSecondaryColor }]}>
-              {themeDescriptionDisplay}
+              {"A place to be with what you're carrying."}
             </Text>
           </View>
 
@@ -1008,12 +1008,16 @@ export default function DailyGiftScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.skipPracticeText, { color: textSecondaryColor }]}>
-                    {skipButtonText}
+                    {'Not right now'}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
+
+          <Text style={styles.transitionMicrocopy}>
+            {'Take your time here'}
+          </Text>
 
           <View style={styles.dailyScriptureSection}>
             <View style={styles.dailyThemeTitleRow}>
@@ -1584,7 +1588,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontFamily: 'serif',
     fontWeight: '400',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xl,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
@@ -1633,6 +1637,15 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
 
+  transitionMicrocopy: {
+    textAlign: 'center' as const,
+    fontSize: 13,
+    fontStyle: 'italic' as const,
+    color: '#9ca3af',
+    marginTop: 8,
+    marginBottom: 28,
+    opacity: 0.85,
+  },
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
