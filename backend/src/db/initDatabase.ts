@@ -578,6 +578,74 @@ export async function initializeDatabase(db: any, app?: App) {
 
     console.log('Database tables initialized successfully');
 
+    // Data migrations: Update reflection prompts with softer, gentler language
+    try {
+      app?.logger.info({}, 'Starting reflection prompt data migrations');
+
+      // 1. Update daily_content table by day_of_week
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'What feels alive in you as this new week begins?' WHERE day_of_week = 0
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'What are you noticing in yourself today?' WHERE day_of_week = 1
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'Where does this scripture land in your heart right now?' WHERE day_of_week = 2
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'What resonates with you about these words?' WHERE day_of_week = 3
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'What might you be gently releasing today?' WHERE day_of_week = 4
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'What stirs in you as you sit with this?' WHERE day_of_week = 5
+      `);
+      await db.execute(sql`
+        UPDATE daily_content SET reflection_prompt = 'Where do you find yourself in this passage?' WHERE day_of_week = 6
+      `);
+
+      app?.logger.info({}, 'Updated daily_content reflection prompts');
+
+      // 2. Update daily_gifts table using day of week from date
+      await db.execute(sql`
+        UPDATE daily_gifts SET reflection_prompt = CASE
+          WHEN EXTRACT(DOW FROM date::date) = 0 THEN 'What feels alive in you as this new week begins?'
+          WHEN EXTRACT(DOW FROM date::date) = 1 THEN 'What are you noticing in yourself today?'
+          WHEN EXTRACT(DOW FROM date::date) = 2 THEN 'Where does this scripture land in your heart right now?'
+          WHEN EXTRACT(DOW FROM date::date) = 3 THEN 'What resonates with you about these words?'
+          WHEN EXTRACT(DOW FROM date::date) = 4 THEN 'What might you be gently releasing today?'
+          WHEN EXTRACT(DOW FROM date::date) = 5 THEN 'What stirs in you as you sit with this?'
+          WHEN EXTRACT(DOW FROM date::date) = 6 THEN 'Where do you find yourself in this passage?'
+          ELSE 'What are you noticing in yourself today?'
+        END
+      `);
+
+      app?.logger.info({}, 'Updated daily_gifts reflection prompts');
+
+      // 3. Update weekly_themes table using rotating cycle
+      await db.execute(sql`
+        UPDATE weekly_themes wt
+        SET reflection_prompt = sub.new_prompt
+        FROM (
+          SELECT id,
+            CASE MOD(ROW_NUMBER() OVER (ORDER BY week_start_date)::integer, 3)
+              WHEN 1 THEN 'What theme feels most present in your life this week?'
+              WHEN 2 THEN 'Where are you being invited to rest or release?'
+              ELSE 'What is quietly asking for your attention this week?'
+            END AS new_prompt
+          FROM weekly_themes
+        ) sub
+        WHERE wt.id = sub.id
+      `);
+
+      app?.logger.info({}, 'Updated weekly_themes reflection prompts');
+      app?.logger.info({}, 'Reflection prompt data migrations completed successfully');
+    } catch (error) {
+      app?.logger.warn({ err: error }, 'Data migrations failed or not applicable');
+      // Don't throw - migrations may fail if tables are empty
+    }
+
     // Auto-seed weekly themes if database is empty
     if (app) {
       await autoSeedThemesIfEmpty(app);
