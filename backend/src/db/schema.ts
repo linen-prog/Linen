@@ -422,3 +422,28 @@ export const monthlyRecapCache = pgTable(
     index('monthly_recap_cache_created').on(table.createdAt),
   ]
 );
+
+// Notifications table
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => {
+        return { id: true } as any;
+      }, { onDelete: 'cascade' }),
+    type: text('type', {
+      enum: ['reaction', 'feedback', 'care_message', 'encouragement'],
+    }).notNull(),
+    message: text('message').notNull(),
+    read: boolean('read').default(false).notNull(),
+    postId: text('post_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('notifications_user').on(table.userId),
+    index('notifications_user_read').on(table.userId, table.read),
+    index('notifications_created').on(table.createdAt),
+  ]
+);

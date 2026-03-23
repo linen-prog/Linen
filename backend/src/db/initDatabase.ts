@@ -549,6 +549,31 @@ export async function initializeDatabase(db: any, app?: App) {
       CREATE INDEX IF NOT EXISTS "monthly_recap_cache_user" ON "monthly_recap_cache"("user_id")
     `);
 
+    // Notifications table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "notifications" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+        "type" text NOT NULL CHECK ("type" IN ('reaction', 'feedback', 'care_message', 'encouragement')),
+        "message" text NOT NULL,
+        "read" boolean NOT NULL DEFAULT false,
+        "post_id" text,
+        "created_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "notifications_user" ON "notifications"("user_id")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "notifications_user_read" ON "notifications"("user_id", "read")
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "notifications_created" ON "notifications"("created_at")
+    `);
+
     console.log('Database tables initialized successfully');
 
     // Auto-seed weekly themes if database is empty
@@ -605,6 +630,46 @@ export async function initializeDatabase(db: any, app?: App) {
       app?.logger.info({ results }, 'Community posts with artwork_url');
     } catch (error) {
       app?.logger.warn({ err: error }, 'Failed to seed community post data');
+      // Don't throw - this is optional seed data
+    }
+
+    // Seed test notifications if table is empty
+    try {
+      const countResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM "notifications"
+      `);
+
+      const notificationCount = (countResult as any).rows?.[0]?.count || 0;
+
+      if (notificationCount === 0) {
+        // Get the first user
+        const userResult = await db.execute(sql`
+          SELECT id FROM "user" LIMIT 1
+        `);
+
+        const userId = (userResult as any).rows?.[0]?.id;
+
+        if (userId) {
+          const now = new Date();
+          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+          const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+
+          await db.execute(sql`
+            INSERT INTO "notifications" (id, user_id, type, message, read, post_id, created_at)
+            VALUES
+              (gen_random_uuid(), ${userId}, 'encouragement', 'Someone is praying for you today 🙏', false, NULL, ${oneHourAgo}),
+              (gen_random_uuid(), ${userId}, 'reaction', 'Your reflection received a ❤️ reaction', false, NULL, ${threeHoursAgo}),
+              (gen_random_uuid(), ${userId}, 'care_message', 'A community member sent you a care message', true, NULL, ${oneDayAgo}),
+              (gen_random_uuid(), ${userId}, 'feedback', 'Your shared prayer touched someone deeply', true, NULL, ${twoDaysAgo})
+          `);
+
+          app?.logger.info({ userId }, 'Seed notifications inserted');
+        }
+      }
+    } catch (error) {
+      app?.logger.warn({ err: error }, 'Failed to seed notifications');
       // Don't throw - this is optional seed data
     }
   } catch (error) {
