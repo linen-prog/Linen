@@ -133,14 +133,52 @@ export function registerDailyGiftRoutes(app: App) {
   // Create a reflection on daily gift
   app.fastify.post(
     '/api/daily-gift/reflect',
+    {
+      schema: {
+        description: 'Create or update a reflection on a daily gift with moods and sensations',
+        tags: ['daily-gift'],
+        body: {
+          type: 'object',
+          required: ['dailyGiftId', 'reflectionText'],
+          properties: {
+            dailyGiftId: { type: 'string', format: 'uuid', description: 'ID of the daily content to reflect on' },
+            reflectionText: { type: 'string', description: 'The reflection text' },
+            shareToComm: { type: 'boolean', description: 'Whether to share to community (camelCase)' },
+            share_to_comm: { type: 'boolean', description: 'Whether to share to community (snake_case)' },
+            category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], description: 'Category for community post' },
+            isAnonymous: { type: 'boolean', description: 'Whether to post anonymously (camelCase)' },
+            is_anonymous: { type: 'boolean', description: 'Whether to post anonymously (snake_case)' },
+            selectedMoods: { type: 'array', items: { type: 'string' }, description: 'Array of mood tags' },
+            selectedSensations: { type: 'array', items: { type: 'string' }, description: 'Array of sensation tags' },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              reflectionId: { type: 'string', format: 'uuid' },
+              postId: { type: ['string', 'null'], format: 'uuid' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: {
           dailyGiftId: string;
           reflectionText: string;
           shareToComm?: boolean;
+          share_to_comm?: boolean;
           category?: 'feed' | 'wisdom' | 'care' | 'prayers';
           isAnonymous?: boolean;
+          is_anonymous?: boolean;
+          selectedMoods?: string[];
+          selectedSensations?: string[];
         };
       }>,
       reply: FastifyReply
@@ -148,7 +186,11 @@ export function registerDailyGiftRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { dailyGiftId, reflectionText, shareToComm, category, isAnonymous } = request.body;
+      // Support both camelCase and snake_case for field names
+      const { dailyGiftId, reflectionText, selectedMoods, selectedSensations } = request.body;
+      const shareToComm = request.body.shareToComm ?? request.body.share_to_comm ?? false;
+      const isAnonymous = request.body.isAnonymous ?? request.body.is_anonymous ?? false;
+      const category = request.body.category || null;
 
       app.logger.info(
         {
@@ -158,6 +200,8 @@ export function registerDailyGiftRoutes(app: App) {
           shareToComm,
           category,
           isAnonymous,
+          moods: selectedMoods?.length || 0,
+          sensations: selectedSensations?.length || 0,
         },
         'POST /api/daily-gift/reflect endpoint called'
       );
@@ -217,6 +261,7 @@ export function registerDailyGiftRoutes(app: App) {
 
         let reflection;
         let postId: string | undefined;
+        const isNewReflection = existingReflection.length === 0;
 
         if (existingReflection.length > 0) {
           // Update existing reflection
@@ -232,6 +277,8 @@ export function registerDailyGiftRoutes(app: App) {
               shareToComm: shareToComm || false,
               category: category || null,
               isAnonymous: isAnonymous || false,
+              moods: selectedMoods && selectedMoods.length > 0 ? selectedMoods : null,
+              sensations: selectedSensations && selectedSensations.length > 0 ? selectedSensations : null,
             })
             .where(eq(schema.userReflections.id, existingReflection[0].id))
             .returning();
@@ -256,6 +303,8 @@ export function registerDailyGiftRoutes(app: App) {
               shareToComm: shareToComm || false,
               category: category || null,
               isAnonymous: isAnonymous || false,
+              moods: selectedMoods && selectedMoods.length > 0 ? selectedMoods : null,
+              sensations: selectedSensations && selectedSensations.length > 0 ? selectedSensations : null,
             })
             .returning();
 
@@ -263,6 +312,27 @@ export function registerDailyGiftRoutes(app: App) {
             { reflectionId: reflection.id, userId: session.user.id, dailyGiftId },
             'Reflection created successfully'
           );
+
+          // Update user_profiles with reflection metrics (only for new reflections)
+          try {
+            await app.db
+              .update(schema.userProfiles)
+              .set({
+                totalReflections: sql`total_reflections + 1`,
+                reflectionStreak: sql`reflection_streak + 1`,
+              })
+              .where(eq(schema.userProfiles.userId, session.user.id));
+
+            app.logger.info(
+              { userId: session.user.id },
+              'User profile metrics updated'
+            );
+          } catch (error) {
+            app.logger.debug(
+              { err: error, userId: session.user.id },
+              'Failed to update user profile metrics'
+            );
+          }
         }
 
         // If sharing to community and category is provided, create community post
@@ -343,7 +413,7 @@ export function registerDailyGiftRoutes(app: App) {
           'Reflection endpoint completed successfully'
         );
 
-        return reply.send({
+        return reply.status(201).send({
           reflectionId: reflection.id,
           postId,
         });
@@ -399,6 +469,8 @@ export function registerDailyGiftRoutes(app: App) {
             shareToComm: r.shareToComm,
             category: r.category,
             isAnonymous: r.isAnonymous,
+            moods: r.moods || [],
+            sensations: r.sensations || [],
             createdAt: r.createdAt,
           }))
         );

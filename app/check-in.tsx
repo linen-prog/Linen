@@ -1528,6 +1528,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.md,
   },
+  groundingLines: {
+    width: '100%',
+    marginBottom: 36,
+    paddingHorizontal: spacing.md,
+    gap: 20,
+  },
+  groundingLine: {
+    fontSize: 17,
+    lineHeight: 26,
+    textAlign: 'center' as const,
+    fontFamily: 'Georgia',
+    letterSpacing: 0.1,
+  },
+  softLines: {
+    width: '100%',
+    marginBottom: 36,
+    paddingHorizontal: spacing.lg,
+    gap: 14,
+  },
+  softLine: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center' as const,
+    opacity: 0.7,
+    letterSpacing: 0.1,
+  },
   emptyStateSubtitle: {
     fontSize: typography.body,
     textAlign: 'center',

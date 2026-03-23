@@ -205,6 +205,8 @@ export const userReflections = pgTable('user_reflections', {
     enum: ['feed', 'wisdom', 'care', 'prayers'],
   }),
   isAnonymous: boolean('is_anonymous').default(false).notNull(),
+  moods: jsonb('moods').$type<string[]>(),
+  sensations: jsonb('sensations').$type<string[]>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
