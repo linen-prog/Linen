@@ -271,7 +271,7 @@ export default function HomeScreen() {
                   />
                 </View>
                 <View style={styles.loveMessagesTextBlock}>
-                  <Text style={styles.loveMessagesTitle}>Care</Text>
+                  <Text style={styles.loveMessagesTitle}>Reactions & Care from Community</Text>
 
                 </View>
               </View>
