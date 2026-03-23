@@ -522,40 +522,39 @@ export default function CheckInScreen() {
       >
         <View style={styles.emptyStateContent}>
           <View style={styles.iconContainer}>
-            <IconSymbol 
+            <IconSymbol
               ios_icon_name="heart.text.square.fill"
               android_material_icon_name="favorite"
-              size={72}
+              size={64}
               color={colors.primary}
             />
           </View>
-          
+
           <Text style={[styles.emptyStateTitle, { color: textColor }]}>
             A gentle space for reflection
           </Text>
-          
-          <Text style={[styles.emptyStateSubtitle, { color: textSecondaryColor }]}>
-            {"I'm here to listen with compassion and gentle presence. Share what's on your heart—your joys, struggles, questions, or simply what you're noticing in this moment."}
-          </Text>
 
-          <View style={styles.guidanceContainer}>
-            <Text style={[styles.guidanceTitle, { color: textColor }]}>
-              What to expect:
+          <View style={styles.groundingLines}>
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              I'm here with you.
             </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• I'll help you notice what's happening in your body"}
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              You can share whatever is on your heart.
             </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• We'll explore sensations, emotions, and patterns together"}
-            </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              • Scripture and prayer may weave naturally into our conversation
-            </Text>
-            <Text style={[styles.guidanceText, { color: textSecondaryColor }]}>
-              {"• I'm not here to fix or advise, but to witness and companion"}
+            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
+              There's no right way to begin.
             </Text>
           </View>
-          
+
+          <View style={styles.softNoteContainer}>
+            <Text style={[styles.softNoteText, { color: textSecondaryColor }]}>
+              We'll move gently, at your pace.
+            </Text>
+            <Text style={[styles.softNoteText, { color: textSecondaryColor }]}>
+              You don't have to figure anything out here.
+            </Text>
+          </View>
+
           <View style={styles.disclaimerContainer}>
             <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
               {"This is not therapy or medical care. If you're in crisis, please reach out to 988 Lifeline or text HOME to 741741."}
@@ -1446,7 +1445,64 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'flex-end',
   },
+  emptyStateContainer: {
+    flex: 1,
+  },
   emptyStateScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    gap: 0,
+  },
+  iconContainer: {
+    marginBottom: 28,
+    opacity: 0.85,
+  },
+  emptyStateTitle: {
+    fontSize: 22,
+    fontWeight: '500',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+    marginBottom: 32,
+    lineHeight: 30,
+  },
+  groundingLines: {
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 36,
+  },
+  groundingLine: {
+    fontSize: 17,
+    textAlign: 'center',
+    lineHeight: 26,
+    fontStyle: 'italic',
+    opacity: 0.9,
+  },
+  softNoteContainer: {
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 48,
+  },
+  softNoteText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.65,
+  },
+  disclaimerContainer: {
+    paddingHorizontal: 8,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 17,
+    opacity: 0.45,
+  },
+  messagesList: {
     paddingTop: 100,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
