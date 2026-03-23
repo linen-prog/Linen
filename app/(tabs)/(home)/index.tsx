@@ -12,8 +12,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
 
 interface UserStats {
-  checkInStreak: number;
-  reflectionStreak: number;
   displayName?: string;
 }
 
@@ -73,8 +71,6 @@ export default function HomeScreen() {
     } catch (error: any) {
       console.log('[Home] Error loading stats:', error?.message || error);
       setStats({
-        checkInStreak: 0,
-        reflectionStreak: 0,
         displayName: user?.name || 'friend',
       });
     }
@@ -168,20 +164,6 @@ export default function HomeScreen() {
             >
               {greetingText}
             </Animated.Text>
-          </View>
-
-          <View style={styles.streakContainer}>
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Check-in</Text>
-              <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{stats?.checkInStreak || 0}</Text>
-            </View>
-
-            <View style={styles.streakCard}>
-              <Text style={styles.streakLabel}>Reflection</Text>
-              <Text style={styles.streakDot}>·</Text>
-              <Text style={styles.streakValue}>{stats?.reflectionStreak || 0}</Text>
-            </View>
           </View>
 
           {/* Love Messages card */}
@@ -327,38 +309,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     color: colors.primary,
     fontFamily: typography.fontFamilySerif,
-  },
-  streakContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 6,
-  },
-  streakCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: borderRadius.sm,
-    paddingVertical: 1,
-    paddingHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.47,
-  },
-  streakLabel: {
-    fontSize: 10,
-    fontWeight: typography.regular,
-    color: colors.textLight,
-  },
-  streakDot: {
-    fontSize: 10,
-    color: colors.textLight,
-    marginHorizontal: 3,
-  },
-  streakValue: {
-    fontSize: 10,
-    fontWeight: typography.regular,
-    color: colors.textLight,
   },
   loveMessagesCard: {
     backgroundColor: '#FFFBF5',

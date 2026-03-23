@@ -22,8 +22,6 @@ export default function HomeScreen() {
   console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
 
-  const [checkInStreak, setCheckInStreak] = useState(0);
-  const [reflectionStreak, setReflectionStreak] = useState(0);
   const [firstName, setFirstName] = useState('');
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,19 +74,6 @@ export default function HomeScreen() {
         const extractedFirstName = userName.split(' ')[0] || 'Friend';
         setFirstName(extractedFirstName);
 
-        // Fetch streaks
-        const { authenticatedGet } = await import('@/utils/api');
-        const streaksResponse = await authenticatedGet<{ checkInStreak: number; reflectionStreak: number }>('/api/streaks');
-        console.log('🏠 [Home] Streaks loaded:', streaksResponse);
-        
-        if (!isMounted) {
-          console.log('🏠 [Home] Component unmounted, skipping state updates');
-          return;
-        }
-        
-        setCheckInStreak(streaksResponse.checkInStreak);
-        setReflectionStreak(streaksResponse.reflectionStreak);
-
         // Fetch personalization data for AI companion
         try {
           const personalizationResponse = await authenticatedGet<PersonalizationData>('/api/check-in/personalization');
@@ -117,8 +102,6 @@ export default function HomeScreen() {
         // Use defaults on error
         if (isMounted) {
           setFirstName('Friend');
-          setCheckInStreak(0);
-          setReflectionStreak(0);
         }
       } finally {
         if (isMounted) {
@@ -170,10 +153,6 @@ export default function HomeScreen() {
   };
 
   const greetingText = 'Peace to you, friend.';
-  const checkInStreakText = `${checkInStreak}`;
-  const checkInBestText = `best: 2`;
-  const reflectionStreakText = `${reflectionStreak}`;
-  const reflectionBestText = `best: 4`;
 
   const isValidText = (val: string | null | undefined, minLen = 5) =>
     typeof val === 'string' && val.trim().length > minLen;
@@ -224,36 +203,6 @@ export default function HomeScreen() {
               >
                 {greetingText}
               </Animated.Text>
-            </View>
-
-            <View style={styles.streakContainer}>
-              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                  Check-In Streak
-                </Text>
-                <View style={styles.streakRow}>
-                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
-                    {checkInStreakText}
-                  </Text>
-                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
-                    {checkInBestText}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-                <Text style={[styles.streakLabel, { color: textSecondaryColor }]}>
-                  Reflection Streak
-                </Text>
-                <View style={styles.streakRow}>
-                  <Text style={[styles.streakNumber, { color: colors.primary }]}>
-                    {reflectionStreakText}
-                  </Text>
-                  <Text style={[styles.streakBest, { color: textSecondaryColor }]}>
-                    {reflectionBestText}
-                  </Text>
-                </View>
-              </View>
             </View>
 
             {/* Love Messages card */}
@@ -442,40 +391,6 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: typography.h2,
     fontWeight: typography.semibold,
-  },
-  streakContainer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  streakCard: {
-    flex: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  streakLabel: {
-    fontSize: 12,
-    fontWeight: typography.regular,
-    marginBottom: spacing.xs,
-  },
-  streakRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  streakNumber: {
-    fontSize: 28,
-    fontWeight: typography.bold,
-  },
-  streakBest: {
-    fontSize: 12,
-    fontWeight: typography.regular,
   },
   primaryActions: {
     gap: spacing.lg,
