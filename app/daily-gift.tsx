@@ -205,7 +205,8 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current...`);
       setIsLoadingGift(true);
       
-      const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const response = await authenticatedGet<DailyGiftResponse>(`/api/weekly-theme/current?date=${localDate}`);
       
       if (!isMounted) {
         console.log('[DailyGift] Component unmounted, skipping state updates');
