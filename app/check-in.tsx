@@ -741,21 +741,9 @@ export default function CheckInScreen() {
               size={24}
               color="#FFFFFF"
             />
-            <TouchableOpacity
-              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || isLoading}
-            >
-              <IconSymbol
-                ios_icon_name="arrow.up"
-                android_material_icon_name="send"
-                size={24}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
 
         {/* Crisis Resources Modal */}
         <Modal
