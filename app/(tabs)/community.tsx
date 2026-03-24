@@ -692,9 +692,6 @@ export default function CommunityScreen() {
         {/* Care Messages Section (only in Care tab) */}
         {selectedTab === 'care' && (
           <View style={styles.careMessagesSection}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              Messages You've Received
-            </Text>
             {!user ? (
               <View style={styles.emptyState}>
                 <IconSymbol
@@ -1629,6 +1626,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   headerBanner: {
+    backgroundColor: 'rgba(34,197,94,0.13)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.3)',
     alignSelf: 'center',
     alignSelf: 'center',
     paddingHorizontal: 18,
