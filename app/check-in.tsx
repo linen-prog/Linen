@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -510,13 +510,7 @@ export default function CheckInScreen() {
 
   const renderEmptyState = () => {
     return (
-      <ScrollView
-        style={styles.emptyStateContainer}
-        contentContainerStyle={styles.emptyStateScrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.emptyStateContent}>
+      <View style={styles.emptyStateContent}>
           <View style={styles.iconContainer}>
             <IconSymbol
               ios_icon_name="heart.text.square.fill"
@@ -552,7 +546,6 @@ export default function CheckInScreen() {
             </Text>
           </View>
         </View>
-      </ScrollView>
     );
   };
 
@@ -568,6 +561,8 @@ export default function CheckInScreen() {
   const labelColor = isDark ? '#d4d4d8' : 'rgba(120,113,108,0.75)';
   
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
+
+  const headerHeight = Platform.OS === 'ios' ? (insets.top + 44) : (StatusBar.currentHeight ?? 24) + 56;
 
   return (
     <GradientBackground>
@@ -585,6 +580,7 @@ export default function CheckInScreen() {
             color: isDark ? '#fafaf9' : '#1c1917',
             fontFamily: 'Georgia',
           },
+          tabBarStyle: { display: 'none' },
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
@@ -632,17 +628,24 @@ export default function CheckInScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
+        keyboardVerticalOffset={headerHeight}
       >
         {messages.length === 0 ? (
-          renderEmptyState()
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.emptyStateScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {renderEmptyState()}
+          </ScrollView>
         ) : (
           <FlatList
             ref={flatListRef}
             data={messages}
             renderItem={renderMessage}
             keyExtractor={item => item.id}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={[styles.messagesList, { paddingBottom: 16 }]}
             showsVerticalScrollIndicator={false}
             scrollEnabled={true}
             style={{ flex: 1 }}
@@ -658,7 +661,7 @@ export default function CheckInScreen() {
         <View style={[styles.inputContainer, {
           backgroundColor: inputBg,
           borderTopColor: inputBorder,
-          paddingBottom: insets.bottom + 8,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
         }]}>
           <TextInput
             style={[styles.input, {
@@ -678,7 +681,7 @@ export default function CheckInScreen() {
           />
           <TouchableOpacity
             style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={handleSend}
+            onPress={() => { console.log('[CheckIn] Send button pressed'); handleSend(); }}
             disabled={!inputText.trim() || isLoading}
           >
             <IconSymbol
@@ -831,7 +834,7 @@ export default function CheckInScreen() {
                 </Text>
               </View>
               
-              <ScrollView style={styles.prayerScroll}>
+              <ScrollView style={styles.prayerScroll} nestedScrollEnabled scrollEnabled>
                 <Text style={[styles.prayerText, { color: textColor }]}>
                   {generatedPrayer}
                 </Text>
@@ -841,43 +844,37 @@ export default function CheckInScreen() {
                 You can pray this aloud, edit it, or simply let it rest with you.
               </Text>
 
-              <View style={styles.prayerActions}>
-                <TouchableOpacity 
-                  style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    console.log('[CheckIn] 🔵 User clicked "Share with Community" button in prayer modal');
-                    console.log('[CheckIn] 🔵 Current prayer ID:', generatedPrayerId);
-                    if (!generatedPrayerId) {
-                      console.error('[CheckIn] ❌ Prayer ID is empty when trying to share!');
-                      Alert.alert('Error', 'Prayer ID is missing. Please try generating the prayer again.');
-                      return;
-                    }
-                    setShowShareModal(true);
-                  }}
-                >
-                  <IconSymbol 
-                    ios_icon_name="square.and.arrow.up"
-                    android_material_icon_name="share"
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.primaryButtonText}>
-                    Share with Community
-                  </Text>
-                </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.primaryButton, { backgroundColor: colors.primary, marginTop: 12 }]}
+                onPress={() => {
+                  console.log('[CheckIn] User tapped "Share with Community" in prayer modal');
+                  setShowShareModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol 
+                  ios_icon_name="square.and.arrow.up"
+                  android_material_icon_name="share"
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.primaryButtonText}>
+                  Share with Community
+                </Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    console.log('[CheckIn] User keeping prayer private');
-                    setShowPrayerModal(false);
-                  }}
-                >
-                  <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
-                    Keep Private
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  console.log('[CheckIn] User keeping prayer private');
+                  setShowPrayerModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelButtonText, { color: textSecondaryColor }]}>
+                  Keep Private
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -1309,7 +1306,7 @@ export default function CheckInScreen() {
         </Modal>
 
         {/* Floating Tab Bar */}
-        <FloatingTabBar tabs={tabs} />
+        {/* FloatingTabBar hidden on this screen */}
 
         {/* Share AI Message Modal - Wisdom Only */}
         <Modal
