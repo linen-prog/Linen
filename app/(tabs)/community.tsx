@@ -1,33 +1,21 @@
 
 /**
  * Community Screen - Tab-based content sharing
- * 
+ *
  * DATA FLOW DOCUMENTATION:
- * 
- * Feed Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'feed' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'feed' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'feed'
- * 
+ *
+ * All Tab (feed):
+ * - Shows posts from ALL categories combined, sorted newest first
+ *
  * Wisdom Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'wisdom' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'wisdom' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'wisdom'
- * 
+ * - Shows posts with category: 'wisdom'
+ *
  * Care Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'care' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'care' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'care'
- * 
- * Prayers Tab:
- * - Shows reflections shared from Daily Gift page (app/daily-gift.tsx) when category: 'prayers' is selected
- * - Shows prayers shared from Check-In page (app/check-in.tsx) when category: 'prayers' is selected
- * - Creates posts with contentType: 'daily-gift' or 'companion' and category: 'prayers'
- * 
- * My Shared Tab:
- * - Shows all posts created by the current user
- * - Includes both Daily Gift reflections and Check-In prayers from all categories
- * - Fetched from /api/community/my-posts endpoint
+ * - Shows posts with category: 'care'
+ * - Also shows care messages received by the current user
+ *
+ * Prayer Tab:
+ * - Shows posts with category: 'prayers'
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -575,9 +563,10 @@ export default function CommunityScreen() {
     { id: 'feed', label: 'All', icon: 'favorite' as const },
     { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
     { id: 'care', label: 'Care', icon: 'chat' as const },
-    { id: 'prayers', label: 'Prayers', icon: 'church' as const },
-    { id: 'my-shared', label: 'My Shared', icon: 'share' as const },
+    { id: 'prayers', label: 'Prayer', icon: 'church' as const },
   ];
+
+
 
 
 
@@ -638,11 +627,13 @@ export default function CommunityScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-        {/* Header Message */}
-        <View style={styles.headerMessage}>
-          <Text style={styles.headerMessageText}>
-            You are not alone here
-          </Text>
+        {/* Top Banner */}
+        <View style={styles.headerBannerWrap}>
+          <View style={styles.headerBanner}>
+            <Text style={styles.headerBannerText}>
+              ✨ You are not alone in this journey
+            </Text>
+          </View>
         </View>
 
         {/* Title Section */}
@@ -652,9 +643,6 @@ export default function CommunityScreen() {
           </Text>
           <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
             A place to share, receive, and be held
-          </Text>
-          <Text style={[styles.guidingLine, { color: textSecondaryColor }]}>
-            Read slowly. You don't have to take it all in.
           </Text>
         </View>
 
@@ -674,19 +662,13 @@ export default function CommunityScreen() {
                   key={tab.id}
                   style={[
                     styles.tab,
-                    isSelected && [styles.tabSelected, { backgroundColor: colors.primary }]
+                    isSelected && styles.tabSelected
                   ]}
                   onPress={() => {
                     console.log('[Community] User selected tab:', tab.id);
                     setSelectedTab(tab.id);
                   }}
                 >
-                  <IconSymbol 
-                    ios_icon_name={tab.icon}
-                    android_material_icon_name={tab.icon}
-                    size={16}
-                    color={isSelected ? '#FFFFFF' : textSecondaryColor}
-                  />
                   <Text style={[
                     styles.tabText,
                     isSelected ? styles.tabTextSelected : { color: textSecondaryColor }
@@ -699,15 +681,17 @@ export default function CommunityScreen() {
           </ScrollView>
         </View>
 
-        {/* Care Message */}
-        <View style={styles.careMessage}>
-          <Text style={[styles.careMessageText, { color: textSecondaryColor }]}>
-            {selectedTab === 'my-shared' 
-              ? 'Your shared reflections and prayers'
-              : selectedTab === 'feed'
-              ? 'Shared reflections and care from this space'
-              : 'Each reflection below is held with care and prayer'
-            }
+        {/* Guiding line */}
+        <View style={styles.guidingLineRow}>
+          <Text style={[styles.guidingLine, { color: textSecondaryColor }]}>
+            Receive what feels right.
+          </Text>
+        </View>
+
+        {/* Section description */}
+        <View style={styles.sectionDescriptionRow}>
+          <Text style={[styles.sectionDescription, { color: textSecondaryColor }]}>
+            Shared reflections and care from this space
           </Text>
         </View>
 
@@ -813,10 +797,7 @@ export default function CommunityScreen() {
                 color={textSecondaryColor}
               />
               <Text style={[styles.emptyStateText, { color: textSecondaryColor }]}>
-                {selectedTab === 'my-shared' 
-                  ? 'Your reflections will appear here when you share them'
-                  : 'This space will fill with shared hearts'
-                }
+                This space will fill with shared hearts
               </Text>
               <Text style={[styles.emptyStateSubtext, { color: textSecondaryColor }]}>
                 You're welcome to simply be here
@@ -842,7 +823,7 @@ export default function CommunityScreen() {
                       <IconSymbol 
                         ios_icon_name={post.isAnonymous ? 'person.fill.questionmark' : 'person.fill'}
                         android_material_icon_name={post.isAnonymous ? 'help' : 'person'}
-                        size={20}
+                        size={18}
                         color={textSecondaryColor}
                       />
                       <Text style={[styles.postAuthorName, { color: textSecondaryColor }]}>
@@ -936,6 +917,7 @@ export default function CommunityScreen() {
                       <Text style={[styles.prayLabel, { color: textSecondaryColor }]}>
                         Held in prayer
                       </Text>
+
                     </TouchableOpacity>
                   </View>
 
@@ -963,7 +945,7 @@ export default function CommunityScreen() {
                         <TouchableOpacity
                           style={styles.reactButton}
                           onPress={() => {
-                            console.log('[Community] User tapped React button for post:', post.id);
+                            console.log('[Community] User tapped Send care button for post:', post.id);
                             if (!user?.id) {
                               console.log('[Community] ⚠️ Guest user cannot react - showing auth prompt');
                               setShowAuthPrompt(true);
@@ -1627,6 +1609,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingBottom: 120,
     paddingBottom: spacing.xxl,
   },
   backRow: {
@@ -1639,6 +1622,44 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerBannerWrap: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  guidingLineRow: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  headerBanner: {
+    alignSelf: 'center',
+    alignSelf: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    borderRadius: 20,
+    marginBottom: 10,
+    backgroundColor: 'rgba(255,248,235,0.55)',
+  },
+  headerBannerText: {
+    fontSize: 13,
+    color: '#8B6F47',
+    fontWeight: '400',
+    letterSpacing: 0.2,
+  },
+  sectionDescriptionRow: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  sectionDescription: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 20,
   },
   headerMessage: {
     alignSelf: 'center',
@@ -1718,7 +1739,7 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   tabsSection: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   tabsContainer: {
     paddingHorizontal: spacing.md,
@@ -1777,9 +1798,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   postCard: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    marginBottom: 16,
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 28,
     borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -1789,9 +1820,9 @@ const styles = StyleSheet.create({
   },
 
   postHeader: {
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 0.5,
+    padding: 24,
+    marginBottom: 28,
+    borderWidth: 0.3,
     shadowColor: borderRadius.lg,
     padding: spacing.lg,
     shadowColor: colors.shadow,
@@ -1901,6 +1932,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   reactButton: {
+    backgroundColor: 'rgba(232, 160, 160, 0.12)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -1908,8 +1940,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colors.border || '#E0E0E0',
+    borderWidth: 0.5,
+    borderColor: colors.border || '#E8E0D8',
   },
   reactButtonText: {
     fontSize: typography.bodySmall,
@@ -2103,6 +2135,7 @@ const styles = StyleSheet.create({
   },
   // Encourage button on post cards
   encourageButton: {
+    backgroundColor: 'rgba(232, 160, 160, 0.10)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
