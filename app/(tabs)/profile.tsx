@@ -746,10 +746,10 @@ export default function ProfileScreen() {
             Profile
           </Text>
           <Text style={[styles.headerSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-            Everything here is optional. Nothing is required to belong.
+            Nothing here is required to belong.
           </Text>
           <Text style={[styles.headerSubtext, { color: colors.textLight }]}>
-            This space exists for care, not classification. Share what feels right, when it feels right.
+            Share what feels right, when it feels right.
           </Text>
         </View>
 
@@ -777,7 +777,7 @@ export default function ProfileScreen() {
                 setShowDisplayNameModal(true);
               }}>
                 <Text style={[styles.editLink, { color: colors.primary }]}>
-                  Edit display name (optional)
+                  Edit how you appear (optional)
                 </Text>
               </TouchableOpacity>
             </View>
@@ -788,45 +788,11 @@ export default function ProfileScreen() {
         {stats && (
           <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
             <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
-              Your Journey
+              Your Time Here
             </Text>
             <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-              A gentle record of your time here
+              A gentle record of your presence
             </Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.checkInStreak}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Check-in Streak
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.reflectionStreak}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Reflection Streak
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.totalReflections}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Total Reflections
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.daysInCommunity}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Days in Community
-                </Text>
-              </View>
-            </View>
 
             <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
 
@@ -843,10 +809,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.menuItemTextContainer}>
                   <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
-                    Monthly Recap
+                    A Look Back
                   </Text>
                   <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                    View your monthly journey insights
+                    A gentle reflection of your month
                   </Text>
                 </View>
               </View>
@@ -861,7 +827,7 @@ export default function ProfileScreen() {
             Community Preview
           </Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-            How you might appear to others (if you choose to share)
+            If you choose to share, this is how you'll appear
           </Text>
           <View style={styles.previewContainer}>
             <View style={[styles.previewAvatar, { backgroundColor: colors.primaryLight }]}>
@@ -886,7 +852,7 @@ export default function ProfileScreen() {
         {/* AI Companion */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            AI Companion (Optional)
+            Your Companion
           </Text>
         </View>
 
@@ -909,10 +875,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Personalize Your AI Companion
+                  Your Companion
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  {companionSubtitle}
+                  Adjust how your companion meets you
                 </Text>
               </View>
             </View>
@@ -944,7 +910,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Companion Name
+                  Name your companion
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                   {profile?.companionName || 'Not set'}
@@ -963,7 +929,7 @@ export default function ProfileScreen() {
         {/* Presence Mode */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Presence & Boundaries (Optional)
+            Presence & Boundaries
           </Text>
         </View>
 
@@ -1023,10 +989,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Emotional Safety
+                  Your boundaries
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  Set boundaries that honor your needs
+                  Set what feels safe for you
                 </Text>
               </View>
             </View>
@@ -1104,7 +1070,7 @@ export default function ProfileScreen() {
                   My Shared Reflections
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  {stats?.totalSharedPosts || 0} posts shared
+                  What you've shared
                 </Text>
               </View>
             </View>
@@ -1172,7 +1138,7 @@ export default function ProfileScreen() {
                   Push Notifications
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  Manage push notification settings
+                  Choose how you'd like to be reminded
                 </Text>
               </View>
             </View>
@@ -2123,6 +2089,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    marginBottom: spacing.xl,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
@@ -2131,11 +2100,11 @@ const styles = StyleSheet.create({
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
       },
       default: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowColor: 'rgba(0,0,0,0.06)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+        elevation: 1,
       },
     }),
   },
@@ -2242,6 +2211,7 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   sectionHeader: {
+    marginTop: spacing.lg,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.xs,
