@@ -646,8 +646,8 @@ export default function CommunityScreen() {
         >
         {/* Top Banner */}
         <View style={styles.headerBannerWrap}>
-          <View style={styles.headerBanner}>
-            <Text style={styles.headerBannerText}>
+          <View style={[styles.headerBanner, { backgroundColor: isDark ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.13)' }]}>
+            <Text style={[styles.headerBannerText, { color: isDark ? '#ffffff' : '#065f46' }]}>
               ✨ You are not alone in this journey
             </Text>
           </View>

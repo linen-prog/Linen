@@ -563,9 +563,9 @@ export default function CheckInScreen() {
     { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
   ];
 
-  const prayerIconColor = isDark ? 'rgba(4,120,87,0.75)' : 'rgba(4,120,87,0.75)';
-  const careIconColor = isDark ? 'rgba(4,120,87,0.75)' : 'rgba(4,120,87,0.75)';
-  const labelColor = isDark ? 'rgba(120,113,108,0.75)' : 'rgba(120,113,108,0.75)';
+  const prayerIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
+  const careIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
+  const labelColor = isDark ? '#d4d4d8' : 'rgba(120,113,108,0.75)';
   
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
@@ -582,7 +582,7 @@ export default function CheckInScreen() {
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: '400' as const,
-            color: '#1c1917',
+            color: isDark ? '#fafaf9' : '#1c1917',
             fontFamily: 'Georgia',
           },
           headerLeft: () => (
@@ -1177,25 +1177,25 @@ export default function CheckInScreen() {
               </View>
 
               {/* Title */}
-              <Text style={styles.celebrationTitle}>
+              <Text style={[styles.celebrationTitle, { color: textColor }]}>
                 Your Request is Shared 🎉
               </Text>
 
               {/* Subtitle */}
-              <Text style={styles.celebrationSubtitle}>
+              <Text style={[styles.celebrationSubtitle, { color: textSecondaryColor }]}>
                 The community will be able to send you encouragement
               </Text>
 
               {/* Anonymous note */}
               {careAnonymous && (
-                <Text style={styles.celebrationAnonymousNote}>
+                <Text style={[styles.celebrationAnonymousNote, { color: textSecondaryColor }]}>
                   (shared anonymously)
                 </Text>
               )}
 
               {/* Reassurance box */}
               <View style={styles.celebrationReassuranceBox}>
-                <Text style={styles.celebrationReassuranceText}>
+                <Text style={[styles.celebrationReassuranceText, { color: textColor }]}>
                   You are not alone. The community is here to hold you with gentle care and support.
                 </Text>
               </View>
@@ -1271,25 +1271,25 @@ export default function CheckInScreen() {
               </View>
 
               {/* Title */}
-              <Text style={styles.prayerCelebrationTitle}>
+              <Text style={[styles.prayerCelebrationTitle, { color: textColor }]}>
                 Thank you for sharing 🙏
               </Text>
 
               {/* Subtitle */}
-              <Text style={styles.prayerCelebrationSubtitle}>
+              <Text style={[styles.prayerCelebrationSubtitle, { color: textSecondaryColor }]}>
                 Your prayer has been shared with the community
               </Text>
 
               {/* Anonymous note */}
               {shareAnonymous && (
-                <Text style={styles.prayerCelebrationAnonymousNote}>
+                <Text style={[styles.prayerCelebrationAnonymousNote, { color: textSecondaryColor }]}>
                   (shared anonymously)
                 </Text>
               )}
 
               {/* Reassurance box */}
               <View style={styles.prayerCelebrationReassuranceBox}>
-                <Text style={styles.prayerCelebrationReassuranceText}>
+                <Text style={[styles.prayerCelebrationReassuranceText, { color: textColor }]}>
                   Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
                 </Text>
               </View>
@@ -1987,7 +1987,7 @@ const styles = StyleSheet.create({
   },
   celebrationSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     marginBottom: spacing.xs,
     lineHeight: 22,
@@ -2009,7 +2009,7 @@ const styles = StyleSheet.create({
   },
   celebrationReassuranceText: {
     fontSize: 14,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -2116,7 +2116,7 @@ const styles = StyleSheet.create({
   },
   prayerCelebrationSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     marginBottom: spacing.xs,
     lineHeight: 22,
@@ -2138,7 +2138,7 @@ const styles = StyleSheet.create({
   },
   prayerCelebrationReassuranceText: {
     fontSize: 14,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     lineHeight: 20,
   },
