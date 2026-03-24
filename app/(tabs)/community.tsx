@@ -150,24 +150,18 @@ export default function CommunityScreen() {
         console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
         allPosts = await authenticatedGet<Post[]>(endpoint);
       } else if (category === 'feed') {
-        // For feed tab, fetch posts from ALL categories (feed, wisdom, care, prayers)
-        console.log('[Community] 🔵 Fetching posts from ALL categories for feed');
-        const categories = ['feed', 'wisdom', 'care', 'prayers'];
-        const categoryPromises = categories.map(cat => 
-          authenticatedGet<Post[]>(`/api/community/posts?category=${cat}`)
-        );
-        const categoryResults = await Promise.all(categoryPromises);
-        
-        // Combine all posts from all categories
-        allPosts = categoryResults.flat();
-        
+        // For feed tab, fetch all posts (no category filter)
+        const endpoint = '/api/community/posts';
+        console.log('[Community] 🔵 Fetching all posts for feed from:', endpoint);
+        allPosts = await authenticatedGet<Post[]>(endpoint);
         // Sort by createdAt (newest first)
         allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        
-        console.log('[Community] ✅ Combined posts from all categories:', allPosts.length, 'posts');
+        console.log('[Community] ✅ All posts loaded for feed:', allPosts.length, 'posts');
       } else {
-        // For specific category tabs (wisdom, care, prayers), only show that category
-        const endpoint = `/api/community/posts?category=${category}`;
+        // Map tab id to the correct category query param
+        // prayers tab → category=prayer (singular, matches what check-in posts)
+        const categoryParam = category === 'prayers' ? 'prayer' : category;
+        const endpoint = `/api/community/posts?category=${categoryParam}`;
         console.log('[Community] 🔵 Fetching posts from:', endpoint);
         allPosts = await authenticatedGet<Post[]>(endpoint);
       }

@@ -62,7 +62,7 @@ export default function CheckInScreen() {
   const [generatedPrayer, setGeneratedPrayer] = useState<string>('');
   const [generatedPrayerId, setGeneratedPrayerId] = useState<string>('');
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
-  const [shareCategory, setShareCategory] = useState<'feed' | 'wisdom' | 'care' | 'prayers'>('prayers');
+  const [shareCategory, setShareCategory] = useState<'prayer' | 'wisdom' | 'care'>('prayer');
   const [shareAnonymous, setShareAnonymous] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [careRequestText, setCareRequestText] = useState('');
@@ -288,37 +288,36 @@ export default function CheckInScreen() {
 
   const handleShareToCommunity = async () => {
     console.log('[CheckIn] 🔵 handleShareToCommunity called');
-    console.log('[CheckIn] 🔵 Prayer ID:', generatedPrayerId);
-    console.log('[CheckIn] 🔵 Category:', shareCategory);
+    console.log('[CheckIn] 🔵 Prayer text length:', generatedPrayer.length);
     console.log('[CheckIn] 🔵 Anonymous:', shareAnonymous);
-    
-    if (!generatedPrayerId) {
-      console.error('[CheckIn] ❌ No prayer ID available for sharing');
+
+    if (!generatedPrayer) {
+      console.error('[CheckIn] ❌ No prayer text available for sharing');
       Alert.alert('Error', 'No prayer to share. Please generate a prayer first.');
       return;
     }
-    
+
     setIsSharing(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      console.log('[CheckIn] 🔵 Calling /api/check-in/share-prayer endpoint...');
-      
+      console.log('[CheckIn] 🔵 POST /api/community/posts with category: prayer');
+
       const requestBody = {
-        prayerId: generatedPrayerId,
-        category: shareCategory,
+        content: generatedPrayer,
+        category: 'prayer',
         isAnonymous: shareAnonymous,
       };
       console.log('[CheckIn] 🔵 Request body:', requestBody);
-      
-      const response = await authenticatedPost('/api/check-in/share-prayer', requestBody);
-      
+
+      const response = await authenticatedPost('/api/community/posts', requestBody);
+
       console.log('[CheckIn] ✅ Prayer shared to community successfully!', response);
-      
+
       setShowShareModal(false);
       setShowPrayerModal(false);
       setIsSharing(false);
-      
+
       // Show celebratory success modal
       setShowPrayerSuccessModal(true);
     } catch (error: any) {
@@ -351,18 +350,19 @@ export default function CheckInScreen() {
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      console.log('[CheckIn] 🔵 Calling /api/check-in/request-care endpoint...');
-      
-      const response = await authenticatedPost('/api/check-in/request-care', {
+      console.log('[CheckIn] 🔵 POST /api/community/posts with category: care');
+
+      const response = await authenticatedPost('/api/community/posts', {
         content: requestText,
+        category: 'care',
         isAnonymous: careAnonymous,
       });
-      
+
       console.log('[CheckIn] ✅ Care request submitted successfully!', response);
       setShowCareModal(false);
       setCareRequestText('');
       setIsSubmittingCare(false);
-      
+
       // Show celebratory success modal
       setShowCareSuccessModal(true);
     } catch (error: any) {
@@ -379,44 +379,43 @@ export default function CheckInScreen() {
   };
 
   const handleShareMessage = async () => {
-    if (!selectedMessageId) {
-      console.error('[CheckIn] ❌ No message ID selected for sharing');
+    if (!selectedMessageContent) {
+      console.error('[CheckIn] ❌ No message content selected for sharing');
       return;
     }
 
-    console.log('[CheckIn] 🔵 User sharing AI message to Wisdom feed', { 
-      messageId: selectedMessageId, 
-      messageIdType: typeof selectedMessageId,
-      anonymous: messageShareAnonymous 
+    console.log('[CheckIn] 🔵 User sharing AI message to Wisdom feed', {
+      contentLength: selectedMessageContent.length,
+      anonymous: messageShareAnonymous,
     });
     setIsSharingMessage(true);
 
     try {
       const { authenticatedPost } = await import('@/utils/api');
-      console.log('[CheckIn] 🔵 Calling /api/check-in/share-message endpoint with messageId:', selectedMessageId);
-      
-      const response = await authenticatedPost('/api/check-in/share-message', {
-        messageId: selectedMessageId,
+      console.log('[CheckIn] 🔵 POST /api/community/posts with category: wisdom');
+
+      const response = await authenticatedPost('/api/community/posts', {
+        content: selectedMessageContent,
         category: 'wisdom',
         isAnonymous: messageShareAnonymous,
       });
-      
+
       console.log('[CheckIn] ✅ AI message shared to Wisdom feed successfully!', response);
       setShowMessageShareModal(false);
       setSelectedMessageId('');
       setSelectedMessageContent('');
       setMessageShareAnonymous(false);
       setIsSharingMessage(false);
-      
-      // Show success message with option to view community
+
+      // Show inline confirmation then navigate
       Alert.alert(
-        'Shared!',
-        'This reflection has been shared with the community in the Wisdom tab.',
+        'Shared with community',
+        'This reflection now appears in the Wisdom tab.',
         [
           {
             text: 'View Community',
             onPress: () => {
-              console.log('[CheckIn] User navigating to community page');
+              console.log('[CheckIn] User navigating to community Wisdom tab');
               setTimeout(() => {
                 try {
                   router.navigate('/(tabs)/community');
@@ -425,12 +424,9 @@ export default function CheckInScreen() {
                   router.replace('/(tabs)');
                 }
               }, 100);
-            }
+            },
           },
-          {
-            text: 'OK',
-            style: 'cancel'
-          }
+          { text: 'OK', style: 'cancel' },
         ]
       );
     } catch (error: any) {
@@ -438,7 +434,7 @@ export default function CheckInScreen() {
       console.error('[CheckIn] ❌ Error details:', {
         message: error?.message,
         response: error?.response,
-        status: error?.status
+        status: error?.status,
       });
       setIsSharingMessage(false);
       const errorMessage = error?.message || 'Failed to share message. Please try again.';

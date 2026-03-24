@@ -773,6 +773,7 @@ export default function ProfileScreen() {
                 {userEmail}
               </Text>
               <TouchableOpacity onPress={() => {
+                console.log('ProfileScreen: Edit how you appear pressed');
                 setTempDisplayName(profile?.displayName || '');
                 setShowDisplayNameModal(true);
               }}>
@@ -2066,7 +2067,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     alignItems: 'center',
   },
   headerTitle: {
@@ -2094,7 +2095,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     ...Platform.select({
       web: {
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
