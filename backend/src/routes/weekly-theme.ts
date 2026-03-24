@@ -54,6 +54,23 @@ function getDayOfYear(): number {
   return dayOfYear; // 0 = Jan 1, 364 = Dec 31
 }
 
+// Parse a date string (YYYY-MM-DD format) and calculate day of year
+function getDayOfYearFromDate(dateStr: string): number {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const startOfYear = new Date(year, 0, 1);
+  const diff = date.getTime() - startOfYear.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return dayOfYear; // 0 = Jan 1, 364 = Dec 31
+}
+
+// Parse a date string (YYYY-MM-DD format) and get day of week (0=Sunday, 6=Saturday)
+function getDayOfWeekFromDate(dateStr: string): number {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getDay();
+}
+
 // Calculate which week (0-51) of the 52-week liturgical cycle we're in
 function getCurrentWeekIndex(): number {
   const now = new Date();
@@ -1173,10 +1190,98 @@ export function registerWeeklyThemeRoutes(app: App) {
   // Get current weekly theme with daily scripture
   app.fastify.get(
     '/api/weekly-theme/current',
-    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-      app.logger.info('Fetching current weekly theme');
+    {
+      schema: {
+        description: 'Get current weekly theme with daily scripture and somatic content',
+        tags: ['weekly-theme'],
+        querystring: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', format: 'date', description: 'Optional date in YYYY-MM-DD format. If provided, uses this date instead of server\'s current date' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              weeklyTheme: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  weekStartDate: { type: 'string' },
+                  liturgicalSeason: { type: 'string' },
+                  themeTitle: { type: 'string' },
+                  themeDescription: { type: 'string' },
+                  featuredExerciseId: { type: ['string', 'null'], format: 'uuid' },
+                  reflectionPrompt: { type: ['string', 'null'] },
+                  somaticExercise: { type: ['object', 'null'] },
+                },
+              },
+              dailyContent: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  dayOfWeek: { type: 'integer' },
+                  dayTitle: { type: 'string' },
+                  scriptureReference: { type: 'string' },
+                  scriptureText: { type: 'string' },
+                  reflectionQuestion: { type: 'string' },
+                  somaticPrompt: { type: ['string', 'null'] },
+                  dayOfYear: { type: 'integer' },
+                },
+              },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest<{ Querystring: { date?: string } }>, reply: FastifyReply): Promise<void> => {
+      const { date: providedDate } = request.query;
+
+      app.logger.info({ providedDate }, 'Fetching current weekly theme');
 
       try {
+        // Validate and parse the date parameter if provided
+        let currentDayOfWeek: number;
+        let dayOfYear: number;
+
+        if (providedDate) {
+          // Validate date format (YYYY-MM-DD)
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateRegex.test(providedDate)) {
+            app.logger.warn({ providedDate }, 'Invalid date format provided');
+            return reply.status(400).send({ error: 'Invalid date format. Use YYYY-MM-DD' });
+          }
+
+          // Parse the provided date
+          currentDayOfWeek = getDayOfWeekFromDate(providedDate);
+          dayOfYear = getDayOfYearFromDate(providedDate);
+
+          app.logger.info(
+            { providedDate, dayOfWeek: currentDayOfWeek, dayOfYear },
+            'Using provided date for daily content'
+          );
+        } else {
+          // Use current Pacific Time (existing behavior)
+          const now = new Date();
+          const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+          currentDayOfWeek = pacificTime.getDay();
+          dayOfYear = getDayOfYear();
+
+          app.logger.info(
+            { dayOfWeek: currentDayOfWeek, dayOfYear },
+            'Using current Pacific Time for daily content'
+          );
+        }
+
         // Get all themes ordered by weekStartDate
         const allThemes = await app.db
           .select()
@@ -1221,25 +1326,14 @@ export function registerWeeklyThemeRoutes(app: App) {
           }
         }
 
-        // Get current day of week in Pacific Time (0=Sunday, 1=Monday, ..., 6=Saturday)
-        const now = new Date();
-        const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-        const currentDayOfWeek = pacificTime.getDay();
-
-        // Get the unique scripture for this day of the year (0-364) - ALWAYS calculate fresh
-        const dayOfYear = getDayOfYear();
-
         app.logger.info(
           {
-            utcTime: now.toISOString(),
-            pacificTimeString: pacificTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }),
-            pacificYear: pacificTime.getFullYear(),
-            pacificMonth: pacificTime.getMonth() + 1,
-            pacificDay: pacificTime.getDate(),
+            dateSource: providedDate ? 'provided' : 'current',
+            providedDate,
             dayOfWeek: currentDayOfWeek,
             dayOfYear,
           },
-          'Pacific Time details for daily scripture calculation'
+          'Date details for daily scripture calculation'
         );
 
         // ALWAYS generate daily content from the 365-day scripture cycle
