@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
+import { NotificationBell } from "@/components/NotificationBell";
 import { Ionicons } from '@expo/vector-icons';
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -201,7 +202,9 @@ export default function HomeScreen() {
               </View>
               <View style={styles.loveMessagesTextBlock}>
                 <Text style={styles.loveMessagesTitle}>{"You've received care"}</Text>
-              </View>
+                            <NotificationBell />
+              
+</View>
             </View>
             {unreadCount > 0 && (
               <View style={styles.loveMessagesBadge}>

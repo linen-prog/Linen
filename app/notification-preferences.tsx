@@ -20,40 +20,31 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { colors } from "@/styles/commonStyles";
 
-// Notification categories for Linen
+// Notification categories - customize these for your app
 const NOTIFICATION_CATEGORIES = [
   {
-    key: "care_messages",
-    label: "Care Messages",
-    description: "When someone sends you a care message",
+    key: "updates",
+    label: "App Updates",
+    description: "New features and improvements",
     defaultEnabled: true,
   },
   {
-    key: "prayers",
-    label: "Prayers",
-    description: "When someone prays for your post",
+    key: "promotions",
+    label: "Promotions",
+    description: "Special offers and discounts",
     defaultEnabled: true,
   },
   {
-    key: "reactions",
-    label: "Community Reactions",
-    description: "When someone reacts to your reflection",
-    defaultEnabled: true,
-  },
-  {
-    key: "daily_gift",
-    label: "Daily Gift Reminder",
-    description: "Reminder to open your daily scripture gift",
+    key: "reminders",
+    label: "Reminders",
+    description: "Activity reminders and tips",
     defaultEnabled: true,
   },
 ];
 
 export default function NotificationPreferencesScreen() {
   const router = useRouter();
-  const { isDark } = useTheme();
   const { hasPermission, permissionDenied, isWeb, requestPermission, sendTag, deleteTag } =
     useNotifications();
 
@@ -99,25 +90,18 @@ export default function NotificationPreferencesScreen() {
     }
   };
 
-  const bgColor = isDark ? colors.backgroundDark : "#F2F2F7";
-  const cardBg = isDark ? colors.cardDark : "#fff";
-  const textColor = isDark ? colors.textDark : "#000";
-  const textSecondaryColor = isDark ? colors.textSecondaryDark : "#8E8E93";
-  const borderColorVal = isDark ? colors.borderDark : "#E5E5EA";
-  const separatorColor = isDark ? colors.borderDark : "#F2F2F7";
-
   if (isWeb) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-        <View style={[styles.header, { backgroundColor: cardBg, borderBottomColor: borderColorVal }]}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.backButton, { color: colors.primary }]}>← Back</Text>
+            <Text style={styles.backButton}>← Back</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: textColor }]}>Notifications</Text>
+          <Text style={styles.title}>Notifications</Text>
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.centeredContent}>
-          <Text style={[styles.webMessage, { color: textSecondaryColor }]}>
+          <Text style={styles.webMessage}>
             Push notifications are available in the mobile app.
           </Text>
         </View>
@@ -126,30 +110,30 @@ export default function NotificationPreferencesScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-      <View style={[styles.header, { backgroundColor: cardBg, borderBottomColor: borderColorVal }]}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Back</Text>
+          <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: textColor }]}>Notifications</Text>
+        <Text style={styles.title}>Notifications</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Permission Status */}
         <View style={styles.section}>
-          <View style={[styles.permissionCard, { backgroundColor: cardBg }]}>
+          <View style={styles.permissionCard}>
             <View style={styles.permissionHeader}>
               <Text style={styles.permissionIcon}>
                 {hasPermission ? "🔔" : "🔕"}
               </Text>
               <View style={styles.permissionTextContainer}>
-                <Text style={[styles.permissionTitle, { color: textColor }]}>
+                <Text style={styles.permissionTitle}>
                   {hasPermission
                     ? "Notifications Enabled"
                     : "Notifications Disabled"}
                 </Text>
-                <Text style={[styles.permissionDescription, { color: textSecondaryColor }]}>
+                <Text style={styles.permissionDescription}>
                   {hasPermission
                     ? "You'll receive push notifications"
                     : "Enable notifications to stay updated"}
@@ -158,7 +142,7 @@ export default function NotificationPreferencesScreen() {
             </View>
             {!hasPermission && (
               <TouchableOpacity
-                style={[styles.enableButton, { backgroundColor: colors.primary }]}
+                style={styles.enableButton}
                 onPress={handleEnableNotifications}
               >
                 <Text style={styles.enableButtonText}>Enable Notifications</Text>
@@ -170,12 +154,12 @@ export default function NotificationPreferencesScreen() {
         {/* Notification Categories */}
         {hasPermission && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textSecondaryColor }]}>Notification Types</Text>
+            <Text style={styles.sectionTitle}>Notification Types</Text>
             {NOTIFICATION_CATEGORIES.map((category) => (
-              <View key={category.key} style={[styles.categoryRow, { backgroundColor: cardBg, borderBottomColor: separatorColor }]}>
+              <View key={category.key} style={styles.categoryRow}>
                 <View style={styles.categoryText}>
-                  <Text style={[styles.categoryLabel, { color: textColor }]}>{category.label}</Text>
-                  <Text style={[styles.categoryDescription, { color: textSecondaryColor }]}>
+                  <Text style={styles.categoryLabel}>{category.label}</Text>
+                  <Text style={styles.categoryDescription}>
                     {category.description}
                   </Text>
                 </View>
@@ -184,7 +168,7 @@ export default function NotificationPreferencesScreen() {
                   onValueChange={(value) =>
                     handleCategoryToggle(category.key, value)
                   }
-                  trackColor={{ false: borderColorVal, true: colors.primary }}
+                  trackColor={{ false: "#E5E5EA", true: "#34C759" }}
                   thumbColor="#fff"
                 />
               </View>
@@ -199,6 +183,7 @@ export default function NotificationPreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F2F2F7",
   },
   header: {
     flexDirection: "row",
@@ -206,15 +191,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
   },
   backButton: {
     fontSize: 16,
+    color: "#007AFF",
     width: 60,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: "#000",
   },
   content: {
     flex: 1,
@@ -227,6 +216,7 @@ const styles = StyleSheet.create({
   },
   webMessage: {
     fontSize: 16,
+    color: "#8E8E93",
     textAlign: "center",
   },
   section: {
@@ -236,12 +226,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
+    color: "#8E8E93",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
   permissionCard: {
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -264,13 +256,16 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 17,
     fontWeight: "600",
+    color: "#000",
   },
   permissionDescription: {
     fontSize: 14,
+    color: "#8E8E93",
     marginTop: 2,
   },
   enableButton: {
     marginTop: 16,
+    backgroundColor: "#007AFF",
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
@@ -284,9 +279,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "#fff",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
   },
   categoryText: {
     flex: 1,
@@ -294,9 +291,11 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 16,
+    color: "#000",
   },
   categoryDescription: {
     fontSize: 13,
+    color: "#8E8E93",
     marginTop: 2,
   },
 });
