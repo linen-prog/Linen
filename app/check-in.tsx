@@ -896,12 +896,13 @@ export default function CheckInScreen() {
               </Text>
 
               <TouchableOpacity 
-                style={[styles.primaryButton, { backgroundColor: colors.primary, marginTop: 12 }]}
+                style={[styles.primaryButton, { backgroundColor: colors.primary, marginTop: 12, opacity: isSharing ? 0.7 : 1 }]}
                 onPress={() => {
-                  console.log('[CheckIn] User tapped "Share with Community" in prayer modal');
-                  setShowShareModal(true);
+                  console.log('[CheckIn] User tapped "Share with Community" button');
+                  handleSharePrayerDirect();
                 }}
                 activeOpacity={0.7}
+                disabled={isSharing || prayerShared}
               >
                 <IconSymbol 
                   ios_icon_name="square.and.arrow.up"
@@ -910,7 +911,7 @@ export default function CheckInScreen() {
                   color="#FFFFFF"
                 />
                 <Text style={styles.primaryButtonText}>
-                  Share with Community
+                  {isSharing ? 'Sharing...' : prayerShared ? 'Shared!' : 'Share with Community'}
                 </Text>
               </TouchableOpacity>
 
