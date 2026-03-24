@@ -746,10 +746,10 @@ export default function ProfileScreen() {
             Profile
           </Text>
           <Text style={[styles.headerSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-            Everything here is optional. Nothing is required to belong.
+            Nothing here is required to belong.
           </Text>
           <Text style={[styles.headerSubtext, { color: colors.textLight }]}>
-            This space exists for care, not classification. Share what feels right, when it feels right.
+            Share what feels right, when it feels right.
           </Text>
         </View>
 
@@ -773,87 +773,50 @@ export default function ProfileScreen() {
                 {userEmail}
               </Text>
               <TouchableOpacity onPress={() => {
+                console.log('ProfileScreen: Edit how you appear pressed');
                 setTempDisplayName(profile?.displayName || '');
                 setShowDisplayNameModal(true);
               }}>
                 <Text style={[styles.editLink, { color: colors.primary }]}>
-                  Edit display name (optional)
+                  Edit how you appear (optional)
                 </Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* Journey Stats */}
-        {stats && (
-          <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
-            <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
-              Your Journey
-            </Text>
-            <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-              A gentle record of your time here
-            </Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.checkInStreak}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Check-in Streak
-                </Text>
+        {/* Your Time Here */}
+        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+          <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
+            Your Time Here
+          </Text>
+          <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+            A gentle record of your presence
+          </Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              console.log('ProfileScreen: A Look Back row pressed, navigating to /weekly-recap');
+              router.push('/weekly-recap');
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <Calendar size={20} color={colors.primary} />
               </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.reflectionStreak}
+              <View style={styles.menuItemTextContainer}>
+                <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                  A Look Back
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Reflection Streak
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.totalReflections}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Total Reflections
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {stats.daysInCommunity}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Days in Community
+                <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                  A gentle reflection of your month
                 </Text>
               </View>
             </View>
-
-            <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                console.log('ProfileScreen: Monthly Recap row pressed, navigating to /weekly-recap');
-                router.push('/weekly-recap');
-              }}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
-                  <Calendar size={20} color={colors.primary} />
-                </View>
-                <View style={styles.menuItemTextContainer}>
-                  <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
-                    Monthly Recap
-                  </Text>
-                  <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                    View your monthly journey insights
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={20} color={colors.textLight} />
-            </TouchableOpacity>
-          </View>
-        )}
+            <ChevronRight size={20} color={colors.textLight} />
+          </TouchableOpacity>
+        </View>
 
         {/* Profile Preview */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -861,7 +824,7 @@ export default function ProfileScreen() {
             Community Preview
           </Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-            How you might appear to others (if you choose to share)
+            If you choose to share, this is how you'll appear
           </Text>
           <View style={styles.previewContainer}>
             <View style={[styles.previewAvatar, { backgroundColor: colors.primaryLight }]}>
@@ -886,7 +849,7 @@ export default function ProfileScreen() {
         {/* AI Companion */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            AI Companion (Optional)
+            Your Companion
           </Text>
         </View>
 
@@ -909,10 +872,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Personalize Your AI Companion
+                  Your Companion
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  {companionSubtitle}
+                  Adjust how your companion meets you
                 </Text>
               </View>
             </View>
@@ -944,7 +907,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Companion Name
+                  Name your companion
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
                   {profile?.companionName || 'Not set'}
@@ -963,7 +926,7 @@ export default function ProfileScreen() {
         {/* Presence Mode */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Presence & Boundaries (Optional)
+            Presence & Boundaries
           </Text>
         </View>
 
@@ -1023,10 +986,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.menuItemTextContainer}>
                 <Text style={[styles.menuItemText, { color: colors.text }]}>
-                  Emotional Safety
+                  Your boundaries
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: colors.textSecondary }]}>
-                  Set boundaries that honor your needs
+                  Set what feels safe for you
                 </Text>
               </View>
             </View>
@@ -1104,7 +1067,7 @@ export default function ProfileScreen() {
                   My Shared Reflections
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  {stats?.totalSharedPosts || 0} posts shared
+                  What you've shared
                 </Text>
               </View>
             </View>
@@ -1172,7 +1135,7 @@ export default function ProfileScreen() {
                   Push Notifications
                 </Text>
                 <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  Manage push notification settings
+                  Choose how you'd like to be reminded
                 </Text>
               </View>
             </View>
@@ -2100,7 +2063,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     alignItems: 'center',
   },
   headerTitle: {
@@ -2123,9 +2086,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     ...Platform.select({
       web: {
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
