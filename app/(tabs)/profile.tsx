@@ -785,38 +785,42 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Your Time Here */}
-        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
-          <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
-            Your Time Here
-          </Text>
-          <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-            A gentle record of your presence
-          </Text>
+        {/* Journey Stats */}
+        {stats && (
+          <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+            <Text style={[styles.cardTitle, { color: isDark ? colors.textDark : colors.text }]}>
+              Your Time Here
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+              A gentle record of your presence
+            </Text>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              console.log('ProfileScreen: A Look Back row pressed, navigating to /weekly-recap');
-              router.push('/weekly-recap');
-            }}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
-                <Calendar size={20} color={colors.primary} />
+            <View style={[styles.divider, { backgroundColor: isDark ? colors.borderDark : colors.border }]} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('ProfileScreen: Monthly Recap row pressed, navigating to /weekly-recap');
+                router.push('/weekly-recap');
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                  <Calendar size={20} color={colors.primary} />
+                </View>
+                <View style={styles.menuItemTextContainer}>
+                  <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                    A Look Back
+                  </Text>
+                  <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    A gentle reflection of your month
+                  </Text>
+                </View>
               </View>
-              <View style={styles.menuItemTextContainer}>
-                <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
-                  A Look Back
-                </Text>
-                <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  A gentle reflection of your month
-                </Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color={colors.textLight} />
-          </TouchableOpacity>
-        </View>
+              <ChevronRight size={20} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Profile Preview */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -2086,7 +2090,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    marginBottom: spacing.xl,
+    borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     ...Platform.select({
@@ -2094,11 +2101,11 @@ const styles = StyleSheet.create({
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
       },
       default: {
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowColor: 'rgba(0,0,0,0.06)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+        elevation: 1,
       },
     }),
   },
@@ -2205,6 +2212,7 @@ const styles = StyleSheet.create({
     fontSize: typography.bodySmall,
   },
   sectionHeader: {
+    marginTop: spacing.lg,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.xs,
