@@ -1753,6 +1753,7 @@ const styles = StyleSheet.create({
   },
 
   invitationCard: {
+    marginBottom: 32,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
