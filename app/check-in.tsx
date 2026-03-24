@@ -73,6 +73,8 @@ export default function CheckInScreen() {
   const [selectedMessageContent, setSelectedMessageContent] = useState<string>('');
   const [messageShareAnonymous, setMessageShareAnonymous] = useState(false);
   const [isSharingMessage, setIsSharingMessage] = useState(false);
+  const [prayerShared, setPrayerShared] = useState(false);
+  const [prayerSharedConfirm, setPrayerSharedConfirm] = useState(false);
 
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -276,6 +278,9 @@ export default function CheckInScreen() {
       console.log('[CheckIn] ✅ Prayer generated successfully:', { prayerId: response.prayerId, prayerLength: response.prayer.length });
       setGeneratedPrayer(response.prayer);
       setGeneratedPrayerId(response.prayerId);
+      // Reset share state each time a new prayer is generated
+      setPrayerShared(false);
+      setPrayerSharedConfirm(false);
       console.log('[CheckIn] 🔵 Prayer ID set in state:', response.prayerId);
       setShowPrayerModal(true);
       setIsGeneratingPrayer(false);
@@ -306,7 +311,7 @@ export default function CheckInScreen() {
       const requestBody = {
         content: generatedPrayer,
         category: 'prayer',
-        isAnonymous: shareAnonymous,
+        anonymous: false,
       };
       console.log('[CheckIn] 🔵 Request body:', requestBody);
 
@@ -317,6 +322,7 @@ export default function CheckInScreen() {
       setShowShareModal(false);
       setShowPrayerModal(false);
       setIsSharing(false);
+      setPrayerShared(true);
 
       // Show celebratory success modal
       setShowPrayerSuccessModal(true);
@@ -327,6 +333,50 @@ export default function CheckInScreen() {
         response: error?.response,
         status: error?.status
       });
+      setIsSharing(false);
+      const errorMessage = error?.message || 'Failed to share prayer. Please try again.';
+      Alert.alert('Error', errorMessage);
+    }
+  };
+
+  const handleSharePrayerDirect = async () => {
+    console.log('[CheckIn] User tapped "Share with community" on prayer modal');
+    if (prayerShared) {
+      console.log('[CheckIn] Prayer already shared, ignoring tap');
+      return;
+    }
+    if (!generatedPrayer) {
+      console.error('[CheckIn] ❌ No prayer text available for sharing');
+      Alert.alert('Error', 'No prayer to share. Please generate a prayer first.');
+      return;
+    }
+
+    setIsSharing(true);
+
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      console.log('[CheckIn] 🔵 POST /api/community/posts — category: prayer, anonymous: false');
+
+      const response = await authenticatedPost('/api/community/posts', {
+        content: generatedPrayer,
+        category: 'prayer',
+        anonymous: false,
+      });
+
+      console.log('[CheckIn] ✅ Prayer shared to community successfully!', response);
+
+      setIsSharing(false);
+      setPrayerShared(true);
+      setPrayerSharedConfirm(true);
+
+      // Hide confirmation after 3 seconds then close modal and show success
+      setTimeout(() => {
+        setPrayerSharedConfirm(false);
+        setShowPrayerModal(false);
+        setShowPrayerSuccessModal(true);
+      }, 3000);
+    } catch (error: any) {
+      console.error('[CheckIn] ❌ Failed to share prayer:', error);
       setIsSharing(false);
       const errorMessage = error?.message || 'Failed to share prayer. Please try again.';
       Alert.alert('Error', errorMessage);
@@ -650,6 +700,7 @@ export default function CheckInScreen() {
             scrollEnabled={true}
             style={{ flex: 1 }}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             onContentSizeChange={() => {
               if (flatListRef.current) {
                 flatListRef.current.scrollToEnd({ animated: true });
@@ -690,9 +741,21 @@ export default function CheckInScreen() {
               size={24}
               color="#FFFFFF"
             />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+              onPress={handleSend}
+              disabled={!inputText.trim() || isLoading}
+            >
+              <IconSymbol
+                ios_icon_name="arrow.up"
+                android_material_icon_name="send"
+                size={24}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
 
         {/* Crisis Resources Modal */}
         <Modal
