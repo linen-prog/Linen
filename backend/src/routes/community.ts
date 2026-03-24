@@ -687,63 +687,68 @@ export function registerCommunityRoutes(app: App) {
   // Get community statistics (no auth required)
   app.fastify.get(
     '/api/community/stats',
+    {
+      schema: {
+        description: 'Get community statistics (public endpoint)',
+        tags: ['community'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              total_members: { type: 'integer' },
+              posts_today: { type: 'integer' },
+            },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       app.logger.info('Fetching community statistics');
 
       try {
-        // Get current date in Pacific timezone
+        // Get start of today in UTC
         const now = new Date();
-        const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+        const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
 
-        // Set start of today (00:00:00)
-        const todayStart = new Date(pacificTime);
-        todayStart.setHours(0, 0, 0, 0);
+        app.logger.debug({ todayStart: todayStart.toISOString() }, 'Calculating community stats for UTC');
 
-        // Set end of today (23:59:59)
-        const todayEnd = new Date(pacificTime);
-        todayEnd.setHours(23, 59, 59, 999);
+        // Count total members
+        const members = await app.db.execute(sql`
+          SELECT COUNT(*) as count FROM "user"
+        `);
 
-        // Convert to ISO strings for database comparison
-        const todayStartISO = todayStart.toISOString();
-        const todayEndISO = todayEnd.toISOString();
-
-        app.logger.info(
-          { todayStartISO, todayEndISO },
-          'Calculating community stats for Pacific timezone'
-        );
+        const totalMembers =
+          members && typeof members === 'object' && 'rows' in members && (members.rows as any[]).length > 0
+            ? (members.rows as any[])[0].count
+            : 0;
 
         // Count posts created today
-        const todayPosts = await app.db
-          .select()
-          .from(schema.communityPosts)
-          .where(
-            and(
-              gte(schema.communityPosts.createdAt, new Date(todayStartISO)),
-              lt(schema.communityPosts.createdAt, new Date(todayEndISO))
-            )
-          );
+        const posts = await app.db.execute(sql`
+          SELECT COUNT(*) as count FROM "community_posts"
+          WHERE "created_at" >= ${todayStart}
+        `);
 
-        const sharedToday = todayPosts.length;
-
-        // Count all prayers
-        const allPrayers = await app.db
-          .select()
-          .from(schema.communityPrayers);
-
-        const liftedInPrayer = allPrayers.length;
+        const postsToday =
+          posts && typeof posts === 'object' && 'rows' in posts && (posts.rows as any[]).length > 0
+            ? (posts.rows as any[])[0].count
+            : 0;
 
         app.logger.info(
-          { sharedToday, liftedInPrayer },
+          { total_members: totalMembers, posts_today: postsToday },
           'Community statistics retrieved'
         );
 
         return reply.send({
-          sharedToday,
-          liftedInPrayer,
+          total_members: totalMembers,
+          posts_today: postsToday,
         });
       } catch (error) {
-        app.logger.error({ err: error }, 'Failed to fetch community statistics');
-        throw error;
+        app.logger.error({ err: error }, 'Failed to fetch community statistics, returning fallback');
+        // Fail gracefully - return zero stats instead of erroring
+        return reply.send({
+          total_members: 0,
+          posts_today: 0,
+        });
       }
     }
   );
