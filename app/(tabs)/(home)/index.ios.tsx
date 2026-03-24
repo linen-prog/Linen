@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -18,6 +18,7 @@ interface UserStats {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -143,7 +144,7 @@ export default function HomeScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         {/* Hidden NotificationButton — provides modal + polling logic */}
         <View style={styles.hiddenNotificationButton}>
           <NotificationButton
@@ -152,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <Animated.Text
             style={[
               styles.appTitle,
