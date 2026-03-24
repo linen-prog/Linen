@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   saveButtonText: {
-    ...typography.body,
+    fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
   },

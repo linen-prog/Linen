@@ -127,10 +127,8 @@ function PrimaryButton({
       speed: 20,
       bounciness: 2,
     }).start();
-    setTimeout(() => {
-      setTapFeedback(false);
-      onPress();
-    }, 900);
+    setTapFeedback(false);
+    onPress();
   };
 
   const feedbackText = "Staying with this…";

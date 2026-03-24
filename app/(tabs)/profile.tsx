@@ -971,10 +971,10 @@ export default function ProfileScreen() {
             style={styles.menuItem}
             onPress={() => {
               setTempBoundaries({
-                comfortReceivingReplies: profile?.comfortReceivingReplies || true,
-                comfortReadingMore: profile?.comfortReadingMore || true,
-                comfortSupportMessages: profile?.comfortSupportMessages || true,
-                comfortNoTags: profile?.comfortNoTags || false,
+                comfortReceivingReplies: profile?.comfortReceivingReplies ?? true,
+                comfortReadingMore: profile?.comfortReadingMore ?? true,
+                comfortSupportMessages: profile?.comfortSupportMessages ?? true,
+                comfortNoTags: profile?.comfortNoTags ?? false,
               });
               setShowBoundariesModal(true);
             }}

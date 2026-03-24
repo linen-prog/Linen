@@ -18,6 +18,17 @@ interface Notification {
   senderName?: string;
 }
 
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 // Helper to resolve image sources (handles both local require() and remote URLs)
 function resolveImageSource(source: string | number | ImageSourcePropType | undefined): ImageSourcePropType {
   if (!source) return { uri: '' };
@@ -336,7 +347,7 @@ const NotificationButton = forwardRef<NotificationButtonHandle, NotificationButt
                             ) : (
                               <Text style={[styles.notificationText, { color: panelTextColor }]}>{notification.message}</Text>
                             )}
-                            <Text style={[styles.notificationTimestamp, { color: panelTextSecondary }]}>{notification.createdAt}</Text>
+                            <Text style={[styles.notificationTimestamp, { color: panelTextSecondary }]}>{formatRelativeTime(notification.createdAt)}</Text>
                           </View>
                         </TouchableOpacity>
                       );

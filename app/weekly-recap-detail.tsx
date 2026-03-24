@@ -451,7 +451,8 @@ export default function WeeklyRecapDetailScreen() {
             <View style={styles.chartContainer}>
               {recap.practiceVisualization.weeklyData.map((count, index) => {
                 const weekLabel = `W${index + 1}`;
-                const maxVal = Math.max(...recap.practiceVisualization!.weeklyData);
+                const weeklyData = recap.practiceVisualization!.weeklyData;
+                const maxVal = Math.max(weeklyData.length > 0 ? Math.max(...weeklyData) : 1, 1);
                 const barHeight = count > 0 ? Math.max((count / maxVal) * 100, 10) : 10;
                 const countText = String(count);
                 

@@ -146,11 +146,23 @@ export default function SomaticPracticeScreen() {
   const exerciseId = params.exerciseId as string;
   const title = params.title as string;
   const description = params.description as string;
-  const duration = params.duration as string;
-  const instructions = params.instructions as string;
+  const rawDuration = params.duration as string | undefined;
+  const rawInstructions = params.instructions as string | undefined;
+
+  // Guard: navigate back if instructions are missing
+  React.useEffect(() => {
+    if (!rawInstructions) {
+      console.warn('[SomaticPractice] Missing instructions param — navigating back');
+      router.back();
+    }
+  }, [rawInstructions, router]);
+
+  const duration = rawDuration ?? '5 minutes';
+  const instructions = rawInstructions ?? '';
 
   // Parse instructions into steps (assume newline-separated or JSON array)
   const steps = React.useMemo(() => {
+    if (!instructions) return [];
     try {
       const parsed = JSON.parse(instructions);
       if (Array.isArray(parsed)) {

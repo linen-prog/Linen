@@ -136,13 +136,14 @@ export default function DailyGiftScreen() {
   const moodOptions = ['peaceful', 'anxious', 'grateful', 'heavy', 'joyful', 'hopeful', 'uncertain', 'weary'];
   const sensationOptions = ['tense', 'grounded', 'restless', 'calm', 'energized', 'tired', 'open', 'constricted'];
 
-  const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
+  // Create glitter particles once — stable across renders to prevent flickering
+  const glitterParticles = React.useMemo<GlitterParticle[]>(() => Array.from({ length: 30 }, (_, index) => ({
     id: index,
     angle: (index / 30) * Math.PI * 2,
     distance: 80 + Math.random() * 60,
     delay: Math.random() * 100,
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
-  }));
+  })), []);
 
   // Use ref to track timer interval
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -849,7 +850,7 @@ export default function DailyGiftScreen() {
   const reflectionPromptDisplay = dailyContent.reflectionQuestion;
   const saveButtonText = isLoading ? 'Holding...' : 'Hold this';
 
-  const liturgicalSeasonDisplay = dailyGiftResponse.weeklyTheme.liturgicalSeason.toUpperCase();
+  const liturgicalSeasonDisplay = (dailyGiftResponse.weeklyTheme?.liturgicalSeason ?? '').toUpperCase();
   const themeTitleDisplay = dailyGiftResponse.weeklyTheme.themeTitle;
   const themeDescriptionDisplay = dailyGiftResponse.weeklyTheme.themeDescription;
   

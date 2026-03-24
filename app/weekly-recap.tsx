@@ -71,6 +71,7 @@ function AnimatedStatCard({
   const translateY = useRef(new Animated.Value(8)).current;
 
   useEffect(() => {
+    const intervalRef = { current: null as ReturnType<typeof setInterval> | null };
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
@@ -81,20 +82,22 @@ function AnimatedStatCard({
       const steps = 30;
       const stepDuration = duration / steps;
       let currentStep = 0;
-      const interval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
         currentStep += 1;
         const progress = currentStep / steps;
         const eased = 1 - Math.pow(1 - progress, 3);
         setDisplayValue(Math.round(eased * value));
         if (currentStep >= steps) {
-          clearInterval(interval);
+          if (intervalRef.current) clearInterval(intervalRef.current);
           setDisplayValue(value);
         }
       }, stepDuration);
-      return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, delay);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, delay]);
 

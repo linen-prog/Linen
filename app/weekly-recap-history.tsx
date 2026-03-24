@@ -112,7 +112,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: YELLOW.accentBorder,
-    boxShadow: '0 2px 8px rgba(251, 191, 36, 0.10)',
+    shadowColor: 'rgba(251, 191, 36, 1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 3,
   },
   recapIconCircle: {
     width: 44,

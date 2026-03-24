@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -35,19 +35,25 @@ export default function OpenGiftScreen() {
   console.log('🎁 [OpenGift] Screen mounted and rendering');
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
-  
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     console.log('🎁 [OpenGift] useEffect - Screen is now visible to user');
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
   }, []);
-  
-  // Create glitter particles
-  const glitterParticles: GlitterParticle[] = Array.from({ length: 30 }, (_, index) => ({
+
+  // Create glitter particles once — stable across renders
+  const glitterParticles = useMemo<GlitterParticle[]>(() => Array.from({ length: 30 }, (_, index) => ({
     id: index,
     angle: (index / 30) * Math.PI * 2,
     distance: 80 + Math.random() * 60,
     delay: Math.random() * 100,
     color: index % 3 === 0 ? colors.accent : index % 3 === 1 ? colors.primary : colors.prayer,
-  }));
+  })), []);
 
   const { isDark } = useTheme();
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -64,7 +70,7 @@ export default function OpenGiftScreen() {
     setIsOpening(true);
 
     // Navigate after animation completes
-    const navigationTimer = setTimeout(() => {
+    navigationTimerRef.current = setTimeout(() => {
       console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
       try {
         router.replace('/daily-gift');
@@ -74,9 +80,6 @@ export default function OpenGiftScreen() {
         router.push('/daily-gift');
       }
     }, 1200);
-
-    // Cleanup timer on unmount
-    return () => clearTimeout(navigationTimer);
   };
 
   const handleCommunityPress = () => {

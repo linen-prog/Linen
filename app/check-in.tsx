@@ -499,14 +499,24 @@ export default function CheckInScreen() {
     setShowCrisisModal(false);
   };
 
-  const handleCall988 = () => {
+  const handleCall988 = async () => {
     console.log('[CheckIn] User tapping to call 988');
-    Linking.openURL('tel:988');
+    try {
+      await Linking.openURL('tel:988');
+    } catch (error) {
+      console.warn('[CheckIn] Unable to open phone dialer:', error);
+      Alert.alert('Not Supported', 'Phone calls are not supported on this device.');
+    }
   };
 
-  const handleTextCrisisLine = () => {
+  const handleTextCrisisLine = async () => {
     console.log('[CheckIn] User tapping to text Crisis Line');
-    Linking.openURL('sms:741741&body=HOME');
+    try {
+      await Linking.openURL('sms:741741&body=HOME');
+    } catch (error) {
+      console.warn('[CheckIn] Unable to open SMS:', error);
+      Alert.alert('Not Supported', 'SMS is not supported on this device.');
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {

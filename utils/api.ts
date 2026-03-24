@@ -81,8 +81,6 @@ async function makeAuthenticatedRequest(
     const url = `${BACKEND_URL}${endpoint}`;
     console.log(`[API] ${options.method || 'GET'} ${endpoint}`);
     console.log(`[API] Full URL: ${url}`);
-    console.log(`[API] Headers:`, headers);
-    console.log(`[API] Body:`, options.body);
 
     const response = await fetch(url, {
       ...options,
