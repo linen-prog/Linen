@@ -7,63 +7,26 @@ import { createGuestAwareAuth } from '../utils/guest-auth.js';
 export function registerCommunityRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
 
-  // Get community posts where is_flagged = false
+  // Get community posts where is_flagged = false (public endpoint, no auth required)
   app.fastify.get(
     '/api/community/posts',
-    {
-      schema: {
-        description: 'Get community posts where is_flagged = false',
-        tags: ['community'],
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              posts: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string', format: 'uuid' },
-                    userId: { type: 'string' },
-                    authorName: { type: ['string', 'null'] },
-                    isAnonymous: { type: 'boolean' },
-                    category: { type: 'string' },
-                    content: { type: 'string' },
-                    prayerCount: { type: 'integer' },
-                    contentType: { type: 'string' },
-                    scriptureReference: { type: ['string', 'null'] },
-                    isFlagged: { type: 'boolean' },
-                    createdAt: { type: 'string', format: 'date-time' },
-                    artworkUrl: { type: ['string', 'null'] },
-                    hasPrayed: { type: 'boolean' },
-                  },
-                },
-              },
-            },
-          },
-          401: {
-            type: 'object',
-            properties: { error: { type: 'string' } },
-          },
-        },
-      },
-    },
     async (
-      request: FastifyRequest,
+      request: FastifyRequest<{ Querystring: { category?: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
-      const session = await requireAuth(request, reply);
-      if (!session) {
-        app.logger.warn({}, 'Unauthorized community posts fetch attempt');
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
+      const { category } = request.query;
 
       app.logger.info(
-        { userId: session.user.id },
+        { category },
         'Fetching community posts'
       );
 
       try {
+        const conditions = [eq(schema.communityPosts.isFlagged, false)];
+        if (category) {
+          conditions.push(eq(schema.communityPosts.category, category as any));
+        }
+
         const posts = await app.db
           .select({
             id: schema.communityPosts.id,
@@ -80,11 +43,20 @@ export function registerCommunityRoutes(app: App) {
             artworkUrl: schema.communityPosts.artworkUrl,
           })
           .from(schema.communityPosts)
-          .where(eq(schema.communityPosts.isFlagged, false))
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
           .orderBy(desc(schema.communityPosts.createdAt))
           .limit(50);
 
-        const userId = session.user.id;
+        // Check if user is authenticated to determine hasPrayed status
+        let userId: string | null = null;
+        try {
+          const session = (request as any).session;
+          if (session?.user?.id) {
+            userId = session.user.id;
+          }
+        } catch {
+          // User not authenticated, userId remains null
+        }
 
         const result = await Promise.all(
           posts.map(async (post) => {
@@ -131,7 +103,7 @@ export function registerCommunityRoutes(app: App) {
         return reply.send({ posts: result });
       } catch (error) {
         app.logger.error(
-          { err: error, userId: session.user.id },
+          { err: error },
           'Failed to fetch community posts'
         );
         throw error;
@@ -141,52 +113,7 @@ export function registerCommunityRoutes(app: App) {
 
   // Create a community post
   app.fastify.post(
-    '/api/community/post',
-    {
-      schema: {
-        description: 'Create a community post',
-        tags: ['community'],
-        body: {
-          type: 'object',
-          required: ['category', 'content', 'isAnonymous'],
-          properties: {
-            category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], description: 'Post category' },
-            content: { type: 'string', description: 'Post content' },
-            isAnonymous: { type: 'boolean', description: 'Whether to post anonymously' },
-            contentType: { type: 'string', enum: ['companion', 'daily-gift', 'somatic', 'manual'], description: 'Type of content' },
-            scriptureReference: { type: 'string', description: 'Scripture reference if applicable' },
-            artworkUrl: { type: 'string', description: 'URL to artwork image' },
-          },
-        },
-        response: {
-          201: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', format: 'uuid' },
-              userId: { type: 'string' },
-              authorName: { type: ['string', 'null'] },
-              isAnonymous: { type: 'boolean' },
-              category: { type: 'string' },
-              content: { type: 'string' },
-              prayerCount: { type: 'integer' },
-              contentType: { type: 'string' },
-              scriptureReference: { type: ['string', 'null'] },
-              isFlagged: { type: 'boolean' },
-              createdAt: { type: 'string', format: 'date-time' },
-              artworkUrl: { type: ['string', 'null'] },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: { error: { type: 'string' } },
-          },
-          401: {
-            type: 'object',
-            properties: { error: { type: 'string' } },
-          },
-        },
-      },
-    },
+    '/api/community/posts',
     async (
       request: FastifyRequest<{
         Body: {
@@ -201,10 +128,7 @@ export function registerCommunityRoutes(app: App) {
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) {
-        app.logger.warn({}, 'Unauthorized community post creation attempt');
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
+      if (!session) return;
 
       const { category, content, isAnonymous, contentType = 'manual', scriptureReference, artworkUrl } =
         request.body;
@@ -259,60 +183,6 @@ export function registerCommunityRoutes(app: App) {
         app.logger.error(
           { err: error, userId: session.user.id, category, contentType },
           'Failed to create community post'
-        );
-        throw error;
-      }
-    }
-  );
-
-  // Delete a community post
-  app.fastify.delete(
-    '/api/community/posts/:postId',
-    async (
-      request: FastifyRequest<{ Params: { postId: string } }>,
-      reply: FastifyReply
-    ): Promise<void> => {
-      const session = await requireAuth(request, reply);
-      if (!session) return;
-
-      const { postId } = request.params;
-
-      app.logger.info({ userId: session.user.id, postId }, 'Deleting community post');
-
-      try {
-        // Fetch the post
-        const posts = await app.db
-          .select()
-          .from(schema.communityPosts)
-          .where(eq(schema.communityPosts.id, postId as any))
-          .limit(1);
-
-        if (!posts.length) {
-          app.logger.warn({ postId }, 'Post not found');
-          return reply.status(404).send({ error: 'Post not found' });
-        }
-
-        const post = posts[0];
-
-        // Verify ownership
-        if (post.userId !== session.user.id) {
-          app.logger.warn(
-            { userId: session.user.id, postId, postOwnerId: post.userId },
-            'Unauthorized post deletion attempt'
-          );
-          return reply.status(403).send({ error: 'Forbidden' });
-        }
-
-        // Delete the post
-        await app.db.delete(schema.communityPosts).where(eq(schema.communityPosts.id, postId as any));
-
-        app.logger.info({ userId: session.user.id, postId }, 'Community post deleted successfully');
-
-        return reply.send({ success: true });
-      } catch (error) {
-        app.logger.error(
-          { err: error, userId: session.user.id, postId },
-          'Failed to delete community post'
         );
         throw error;
       }
@@ -615,7 +485,7 @@ export function registerCommunityRoutes(app: App) {
 
   // Delete a community post (only manual posts or user's own posts)
   app.fastify.delete(
-    '/api/community/post/:postId',
+    '/api/community/posts/:postId',
     async (
       request: FastifyRequest<{ Params: { postId: string } }>,
       reply: FastifyReply
@@ -725,7 +595,7 @@ export function registerCommunityRoutes(app: App) {
         // Count posts created today
         const posts = await app.db.execute(sql`
           SELECT COUNT(*) as count FROM "community_posts"
-          WHERE "created_at" >= ${todayStart}
+          WHERE "created_at" >= ${todayStart.toISOString()}
         `);
 
         const postsToday =
