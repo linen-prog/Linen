@@ -153,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={[styles.header, { paddingTop: insets.top + 32 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
           <Animated.Text
             style={[
               styles.appTitle,
