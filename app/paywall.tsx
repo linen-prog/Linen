@@ -1,13 +1,13 @@
 /**
- * Paywall Screen — redesigned to match Linen's warm spiritual aesthetic.
- * Uses the app's existing color tokens, GradientBackground, typography, and
- * card patterns. All RevenueCat logic is preserved unchanged.
+ * Paywall Screen — redesigned as a gentle, emotional invitation.
+ * All RevenueCat logic is preserved unchanged.
  */
 
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Linking,
   Platform,
   Pressable,
@@ -18,13 +18,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import Animated, {
+import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
   FadeInDown,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { PurchasesPackage } from "react-native-purchases";
 
@@ -38,23 +38,24 @@ import { colors, typography, spacing, borderRadius } from "@/styles/commonStyles
 const FEATURES = [
   {
     icon: "✦",
+    title: "AI Companion",
+    description:
+      "A gentle companion that helps you notice what's happening in your mind and body — and gently return to yourself and God",
+  },
+  {
+    icon: "✧",
     title: "Daily Sacred Gifts",
-    description: "Every reflection, scripture, and somatic practice — unlocked",
+    description: "A daily rhythm of reflection, scripture, and embodied practice",
   },
   {
-    icon: "🎨",
-    title: "Artwork Canvas",
-    description: "Express your faith through creative drawing",
+    icon: "◯",
+    title: "Community Care",
+    description: "Share, receive encouragement, and be held in prayer",
   },
   {
-    icon: "🤝",
-    title: "Community Access",
-    description: "Share reflections, send care, and pray with others",
-  },
-  {
-    icon: "📖",
-    title: "Weekly Recaps",
-    description: "Review your spiritual journey with full summaries",
+    icon: "◌",
+    title: "Weekly Reflections",
+    description: "A quiet look back to notice what's been unfolding in you",
   },
 ];
 
@@ -73,113 +74,87 @@ function FeatureRow({
   index: number;
   isDark: boolean;
 }) {
+  const textPrimary = isDark ? colors.textDark : colors.text;
+  const textSecond = isDark ? colors.textSecondaryDark : colors.textSecondary;
+
   return (
-    <Animated.View
-      entering={FadeInDown.delay(300 + index * 80).duration(400)}
+    <Reanimated.View
+      entering={FadeInDown.delay(300 + index * 90).duration(500)}
       style={styles.featureRow}
     >
-      <View style={[styles.featureIconWrap, { backgroundColor: isDark ? colors.cardDark : colors.accentLight }]}>
-        <Text style={styles.featureIconText}>{icon}</Text>
+      <View style={styles.featureIconWrap}>
+        <Text style={[styles.featureIconText, { color: colors.primary }]}>{icon}</Text>
       </View>
       <View style={styles.featureTextWrap}>
-        <Text style={[styles.featureTitle, { color: isDark ? colors.textDark : colors.text }]}>
-          {title}
-        </Text>
-        <Text style={[styles.featureDesc, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-          {description}
-        </Text>
+        <Text style={[styles.featureTitle, { color: textPrimary }]}>{title}</Text>
+        <Text style={[styles.featureDesc, { color: textSecond }]}>{description}</Text>
       </View>
-      <Ionicons
-        name="checkmark-circle"
-        size={20}
-        color={colors.primary}
-        style={{ opacity: 0.85 }}
-      />
-    </Animated.View>
+    </Reanimated.View>
   );
 }
 
-// ─── Package card ─────────────────────────────────────────────────────────────
+// ─── Animated primary button ─────────────────────────────────────────────────
 
-function PackageCard({
-  pkg,
-  isSelected,
+function PrimaryButton({
+  label,
   onPress,
-  isDark,
+  disabled,
+  loading,
 }: {
-  pkg: PurchasesPackage;
-  isSelected: boolean;
+  label: string;
   onPress: () => void;
-  isDark: boolean;
+  disabled: boolean;
+  loading: boolean;
 }) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const scale = useRef(new Animated.Value(1)).current;
+  const [tapFeedback, setTapFeedback] = useState(false);
 
-  const handlePress = () => {
-    console.log("[Paywall] Package selected:", pkg.identifier, pkg.product.title);
-    scale.value = withTiming(0.97, { duration: 80 }, () => {
-      scale.value = withTiming(1, { duration: 120 });
-    });
-    onPress();
+  const handlePressIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTapFeedback(true);
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 0,
+    }).start();
   };
 
-  const cardBg = isDark
-    ? isSelected ? colors.primaryDark : colors.cardDark
-    : isSelected ? colors.primaryLight : colors.card;
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1.0,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 2,
+    }).start();
+    setTimeout(() => {
+      setTapFeedback(false);
+      onPress();
+    }, 900);
+  };
 
-  const borderCol = isSelected ? colors.primary : (isDark ? colors.borderDark : colors.border);
+  const feedbackText = "Staying with this…";
 
   return (
-    <Animated.View style={animStyle}>
-      <Pressable
-        onPress={handlePress}
-        style={[
-          styles.packageCard,
-          {
-            backgroundColor: cardBg,
-            borderColor: borderCol,
-            borderWidth: isSelected ? 2 : 1,
-          },
-        ]}
-      >
-        {/* Selected accent bar */}
-        {isSelected && <View style={styles.packageAccentBar} />}
-
-        <View style={styles.packageRow}>
-          <View style={styles.packageLeft}>
-            <Text style={[styles.packageTitle, { color: isDark ? colors.textDark : colors.text }]}>
-              {pkg.product.title}
-            </Text>
-            {pkg.product.description ? (
-              <Text style={[styles.packageDesc, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                {pkg.product.description}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.packageRight}>
-            {pkg.product.priceString ? (
-              <Text style={[styles.packagePrice, { color: isSelected ? colors.primary : (isDark ? colors.textDark : colors.text) }]}>
-                {pkg.product.priceString}
-              </Text>
-            ) : null}
-            <View
-              style={[
-                styles.packageCheckCircle,
-                {
-                  backgroundColor: isSelected ? colors.primary : "transparent",
-                  borderColor: isSelected ? colors.primary : (isDark ? colors.borderDark : colors.border),
-                },
-              ]}
-            >
-              {isSelected && (
-                <Ionicons name="checkmark" size={13} color="#fff" />
-              )}
-            </View>
-          </View>
-        </View>
-      </Pressable>
-    </Animated.View>
+    <View style={styles.primaryButtonWrap}>
+      {tapFeedback && !loading && (
+        <Text style={styles.tapFeedbackText}>{feedbackText}</Text>
+      )}
+      <Animated.View style={[{ transform: [{ scale }] }, disabled && styles.buttonDisabled]}>
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={disabled || loading}
+          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>{label}</Text>
+          )}
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -263,16 +238,6 @@ export default function PaywallScreen() {
     router.replace("/(tabs)");
   };
 
-  const handleDevBypass = async () => {
-    console.log("[Paywall][DEV] Dev bypass tapped — simulating subscription");
-    if (isWeb) {
-      mockWebPurchase();
-    } else {
-      await mockNativePurchase();
-    }
-    router.replace("/(tabs)");
-  };
-
   const handleWebMockPurchase = async () => {
     if (!selectedPackage) return;
     console.log("[Paywall] Web mock purchase initiated:", selectedPackage.identifier);
@@ -299,12 +264,6 @@ export default function PaywallScreen() {
 
   // ── Derived values ───────────────────────────────────────────────────────────
 
-  const subscribeLabel = selectedPackage
-    ? selectedPackage.product.priceString
-      ? `Subscribe · ${selectedPackage.product.priceString}`
-      : "Subscribe"
-    : "Select a plan";
-
   const surfaceBg = isDark ? colors.backgroundDark : colors.background;
   const cardBg = isDark ? colors.cardDark : colors.card;
   const textPrimary = isDark ? colors.textDark : colors.text;
@@ -317,7 +276,6 @@ export default function PaywallScreen() {
     return (
       <GradientBackground style={{ flex: 1 }}>
         <SafeAreaView edges={["top", "bottom"]} style={styles.flex}>
-          {/* Close */}
           <Pressable
             onPress={handleClose}
             style={[styles.closeButton, { backgroundColor: isDark ? colors.cardDark : colors.card, borderColor: borderCol }]}
@@ -327,11 +285,9 @@ export default function PaywallScreen() {
           </Pressable>
 
           <View style={styles.subscribedContent}>
-            {/* Glow orb */}
             <View style={[styles.glowOrb, { backgroundColor: colors.primaryLight }]} />
 
-            <Animated.View entering={FadeInDown.duration(500)} style={styles.subscribedInner}>
-              {/* Badge */}
+            <Reanimated.View entering={FadeInDown.duration(500)} style={styles.subscribedInner}>
               <View style={[styles.badge, { backgroundColor: colors.primaryLight, borderColor: colors.primary + "30" }]}>
                 <Text style={[styles.badgeText, { color: colors.primary }]}>PRO MEMBER</Text>
               </View>
@@ -343,7 +299,6 @@ export default function PaywallScreen() {
                 Welcome to the full Linen experience
               </Text>
 
-              {/* Unlocked features card */}
               <View style={[styles.card, { backgroundColor: cardBg, borderColor: borderCol }]}>
                 <Text style={[styles.cardLabel, { color: textSecond }]}>UNLOCKED</Text>
                 {FEATURES.slice(0, 3).map((f, i) => (
@@ -360,7 +315,7 @@ export default function PaywallScreen() {
               >
                 <Text style={styles.primaryButtonText}>Start Exploring</Text>
               </Pressable>
-            </Animated.View>
+            </Reanimated.View>
           </View>
         </SafeAreaView>
       </GradientBackground>
@@ -374,7 +329,7 @@ export default function PaywallScreen() {
       <GradientBackground style={{ flex: 1 }}>
         <SafeAreaView edges={["top", "bottom"]} style={[styles.flex, styles.centered]}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: textSecond }]}>Loading plans…</Text>
+          <Text style={[styles.loadingText, { color: textSecond }]}>Loading…</Text>
         </SafeAreaView>
       </GradientBackground>
     );
@@ -401,24 +356,26 @@ export default function PaywallScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Header ── */}
-          <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-            <View style={[styles.badge, { backgroundColor: colors.accentLight, borderColor: colors.accent + "50" }]}>
-              <Text style={[styles.badgeText, { color: colors.accentDark }]}>LINEN PREMIUM</Text>
-            </View>
+          <Reanimated.View entering={FadeInDown.duration(500)} style={styles.header}>
             <Text style={[styles.headline, { color: textPrimary }]}>
-              Deepen Your{"\n"}Daily Practice
+              A deeper knowing of{"\n"}yourself and God
             </Text>
-            <Text style={[styles.subheadline, { color: textSecond }]}>
-              7-day free trial, then $8.99/month
+            <Text style={[styles.trialLine, { color: textPrimary }]}>
+              Begin with 7 days free
             </Text>
-          </Animated.View>
+            <Text style={[styles.priceLine, { color: textSecond }]}>
+              Then $8.99/month
+            </Text>
+          </Reanimated.View>
 
-          {/* ── Features card ── */}
-          <Animated.View
-            entering={FadeInDown.delay(150).duration(400)}
-            style={[styles.card, { backgroundColor: cardBg, borderColor: borderCol }]}
+          {/* ── Features section ── */}
+          <Reanimated.View
+            entering={FadeInDown.delay(150).duration(500)}
+            style={styles.featuresSection}
           >
-            <Text style={[styles.cardLabel, { color: textSecond }]}>WHAT YOU'LL UNLOCK</Text>
+            <Text style={[styles.sectionTitle, { color: textSecond }]}>
+              What you're stepping into
+            </Text>
             {FEATURES.map((f, i) => (
               <FeatureRow
                 key={i}
@@ -429,32 +386,11 @@ export default function PaywallScreen() {
                 isDark={isDark}
               />
             ))}
-          </Animated.View>
-
-          {/* ── Package selection ── */}
-          {packages.length > 0 && (
-            <Animated.View
-              entering={FadeInDown.delay(500).duration(400)}
-              style={styles.packagesWrap}
-            >
-              <Text style={[styles.cardLabel, { color: textSecond, marginBottom: spacing.sm }]}>
-                CHOOSE YOUR PLAN
-              </Text>
-              {packages.map((pkg) => (
-                <PackageCard
-                  key={pkg.identifier}
-                  pkg={pkg}
-                  isSelected={selectedPackage?.identifier === pkg.identifier}
-                  onPress={() => setSelectedPackage(pkg)}
-                  isDark={isDark}
-                />
-              ))}
-            </Animated.View>
-          )}
+          </Reanimated.View>
 
           {/* ── No packages (Expo Go) ── */}
           {!isWeb && packages.length === 0 && !loading && (
-            <Animated.View
+            <Reanimated.View
               entering={FadeInDown.delay(400).duration(400)}
               style={[styles.card, { backgroundColor: cardBg, borderColor: borderCol }]}
             >
@@ -478,46 +414,30 @@ export default function PaywallScreen() {
                   </Text>
                 </Pressable>
               )}
-            </Animated.View>
+            </Reanimated.View>
           )}
 
-          {/* Bottom padding so content clears the fixed footer */}
-          <View style={{ height: 16 }} />
+          <View style={{ height: 24 }} />
         </ScrollView>
 
         {/* ── Bottom actions ── */}
-        <Animated.View
-          entering={FadeInDown.delay(600).duration(400)}
-          style={[styles.bottomActions, { borderTopColor: borderCol, backgroundColor: isDark ? colors.backgroundDark + "F0" : colors.background + "F0" }]}
+        <Reanimated.View
+          entering={FadeInDown.delay(600).duration(500)}
+          style={[styles.bottomActions, { borderTopColor: "transparent", backgroundColor: isDark ? colors.backgroundDark + "F0" : colors.background + "F0" }]}
         >
-          {/* DEV-only bypass — stripped from production builds automatically */}
-          {__DEV__ && (
-            <Pressable
-              onPress={handleDevBypass}
-              style={[styles.devBypassButton, { borderColor: isDark ? colors.borderDark : colors.border }]}
-            >
-              <Text style={[styles.devBypassText, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                🛠 Skip (Dev)
-              </Text>
-            </Pressable>
-          )}
+          {/* Emotional bridge line */}
+          <Text style={[styles.bridgeLine, { color: textSecond }]}>
+            You don't have to stop here
+          </Text>
+
           {isWeb ? (
             <>
-              <Pressable
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: colors.primary },
-                  (!selectedPackage || webMockState === "processing") && styles.buttonDisabled,
-                ]}
+              <PrimaryButton
+                label="Begin your 7-day free trial"
                 onPress={handleWebMockPurchase}
                 disabled={!selectedPackage || webMockState === "processing"}
-              >
-                {webMockState === "processing" ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>{subscribeLabel}</Text>
-                )}
-              </Pressable>
+                loading={webMockState === "processing"}
+              />
               <Pressable
                 style={styles.ghostButton}
                 onPress={handleRestore}
@@ -526,7 +446,7 @@ export default function PaywallScreen() {
                 {restoring ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={[styles.ghostButtonText, { color: colors.primary }]}>
+                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>
                     Restore Purchases
                   </Text>
                 )}
@@ -537,21 +457,12 @@ export default function PaywallScreen() {
             </>
           ) : (
             <>
-              <Pressable
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: colors.primary },
-                  (!selectedPackage || purchasing) && styles.buttonDisabled,
-                ]}
+              <PrimaryButton
+                label="Begin your 7-day free trial"
                 onPress={handlePurchase}
                 disabled={!selectedPackage || purchasing}
-              >
-                {purchasing ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>{subscribeLabel}</Text>
-                )}
-              </Pressable>
+                loading={purchasing}
+              />
 
               <Pressable
                 style={styles.ghostButton}
@@ -561,7 +472,7 @@ export default function PaywallScreen() {
                 {restoring ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={[styles.ghostButtonText, { color: colors.primary }]}>
+                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>
                     Restore Purchases
                   </Text>
                 )}
@@ -575,7 +486,7 @@ export default function PaywallScreen() {
               </Text>
             </>
           )}
-        </Animated.View>
+        </Reanimated.View>
       </SafeAreaView>
 
       {/* ── Web mock purchase dialog ── */}
@@ -673,7 +584,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: borderRadius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -683,14 +594,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 56,
     paddingBottom: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
 
   // Header
   header: {
     alignItems: "center",
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.xl * 1.5,
+    paddingBottom: spacing.md,
     gap: spacing.sm,
   },
   badge: {
@@ -705,24 +616,44 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   headline: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: typography.bold,
     textAlign: "center",
     lineHeight: 42,
     fontFamily: "Georgia",
-    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  subheadline: {
-    fontSize: typography.body,
+  trialLine: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
     textAlign: "center",
-    lineHeight: 22,
+  },
+  priceLine: {
+    fontSize: typography.bodySmall,
+    textAlign: "center",
+    opacity: 0.7,
+    marginTop: 2,
   },
 
-  // Card
+  // Features section
+  featuresSection: {
+    gap: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+    letterSpacing: 0.3,
+    textAlign: "center",
+    opacity: 0.75,
+    marginBottom: spacing.xs,
+  },
+
+  // Card (used in subscribed state + no-packages)
   card: {
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
   },
   cardLabel: {
@@ -736,97 +667,33 @@ const styles = StyleSheet.create({
   // Feature row
   featureRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.md,
     paddingVertical: spacing.xs,
   },
   featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 2,
   },
   featureIconText: {
-    fontSize: 20,
+    fontSize: 18,
   },
   featureTextWrap: {
     flex: 1,
+    gap: 4,
   },
   featureTitle: {
     fontSize: typography.body,
     fontWeight: typography.semibold,
+    lineHeight: 22,
   },
   featureDesc: {
     fontSize: typography.bodySmall,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-
-  // Packages
-  packagesWrap: {
-    gap: spacing.sm,
-  },
-  packageCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    overflow: "hidden",
-  },
-  packageAccentBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: colors.primary,
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
-  },
-  packageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  packageLeft: {
-    flex: 1,
-    gap: 3,
-  },
-  packageTitle: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
-  },
-  packageDesc: {
-    fontSize: typography.bodySmall,
-    lineHeight: 18,
-  },
-  packageRight: {
-    alignItems: "flex-end",
-    gap: spacing.xs,
-  },
-  packagePrice: {
-    fontSize: typography.h4,
-    fontWeight: typography.bold,
-  },
-  packageCheckCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: borderRadius.full,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Dev bypass
-  devBypassButton: {
-    paddingVertical: spacing.sm,
-    alignItems: "center",
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  devBypassText: {
-    fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
+    lineHeight: 20,
+    opacity: 0.85,
   },
 
   // No packages
@@ -854,41 +721,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
-    gap: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+  },
+
+  // Bridge line
+  bridgeLine: {
+    fontSize: typography.bodySmall,
+    textAlign: "center",
+    opacity: 0.6,
+    marginBottom: spacing.xs,
+  },
+
+  // Primary button
+  primaryButtonWrap: {
+    gap: spacing.xs,
+    alignItems: "center",
+  },
+  tapFeedbackText: {
+    fontSize: typography.bodySmall,
+    color: colors.primary,
+    opacity: 0.75,
+    textAlign: "center",
+    fontStyle: "italic",
   },
   primaryButton: {
-    height: 55,
+    height: 56,
     borderRadius: borderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+    minWidth: 280,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 5,
   },
   primaryButtonText: {
     color: "#fff",
-    fontSize: typography.h4,
-    fontWeight: typography.bold,
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    letterSpacing: 0.2,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   ghostButton: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     alignItems: "center",
   },
   ghostButtonText: {
-    fontSize: typography.body,
+    fontSize: typography.bodySmall,
     fontWeight: typography.medium,
+    opacity: 0.65,
   },
   legalText: {
-    fontSize: 11,
+    fontSize: 10,
     textAlign: "center",
-    lineHeight: 16,
-    opacity: 0.7,
+    lineHeight: 15,
+    opacity: 0.5,
   },
 
   // Subscribed
