@@ -121,19 +121,21 @@ export default function CheckInScreen() {
         console.log('[CheckIn] Message IDs from backend:', response.messages.map(m => ({ id: m.id, role: m.role })));
         setConversationId(response.conversationId);
         
-        // Load existing messages (but don't show initial AI greeting for new conversations)
-        const loadedMessages = response.messages
-          .filter(msg => msg.role === 'user' || response.messages.length > 1)
-          .map((msg) => ({
+        // Load existing messages, but only show them if the user has actually sent at least one message.
+        // This ensures a new conversation always starts with the clean empty state (no AI greeting bubble).
+        const hasUserMessage = response.messages.some(msg => msg.role === 'user');
+        
+        if (hasUserMessage) {
+          const loadedMessages = response.messages.map((msg) => ({
             id: msg.id,
             role: msg.role as 'user' | 'assistant',
             content: msg.content,
             createdAt: new Date(msg.createdAt),
           }));
-        
-        // Only set messages if there's actual conversation history
-        if (loadedMessages.length > 1 || (loadedMessages.length === 1 && loadedMessages[0].role === 'user')) {
           setMessages(loadedMessages);
+          console.log('[CheckIn] Loaded existing conversation with', loadedMessages.length, 'messages');
+        } else {
+          console.log('[CheckIn] No user messages yet — showing clean empty state');
         }
         
         if (response.isNewConversation) {
