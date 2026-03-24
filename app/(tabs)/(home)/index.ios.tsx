@@ -144,7 +144,7 @@ export default function HomeScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         {/* Hidden NotificationButton — provides modal + polling logic */}
         <View style={styles.hiddenNotificationButton}>
           <NotificationButton
@@ -153,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
+        <View style={[styles.header, { paddingTop: 16 }]}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: 24,
+    marginTop: 48,
     marginBottom: 20,
   },
   greeting: {
