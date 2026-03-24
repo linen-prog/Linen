@@ -125,6 +125,7 @@ export default function DailyGiftScreen() {
   
   const [shareToCommunity, setShareToCommunity] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [sharedToCommunity, setSharedToCommunity] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -566,6 +567,39 @@ export default function DailyGiftScreen() {
       }
       
       console.log(`[DailyGift] ${saveTimestamp} - Reflection saved successfully:`, response);
+
+      // Separately post to community wall if toggle is on
+      if (shareToCommunity) {
+        try {
+          const communityAuthToken = await getAuthToken();
+          console.log(`[DailyGift] ${saveTimestamp} - Posting to community wall: POST /api/community/posts`);
+          const communityRes = await fetch(`${BACKEND_URL}/api/community/posts`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${communityAuthToken}`,
+            },
+            body: JSON.stringify({
+              content: reflectionText.trim(),
+              category: 'reflection',
+              anonymous: isAnonymous,
+            }),
+          });
+          if (!communityRes.ok) {
+            const errText = await communityRes.text();
+            console.log(`[DailyGift] ${saveTimestamp} - Community post failed (${communityRes.status}):`, errText);
+          } else {
+            const communityData = await communityRes.json();
+            console.log(`[DailyGift] ${saveTimestamp} - Community post created successfully:`, communityData);
+            setSharedToCommunity(true);
+            // Auto-hide the success message after 4 seconds
+            setTimeout(() => setSharedToCommunity(false), 4000);
+          }
+        } catch (communityError) {
+          console.log(`[DailyGift] ${saveTimestamp} - Community post error (non-critical):`, communityError);
+        }
+      }
+
       setIsLoading(false);
       setHasReflected(true);
       setAttachment(null);
@@ -1145,10 +1179,10 @@ export default function DailyGiftScreen() {
               )}
 
               {/* Share with Community toggle */}
-              <View style={styles.shareToggleRow}>
+              <View style={[styles.shareToggleRow, { backgroundColor: cardBg }]}>
                 <View style={styles.shareToggleLeft}>
                   <Ionicons name="people-outline" size={18} color={textSecondaryColor} />
-                  <Text style={styles.shareToggleLabel}>Share with community</Text>
+                  <Text style={[styles.shareToggleLabel, { color: textColor }]}>Share with community</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => {
@@ -1164,10 +1198,10 @@ export default function DailyGiftScreen() {
 
               {/* Anonymous toggle — only shown when sharing */}
               {shareToCommunity && (
-                <View style={[styles.shareToggleRow, { marginTop: 8 }]}>
+                <View style={[styles.shareToggleRow, { marginTop: 8, backgroundColor: cardBg }]}>
                   <View style={styles.shareToggleLeft}>
                     <Ionicons name="eye-off-outline" size={18} color={textSecondaryColor} />
-                    <Text style={styles.shareToggleLabel}>Post anonymously</Text>
+                    <Text style={[styles.shareToggleLabel, { color: textColor }]}>Post anonymously</Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => {
@@ -1179,6 +1213,14 @@ export default function DailyGiftScreen() {
                   >
                     <View style={[styles.toggleThumb, isAnonymous && styles.toggleThumbActive]} />
                   </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Community share success message */}
+              {sharedToCommunity && (
+                <View style={styles.communitySuccessRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <Text style={[styles.communitySuccessText, { color: colors.primary }]}>Shared with community</Text>
                 </View>
               )}
 
@@ -1993,6 +2035,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+  },
+  communitySuccessRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  communitySuccessText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
   },
   toggleThumbActive: {
     alignSelf: 'flex-end',
