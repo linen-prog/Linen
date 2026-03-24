@@ -182,7 +182,7 @@ export default function HomeScreen() {
                 { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
               ]}
             >
-              {"I'm glad you're here today."}
+              {"I'm glad you're here."}
             </Animated.Text>
           </View>
 
@@ -196,10 +196,10 @@ export default function HomeScreen() {
           >
             <View style={styles.loveMessagesLeft}>
               <View style={styles.loveMessagesIconCircle}>
-                <Ionicons name="sparkles" size={22} color="#d97706" />
+                <Ionicons name="sparkles" size={20} color="#b08040" />
               </View>
               <View style={styles.loveMessagesTextBlock}>
-                <Text style={styles.loveMessagesTitle}>Messages</Text>
+                <Text style={styles.loveMessagesTitle}>{"You've received care"}</Text>
               </View>
             </View>
             {unreadCount > 0 && (
@@ -247,7 +247,7 @@ export default function HomeScreen() {
 
             <View>
               <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+              <Text style={styles.giftCardSubtitle}>A quiet moment with scripture</Text>
             </View>
           </TouchableOpacity>
 
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   greetingContainer: {
     alignItems: 'flex-start',
     marginTop: 12,
-    marginBottom: 4,
+    marginBottom: 20,
   },
   greeting: {
     fontSize: 16,
@@ -343,30 +343,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   presenceCue: {
-    fontSize: 12,
+    fontSize: 13,
     fontStyle: 'italic',
     color: colors.textSecondary,
-    opacity: 0.5,
+    opacity: 0.55,
     textAlign: 'center',
-    marginTop: 14,
-    marginBottom: 20,
+    marginTop: 2,
+    marginBottom: 28,
   },
   loveMessagesCard: {
     backgroundColor: '#FFFBF5',
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: spacing.md,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#92400e',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 0.5,
-    borderColor: '#fde68a',
+    borderColor: '#f5e6c8',
   },
   loveMessagesLeft: {
     flexDirection: 'row',
@@ -414,20 +414,20 @@ const styles = StyleSheet.create({
   checkInCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.xl + 6,
-    paddingHorizontal: spacing.md + 4,
-    marginBottom: 16,
+    paddingVertical: spacing.xl + 14,
+    paddingHorizontal: spacing.lg + 8,
+    marginBottom: 22,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 14,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 7,
     alignItems: 'center',
   },
   checkInIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: colors.accentVeryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -461,15 +461,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     borderWidth: 0.5,
-    borderColor: colors.accentMedium,
-    paddingVertical: 16,
+    borderColor: 'rgba(180,160,130,0.18)',
+    paddingVertical: 18,
     paddingHorizontal: spacing.md + 4,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: colors.accentDark,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -491,12 +491,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg + 4,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg + 8,
+    marginBottom: 20,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   weeklyRecapIconContainer: {
     marginRight: spacing.md,
@@ -515,9 +515,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   communityIconContainer: {
     marginRight: spacing.md,
