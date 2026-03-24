@@ -153,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 32 }]}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: 12,
+    marginTop: 24,
     marginBottom: 20,
   },
   greeting: {
