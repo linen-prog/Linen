@@ -144,7 +144,7 @@ export default function HomeScreen() {
 
   return (
     <GradientBackground>
-      <View style={[styles.container, { paddingTop: insets.top + 6 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
         {/* Hidden NotificationButton — provides modal + polling logic */}
         <View style={styles.hiddenNotificationButton}>
           <NotificationButton

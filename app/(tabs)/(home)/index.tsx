@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -144,7 +144,7 @@ export default function HomeScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
         {/* Hidden NotificationButton — provides modal + polling logic */}
         <View style={styles.hiddenNotificationButton}>
           <NotificationButton
@@ -153,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={[styles.header, { paddingTop: 16 }]}>
+        <View style={styles.header}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -286,7 +286,7 @@ export default function HomeScreen() {
             <Text style={styles.communityCardTitle}>Community</Text>
           </TouchableOpacity>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </GradientBackground>
   );
 }
