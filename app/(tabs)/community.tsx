@@ -1044,6 +1044,21 @@ export default function CommunityScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.reactionPickerHeader}>
+              <TouchableOpacity
+                style={styles.modalBackButton}
+                onPress={() => {
+                  console.log('[Community] User tapped back arrow on reaction picker');
+                  setShowReactionPicker(null);
+                }}
+                hitSlop={8}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="chevron-left"
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
               <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
                 Choose reactions
               </Text>
@@ -1296,7 +1311,12 @@ export default function CommunityScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.fullscreenArtworkCloseText}>✕</Text>
+              <IconSymbol
+                ios_icon_name="chevron.left"
+                android_material_icon_name="chevron-left"
+                size={24}
+                color="rgba(255,255,255,0.9)"
+              />
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -1371,6 +1391,21 @@ export default function CommunityScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.careModalHeader}>
+              <TouchableOpacity
+                style={styles.modalBackButton}
+                onPress={() => {
+                  console.log('[Community] User tapped back arrow on care modal');
+                  setShowCareModal(null);
+                }}
+                hitSlop={8}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="chevron-left"
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
               <Text style={[styles.careModalTitle, { color: textColor }]}>
                 Send Care
               </Text>
@@ -2428,10 +2463,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '80%',
   },
+  modalBackButton: {
+    padding: 4,
+    marginRight: 8,
+  },
   fullscreenArtworkClose: {
     position: 'absolute',
     top: 56,
-    right: 20,
+    left: 16,
     width: 40,
     height: 40,
     borderRadius: 20,
