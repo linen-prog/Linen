@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -18,6 +18,7 @@ interface UserStats {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [lastCheckInMessage, setLastCheckInMessage] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -152,7 +153,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: 16 }]}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -182,7 +183,7 @@ export default function HomeScreen() {
                 { opacity: greetingOpacity, transform: [{ translateY: greetingTranslateY }] },
               ]}
             >
-              {"I'm glad you're here today."}
+              {"I'm glad you're here."}
             </Animated.Text>
           </View>
 
@@ -196,10 +197,10 @@ export default function HomeScreen() {
           >
             <View style={styles.loveMessagesLeft}>
               <View style={styles.loveMessagesIconCircle}>
-                <Ionicons name="sparkles" size={22} color="#d97706" />
+                <Ionicons name="sparkles" size={20} color="#b08040" />
               </View>
               <View style={styles.loveMessagesTextBlock}>
-                <Text style={styles.loveMessagesTitle}>Messages</Text>
+                <Text style={styles.loveMessagesTitle}>{"You've received care"}</Text>
               </View>
             </View>
             {unreadCount > 0 && (
@@ -247,7 +248,7 @@ export default function HomeScreen() {
 
             <View>
               <Text style={styles.giftCardTitle}>Open Your Gift</Text>
-              <Text style={styles.giftCardSubtitle}>Daily scripture reflection</Text>
+              <Text style={styles.giftCardSubtitle}>A quiet moment with scripture</Text>
             </View>
           </TouchableOpacity>
 
@@ -324,8 +325,8 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     alignItems: 'flex-start',
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 48,
+    marginBottom: 20,
   },
   greeting: {
     fontSize: 16,
@@ -343,30 +344,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   presenceCue: {
-    fontSize: 12,
+    fontSize: 13,
     fontStyle: 'italic',
     color: colors.textSecondary,
-    opacity: 0.5,
+    opacity: 0.55,
     textAlign: 'center',
-    marginTop: 14,
-    marginBottom: 20,
+    marginTop: 2,
+    marginBottom: 28,
   },
   loveMessagesCard: {
     backgroundColor: '#FFFBF5',
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: spacing.md,
     marginBottom: 16,
     shadowColor: '#92400e',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 0.5,
-    borderColor: '#fde68a',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   loveMessagesLeft: {
     flexDirection: 'row',
@@ -413,21 +414,23 @@ const styles = StyleSheet.create({
   },
   checkInCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.xl + 6,
-    paddingHorizontal: spacing.md + 4,
-    marginBottom: 16,
+    borderRadius: 16,
+    paddingVertical: spacing.xl + 14,
+    paddingHorizontal: spacing.lg + 8,
+    marginBottom: 20,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 14,
     elevation: 5,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   checkInIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: colors.accentVeryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -459,17 +462,17 @@ const styles = StyleSheet.create({
   },
   giftCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    borderWidth: 0.5,
-    borderColor: colors.accentMedium,
-    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    paddingVertical: 18,
     paddingHorizontal: spacing.md + 4,
     marginBottom: 16,
     shadowColor: colors.accentDark,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -486,17 +489,19 @@ const styles = StyleSheet.create({
   },
   weeklyRecapCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingVertical: spacing.lg + 4,
     paddingHorizontal: spacing.lg + 4,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg + 8,
+    marginBottom: 16,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   weeklyRecapIconContainer: {
     marginRight: spacing.md,
@@ -508,16 +513,18 @@ const styles = StyleSheet.create({
   },
   communityCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingVertical: spacing.lg + 4,
     paddingHorizontal: spacing.lg + 4,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   communityIconContainer: {
     marginRight: spacing.md,

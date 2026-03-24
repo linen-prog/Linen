@@ -196,7 +196,10 @@ export default function HomeScreen() {
                 Peace to you, friend.
               </Text>
               <Text style={[styles.welcomeLine2, { color: textSecondaryColor }]}>
-                you made it back
+                I'm glad you're here.
+              </Text>
+              <Text style={[styles.welcomeLine3, { color: textSecondaryColor }]}>
+                Take a breath before you begin
               </Text>
             </Animated.View>
 
@@ -215,8 +218,8 @@ export default function HomeScreen() {
                   <View style={styles.companionBannerLeft}>
                     <Text style={styles.companionBannerIcon}>✨</Text>
                     <View style={styles.companionBannerText}>
-                      <Text style={styles.companionBannerTitle}>Personalize Your AI Companion</Text>
-                      <Text style={styles.companionBannerSubtitle}>Set your tone, directness & more →</Text>
+                      <Text style={styles.companionBannerTitle}>Shape your companion</Text>
+                      <Text style={styles.companionBannerSubtitle}>Adjust how it meets you →</Text>
                     </View>
                   </View>
                   <TouchableOpacity
@@ -252,7 +255,7 @@ export default function HomeScreen() {
                   {checkInTagline}
                 </Text>
                 <Text style={[styles.checkInPresenceCue, { color: colors.textLight }]}>
-                  You can take your time here
+                  Take your time
                 </Text>
                 {personalizationContext && (
                   <Text style={[styles.checkInContext, { color: textSecondaryColor }]}>
@@ -280,7 +283,7 @@ export default function HomeScreen() {
                     Open Your Gift
                   </Text>
                   <Text style={[styles.giftSubtitle, { color: textSecondaryColor }]}>
-                    Daily scripture reflection
+                    A quiet moment with scripture
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -299,7 +302,7 @@ export default function HomeScreen() {
                     Messages
                   </Text>
                   <Text style={[styles.messagesSubtitle, { color: textSecondaryColor }]}>
-                    Someone is thinking of you
+                    You've received care
                   </Text>
                 </View>
                 {unreadCount > 0 && (
@@ -383,8 +386,9 @@ const styles = StyleSheet.create({
   // ── Welcome block ──────────────────────────────────────────
   welcomeBlock: {
     paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.md,
     paddingHorizontal: spacing.xs,
+    marginBottom: 20,
   },
   welcomeLine1: {
     fontSize: 28,
@@ -398,19 +402,28 @@ const styles = StyleSheet.create({
     fontWeight: typography.regular,
     lineHeight: 26,
   },
+  welcomeLine3: {
+    fontSize: 13,
+    fontWeight: typography.regular,
+    lineHeight: 20,
+    marginTop: 4,
+    opacity: 0.5,
+  },
 
   // ── Check-In card ──────────────────────────────────────────
   checkInCard: {
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xl,
+    borderRadius: 16,
+    paddingVertical: spacing.xl + 6,
+    paddingHorizontal: spacing.xl + 4,
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: 20,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   checkInIconCircle: {
     width: 72,
@@ -453,15 +466,17 @@ const styles = StyleSheet.create({
   giftCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    marginBottom: 16,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.7,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   giftIconCircle: {
     width: 56,
@@ -488,15 +503,17 @@ const styles = StyleSheet.create({
   messagesCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    marginBottom: 16,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.7,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   messagesIconCircle: {
     width: 48,
@@ -539,18 +556,21 @@ const styles = StyleSheet.create({
   quietRow: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginBottom: 16,
   },
   quietCard: {
     flex: 1,
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'flex-start',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   quietIconCircle: {
     width: 44,
@@ -576,11 +596,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.primaryLight,
-    borderRadius: borderRadius.md,
+    borderRadius: 16,
     padding: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#a7f3d0',
+    borderColor: 'rgba(0,0,0,0.10)',
   },
   companionBannerLeft: {
     flexDirection: 'row',

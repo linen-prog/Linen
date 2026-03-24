@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
-import { authenticatedGet } from '@/utils/api';
+import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import Animated, { 
@@ -22,7 +22,6 @@ import Animated, {
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface WeeklyTheme {
   id: string;
@@ -102,7 +101,6 @@ export default function DailyGiftScreen() {
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
   const router = useRouter();
   const { isSubscribed, loading: subLoading } = useSubscription();
-  const { session } = useAuth();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
   const [hasReflected, setHasReflected] = useState(false);
@@ -127,6 +125,7 @@ export default function DailyGiftScreen() {
   
   const [shareToCommunity, setShareToCommunity] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [sharedToCommunity, setSharedToCommunity] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -207,7 +206,8 @@ export default function DailyGiftScreen() {
       console.log(`[DailyGift] ${loadTimestamp} - Loading daily gift from /api/weekly-theme/current...`);
       setIsLoadingGift(true);
       
-      const response = await authenticatedGet<DailyGiftResponse>('/api/weekly-theme/current');
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const response = await authenticatedGet<DailyGiftResponse>(`/api/weekly-theme/current?date=${localDate}`);
       
       if (!isMounted) {
         console.log('[DailyGift] Component unmounted, skipping state updates');
@@ -502,26 +502,29 @@ export default function DailyGiftScreen() {
     try {
       let response: { reflectionId: string; postId?: string };
 
+      const authToken = await getAuthToken();
+      console.log(`[DailyGift] ${saveTimestamp} - Auth token present:`, !!authToken);
+
       if (attachment) {
         console.log(`[DailyGift] ${saveTimestamp} - Uploading with attachment via multipart/form-data`);
         const formData = new FormData();
         formData.append('dailyGiftId', dailyGiftResponse.dailyContent.id);
         formData.append('reflectionText', reflectionText.trim());
         formData.append('attachment', { uri: attachment.uri, name: attachment.name, type: attachment.mimeType } as any);
-
-        const backendUrl = 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev';
-        const token = (session as any)?.token || (session as any)?.session?.token;
-        const headers: Record<string, string> = { 'Accept': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        console.log(`[DailyGift] ${saveTimestamp} - POST ${backendUrl}/api/daily-gift/reflect (multipart)`);
         formData.append('selectedMoods', JSON.stringify(selectedMoods));
         formData.append('selectedSensations', JSON.stringify(selectedSensations));
         formData.append('shareToCommunity', String(shareToCommunity));
         formData.append('isAnonymous', String(isAnonymous));
 
+        const headers: Record<string, string> = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        };
+
+        console.log(`[DailyGift] ${saveTimestamp} - POST ${BACKEND_URL}/api/daily-gift/reflect (multipart)`);
         console.log(`[DailyGift] ${saveTimestamp} - Appended share fields:`, { shareToCommunity, isAnonymous });
-        const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
+
+        const res = await fetch(`${BACKEND_URL}/api/daily-gift/reflect`, {
           method: 'POST',
           headers,
           body: formData,
@@ -535,12 +538,14 @@ export default function DailyGiftScreen() {
         response = await res.json();
       } else {
         console.log(`[DailyGift] ${saveTimestamp} - Saving reflection (JSON) to /api/daily-gift/reflect`);
-        const backendUrl = 'https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev';
-        const token = (session as any)?.token || (session as any)?.session?.token;
-        const headers: Record<string, string> = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${backendUrl}/api/daily-gift/reflect`, {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        };
+
+        const res = await fetch(`${BACKEND_URL}/api/daily-gift/reflect`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -562,6 +567,39 @@ export default function DailyGiftScreen() {
       }
       
       console.log(`[DailyGift] ${saveTimestamp} - Reflection saved successfully:`, response);
+
+      // Separately post to community wall if toggle is on
+      if (shareToCommunity) {
+        try {
+          const communityAuthToken = await getAuthToken();
+          console.log(`[DailyGift] ${saveTimestamp} - Posting to community wall: POST /api/community/posts`);
+          const communityRes = await fetch(`${BACKEND_URL}/api/community/posts`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${communityAuthToken}`,
+            },
+            body: JSON.stringify({
+              content: reflectionText.trim(),
+              category: 'reflection',
+              anonymous: isAnonymous,
+            }),
+          });
+          if (!communityRes.ok) {
+            const errText = await communityRes.text();
+            console.log(`[DailyGift] ${saveTimestamp} - Community post failed (${communityRes.status}):`, errText);
+          } else {
+            const communityData = await communityRes.json();
+            console.log(`[DailyGift] ${saveTimestamp} - Community post created successfully:`, communityData);
+            setSharedToCommunity(true);
+            // Auto-hide the success message after 4 seconds
+            setTimeout(() => setSharedToCommunity(false), 4000);
+          }
+        } catch (communityError) {
+          console.log(`[DailyGift] ${saveTimestamp} - Community post error (non-critical):`, communityError);
+        }
+      }
+
       setIsLoading(false);
       setHasReflected(true);
       setAttachment(null);
@@ -1141,10 +1179,10 @@ export default function DailyGiftScreen() {
               )}
 
               {/* Share with Community toggle */}
-              <View style={styles.shareToggleRow}>
+              <View style={[styles.shareToggleRow, { backgroundColor: cardBg }]}>
                 <View style={styles.shareToggleLeft}>
                   <Ionicons name="people-outline" size={18} color={textSecondaryColor} />
-                  <Text style={styles.shareToggleLabel}>Share with community</Text>
+                  <Text style={[styles.shareToggleLabel, { color: textColor }]}>Share with community</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => {
@@ -1160,10 +1198,10 @@ export default function DailyGiftScreen() {
 
               {/* Anonymous toggle — only shown when sharing */}
               {shareToCommunity && (
-                <View style={[styles.shareToggleRow, { marginTop: 8 }]}>
+                <View style={[styles.shareToggleRow, { marginTop: 8, backgroundColor: cardBg }]}>
                   <View style={styles.shareToggleLeft}>
                     <Ionicons name="eye-off-outline" size={18} color={textSecondaryColor} />
-                    <Text style={styles.shareToggleLabel}>Post anonymously</Text>
+                    <Text style={[styles.shareToggleLabel, { color: textColor }]}>Post anonymously</Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => {
@@ -1175,6 +1213,14 @@ export default function DailyGiftScreen() {
                   >
                     <View style={[styles.toggleThumb, isAnonymous && styles.toggleThumbActive]} />
                   </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Community share success message */}
+              {sharedToCommunity && (
+                <View style={styles.communitySuccessRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <Text style={[styles.communitySuccessText, { color: colors.primary }]}>Shared with community</Text>
                 </View>
               )}
 
@@ -1750,6 +1796,7 @@ const styles = StyleSheet.create({
   },
 
   invitationCard: {
+    marginBottom: 32,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -1988,6 +2035,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+  },
+  communitySuccessRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  communitySuccessText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
   },
   toggleThumbActive: {
     alignSelf: 'flex-end',

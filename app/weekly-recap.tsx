@@ -1127,7 +1127,7 @@ export default function WeeklyRecapScreen() {
 
           {/* ── Header ── */}
           <View style={styles.header}>
-            <Text style={styles.title}>A Look Back</Text>
+            <Text style={[styles.title, { color: isDark ? '#fafaf9' : '#1c1917' }]}>A Look Back</Text>
             {dateRangeText.length > 0 && (
               <Text style={styles.dateRange}>{dateRangeText}</Text>
             )}

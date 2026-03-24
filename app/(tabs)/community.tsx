@@ -144,16 +144,29 @@ export default function CommunityScreen() {
       const { authenticatedGet } = await import('@/utils/api');
       
       let allPosts: Post[] = [];
+
+      const unwrapPosts = (raw: unknown): Post[] => {
+        if (Array.isArray(raw)) return raw as Post[];
+        if (raw && typeof raw === 'object') {
+          const obj = raw as Record<string, unknown>;
+          if (Array.isArray(obj.posts)) return obj.posts as Post[];
+          if (Array.isArray(obj.data)) return obj.data as Post[];
+        }
+        console.warn('[Community] ⚠️ Unexpected posts response shape:', raw);
+        return [];
+      };
       
       if (category === 'my-shared') {
         const endpoint = '/api/community/my-posts';
         console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
-        allPosts = await authenticatedGet<Post[]>(endpoint);
+        const raw = await authenticatedGet<unknown>(endpoint);
+        allPosts = unwrapPosts(raw);
       } else if (category === 'feed') {
         // For feed tab, fetch all posts (no category filter)
         const endpoint = '/api/community/posts';
         console.log('[Community] 🔵 Fetching all posts for feed from:', endpoint);
-        allPosts = await authenticatedGet<Post[]>(endpoint);
+        const raw = await authenticatedGet<unknown>(endpoint);
+        allPosts = unwrapPosts(raw);
         // Sort by createdAt (newest first)
         allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         console.log('[Community] ✅ All posts loaded for feed:', allPosts.length, 'posts');
@@ -163,7 +176,8 @@ export default function CommunityScreen() {
         const categoryParam = category === 'prayers' ? 'prayer' : category;
         const endpoint = `/api/community/posts?category=${categoryParam}`;
         console.log('[Community] 🔵 Fetching posts from:', endpoint);
-        allPosts = await authenticatedGet<Post[]>(endpoint);
+        const raw = await authenticatedGet<unknown>(endpoint);
+        allPosts = unwrapPosts(raw);
       }
       
       console.log('[Community] ✅ Posts loaded for', category, ':', allPosts.length, 'posts');
@@ -409,7 +423,16 @@ export default function CommunityScreen() {
     
     try {
       const { authenticatedGet } = await import('@/utils/api');
-      const response = await authenticatedGet<CareMessage[]>('/api/community/care-messages');
+      const raw = await authenticatedGet<unknown>('/api/community/care-messages');
+      let response: CareMessage[] = [];
+      if (Array.isArray(raw)) {
+        response = raw as CareMessage[];
+      } else if (raw && typeof raw === 'object') {
+        const obj = raw as Record<string, unknown>;
+        if (Array.isArray(obj.messages)) response = obj.messages as CareMessage[];
+        else if (Array.isArray(obj.data)) response = obj.data as CareMessage[];
+        else console.warn('[Community] ⚠️ Unexpected care-messages response shape:', raw);
+      }
       console.log('[Community] Care messages loaded:', response.length);
       
       setCareMessages(response.map(msg => ({
@@ -623,8 +646,8 @@ export default function CommunityScreen() {
         >
         {/* Top Banner */}
         <View style={styles.headerBannerWrap}>
-          <View style={styles.headerBanner}>
-            <Text style={styles.headerBannerText}>
+          <View style={[styles.headerBanner, { backgroundColor: isDark ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.13)' }]}>
+            <Text style={[styles.headerBannerText, { color: isDark ? '#ffffff' : '#065f46' }]}>
               ✨ You are not alone in this journey
             </Text>
           </View>
@@ -1021,6 +1044,21 @@ export default function CommunityScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.reactionPickerHeader}>
+              <TouchableOpacity
+                style={styles.modalBackButton}
+                onPress={() => {
+                  console.log('[Community] User tapped back arrow on reaction picker');
+                  setShowReactionPicker(null);
+                }}
+                hitSlop={8}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="chevron-left"
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
               <Text style={[styles.reactionPickerTitle, { color: textColor }]}>
                 Choose reactions
               </Text>
@@ -1273,7 +1311,12 @@ export default function CommunityScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.fullscreenArtworkCloseText}>✕</Text>
+              <IconSymbol
+                ios_icon_name="chevron.left"
+                android_material_icon_name="chevron-left"
+                size={24}
+                color="rgba(255,255,255,0.9)"
+              />
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -1348,6 +1391,21 @@ export default function CommunityScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.careModalHeader}>
+              <TouchableOpacity
+                style={styles.modalBackButton}
+                onPress={() => {
+                  console.log('[Community] User tapped back arrow on care modal');
+                  setShowCareModal(null);
+                }}
+                hitSlop={8}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="chevron-left"
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
               <Text style={[styles.careModalTitle, { color: textColor }]}>
                 Send Care
               </Text>
@@ -2405,10 +2463,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '80%',
   },
+  modalBackButton: {
+    padding: 4,
+    marginRight: 8,
+  },
   fullscreenArtworkClose: {
     position: 'absolute',
     top: 56,
-    right: 20,
+    left: 16,
     width: 40,
     height: 40,
     borderRadius: 20,

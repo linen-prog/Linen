@@ -40,7 +40,7 @@ const FEATURES = [
     icon: "✦",
     title: "AI Companion",
     description:
-      "A gentle companion that helps you notice what's happening in your mind and body — and gently return to yourself and God",
+      "A gentle companion that helps you notice what's happening in your mind and body — and return to yourself and God",
   },
   {
     icon: "✧",
@@ -427,7 +427,7 @@ export default function PaywallScreen() {
         >
           {/* Emotional bridge line */}
           <Text style={[styles.bridgeLine, { color: textSecond }]}>
-            You don't have to stop here
+            Stay with what's opening in you
           </Text>
 
           {isWeb ? (
@@ -601,8 +601,8 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     paddingTop: spacing.xl * 1.5,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+    gap: spacing.md,
   },
   badge: {
     paddingHorizontal: spacing.md,
@@ -616,12 +616,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   headline: {
-    fontSize: 32,
+    fontSize: 27,
     fontWeight: typography.bold,
     textAlign: "center",
-    lineHeight: 42,
+    lineHeight: 34,
     fontFamily: "Georgia",
-    marginBottom: spacing.sm,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
   trialLine: {
     fontSize: typography.h4,
@@ -637,16 +638,18 @@ const styles = StyleSheet.create({
 
   // Features section
   featuresSection: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingVertical: spacing.sm,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: typography.body,
     fontWeight: typography.medium,
     letterSpacing: 0.3,
     textAlign: "center",
-    opacity: 0.75,
-    marginBottom: spacing.xs,
+    opacity: 0.88,
+    marginTop: spacing.xs,
+    marginBottom: 4,
   },
 
   // Card (used in subscribed state + no-packages)
@@ -679,7 +682,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   featureIconText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   featureTextWrap: {
     flex: 1,
@@ -719,23 +722,24 @@ const styles = StyleSheet.create({
   // Bottom actions
   bottomActions: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
 
   // Bridge line
   bridgeLine: {
-    fontSize: typography.bodySmall,
+    fontSize: typography.bodySmall - 1,
     textAlign: "center",
-    opacity: 0.6,
-    marginBottom: spacing.xs,
+    opacity: 0.55,
+    marginBottom: spacing.sm,
   },
 
   // Primary button
   primaryButtonWrap: {
     gap: spacing.xs,
     alignItems: "center",
+    marginTop: spacing.sm,
   },
   tapFeedbackText: {
     fontSize: typography.bodySmall,
@@ -751,11 +755,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
     minWidth: 280,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   primaryButtonText: {
     color: "#fff",
@@ -772,8 +776,8 @@ const styles = StyleSheet.create({
   },
   ghostButtonText: {
     fontSize: typography.bodySmall,
-    fontWeight: typography.medium,
-    opacity: 0.65,
+    fontWeight: "300",
+    opacity: 0.6,
   },
   legalText: {
     fontSize: 10,

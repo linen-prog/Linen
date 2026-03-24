@@ -530,6 +530,10 @@ export default function CheckInScreen() {
             A gentle space for reflection
           </Text>
 
+          <Text style={[styles.groundingBreath, { color: textSecondaryColor }]}>
+            Take a breath.
+          </Text>
+
           <View style={styles.groundingLines}>
             <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
               I'm here with you.
@@ -539,15 +543,6 @@ export default function CheckInScreen() {
             </Text>
             <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
               There's no right way to begin.
-            </Text>
-          </View>
-
-          <View style={styles.softNoteContainer}>
-            <Text style={[styles.softNoteText, { color: textSecondaryColor }]}>
-              We'll move gently, at your pace.
-            </Text>
-            <Text style={[styles.softNoteText, { color: textSecondaryColor }]}>
-              You don't have to figure anything out here.
             </Text>
           </View>
 
@@ -568,9 +563,9 @@ export default function CheckInScreen() {
     { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
   ];
 
-  const prayerIconColor = colors.primary;
-  const careIconColor = colors.primary;
-  const labelColor = colors.textSecondary;
+  const prayerIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
+  const careIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
+  const labelColor = isDark ? '#d4d4d8' : 'rgba(120,113,108,0.75)';
   
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
@@ -587,7 +582,7 @@ export default function CheckInScreen() {
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: '400' as const,
-            color: '#1c1917',
+            color: isDark ? '#fafaf9' : '#1c1917',
             fontFamily: 'Georgia',
           },
           headerLeft: () => (
@@ -634,70 +629,67 @@ export default function CheckInScreen() {
           ),
         }}
       />
-      <View style={{ flex: 1 }}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
-        >
-          <View style={{ flex: 1 }}>
-            {messages.length === 0 ? (
-              renderEmptyState()
-            ) : (
-              <FlatList
-                ref={flatListRef}
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.messagesList}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={true}
-                style={{ flex: 1 }}
-                onContentSizeChange={() => {
-                  if (flatListRef.current) {
-                    flatListRef.current.scrollToEnd({ animated: true });
-                  }
-                }}
-              />
-            )}
-          </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
+      >
+        {messages.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={true}
+            style={{ flex: 1 }}
+            keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => {
+              if (flatListRef.current) {
+                flatListRef.current.scrollToEnd({ animated: true });
+              }
+            }}
+          />
+        )}
 
-          <View style={[styles.inputContainer, { 
-            backgroundColor: colors.card,
-            borderTopColor: inputBorder,
-            paddingBottom: insets.bottom + 8,
-          }]}>
-            <TextInput
-              style={[styles.input, { 
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-                color: textColor 
-              }]}
-              placeholder="Share what's on your heart..."
-              placeholderTextColor={textSecondaryColor}
-              value={inputText}
-              onChangeText={setInputText}
-              maxLength={1000}
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
-              blurOnSubmit={false}
-              multiline={false}
+        <View style={[styles.inputContainer, {
+          backgroundColor: inputBg,
+          borderTopColor: inputBorder,
+          paddingBottom: insets.bottom + 8,
+        }]}>
+          <TextInput
+            style={[styles.input, {
+              backgroundColor: isDark ? colors.cardDark : colors.card,
+              borderColor: inputBorder,
+              color: textColor,
+            }]}
+            placeholder="What's on your heart?"
+            placeholderTextColor={textSecondaryColor}
+            value={inputText}
+            onChangeText={setInputText}
+            maxLength={1000}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+            multiline={false}
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isLoading}
+          >
+            <IconSymbol
+              ios_icon_name="arrow.up"
+              android_material_icon_name="send"
+              size={24}
+              color="#FFFFFF"
             />
-            <TouchableOpacity 
-              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || isLoading}
-            >
-              <IconSymbol 
-                ios_icon_name="arrow.up"
-                android_material_icon_name="send"
-                size={24}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
 
         {/* Crisis Resources Modal */}
         <Modal
@@ -1182,25 +1174,25 @@ export default function CheckInScreen() {
               </View>
 
               {/* Title */}
-              <Text style={styles.celebrationTitle}>
+              <Text style={[styles.celebrationTitle, { color: textColor }]}>
                 Your Request is Shared 🎉
               </Text>
 
               {/* Subtitle */}
-              <Text style={styles.celebrationSubtitle}>
+              <Text style={[styles.celebrationSubtitle, { color: textSecondaryColor }]}>
                 The community will be able to send you encouragement
               </Text>
 
               {/* Anonymous note */}
               {careAnonymous && (
-                <Text style={styles.celebrationAnonymousNote}>
+                <Text style={[styles.celebrationAnonymousNote, { color: textSecondaryColor }]}>
                   (shared anonymously)
                 </Text>
               )}
 
               {/* Reassurance box */}
               <View style={styles.celebrationReassuranceBox}>
-                <Text style={styles.celebrationReassuranceText}>
+                <Text style={[styles.celebrationReassuranceText, { color: textColor }]}>
                   You are not alone. The community is here to hold you with gentle care and support.
                 </Text>
               </View>
@@ -1276,25 +1268,25 @@ export default function CheckInScreen() {
               </View>
 
               {/* Title */}
-              <Text style={styles.prayerCelebrationTitle}>
+              <Text style={[styles.prayerCelebrationTitle, { color: textColor }]}>
                 Thank you for sharing 🙏
               </Text>
 
               {/* Subtitle */}
-              <Text style={styles.prayerCelebrationSubtitle}>
+              <Text style={[styles.prayerCelebrationSubtitle, { color: textSecondaryColor }]}>
                 Your prayer has been shared with the community
               </Text>
 
               {/* Anonymous note */}
               {shareAnonymous && (
-                <Text style={styles.prayerCelebrationAnonymousNote}>
+                <Text style={[styles.prayerCelebrationAnonymousNote, { color: textSecondaryColor }]}>
                   (shared anonymously)
                 </Text>
               )}
 
               {/* Reassurance box */}
               <View style={styles.prayerCelebrationReassuranceBox}>
-                <Text style={styles.prayerCelebrationReassuranceText}>
+                <Text style={[styles.prayerCelebrationReassuranceText, { color: textColor }]}>
                   Your prayer may comfort and encourage someone who needs it today. Thank you for sharing your heart with the community.
                 </Text>
               </View>
@@ -1458,6 +1450,14 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     opacity: 0.85,
   },
+  groundingBreath: {
+    fontSize: 14,
+    opacity: 0.5,
+    marginTop: 6,
+    marginBottom: 28,
+    textAlign: 'center' as const,
+    fontStyle: 'italic' as const,
+  },
   emptyStateTitle: {
     fontSize: 22,
     fontWeight: '500',
@@ -1467,18 +1467,20 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   groundingLines: {
+    marginTop: 32,
     alignItems: 'center',
     gap: 14,
     marginBottom: 36,
   },
   groundingLine: {
+    marginBottom: 16,
     fontSize: 17,
     textAlign: 'center',
     lineHeight: 26,
     fontStyle: 'italic',
     opacity: 0.9,
   },
-  softNoteContainer: {
+  softNoteContainerUnused: {
     alignItems: 'center',
     gap: 10,
     marginBottom: 48,
@@ -1490,6 +1492,8 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   disclaimerContainer: {
+    marginTop: 32,
+    opacity: 0.65,
     paddingHorizontal: 8,
   },
   disclaimerText: {
@@ -1679,6 +1683,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   headerButtonContainer: {
+    opacity: 0.8,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xs,
@@ -1979,7 +1984,7 @@ const styles = StyleSheet.create({
   },
   celebrationSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     marginBottom: spacing.xs,
     lineHeight: 22,
@@ -2001,7 +2006,7 @@ const styles = StyleSheet.create({
   },
   celebrationReassuranceText: {
     fontSize: 14,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -2108,7 +2113,7 @@ const styles = StyleSheet.create({
   },
   prayerCelebrationSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     marginBottom: spacing.xs,
     lineHeight: 22,
@@ -2130,7 +2135,7 @@ const styles = StyleSheet.create({
   },
   prayerCelebrationReassuranceText: {
     fontSize: 14,
-    color: '#666',
+    color: '#57534e',
     textAlign: 'center',
     lineHeight: 20,
   },
