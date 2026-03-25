@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar, Animated, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -93,6 +93,21 @@ export default function CheckInScreen() {
       });
     }, 4000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
   }, []);
 
   const { isDark } = useTheme();
@@ -635,7 +650,11 @@ export default function CheckInScreen() {
   
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
-  const headerHeight = Platform.OS === 'ios' ? (insets.top + 44) : (StatusBar.currentHeight ?? 24) + 56;
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56;
+  const statusBarHeight = StatusBar.currentHeight ?? 0;
+  const keyboardVerticalOffset = Platform.OS === 'ios'
+    ? headerHeight + (insets.top > 20 ? insets.top : 0)
+    : headerHeight + statusBarHeight;
 
   return (
     <GradientBackground>
@@ -705,8 +724,8 @@ export default function CheckInScreen() {
       />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={headerHeight}
+        behavior="padding"
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         {messages.length === 0 ? (
           <ScrollView
@@ -723,7 +742,7 @@ export default function CheckInScreen() {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={item => item.id}
-            contentContainerStyle={[styles.messagesList, { paddingBottom: 16 }]}
+            contentContainerStyle={[styles.messagesList, { paddingBottom: 16, flexGrow: 1 }]}
             showsVerticalScrollIndicator={false}
             scrollEnabled={true}
             style={{ flex: 1 }}
