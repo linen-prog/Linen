@@ -3,10 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
 import { NotificationBell } from "@/components/NotificationBell";
-import { Ionicons } from '@expo/vector-icons';
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
@@ -154,7 +154,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={styles.header}>
+        <BlurView intensity={0} tint="default" style={styles.header}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -163,7 +163,7 @@ export default function HomeScreen() {
           >
             Linen
           </Animated.Text>
-        </View>
+        </BlurView>
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -198,7 +198,7 @@ export default function HomeScreen() {
           >
             <View style={styles.loveMessagesLeft}>
               <View style={styles.loveMessagesIconCircle}>
-                <Ionicons name="sparkles" size={20} color="#b08040" />
+                <IconSymbol ios_icon_name="heart.fill" android_material_icon_name="favorite" size={20} color="#b08040" />
               </View>
               <View style={styles.loveMessagesTextBlock}>
                 <Text style={styles.loveMessagesTitle}>{"You've received care"}</Text>
@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
     height: 0,
     overflow: 'hidden',
     opacity: 0,
+    display: 'none',
   },
   header: {
     flexDirection: 'row',

@@ -1,18 +1,9 @@
 /**
- * OneSignal Push Notification Context
+ * NotificationContext — native stub (no-op).
  *
- * Provides push notification management for Expo + React Native apps.
- * Reads OneSignal App ID from app.json (expo.extra) automatically.
- *
- * Supports:
- * - Native iOS/Android via OneSignal SDK
- * - Permission management
- * - Notification event handling
- * - User ID linking for targeted notifications
- *
- * SETUP:
- * 1. Wrap your app with <NotificationProvider> inside <AuthProvider>
- * 2. Run: npx expo install onesignal-expo-plugin react-native-onesignal && npx expo prebuild
+ * OneSignal native module is not present in this binary, so all notification
+ * functionality is disabled. The interface matches NotificationContext.tsx so
+ * the rest of the app compiles and runs without crashing.
  */
 
 import React, {
@@ -47,27 +38,26 @@ const ONESIGNAL_APP_ID = extra.oneSignalAppId || "";
 const isWeb = Platform.OS === "web";
 
 interface NotificationContextType {
-  /** Whether the user has granted notification permission */
   hasPermission: boolean;
-  /** Whether permission has been requested but not yet granted */
   permissionDenied: boolean;
-  /** Loading state during initialization */
   loading: boolean;
-  /** Whether running on web (notifications not available) */
   isWeb: boolean;
-  /** Request notification permission from the user */
   requestPermission: () => Promise<boolean>;
-  /** Set a tag for user segmentation */
   sendTag: (key: string, value: string) => void;
-  /** Remove a tag */
   deleteTag: (key: string) => void;
-  /** Last received notification data */
   lastNotification: Record<string, unknown> | null;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
+const NotificationContext = createContext<NotificationContextType>({
+  hasPermission: false,
+  permissionDenied: false,
+  loading: false,
+  isWeb: false,
+  requestPermission: async () => false,
+  sendTag: () => {},
+  deleteTag: () => {},
+  lastNotification: null,
+});
 
 interface NotificationProviderProps {
   children: ReactNode;
@@ -224,14 +214,21 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   return (
     <NotificationContext.Provider
       value={{
-        hasPermission,
-        permissionDenied,
-        loading,
-        isWeb,
-        requestPermission,
-        sendTag,
-        deleteTag,
-        lastNotification,
+        hasPermission: false,
+        permissionDenied: false,
+        loading: false,
+        isWeb: false,
+        requestPermission: async () => {
+          console.log("[Notifications] requestPermission called — OneSignal not available");
+          return false;
+        },
+        sendTag: (key: string, value: string) => {
+          console.log("[Notifications] sendTag called — OneSignal not available", key, value);
+        },
+        deleteTag: (key: string) => {
+          console.log("[Notifications] deleteTag called — OneSignal not available", key);
+        },
+        lastNotification: null,
       }}
     >
       {children}
@@ -239,22 +236,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   );
 }
 
-/**
- * Hook to access notification state and methods.
- *
- * @example
- * const { hasPermission, requestPermission } = useNotifications();
- *
- * if (!hasPermission) {
- *   return <Button onPress={requestPermission}>Enable Notifications</Button>;
- * }
- */
 export function useNotifications() {
-  const context = useContext(NotificationContext);
-  if (context === undefined) {
-    throw new Error(
-      "useNotifications must be used within NotificationProvider"
-    );
-  }
-  return context;
+  return useContext(NotificationContext);
 }
