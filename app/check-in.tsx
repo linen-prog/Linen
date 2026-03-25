@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -9,15 +9,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import FloatingTabBar from '@/components/FloatingTabBar';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring,
-  withSequence,
-  withTiming,
-  withRepeat,
-  Easing
-} from 'react-native-reanimated';
 
 interface Message {
   id: string;
@@ -75,6 +66,34 @@ export default function CheckInScreen() {
   const [isSharingMessage, setIsSharingMessage] = useState(false);
   const [prayerShared, setPrayerShared] = useState(false);
   const [prayerSharedConfirm, setPrayerSharedConfirm] = useState(false);
+
+  // Rotating placeholder state
+  const placeholderTexts = [
+    "What's on your heart?",
+    "What are you noticing right now?",
+    "Where do you feel this in your body?",
+  ];
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const placeholderOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(placeholderOpacity, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
+        setPlaceholderIndex(prev => (prev + 1) % placeholderTexts.length);
+        Animated.timing(placeholderOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -582,29 +601,21 @@ export default function CheckInScreen() {
             />
           </View>
 
-          <Text style={[styles.emptyStateTitle, { color: textColor }]}>
-            A gentle space for reflection
-          </Text>
-
           <Text style={[styles.groundingBreath, { color: textSecondaryColor }]}>
             Take a breath.
           </Text>
 
-          <View style={styles.groundingLines}>
-            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
-              I'm here with you.
-            </Text>
-            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
-              You can share whatever is on your heart.
-            </Text>
-            <Text style={[styles.groundingLine, { color: textSecondaryColor }]}>
-              There's no right way to begin.
-            </Text>
-          </View>
+          <Text style={[styles.emptyStateTitle, { color: textColor }]}>
+            A gentle space for reflection
+          </Text>
+
+          <Text style={[styles.groundingBody, { color: textSecondaryColor }]}>
+            {"I'm here with you.\nYou can share whatever is on your heart.\nThere's no right way to begin."}
+          </Text>
 
           <View style={styles.disclaimerContainer}>
             <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
-              {"This is not therapy or medical care. If you're in crisis, please reach out to 988 Lifeline or text HOME to 741741."}
+              {"This space is for reflection, not medical or crisis care.\nIf you're in immediate need, please reach out to 988 or text HOME to 741741."}
             </Text>
           </View>
         </View>
@@ -654,35 +665,40 @@ export default function CheckInScreen() {
           ),
           headerRight: () => (
             <View style={styles.headerButtons}>
-              <TouchableOpacity 
-                onPress={handlePrayerIconPress}
-                style={styles.headerButtonContainer}
-                disabled={isGeneratingPrayer}
-              >
-                <IconSymbol 
-                  ios_icon_name="hands.sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={24}
-                  color={prayerIconColor}
-                />
-                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                  Prayer
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={handleRequestCare}
-                style={styles.headerButtonContainer}
-              >
-                <IconSymbol 
-                  ios_icon_name="heart.fill"
-                  android_material_icon_name="favorite"
-                  size={24}
-                  color={careIconColor}
-                />
-                <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                  Care
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.responseStyleLabel}>
+                Response style
+              </Text>
+              <View style={styles.headerButtonsRow}>
+                <TouchableOpacity 
+                  onPress={handlePrayerIconPress}
+                  style={styles.headerButtonContainer}
+                  disabled={isGeneratingPrayer}
+                >
+                  <IconSymbol 
+                    ios_icon_name="hands.sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={20}
+                    color={prayerIconColor}
+                  />
+                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                    Prayer
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleRequestCare}
+                  style={styles.headerButtonContainer}
+                >
+                  <IconSymbol 
+                    ios_icon_name="heart.fill"
+                    android_material_icon_name="favorite"
+                    size={20}
+                    color={careIconColor}
+                  />
+                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
+                    Care
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ),
         }}
@@ -726,22 +742,34 @@ export default function CheckInScreen() {
           borderTopColor: inputBorder,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
         }]}>
-          <TextInput
-            style={[styles.input, {
-              backgroundColor: isDark ? colors.cardDark : colors.card,
-              borderColor: inputBorder,
-              color: textColor,
-            }]}
-            placeholder="What's on your heart?"
-            placeholderTextColor={textSecondaryColor}
-            value={inputText}
-            onChangeText={setInputText}
-            maxLength={1000}
-            returnKeyType="send"
-            onSubmitEditing={handleSend}
-            blurOnSubmit={false}
-            multiline={false}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[styles.input, {
+                backgroundColor: isDark ? colors.cardDark : colors.card,
+                borderColor: inputBorder,
+                color: textColor,
+              }]}
+              placeholder=""
+              placeholderTextColor="transparent"
+              value={inputText}
+              onChangeText={setInputText}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              maxLength={1000}
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
+              blurOnSubmit={false}
+              multiline={false}
+            />
+            {inputText.length === 0 && !isInputFocused && (
+              <Animated.Text
+                style={[styles.animatedPlaceholder, { color: textSecondaryColor, opacity: placeholderOpacity }]}
+                pointerEvents="none"
+              >
+                {placeholderTexts[placeholderIndex]}
+              </Animated.Text>
+            )}
+          </View>
           <TouchableOpacity
             style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
             onPress={() => { console.log('[CheckIn] Send button pressed'); handleSend(); }}
@@ -1511,7 +1539,45 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     opacity: 0.85,
   },
+  groundingBody: {
+    fontSize: 15,
+    lineHeight: 26,
+    textAlign: 'center',
+    marginTop: 28,
+    paddingHorizontal: 24,
+  },
+  inputWrapper: {
+    flex: 1,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  animatedPlaceholder: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    fontSize: 15,
+    pointerEvents: 'none',
+  },
+  responseStyleLabel: {
+    fontSize: 10,
+    opacity: 0.5,
+    textAlign: 'center',
+    marginBottom: 2,
+    color: 'rgba(120,113,108,0.75)',
+  },
+  headerButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   groundingBreath: {
+    fontSize: 14,
+    opacity: 0.6,
+    textAlign: 'center',
+    marginTop: 16,
+    fontStyle: 'italic',
+  },
+  _removed_placeholder: {
     fontSize: 14,
     opacity: 0.5,
     marginTop: 6,
