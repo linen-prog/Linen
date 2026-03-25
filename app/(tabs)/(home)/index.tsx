@@ -154,7 +154,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <BlurView intensity={60} tint="light" style={styles.header}>
+        <BlurView intensity={0} tint="default" style={styles.header}>
           <Animated.Text
             style={[
               styles.appTitle,
@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
     height: 0,
     overflow: 'hidden',
     opacity: 0,
+    display: 'none',
   },
   header: {
     flexDirection: 'row',
