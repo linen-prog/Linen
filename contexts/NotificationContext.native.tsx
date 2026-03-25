@@ -24,8 +24,17 @@ import React, {
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
-import { OneSignal, NotificationWillDisplayEvent } from "react-native-onesignal";
 import Constants from "expo-constants";
+
+// Dynamically require OneSignal to avoid crash when native module isn't linked
+let OneSignal: any = null;
+type NotificationWillDisplayEvent = any;
+try {
+  const onesignal = require("react-native-onesignal");
+  OneSignal = onesignal.OneSignal ?? null;
+} catch (e) {
+  console.warn("[OneSignal] Native module not available — notifications disabled:", e);
+}
 
 // Import auth hook for user targeting (validated at setup time)
 import { useAuth } from "./AuthContext";
@@ -88,6 +97,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         "[OneSignal] App ID not provided. " +
         "Please add oneSignalAppId to app.json extra."
       );
+      setLoading(false);
+      return;
+    }
+
+    if (!OneSignal) {
+      console.warn("[OneSignal] Skipping initialization — native module not linked.");
       setLoading(false);
       return;
     }
