@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert, ActionSheetIOS, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert, ActionSheetIOS, Platform, Image, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
@@ -12,11 +12,11 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import Animated, { 
+import ReanimatedLib, { 
   useSharedValue, 
   useAnimatedStyle, 
-  withTiming, 
-  withSequence,
+  withTiming as reanimatedWithTiming, 
+  withSequence as reanimatedWithSequence,
   Easing 
 } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -116,6 +116,25 @@ export default function DailyGiftScreen() {
 
   const [hasSkippedSomaticPrompt, setHasSkippedSomaticPrompt] = useState(false);
   const [showSomaticModal, setShowSomaticModal] = useState(false);
+
+  // Somatic pause state (new inline pause after scripture reveals)
+  const [showSomaticPause, setShowSomaticPause] = useState(false);
+  const [somaticPausePhase, setSomaticPausePhase] = useState<'inhale' | 'exhale'>('inhale');
+
+  // Scripture fade-in animation
+  const scriptureOpacity = useRef(new Animated.Value(0)).current;
+  // Breathing circle animation
+  const breathingScale = useRef(new Animated.Value(0.85)).current;
+  const breathingOpacity = useRef(new Animated.Value(0.3)).current;
+  // Rotating reflection placeholder
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const placeholderOpacity = useRef(new Animated.Value(1)).current;
+
+  const reflectionPlaceholders = [
+    "What's stirring in you?",
+    "Anything you want to say back?",
+    "A word, a feeling, or a prayer\u2026",
+  ];
   const [somaticTimerActive, setSomaticTimerActive] = useState(false);
   const [somaticTimeRemaining, setSomaticTimeRemaining] = useState(60);
   const [showSomaticCelebration, setShowSomaticCelebration] = useState(false);
@@ -147,6 +166,10 @@ export default function DailyGiftScreen() {
 
   // Use ref to track timer interval
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const somaticPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const somaticPauseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const breathingAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+  const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timer effect for somatic invitation - FIXED
   useEffect(() => {
@@ -196,6 +219,135 @@ export default function DailyGiftScreen() {
       }
     };
   }, [somaticTimerActive]); // Only depend on somaticTimerActive, not somaticTimeRemaining
+
+  // Scripture fade-in: trigger when gift is opened
+  useEffect(() => {
+    if (!isGiftOpened) return;
+    scriptureOpacity.setValue(0);
+    Animated.timing(scriptureOpacity, {
+      toValue: 1,
+      duration: 800,
+      delay: 300,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      // After scripture fully fades in, wait 1200ms then show somatic pause
+      somaticPauseTimerRef.current = setTimeout(() => {
+        console.log('[DailyGift] Scripture fade-in complete — showing somatic pause');
+        setShowSomaticPause(true);
+      }, 1200);
+    });
+    return () => {
+      if (somaticPauseTimerRef.current) {
+        clearTimeout(somaticPauseTimerRef.current);
+        somaticPauseTimerRef.current = null;
+      }
+    };
+  }, [isGiftOpened]);
+
+  // Somatic pause: breathing animation + phase cycling + auto-dismiss
+  useEffect(() => {
+    if (!showSomaticPause) {
+      if (breathingAnimRef.current) {
+        breathingAnimRef.current.stop();
+        breathingAnimRef.current = null;
+      }
+      if (somaticPauseIntervalRef.current) {
+        clearInterval(somaticPauseIntervalRef.current);
+        somaticPauseIntervalRef.current = null;
+      }
+      return;
+    }
+
+    console.log('[DailyGift] Somatic pause started — beginning breathing animation');
+    setSomaticPausePhase('inhale');
+
+    // Breathing circle loop: scale 0.85→1.15→0.85 over 4s
+    const breathAnim = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(breathingScale, {
+            toValue: 1.15,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(breathingOpacity, {
+            toValue: 0.6,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(breathingScale, {
+            toValue: 0.85,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(breathingOpacity, {
+            toValue: 0.3,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+    breathingAnimRef.current = breathAnim;
+    breathAnim.start();
+
+    // Cycle inhale/exhale every 3s
+    somaticPauseIntervalRef.current = setInterval(() => {
+      setSomaticPausePhase(prev => {
+        const next = prev === 'inhale' ? 'exhale' : 'inhale';
+        console.log('[DailyGift] Somatic pause phase:', next);
+        return next;
+      });
+    }, 3000);
+
+    // Auto-dismiss after 6s
+    somaticPauseTimerRef.current = setTimeout(() => {
+      console.log('[DailyGift] Somatic pause auto-dismissed after 6s');
+      setShowSomaticPause(false);
+    }, 6000);
+
+    return () => {
+      if (breathingAnimRef.current) {
+        breathingAnimRef.current.stop();
+        breathingAnimRef.current = null;
+      }
+      if (somaticPauseIntervalRef.current) {
+        clearInterval(somaticPauseIntervalRef.current);
+        somaticPauseIntervalRef.current = null;
+      }
+      if (somaticPauseTimerRef.current) {
+        clearTimeout(somaticPauseTimerRef.current);
+        somaticPauseTimerRef.current = null;
+      }
+    };
+  }, [showSomaticPause]);
+
+  // Rotating reflection placeholder: cycle every 4s with fade
+  useEffect(() => {
+    placeholderIntervalRef.current = setInterval(() => {
+      Animated.timing(placeholderOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setPlaceholderIndex(prev => (prev + 1) % 3);
+        Animated.timing(placeholderOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => {
+      if (placeholderIntervalRef.current) {
+        clearInterval(placeholderIntervalRef.current);
+        placeholderIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const loadDailyGift = useCallback(async () => {
     let isMounted = true;
@@ -860,9 +1012,8 @@ export default function DailyGiftScreen() {
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
 
   const completedTitle = 'Reflection Saved';
-  const completedText = 'Your reflection has been saved. Return tomorrow for a new gift.';
-  const reflectionTitle = 'Your Reflection';
-  const reflectionPlaceholder = 'You can write here if you\'d like...';
+  const completedText = 'Come back tomorrow for another gift.';
+  const reflectionTitle = 'Your response';
   const moodTagsTitle = 'If it helps, you can name it';
   const sensationTagsTitle = 'What do you notice in your body?';
   const moodTagsSubtitle = 'Optional';
@@ -1090,18 +1241,24 @@ export default function DailyGiftScreen() {
             </View>
             
             <View style={[styles.scriptureCard, { backgroundColor: cardBg }]}>
-              <Text style={[styles.scriptureReference, { color: colors.primary }]}>
-                {referenceDisplay}
-              </Text>
-              
-              <Text style={[styles.scriptureQuote, { color: textColor }]}>
-                {'\u201C'}{scriptureDisplay}{'\u201D'}
-              </Text>
-              
-              <Text style={[styles.scripturePrompt, { color: textSecondaryColor }]}>
-                {reflectionPromptDisplay}
-              </Text>
-              
+              <Animated.View style={{ opacity: scriptureOpacity }}>
+                <Text style={[styles.todaysGiftLabel, { color: textSecondaryColor }]}>
+                  TODAY'S GIFT
+                </Text>
+
+                <Text style={[styles.scriptureQuote, { color: textColor }]}>
+                  {'\u201C'}{scriptureDisplay}{'\u201D'}
+                </Text>
+
+                <Text style={[styles.scriptureReference, { color: colors.primary }]}>
+                  {referenceDisplay}
+                </Text>
+
+                <Text style={[styles.scripturePrompt, { color: textSecondaryColor }]}>
+                  {reflectionPromptDisplay}
+                </Text>
+              </Animated.View>
+
               <View style={styles.dailyIndicator}>
                 <IconSymbol 
                   ios_icon_name="calendar"
@@ -1116,8 +1273,36 @@ export default function DailyGiftScreen() {
             </View>
           </View>
 
+          {/* Somatic pause — inline, shown after scripture fades in */}
+          {showSomaticPause && (
+            <View style={styles.somaticPauseContainer}>
+              <Animated.View style={[styles.breathingCircle, {
+                opacity: breathingOpacity,
+                transform: [{ scale: breathingScale }],
+                backgroundColor: colors.primary,
+              }]} />
+              <Text style={[styles.somaticPauseMessage, { color: textSecondaryColor }]}>
+                Let this land for a moment
+              </Text>
+              <Text style={[styles.somaticPausePhaseText, { color: textSecondaryColor }]}>
+                {somaticPausePhase === 'inhale' ? 'Inhale\u2026 receive.' : 'Exhale\u2026 release.'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[DailyGift] User tapped Continue gently — dismissing somatic pause');
+                  setShowSomaticPause(false);
+                }}
+                activeOpacity={0.6}
+              >
+                <Text style={[styles.somaticPauseSkip, { color: textSecondaryColor }]}>
+                  Continue gently \u2192
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {!hasReflected ? (
-            <View style={[styles.reflectionCard, { backgroundColor: cardBg }]}>
+            <View style={[styles.reflectionCard, { backgroundColor: cardBg, display: showSomaticPause ? 'none' : 'flex' }]}>
               <Text style={[styles.reflectionTitle, { color: textColor }]}>
                 {reflectionTitle}
               </Text>
@@ -1128,7 +1313,7 @@ export default function DailyGiftScreen() {
                   borderColor: inputBorder,
                   color: textColor 
                 }]}
-                placeholder={reflectionPlaceholder}
+                placeholder={reflectionPlaceholders[placeholderIndex]}
                 placeholderTextColor={textSecondaryColor}
                 value={reflectionText}
                 onChangeText={setReflectionText}
@@ -1879,6 +2064,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
   },
+  todaysGiftLabel: {
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    opacity: 0.5,
+    marginBottom: 16,
+  },
+  somaticPauseContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  breathingCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 28,
+  },
+  somaticPauseMessage: {
+    fontSize: 18,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 12,
+    opacity: 0.75,
+  },
+  somaticPausePhaseText: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.6,
+  },
+  somaticPauseSkip: {
+    fontSize: 13,
+    textAlign: 'center',
+    opacity: 0.5,
+    paddingVertical: 8,
+  },
   scriptureCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
@@ -1889,12 +2114,18 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  scriptureCardInner: {
+    paddingVertical: 24,
+  },
   scriptureReference: {
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
   },
   scriptureQuote: {
+    fontSize: 22,
+    lineHeight: 34,
+    paddingVertical: 24,
     fontSize: 18,
     fontFamily: 'serif',
     fontWeight: '400',

@@ -1,20 +1,21 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { colors, spacing } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import FloatingTabBar from '@/components/FloatingTabBar';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import ChimePlayer from '@/components/ChimePlayer';
+import ReanimatedAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSequence,
-  Easing 
+  Easing,
 } from 'react-native-reanimated';
 
 const tabs = [
@@ -23,7 +24,7 @@ const tabs = [
   { name: 'profile', route: '/(tabs)/profile' as const, icon: 'person' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
 ];
 
-interface GlitterParticle {
+interface GlitterParticleData {
   id: number;
   angle: number;
   distance: number;
@@ -35,19 +36,53 @@ export default function OpenGiftScreen() {
   console.log('🎁 [OpenGift] Screen mounted and rendering');
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
+  const [ritualPausing, setRitualPausing] = useState(false);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ritualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioPlayerRef = useRef<{ play: () => void } | null>(null);
+
+  // Animated values — nativeDriver compatible (opacity + transform only)
+  const glowOpacity = useRef(new Animated.Value(0)).current;
+  const microcopyOpacity = useRef(new Animated.Value(0)).current;
+  const glowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     console.log('🎁 [OpenGift] useEffect - Screen is now visible to user');
     return () => {
-      if (navigationTimerRef.current) {
-        clearTimeout(navigationTimerRef.current);
-      }
+      if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+      if (ritualTimerRef.current) clearTimeout(ritualTimerRef.current);
+      if (glowLoopRef.current) glowLoopRef.current.stop();
+      glowOpacity.stopAnimation();
+      microcopyOpacity.stopAnimation();
     };
   }, []);
 
+  const startGlowPulse = () => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowOpacity, { toValue: 0.8, duration: 1200, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.3, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    glowLoopRef.current = loop;
+    loop.start();
+  };
+
+  const fadeOutGlow = () => {
+    if (glowLoopRef.current) glowLoopRef.current.stop();
+    Animated.timing(glowOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start();
+  };
+
+  const fadeInMicrocopy = () => {
+    Animated.timing(microcopyOpacity, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  };
+
+  const fadeOutMicrocopy = () => {
+    Animated.timing(microcopyOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+  };
+
   // Create glitter particles once — stable across renders
-  const glitterParticles = useMemo<GlitterParticle[]>(() => Array.from({ length: 30 }, (_, index) => ({
+  const glitterParticles = useMemo<GlitterParticleData[]>(() => Array.from({ length: 30 }, (_, index) => ({
     id: index,
     angle: (index / 30) * Math.PI * 2,
     distance: 80 + Math.random() * 60,
@@ -56,30 +91,48 @@ export default function OpenGiftScreen() {
   })), []);
 
   const { isDark } = useTheme();
-  const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
   const textSecondaryColor = isDark ? colors.textSecondaryDark : colors.textSecondary;
 
-  const handleOpenGift = () => {
-    if (isOpening) {
-      console.log('🎁 [OpenGift] Already opening, ignoring tap');
+  const handleReceiveGift = () => {
+    if (isOpening || ritualPausing) {
+      console.log('🎁 [OpenGift] Already in ritual or opening, ignoring tap');
       return;
     }
 
-    console.log('🎁 [OpenGift] User tapped gift box - starting glitter animation');
-    setIsOpening(true);
+    console.log('🎁 [OpenGift] User tapped "Receive your gift" - starting 1.5s ritual pause');
+    setRitualPausing(true);
+    startGlowPulse();
+    fadeInMicrocopy();
 
-    // Navigate after animation completes
-    navigationTimerRef.current = setTimeout(() => {
-      console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
-      try {
-        router.replace('/daily-gift');
-      } catch (error) {
-        console.error('🎁 [OpenGift] Navigation error:', error);
-        // Fallback: try push instead of replace
-        router.push('/daily-gift');
+    // Play chime sound — fail silently if asset missing or audio unavailable
+    try {
+      if (audioPlayerRef.current) {
+        console.log('🎁 [OpenGift] Playing chime sound');
+        audioPlayerRef.current.play();
       }
-    }, 1200);
+    } catch (err) {
+      console.log('🎁 [OpenGift] Audio play failed silently:', err);
+    }
+
+    // After 1.5s ritual pause, start glitter animation then navigate
+    ritualTimerRef.current = setTimeout(() => {
+      console.log('🎁 [OpenGift] Ritual pause complete - starting glitter animation');
+      setRitualPausing(false);
+      fadeOutMicrocopy();
+      fadeOutGlow();
+      setIsOpening(true);
+
+      navigationTimerRef.current = setTimeout(() => {
+        console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
+        try {
+          router.replace('/daily-gift');
+        } catch (error) {
+          console.error('🎁 [OpenGift] Navigation error:', error);
+          router.push('/daily-gift');
+        }
+      }, 1200);
+    }, 1500);
   };
 
   const handleCommunityPress = () => {
@@ -89,14 +142,22 @@ export default function OpenGiftScreen() {
 
   const titleText = 'Your Daily Gift';
   const subtitleText = 'A word for your heart today';
-  const tapText = 'Tap to open';
+  const buttonLabel = 'Receive your gift';
+  const isInteractive = !ritualPausing && !isOpening;
 
-  console.log('🎁 [OpenGift] Rendering screen content');
+  console.log('🎁 [OpenGift] Rendering - ritualPausing:', ritualPausing, 'isOpening:', isOpening);
 
   return (
     <GradientBackground>
+      {/*
+        ChimePlayer calls useAudioPlayer unconditionally at its own top level
+        (satisfying Rules of Hooks), then surfaces the player via onReady.
+        It renders null and is wrapped in a try/catch at the component boundary.
+      */}
+      <ChimePlayer onReady={(player) => { audioPlayerRef.current = player; }} />
+
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
-        <Stack.Screen 
+        <Stack.Screen
           options={{
             headerShown: true,
             title: 'Daily Gift',
@@ -140,19 +201,22 @@ export default function OpenGiftScreen() {
           <Text style={[styles.title, { color: textColor }]}>
             {titleText}
           </Text>
-          
+
           <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
             {subtitleText}
           </Text>
 
           <View style={styles.giftContainer}>
-            <TouchableOpacity 
+            {/* Soft pulsing glow — zIndex 0, behind the gift box */}
+            <Animated.View style={[styles.glowRing, { opacity: glowOpacity }]} />
+
+            <TouchableOpacity
               style={[styles.giftBox, { backgroundColor: colors.primary }]}
-              onPress={handleOpenGift}
+              onPress={handleReceiveGift}
               activeOpacity={0.8}
-              disabled={isOpening}
+              disabled={!isInteractive}
             >
-              <IconSymbol 
+              <IconSymbol
                 ios_icon_name="gift.fill"
                 android_material_icon_name="card-giftcard"
                 size={80}
@@ -160,9 +224,9 @@ export default function OpenGiftScreen() {
               />
             </TouchableOpacity>
 
-            {/* Glitter particles */}
+            {/* Glitter particles — rendered after ritual pause ends */}
             {isOpening && glitterParticles.map((particle) => (
-              <GlitterParticle
+              <GlitterParticleView
                 key={particle.id}
                 angle={particle.angle}
                 distance={particle.distance}
@@ -172,9 +236,25 @@ export default function OpenGiftScreen() {
             ))}
           </View>
 
-          <Text style={[styles.tapText, { color: textSecondaryColor }]}>
-            {tapText}
-          </Text>
+          {/* Ritual microcopy — fades in during the 1.5s pause */}
+          <Animated.Text
+            style={[styles.microcopy, { color: textSecondaryColor, opacity: microcopyOpacity }]}
+          >
+            Take a breath before you receive
+          </Animated.Text>
+
+          {/* Receive button — hidden during ritual pause and glitter animation */}
+          {isInteractive && (
+            <TouchableOpacity
+              onPress={handleReceiveGift}
+              activeOpacity={0.7}
+              style={styles.receiveButton}
+            >
+              <Text style={[styles.receiveButtonText, { color: colors.primary }]}>
+                {buttonLabel}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <FloatingTabBar tabs={tabs} />
@@ -183,15 +263,15 @@ export default function OpenGiftScreen() {
   );
 }
 
-function GlitterParticle({ 
-  angle, 
-  distance, 
-  delay, 
-  color 
-}: { 
-  angle: number; 
-  distance: number; 
-  delay: number; 
+function GlitterParticleView({
+  angle,
+  distance,
+  delay,
+  color,
+}: {
+  angle: number;
+  distance: number;
+  delay: number;
   color: string;
 }) {
   const translateX = useSharedValue(0);
@@ -204,13 +284,13 @@ function GlitterParticle({
     const targetY = Math.sin(angle) * distance;
 
     setTimeout(() => {
-      translateX.value = withTiming(targetX, { 
-        duration: 800, 
-        easing: Easing.out(Easing.cubic) 
+      translateX.value = withTiming(targetX, {
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
       });
-      translateY.value = withTiming(targetY, { 
-        duration: 800, 
-        easing: Easing.out(Easing.cubic) 
+      translateY.value = withTiming(targetY, {
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
       });
       opacity.value = withSequence(
         withTiming(1, { duration: 200 }),
@@ -233,12 +313,8 @@ function GlitterParticle({
   }));
 
   return (
-    <Animated.View
-      style={[
-        styles.glitterParticle,
-        { backgroundColor: color },
-        animatedStyle,
-      ]}
+    <ReanimatedAnimated.View
+      style={[styles.glitterParticle, { backgroundColor: color }, animatedStyle]}
     />
   );
 }
@@ -246,20 +322,6 @@ function GlitterParticle({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerButton: {
-    padding: spacing.xs,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   content: {
     flex: 1,
@@ -290,6 +352,14 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
   },
+  glowRing: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(212, 196, 168, 0.4)',
+    zIndex: 0,
+  },
   giftBox: {
     width: 140,
     height: 140,
@@ -301,16 +371,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    zIndex: 1,
   },
   glitterParticle: {
     position: 'absolute',
     width: 8,
     height: 8,
     borderRadius: 4,
+    zIndex: 2,
   },
-  tapText: {
+  microcopy: {
     fontSize: 16,
-    textAlign: 'center',
+    fontStyle: 'italic',
     fontWeight: '300',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  receiveButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  receiveButtonText: {
+    fontSize: 16,
+    fontWeight: '400',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
 });
