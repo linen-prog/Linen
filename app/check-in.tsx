@@ -238,6 +238,9 @@ export default function CheckInScreen() {
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 50);
     setIsLoading(true);
 
     try {
@@ -761,13 +764,19 @@ export default function CheckInScreen() {
               style={[styles.input, {
                 backgroundColor: isDark ? colors.cardDark : colors.card,
                 borderColor: inputBorder,
-                color: textColor,
+                color: isDark ? '#fafaf9' : '#1c1917',
                 maxHeight: 100,
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                lineHeight: 20,
+                textAlignVertical: 'top',
               }]}
               placeholder=""
               placeholderTextColor="transparent"
               value={inputText}
-              onChangeText={setInputText}
+              onChangeText={(text) => {
+                setInputText(text);
+              }}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
               maxLength={1000}
@@ -1792,7 +1801,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   inputContainer: {
-    height: 60,
+    minHeight: 60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -1802,7 +1811,6 @@ const styles = StyleSheet.create({
     // marginBottom removed — FloatingTabBar is outside KeyboardAvoidingView
   },
   input: {
-    height: 44,
     flex: 1,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
