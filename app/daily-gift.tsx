@@ -1783,9 +1783,9 @@ function GlitterParticle({
     transform: [
       { translateX: translateX.value },
       { translateY: translateY.value },
-      { scale: scale.value },
+      { scale: scale },
     ],
-    opacity: opacity.value,
+    opacity: opacity,
   }));
 
   return (
