@@ -297,11 +297,11 @@ export default function DailyGiftScreen() {
       });
     }, 3000);
 
-    // Auto-dismiss after 30s
+    // Auto-dismiss after 60s
     somaticPauseTimerRef.current = setTimeout(() => {
-      console.log('[DailyGift] Somatic pause auto-dismissed after 30s');
+      console.log('[DailyGift] Somatic pause auto-dismissed after 60s');
       setShowSomaticPause(false);
-    }, 30000);
+    }, 60000);
 
     return () => {
       if (breathingAnimRef.current) {
@@ -1292,6 +1292,18 @@ export default function DailyGiftScreen() {
                   Continue gently \u2192
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[DailyGift] User tapped "I\'m ready" — skipping breathing to reflection');
+                  setShowSomaticPause(false);
+                }}
+                activeOpacity={0.5}
+                style={styles.imReadyButton}
+              >
+                <Text style={styles.imReadyText}>
+                  I'm ready
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -2084,6 +2096,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     opacity: 0.6,
+  },
+  imReadyButton: {
+    marginTop: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  imReadyText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    color: '#6b7280',
+    opacity: 0.6,
+    letterSpacing: 0.3,
   },
   somaticPauseSkip: {
     fontSize: 13,
