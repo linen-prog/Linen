@@ -1780,12 +1780,21 @@ function GlitterParticle({
 
   const animatedStyle = { transform: [{ translateX }, { translateY }, { scale }], opacity };
 
+  return (
+    <Animated.View
+      style={[
+        styles.glitterParticle,
+        { backgroundColor: color },
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
     transform: [
-      // BROKEN_LINE_3
-      // BROKEN_LINE_4
-      // BROKEN_LINE_5
+
     ],
-    // BROKEN_LINE_7
+
   }));
 
   return (
