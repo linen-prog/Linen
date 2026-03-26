@@ -658,7 +658,7 @@ export default function CheckInScreen() {
   return (
     <GradientBackground>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ flex: 1, backgroundColor: bgColor }}>
+      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
         {/* TOP SAFE AREA SPACER — fills notch/Dynamic Island with header color */}
         <View style={{ height: insets.top, backgroundColor: headerBgColor }} />
 
