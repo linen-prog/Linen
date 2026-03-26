@@ -1240,6 +1240,10 @@ export function registerWeeklyThemeRoutes(app: App) {
             type: 'object',
             properties: { error: { type: 'string' } },
           },
+          500: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
         },
       },
     },
@@ -1570,7 +1574,9 @@ export function registerWeeklyThemeRoutes(app: App) {
           },
           'Failed to fetch current weekly theme'
         );
-        throw error;
+        return reply.status(500).send({
+          error: 'Failed to fetch current weekly theme. Please try again later.',
+        });
       }
     }
   );
