@@ -750,6 +750,7 @@ export default function DailyGiftScreen() {
 
       setIsLoading(false);
       setHasReflected(true);
+      setSavedReflectionText(reflectionText.trim());
       setAttachment(null);
       setShareToCommunity(false);
       setIsAnonymous(false);
@@ -836,6 +837,22 @@ export default function DailyGiftScreen() {
     breathingScale.setValue(0.85);
     breathingOpacity.setValue(0.3);
     setShowSomaticPause(true);
+  };
+
+  const handleRedoSomaticInvitation = () => {
+    console.log('[DailyGift] User tapped redo on Somatic Invitation — resetting to show breathing exercise');
+    setHasSkippedSomaticPrompt(false);
+    setSomaticTimerActive(false);
+    setSomaticTimeRemaining(60);
+    setShowSomaticCelebration(false);
+  };
+
+  const [savedReflectionText, setSavedReflectionText] = useState('');
+
+  const handleRedoReflection = () => {
+    console.log('[DailyGift] User tapped redo on Reflection — re-opening input with previous text');
+    setReflectionText(savedReflectionText);
+    setHasReflected(false);
   };
 
   const toggleMood = (mood: string) => {
@@ -1172,6 +1189,21 @@ export default function DailyGiftScreen() {
               {"A place to be with what you're carrying."}
             </Text>
           </View>
+
+          {hasSomaticPrompt && hasSkippedSomaticPrompt && (
+            <View style={styles.somaticCompletedRow}>
+              <Text style={[styles.invitationLabel, { color: colors.primary }]}>
+                {invitationLabel}
+              </Text>
+              <TouchableOpacity
+                onPress={handleRedoSomaticInvitation}
+                style={styles.redoIconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="refresh-outline" size={18} color={textSecondaryColor} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {hasSomaticPrompt && !hasSkippedSomaticPrompt && (
             <View style={[styles.invitationCard, { backgroundColor: cardBg }]}>
@@ -1537,9 +1569,18 @@ export default function DailyGiftScreen() {
                 size={48}
                 color={colors.success}
               />
-              <Text style={[styles.completedTitle, { color: textColor }]}>
-                {completedTitle}
-              </Text>
+              <View style={styles.completedTitleRow}>
+                <Text style={[styles.completedTitle, { color: textColor }]}>
+                  {completedTitle}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleRedoReflection}
+                  style={styles.redoIconButton}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="refresh-outline" size={18} color={textSecondaryColor} />
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.completedText, { color: textSecondaryColor }]}>
                 {completedText}
               </Text>
@@ -2122,6 +2163,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
+  },
+  somaticCompletedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  completedTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  redoIconButton: {
+    padding: 6,
+    marginLeft: 6,
   },
   breatheAgainLink: {
     alignSelf: 'center' as const,
