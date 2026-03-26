@@ -146,6 +146,7 @@ export function registerDailyGiftRoutes(app: App) {
             shareToComm: { type: 'boolean', description: 'Whether to share to community (camelCase)' },
             share_to_comm: { type: 'boolean', description: 'Whether to share to community (snake_case)' },
             category: { type: 'string', enum: ['feed', 'wisdom', 'care', 'prayers'], description: 'Category for community post' },
+            anonymous: { type: 'boolean', description: 'Whether to post anonymously (legacy field name)' },
             isAnonymous: { type: 'boolean', description: 'Whether to post anonymously (camelCase)' },
             is_anonymous: { type: 'boolean', description: 'Whether to post anonymously (snake_case)' },
             selectedMoods: { type: 'array', items: { type: 'string' }, description: 'Array of mood tags' },
@@ -175,6 +176,7 @@ export function registerDailyGiftRoutes(app: App) {
           shareToComm?: boolean;
           share_to_comm?: boolean;
           category?: 'feed' | 'wisdom' | 'care' | 'prayers';
+          anonymous?: boolean;
           isAnonymous?: boolean;
           is_anonymous?: boolean;
           selectedMoods?: string[];
@@ -189,7 +191,7 @@ export function registerDailyGiftRoutes(app: App) {
       // Support both camelCase and snake_case for field names
       const { dailyGiftId, reflectionText, selectedMoods, selectedSensations } = request.body;
       const shareToComm = request.body.shareToComm ?? request.body.share_to_comm ?? false;
-      const isAnonymous = request.body.isAnonymous ?? request.body.is_anonymous ?? false;
+      const isAnonymous = request.body.anonymous === true || request.body.isAnonymous === true || request.body.is_anonymous === true;
       const category = request.body.category || null;
 
       app.logger.info(
