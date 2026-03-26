@@ -29,7 +29,7 @@
       "entitlements": {
         "aps-environment": "production",
         "com.apple.security.application-groups": [
-          "group.com.linen.app.onesignal"
+          "group.com.p200f1d085d4143dca5ee60fe312d4fa5.app.onesignal"
         ]
       }
     },
