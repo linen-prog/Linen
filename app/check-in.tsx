@@ -92,6 +92,9 @@ export default function CheckInScreen() {
       });
     }, 4000);
     return () => clearInterval(interval);
+  // placeholderOpacity is a stable Animated.Value ref; placeholderTexts is a
+  // static constant defined outside the component — neither needs to be a dep.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

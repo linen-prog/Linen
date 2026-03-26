@@ -451,7 +451,8 @@ export default function DailyGiftScreen() {
     try {
       const checkTimestamp = new Date().toISOString();
       console.log(`[DailyGift] ${checkTimestamp} - Checking if user has reflected today for dailyContentId:`, dailyContentId);
-      const response = await authenticatedGet<any[]>('/api/daily-gift/my-reflections');
+      const rawResponse = await authenticatedGet<any>('/api/daily-gift/my-reflections');
+      const response: any[] = Array.isArray(rawResponse) ? rawResponse : [];
       
       const todayReflection = response.find(
         (r: any) => r.dailyGiftId === dailyContentId
