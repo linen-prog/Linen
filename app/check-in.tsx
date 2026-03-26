@@ -629,7 +629,7 @@ export default function CheckInScreen() {
           </Text>
 
           <View style={styles.disclaimerContainer}>
-            <Text style={[styles.disclaimerText, { color: textSecondaryColor }]}>
+            <Text style={[styles.disclaimerText, { color: textSecondaryColor, opacity: 0.6 }]}>
               {"This space is for reflection, not medical or crisis care.\nIf you're in immediate need, please reach out to 988 or text HOME to 741741."}
             </Text>
           </View>
@@ -1731,8 +1731,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   disclaimerText: {
     fontSize: typography.small,
