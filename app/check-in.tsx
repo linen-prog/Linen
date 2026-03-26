@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, StatusBar, Animated, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, Animated, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -651,10 +651,9 @@ export default function CheckInScreen() {
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
-  const statusBarHeight = StatusBar.currentHeight ?? 0;
   const keyboardVerticalOffset = Platform.OS === 'ios'
-    ? headerHeight + (insets.top > 20 ? insets.top : 0)
-    : headerHeight + statusBarHeight;
+    ? headerHeight + insets.top
+    : 0;
 
   return (
     <GradientBackground>
@@ -724,13 +723,13 @@ export default function CheckInScreen() {
       />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
         {messages.length === 0 ? (
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={styles.emptyStateScrollContent}
+            contentContainerStyle={[styles.emptyStateScrollContent, { flexGrow: 1 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
@@ -742,10 +741,10 @@ export default function CheckInScreen() {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={item => item.id}
-            contentContainerStyle={[styles.messagesList, { paddingBottom: 16, flexGrow: 1 }]}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20, flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
             scrollEnabled={true}
-            style={{ flex: 1 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             onContentSizeChange={() => {
@@ -759,7 +758,7 @@ export default function CheckInScreen() {
         <View style={[styles.inputContainer, {
           backgroundColor: inputBg,
           borderTopColor: inputBorder,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingBottom: Math.max(insets.bottom, 8),
         }]}>
           <View style={styles.inputWrapper}>
             <TextInput
@@ -775,10 +774,11 @@ export default function CheckInScreen() {
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
               maxLength={1000}
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
+              returnKeyType="default"
               blurOnSubmit={false}
-              multiline={false}
+              multiline={true}
+              maxHeight={120}
+              scrollEnabled={true}
             />
             {inputText.length === 0 && !isInputFocused && (
               <Animated.Text
@@ -1568,6 +1568,12 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flex: 1,
     position: 'relative',
+    maxHeight: 120,
+    justifyContent: 'center',
+  },
+  inputWrapper_DELETED_IGNORE: {
+    flex: 1,
+    position: 'relative',
     justifyContent: 'center',
   },
   animatedPlaceholder: {
@@ -1799,7 +1805,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     gap: spacing.sm,
-    marginBottom: 80, // Add margin for FloatingTabBar
+    // marginBottom removed — FloatingTabBar is outside KeyboardAvoidingView
   },
   input: {
     height: 44,
