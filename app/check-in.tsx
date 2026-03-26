@@ -1,7 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, Animated, Keyboard } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -9,7 +8,6 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
-import FloatingTabBar from '@/components/FloatingTabBar';
 
 interface Message {
   id: string;
@@ -40,7 +38,7 @@ export default function CheckInScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [draftMessage, setDraftMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [companionName, setCompanionName] = useState<string | null>(null);
@@ -112,7 +110,6 @@ export default function CheckInScreen() {
   }, []);
 
   const { isDark } = useTheme();
-  const insets = useSafeAreaInsets();
 
   // Color variables for consistency
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -215,7 +212,7 @@ export default function CheckInScreen() {
   };
 
   const handleSend = async () => {
-    const messageText = inputText.trim();
+    const messageText = draftMessage.trim();
     if (!messageText || isLoading) {
       return;
     }
@@ -237,10 +234,8 @@ export default function CheckInScreen() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 50);
+    setDraftMessage('');
+    flatListRef.current?.scrollToEnd({ animated: true });
     setIsLoading(true);
 
     try {
@@ -651,47 +646,36 @@ export default function CheckInScreen() {
   const prayerIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
   const careIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
   const labelColor = isDark ? '#d4d4d8' : 'rgba(120,113,108,0.75)';
-  
-  const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
+  const headerBgColor = isDark ? '#1c1917' : '#faf7f2';
+  const inputBgColor = isDark ? colors.cardDark : colors.card;
 
-  const headerHeight = Platform.OS === 'ios' ? 44 : 56;
-  const keyboardVerticalOffset = headerHeight + insets.top;
+  const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
   return (
     <GradientBackground>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: headerTitle,
-          headerBackTitle: '',
-          headerTransparent: false,
-          headerStyle: { backgroundColor: isDark ? '#1c1917' : '#faf7f2' },
-          headerTintColor: '#047857',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontWeight: '400' as const,
-            color: isDark ? '#fafaf9' : '#1c1917',
-            fontFamily: 'Georgia',
-          },
-          tabBarStyle: { display: 'none' },
-          headerLeft: () => (
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={{ flex: 1 }}>
+        {/* Fixed header below Dynamic Island / notch */}
+        <SafeAreaView edges={['top']} style={{ backgroundColor: headerBgColor }}>
+          <View style={[styles.customHeader, { backgroundColor: headerBgColor, borderBottomColor: inputBorder }]}>
             <TouchableOpacity
               onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
-              style={{ paddingRight: 8, flexDirection: 'row', alignItems: 'center' }}
+              style={styles.headerBackButton}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <ChevronLeft size={24} color="#047857" />
             </TouchableOpacity>
-          ),
-          headerRight: () => (
+            <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917' }]} numberOfLines={1}>
+              {headerTitle}
+            </Text>
             <View style={styles.headerButtons}>
               <View style={styles.headerButtonsRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={handlePrayerIconPress}
                   style={styles.headerButtonContainer}
                   disabled={isGeneratingPrayer}
                 >
-                  <IconSymbol 
+                  <IconSymbol
                     ios_icon_name="hands.sparkles"
                     android_material_icon_name="auto-awesome"
                     size={20}
@@ -701,11 +685,11 @@ export default function CheckInScreen() {
                     Prayer
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={handleRequestCare}
                   style={styles.headerButtonContainer}
                 >
-                  <IconSymbol 
+                  <IconSymbol
                     ios_icon_name="heart.fill"
                     android_material_icon_name="favorite"
                     size={20}
@@ -717,97 +701,96 @@ export default function CheckInScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          ),
-        }}
-      />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-        {messages.length === 0 ? (
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={[styles.emptyStateScrollContent, { flexGrow: 1 }]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {renderEmptyState()}
-          </ScrollView>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 80, flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={true}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            onContentSizeChange={() => {
-              if (flatListRef.current) {
-                flatListRef.current.scrollToEnd({ animated: true });
-              }
-            }}
-          />
-        )}
-
-        <View style={[styles.inputContainer, {
-          backgroundColor: inputBg,
-          borderTopColor: inputBorder,
-          paddingBottom: Math.max(insets.bottom, 8),
-        }]}>
-          <View style={[styles.inputWrapper, { maxHeight: 120 }]}>
-            <TextInput
-              style={[styles.input, {
-                backgroundColor: isDark ? colors.cardDark : colors.card,
-                borderColor: inputBorder,
-                color: isDark ? '#fafaf9' : '#1c1917',
-                maxHeight: 100,
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                lineHeight: 20,
-                textAlignVertical: 'top',
-              }]}
-              placeholder=""
-              placeholderTextColor="transparent"
-              value={inputText}
-              onChangeText={(text) => {
-                setInputText(text);
-              }}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
-              maxLength={1000}
-              returnKeyType="default"
-              blurOnSubmit={false}
-              multiline={true}
-              scrollEnabled={true}
-            />
-            {inputText.length === 0 && !isInputFocused && (
-              <Animated.Text
-                style={[styles.animatedPlaceholder, { color: textSecondaryColor, opacity: placeholderOpacity }]}
-                pointerEvents="none"
-              >
-                {placeholderTexts[placeholderIndex]}
-              </Animated.Text>
-            )}
           </View>
-          <TouchableOpacity
-            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={() => { console.log('[CheckIn] Send button pressed'); handleSend(); }}
-            disabled={!inputText.trim() || isLoading}
-          >
-            <IconSymbol
-              ios_icon_name="arrow.up"
-              android_material_icon_name="send"
-              size={24}
-              color="#FFFFFF"
+        </SafeAreaView>
+
+        {/* KeyboardAvoidingView wraps ONLY the message list + input */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          {messages.length === 0 ? (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={[styles.emptyStateScrollContent, { flexGrow: 1 }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {renderEmptyState()}
+            </ScrollView>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 80, flexGrow: 1 }}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              onContentSizeChange={() => {
+                if (flatListRef.current) {
+                  flatListRef.current.scrollToEnd({ animated: true });
+                }
+              }}
             />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+          )}
+
+          {/* Input bar with bottom safe area */}
+          <SafeAreaView edges={['bottom']} style={{ backgroundColor: inputBgColor }}>
+            <View style={[styles.inputContainer, { backgroundColor: inputBgColor, borderTopColor: inputBorder }]}>
+              <View style={[styles.inputWrapper, { maxHeight: 120 }]}>
+                <TextInput
+                  style={[styles.input, {
+                    backgroundColor: isDark ? colors.cardDark : colors.card,
+                    borderColor: inputBorder,
+                    color: isDark ? '#fafaf9' : '#1c1917',
+                    maxHeight: 100,
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    lineHeight: 20,
+                    textAlignVertical: 'top',
+                  }]}
+                  placeholder=""
+                  placeholderTextColor="transparent"
+                  value={draftMessage}
+                  onChangeText={setDraftMessage}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  maxLength={1000}
+                  returnKeyType="default"
+                  blurOnSubmit={false}
+                  multiline={true}
+                  scrollEnabled={true}
+                />
+                {draftMessage.length === 0 && !isInputFocused && (
+                  <Animated.Text
+                    style={[styles.animatedPlaceholder, { color: textSecondaryColor, opacity: placeholderOpacity }]}
+                    pointerEvents="none"
+                  >
+                    {placeholderTexts[placeholderIndex]}
+                  </Animated.Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.sendButton, (!draftMessage.trim() || isLoading) && styles.sendButtonDisabled]}
+                onPress={() => { console.log('[CheckIn] Send button pressed'); handleSend(); }}
+                disabled={!draftMessage.trim() || isLoading}
+              >
+                <IconSymbol
+                  ios_icon_name="arrow.up"
+                  android_material_icon_name="send"
+                  size={24}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
+      </View>
 
         {/* Crisis Resources Modal */}
         <Modal
@@ -1530,6 +1513,27 @@ export default function CheckInScreen() {
 }
 
 const styles = StyleSheet.create({
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    paddingHorizontal: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerBackButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitleText: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '400',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginHorizontal: 4,
+  },
   container: {
     flex: 1,
     flex: 1,
