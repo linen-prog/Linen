@@ -4,9 +4,18 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getBearerToken } from '@/lib/auth';
 
-export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:3000';
+const _configuredBackendUrl = Constants.expoConfig?.extra?.backendUrl as string | undefined;
 
-console.log('🔗 API initialized with backend URL:', BACKEND_URL);
+if (!_configuredBackendUrl) {
+  console.error(
+    '[API] CRITICAL: backendUrl is not set in app.json extra. ' +
+    'All API calls will fail. Set expo.extra.backendUrl in app.json.'
+  );
+}
+
+export const BACKEND_URL: string = _configuredBackendUrl || '';
+
+console.log('[API] Initialized with backend URL:', BACKEND_URL || '(NOT SET — check app.json)');
 
 // Generate a persistent guest token for this device
 async function getGuestToken(): Promise<string> {
@@ -92,7 +101,8 @@ async function makeAuthenticatedRequest(
 
     if (!response.ok) {
       console.error(`[API] Request failed: ${response.status} ${response.statusText}`);
-      const errorText = await response.text();
+      // Read body once here — callers must NOT call response.text()/json() again
+      const errorText = await response.text().catch(() => '');
       console.error('[API] Error response:', errorText);
     }
 
@@ -116,8 +126,7 @@ export async function authenticatedGet<T = any>(endpoint: string): Promise<T> {
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => response.statusText);
-    console.error(`[API] GET ${endpoint} error body:`, errorText);
+    // Body was already consumed in makeAuthenticatedRequest — use statusText only
     throw new Error(`GET ${endpoint} failed: ${response.status} ${response.statusText}`);
   }
 
@@ -153,9 +162,8 @@ export async function authenticatedPost<T = any>(
     console.log(`[API] Response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[API] Error response body:`, errorText);
-      throw new Error(`POST ${endpoint} failed: ${response.statusText}`);
+      // Body was already consumed in makeAuthenticatedRequest — use statusText only
+      throw new Error(`POST ${endpoint} failed: ${response.status} ${response.statusText}`);
     }
 
     const responseData = await response.json();

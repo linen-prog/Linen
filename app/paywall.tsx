@@ -247,8 +247,8 @@ export default function PaywallScreen() {
 
   const handleDownloadApp = () => {
     console.log("[Paywall] Download app tapped");
-    const iosUrl = "https://apps.apple.com/app/your-app-id";
-    const androidUrl = "https://play.google.com/store/apps/details?id=your.app.id";
+    const iosUrl = "https://apps.apple.com/app/linen/id6744042512";
+    const androidUrl = "https://play.google.com/store/apps/details?id=com.linen.app";
     Alert.alert(
       "Download the App",
       "To subscribe, please download our app from your device's app store.",

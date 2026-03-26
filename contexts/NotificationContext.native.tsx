@@ -16,19 +16,18 @@ import React, {
 } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import { useAuth } from "./AuthContext";
 
-// Dynamically require OneSignal to avoid crash when native module isn't linked
+// Dynamically import OneSignal to avoid crash when native module isn't linked
 let OneSignal: any = null;
 type NotificationWillDisplayEvent = any;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const onesignal = require("react-native-onesignal");
   OneSignal = onesignal.OneSignal ?? null;
 } catch (e) {
   console.warn("[OneSignal] Native module not available — notifications disabled:", e);
 }
-
-// Import auth hook for user targeting (validated at setup time)
-import { useAuth } from "./AuthContext";
 
 // Read App ID from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -214,21 +213,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   return (
     <NotificationContext.Provider
       value={{
-        hasPermission: false,
-        permissionDenied: false,
-        loading: false,
-        isWeb: false,
-        requestPermission: async () => {
-          console.log("[Notifications] requestPermission called — OneSignal not available");
-          return false;
-        },
-        sendTag: (key: string, value: string) => {
-          console.log("[Notifications] sendTag called — OneSignal not available", key, value);
-        },
-        deleteTag: (key: string) => {
-          console.log("[Notifications] deleteTag called — OneSignal not available", key);
-        },
-        lastNotification: null,
+        hasPermission,
+        permissionDenied,
+        loading,
+        isWeb,
+        requestPermission,
+        sendTag,
+        deleteTag,
+        lastNotification,
       }}
     >
       {children}
