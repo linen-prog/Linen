@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, Animated, Keyboard } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -110,6 +110,7 @@ export default function CheckInScreen() {
   }, []);
 
   const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Color variables for consistency
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -654,53 +655,63 @@ export default function CheckInScreen() {
   return (
     <GradientBackground>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ flex: 1 }}>
-        {/* Fixed header below Dynamic Island / notch */}
-        <SafeAreaView edges={['top']} style={{ backgroundColor: headerBgColor }}>
-          <View style={[styles.customHeader, { backgroundColor: headerBgColor, borderBottomColor: inputBorder, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <TouchableOpacity
-                onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
-                style={styles.headerBackButton}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <ChevronLeft size={24} color="#047857" />
-              </TouchableOpacity>
-              <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917', flex: 1 }]} numberOfLines={1}>
-                {headerTitle}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <TouchableOpacity
-                onPress={handlePrayerIconPress}
-                style={styles.headerIconButton}
-                disabled={isGeneratingPrayer}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <IconSymbol
-                  ios_icon_name="hands.sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={22}
-                  color={prayerIconColor}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleRequestCare}
-                style={styles.headerIconButton}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <IconSymbol
-                  ios_icon_name="heart.fill"
-                  android_material_icon_name="favorite"
-                  size={22}
-                  color={careIconColor}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: bgColor }}>
+        {/* TOP SAFE AREA SPACER — fills notch/Dynamic Island with header color */}
+        <View style={{ height: insets.top, backgroundColor: headerBgColor }} />
 
-        {/* KeyboardAvoidingView wraps ONLY the message list + input */}
+        {/* HEADER — in normal flow, below the safe area spacer */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          backgroundColor: headerBgColor,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: inputBorder,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <TouchableOpacity
+              onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ChevronLeft size={24} color="#047857" />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917', flex: 1 }]} numberOfLines={1}>
+              {headerTitle}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <TouchableOpacity
+              onPress={handlePrayerIconPress}
+              style={styles.headerIconButton}
+              disabled={isGeneratingPrayer}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <IconSymbol
+                ios_icon_name="hands.sparkles"
+                android_material_icon_name="auto-awesome"
+                size={22}
+                color={prayerIconColor}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleRequestCare}
+              style={styles.headerIconButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <IconSymbol
+                ios_icon_name="heart.fill"
+                android_material_icon_name="favorite"
+                size={22}
+                color={careIconColor}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* MESSAGE LIST + INPUT — flex: 1, scrollable */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -735,9 +746,15 @@ export default function CheckInScreen() {
             />
           )}
 
-          {/* Input bar with bottom safe area */}
-          <SafeAreaView edges={['bottom']} style={{ backgroundColor: inputBgColor }}>
-            <View style={[styles.inputContainer, { backgroundColor: inputBgColor, borderTopColor: inputBorder }]}>
+          {/* INPUT — anchored at bottom with insets.bottom padding */}
+          <View style={{
+            paddingBottom: insets.bottom,
+            backgroundColor: inputBgColor,
+            maxHeight: 120 + insets.bottom,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: inputBorder,
+          }}>
+            <View style={[styles.inputContainer, { backgroundColor: inputBgColor, borderTopWidth: 0 }]}>
               <View style={[styles.inputWrapper, { maxHeight: 120 }]}>
                 <TextInput
                   style={[styles.input, {
@@ -784,7 +801,7 @@ export default function CheckInScreen() {
                 />
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
+          </View>
         </KeyboardAvoidingView>
       </View>
 
