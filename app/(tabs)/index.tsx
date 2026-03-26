@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -21,6 +22,7 @@ interface PersonalizationData {
 export default function HomeScreen() {
   console.log('🏠 [Home] Screen rendering');
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [firstName, setFirstName] = useState('');
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
@@ -183,7 +185,7 @@ export default function HomeScreen() {
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
             showsVerticalScrollIndicator={false}
           >
             {/* ── Welcome block ── */}

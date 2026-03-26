@@ -650,7 +650,7 @@ export default function CheckInScreen() {
   const headerBgColor = isDark ? '#1c1917' : '#faf7f2';
   const inputBgColor = isDark ? colors.cardDark : colors.card;
 
-  const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
+  const headerTitle = companionName ? `Peace to you, friend.` : 'Peace to you, friend.';
 
   return (
     <GradientBackground>
