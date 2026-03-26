@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Modal, ScrollView, Linking, Alert, Animated, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -651,9 +652,7 @@ export default function CheckInScreen() {
   const headerTitle = companionName ? `Conversation with ${companionName}` : 'Heart Conversation';
 
   const headerHeight = Platform.OS === 'ios' ? 44 : 56;
-  const keyboardVerticalOffset = Platform.OS === 'ios'
-    ? headerHeight + insets.top
-    : 0;
+  const keyboardVerticalOffset = headerHeight + insets.top;
 
   return (
     <GradientBackground>
@@ -662,8 +661,8 @@ export default function CheckInScreen() {
           headerShown: true,
           title: headerTitle,
           headerBackTitle: '',
-          headerTransparent: true,
-          headerStyle: { backgroundColor: 'transparent' },
+          headerTransparent: false,
+          headerStyle: { backgroundColor: isDark ? '#1c1917' : '#faf7f2' },
           headerTintColor: '#047857',
           headerTitleStyle: {
             fontSize: 18,
@@ -683,9 +682,6 @@ export default function CheckInScreen() {
           ),
           headerRight: () => (
             <View style={styles.headerButtons}>
-              <Text style={styles.responseStyleLabel}>
-                Response style
-              </Text>
               <View style={styles.headerButtonsRow}>
                 <TouchableOpacity 
                   onPress={handlePrayerIconPress}
@@ -724,7 +720,7 @@ export default function CheckInScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={keyboardVerticalOffset}
+        keyboardVerticalOffset={0}
       >
         {messages.length === 0 ? (
           <ScrollView
@@ -742,7 +738,7 @@ export default function CheckInScreen() {
             renderItem={renderMessage}
             keyExtractor={item => item.id}
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20, flexGrow: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 80, flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
             scrollEnabled={true}
             keyboardShouldPersistTaps="handled"
@@ -760,12 +756,13 @@ export default function CheckInScreen() {
           borderTopColor: inputBorder,
           paddingBottom: Math.max(insets.bottom, 8),
         }]}>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, { maxHeight: 120 }]}>
             <TextInput
               style={[styles.input, {
                 backgroundColor: isDark ? colors.cardDark : colors.card,
                 borderColor: inputBorder,
                 color: textColor,
+                maxHeight: 100,
               }]}
               placeholder=""
               placeholderTextColor="transparent"
@@ -777,7 +774,6 @@ export default function CheckInScreen() {
               returnKeyType="default"
               blurOnSubmit={false}
               multiline={true}
-              maxHeight={120}
               scrollEnabled={true}
             />
             {inputText.length === 0 && !isInputFocused && (
