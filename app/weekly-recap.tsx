@@ -1256,25 +1256,6 @@ export default function WeeklyRecapScreen() {
               />
               <Text style={styles.buttonTextHistory}>See Your Week</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => { console.log('[WeeklyRecap] "Revisit" button pressed'); handleGenerateRecap(); }}
-              disabled={generating}
-            >
-              {generating ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <IconSymbol
-                    ios_icon_name="arrow.clockwise"
-                    android_material_icon_name="refresh"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.buttonText}>Revisit</Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
 
           <Text style={styles.noticeNote}>
