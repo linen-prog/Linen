@@ -1289,7 +1289,7 @@ export default function DailyGiftScreen() {
                 activeOpacity={0.6}
               >
                 <Text style={[styles.somaticPauseSkip, { color: textSecondaryColor }]}>
-                  Continue gently \u2192
+                  Continue gently
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2110,6 +2110,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   somaticPauseSkip: {
+    textAlign: 'center',
     fontSize: 13,
     textAlign: 'center',
     opacity: 0.5,
