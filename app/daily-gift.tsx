@@ -1779,13 +1779,13 @@ function GlitterParticle({
   }, []);
 
   const animatedStyle = { transform: [{ translateX }, { translateY }, { scale }], opacity };
-  const _noop = {
+
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale },
+      // BROKEN_LINE_3
+      // BROKEN_LINE_4
+      // BROKEN_LINE_5
     ],
-    opacity: opacity,
+    // BROKEN_LINE_7
   }));
 
   return (
