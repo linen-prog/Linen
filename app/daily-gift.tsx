@@ -829,6 +829,14 @@ export default function DailyGiftScreen() {
     setHasSkippedSomaticPrompt(true);
   };
 
+  const handleBreatheAgain = () => {
+    console.log('[DailyGift] User tapped "Breathe again" — resetting somatic pause');
+    // Reset breathing animation values
+    breathingScale.setValue(0.85);
+    breathingOpacity.setValue(0.3);
+    setShowSomaticPause(true);
+  };
+
   const toggleMood = (mood: string) => {
     console.log('[DailyGift] User toggled mood:', mood);
     setSelectedMoods(prev => 
@@ -1305,6 +1313,18 @@ export default function DailyGiftScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+          )}
+
+          {!showSomaticPause && isGiftOpened && (
+            <TouchableOpacity
+              onPress={handleBreatheAgain}
+              activeOpacity={0.5}
+              style={styles.breatheAgainLink}
+            >
+              <Text style={[styles.breatheAgainText, { color: textSecondaryColor }]}>
+                Breathe again
+              </Text>
+            </TouchableOpacity>
           )}
 
           {!hasReflected ? (
@@ -2101,6 +2121,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
+  },
+  breatheAgainLink: {
+    alignSelf: 'center' as const,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  breatheAgainText: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    opacity: 0.5,
+    textAlign: 'center' as const,
+    letterSpacing: 0.2,
   },
   imReadyText: {
     fontSize: 13,
