@@ -297,11 +297,11 @@ export default function DailyGiftScreen() {
       });
     }, 3000);
 
-    // Auto-dismiss after 6s
+    // Auto-dismiss after 30s
     somaticPauseTimerRef.current = setTimeout(() => {
-      console.log('[DailyGift] Somatic pause auto-dismissed after 6s');
+      console.log('[DailyGift] Somatic pause auto-dismissed after 30s');
       setShowSomaticPause(false);
-    }, 6000);
+    }, 30000);
 
     return () => {
       if (breathingAnimRef.current) {
