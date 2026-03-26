@@ -302,7 +302,7 @@ export default function SomaticPracticeScreen() {
   const nextStepText = 'Next Step';
   const previousStepText = 'Previous';
   const completeEarlyText = 'Complete Early';
-  const celebrationTitle = 'You completed';
+  const celebrationTitle = 'Congratulations!';
   const celebrationSubtitle = title;
   const celebrationMessage = 'Well done. You showed up for yourself today.';
   const reflectionPrompt = 'How did that feel in your body?';
@@ -807,6 +807,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     marginTop: spacing.md,
     textAlign: 'center',
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   celebrationSubtitle: {
     fontSize: typography.h2,
