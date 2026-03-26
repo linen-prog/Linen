@@ -12,13 +12,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import ReanimatedLib, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming as reanimatedWithTiming, 
-  withSequence as reanimatedWithSequence,
-  Easing 
-} from 'react-native-reanimated';
+
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -1760,36 +1754,32 @@ function GlitterParticle({
   delay: number; 
   color: string;
 }) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0);
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     const targetX = Math.cos(angle) * distance;
     const targetY = Math.sin(angle) * distance;
 
     setTimeout(() => {
-      translateX.value = withTiming(targetX, { 
-        duration: 800, 
-        easing: Easing.out(Easing.cubic) 
-      });
-      translateY.value = withTiming(targetY, { 
-        duration: 800, 
-        easing: Easing.out(Easing.cubic) 
-      });
-      opacity.value = withSequence(
-        withTiming(1, { duration: 200 }),
-        withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) })
-      );
-      scale.value = withSequence(
-        withTiming(1, { duration: 200 }),
-        withTiming(0.5, { duration: 600 })
-      );
+      Animated.timing(translateX, { toValue: targetX, duration: 800, useNativeDriver: true }).start();
+      Animated.timing(translateY, { toValue: targetY, duration: 800, useNativeDriver: true }).start();
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 600, useNativeDriver: true }),
+      ]).start();
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 0.5, duration: 600, useNativeDriver: true }),
+      ]).start();
+
     }, delay);
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const animatedStyle = { transform: [{ translateX }, { translateY }, { scale }], opacity };
+  const _noop = {
     transform: [
       { translateX: translateX.value },
       { translateY: translateY.value },
