@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet } from '@/utils/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface DailyGiftResponse {
   weeklyTheme: {
@@ -114,7 +115,8 @@ export default function ScriptureVerificationScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
         <Stack.Screen 
           options={{
             headerShown: false,
@@ -127,11 +129,13 @@ export default function ScriptureVerificationScreen() {
           </Text>
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
       <Stack.Screen 
         options={{
           headerShown: false,
@@ -394,6 +398,7 @@ export default function ScriptureVerificationScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

@@ -26,6 +26,7 @@ import Animated, {
   runOnJS
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GradientBackground } from '@/components/GradientBackground';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 
@@ -1720,6 +1721,7 @@ export default function ArtworkCanvasScreen() {
   }
 
   return (
+    <GradientBackground>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
         <Stack.Screen 
@@ -2950,6 +2952,7 @@ export default function ArtworkCanvasScreen() {
         </Modal>
       </SafeAreaView>
     </GestureHandlerRootView>
+    </GradientBackground>
   );
 }
 

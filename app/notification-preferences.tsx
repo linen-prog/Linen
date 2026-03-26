@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { GradientBackground } from "@/components/GradientBackground";
 
 // Notification categories - customize these for your app
 const NOTIFICATION_CATEGORIES = [
@@ -92,7 +93,8 @@ export default function NotificationPreferencesScreen() {
 
   if (isWeb) {
     return (
-      <SafeAreaView style={styles.container}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backButton}>← Back</Text>
@@ -106,11 +108,13 @@ export default function NotificationPreferencesScreen() {
           </Text>
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backButton}>← Back</Text>
@@ -177,6 +181,7 @@ export default function NotificationPreferencesScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

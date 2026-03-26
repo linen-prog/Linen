@@ -17,6 +17,7 @@ import { Stack, useRouter } from 'expo-router';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
+import { GradientBackground } from '@/components/GradientBackground';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -275,13 +276,15 @@ export default function CompanionPreferencesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]} edges={['top', 'bottom']}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: 'transparent' }]} edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: textSecondaryColor }]}>Loading your preferences…</Text>
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -295,7 +298,8 @@ export default function CompanionPreferencesScreen() {
   const subtitleText = `${toneLabel} · ${directnessLabel}`;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]} edges={['top', 'bottom']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: 'transparent' }]} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={styles.flex}
@@ -430,6 +434,7 @@ export default function CompanionPreferencesScreen() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

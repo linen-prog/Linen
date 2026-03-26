@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface WeeklyRecap {
   id: string;
@@ -218,7 +219,8 @@ export default function WeeklyRecapDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -244,12 +246,14 @@ export default function WeeklyRecapDetailScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   if (!recap) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -275,13 +279,15 @@ export default function WeeklyRecapDetailScreen() {
           <Text style={[styles.itemText, { color: textColor }]}>Recap not found</Text>
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   const dateRangeDisplay = formatDateRange(recap.weekStartDate, recap.weekEndDate);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Weekly Recap',
@@ -303,7 +309,7 @@ export default function WeeklyRecapDetailScreen() {
           ),
         }}
       />
-      <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={[styles.weekRange, { color: textColor }]}>{dateRangeDisplay}</Text>
           {recap.isPremium && (
@@ -470,5 +476,6 @@ export default function WeeklyRecapDetailScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }

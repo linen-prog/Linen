@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface ColorPalette {
   id: string;
@@ -155,7 +156,8 @@ export default function ThemePreviewScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: currentPalette.colors.background }]} edges={['top']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -287,6 +289,7 @@ export default function ThemePreviewScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

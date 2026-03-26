@@ -7,6 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface RecapPreferences {
   id: string;
@@ -160,7 +161,8 @@ export default function RecapSettingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
+      <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
         <Stack.Screen
           options={{
             title: 'Recap Settings',
@@ -181,6 +183,7 @@ export default function RecapSettingsScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -189,7 +192,8 @@ export default function RecapSettingsScreen() {
   const disabledSelected = selectedDay === 'disabled';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['bottom']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Recap Settings',
@@ -206,7 +210,7 @@ export default function RecapSettingsScreen() {
           },
         }}
       />
-      <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: textColor }]}>Delivery Preferences</Text>
           <Text style={[styles.sectionDescription, { color: textSecondaryColor }]}>
@@ -305,5 +309,6 @@ export default function RecapSettingsScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }

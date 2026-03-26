@@ -16,6 +16,7 @@ import { completeOnboarding } from "@/utils/onboardingStorage";
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
 import { OptionCard } from "@/components/onboarding/OptionCard";
 import { useOnboardingColors } from "@/hooks/useOnboardingColors";
+import { GradientBackground } from "@/components/GradientBackground";
 
 const TOTAL_STEPS = onboardingQuestions.length;
 
@@ -93,7 +94,8 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
         {!isFirstStep ? (
           <Pressable onPress={goBack} style={styles.backButton} hitSlop={12}>
@@ -141,6 +143,7 @@ export default function OnboardingScreen() {
         </Pressable>
       </View>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 

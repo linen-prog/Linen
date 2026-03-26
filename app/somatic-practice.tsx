@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedPost } from '@/utils/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { GradientBackground } from '@/components/GradientBackground';
 
 interface BreathingTechnique {
   id: string;
@@ -314,7 +315,8 @@ export default function SomaticPracticeScreen() {
   const canGoPrevious = currentStep > 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]} edges={['top']}>
+    <GradientBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
       <Stack.Screen 
         options={{
           headerShown: true,
@@ -584,6 +586,7 @@ export default function SomaticPracticeScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 
