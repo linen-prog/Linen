@@ -1795,8 +1795,6 @@ function GlitterParticle({
 
     ],
 
-  }));
-
   return (
     <Animated.View
       style={[
