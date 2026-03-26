@@ -657,49 +657,45 @@ export default function CheckInScreen() {
       <View style={{ flex: 1 }}>
         {/* Fixed header below Dynamic Island / notch */}
         <SafeAreaView edges={['top']} style={{ backgroundColor: headerBgColor }}>
-          <View style={[styles.customHeader, { backgroundColor: headerBgColor, borderBottomColor: inputBorder }]}>
-            <TouchableOpacity
-              onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
-              style={styles.headerBackButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <ChevronLeft size={24} color="#047857" />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917' }]} numberOfLines={1}>
-              {headerTitle}
-            </Text>
-            <View style={styles.headerButtons}>
-              <View style={styles.headerButtonsRow}>
-                <TouchableOpacity
-                  onPress={handlePrayerIconPress}
-                  style={styles.headerButtonContainer}
-                  disabled={isGeneratingPrayer}
-                >
-                  <IconSymbol
-                    ios_icon_name="hands.sparkles"
-                    android_material_icon_name="auto-awesome"
-                    size={20}
-                    color={prayerIconColor}
-                  />
-                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                    Prayer
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleRequestCare}
-                  style={styles.headerButtonContainer}
-                >
-                  <IconSymbol
-                    ios_icon_name="heart.fill"
-                    android_material_icon_name="favorite"
-                    size={20}
-                    color={careIconColor}
-                  />
-                  <Text style={[styles.headerButtonLabel, { color: labelColor }]}>
-                    Care
-                  </Text>
-                </TouchableOpacity>
-              </View>
+          <View style={[styles.customHeader, { backgroundColor: headerBgColor, borderBottomColor: inputBorder, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <TouchableOpacity
+                onPress={() => { console.log('[CheckIn] Back button pressed'); router.back(); }}
+                style={styles.headerBackButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronLeft size={24} color="#047857" />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917', flex: 1 }]} numberOfLines={1}>
+                {headerTitle}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity
+                onPress={handlePrayerIconPress}
+                style={styles.headerIconButton}
+                disabled={isGeneratingPrayer}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <IconSymbol
+                  ios_icon_name="hands.sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={22}
+                  color={prayerIconColor}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleRequestCare}
+                style={styles.headerIconButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <IconSymbol
+                  ios_icon_name="heart.fill"
+                  android_material_icon_name="favorite"
+                  size={22}
+                  color={careIconColor}
+                />
+              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
@@ -1833,6 +1829,12 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  headerIconButton: {
+    padding: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerButtons: {
     flexDirection: 'row',
