@@ -663,6 +663,7 @@ export default function DailyGiftScreen() {
         formData.append('selectedSensations', JSON.stringify(selectedSensations));
         formData.append('shareToCommunity', String(shareToCommunity));
         formData.append('isAnonymous', String(isAnonymous));
+        formData.append('anonymous', String(isAnonymous));
 
         const headers: Record<string, string> = {
           'Accept': 'application/json',
@@ -703,6 +704,7 @@ export default function DailyGiftScreen() {
             selectedSensations,
             shareToCommunity,
             isAnonymous,
+            anonymous: isAnonymous,
           }),
         });
 
