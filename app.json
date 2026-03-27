@@ -27,10 +27,7 @@
         ]
       },
       "entitlements": {
-        "aps-environment": "production",
-        "com.apple.security.application-groups": [
-          "group.com.p200f1d085d4143dca5ee60fe312d4fa5.app.onesignal"
-        ]
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -53,14 +50,6 @@
       "bundler": "metro"
     },
     "plugins": [
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production",
-          "appGroupName": "group.com.p200f1d085d4143dca5ee60fe312d4fa5.app.onesignal",
-          "iPhoneDeploymentTarget": "12.0"
-        }
-      ],
       "expo-font",
       "expo-router",
       "expo-web-browser",
@@ -73,7 +62,6 @@
     "extra": {
       "router": {},
       "backendUrl": "https://mdex7zmyjmrw8reaeyzfnp7z3r6fj2v2.app.specular.dev",
-      "oneSignalAppId": "96468dbf-fc22-4e5d-8815-0b34ed040738",
       "revenueCatApiKeyIos": "appl_NvLOtwHxKbKNYtCKqhlqBFPgNJu",
       "revenueCatApiKeyAndroid": "goog_PqbjuOVisTecnJCkYlQGHVweOiF",
       "revenueCatEntitlementId": "pro",
