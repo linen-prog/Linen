@@ -1,9 +1,8 @@
 /**
- * NotificationContext — native (no-op, OneSignal removed).
+ * NotificationContext — native stub.
  *
- * OneSignal has been disconnected. All methods are no-ops that satisfy
- * the shared NotificationContextType interface so the rest of the app
- * compiles and runs without changes.
+ * All methods are no-ops that satisfy the shared NotificationContextType
+ * interface so the rest of the app compiles and runs without changes.
  */
 
 import React, {
