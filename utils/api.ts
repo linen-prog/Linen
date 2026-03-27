@@ -213,14 +213,37 @@ export async function authenticatedPut<T = any>(
 export async function authenticatedDelete<T = any>(
   endpoint: string
 ): Promise<T | null> {
-  const response = await makeAuthenticatedRequest(endpoint, {
-    method: 'DELETE',
-  });
+  // Use fetch directly so we can read the error body ourselves (makeAuthenticatedRequest
+  // already consumes the body on error, leaving nothing for us to read here).
+  const authToken = await getAuthToken();
+  const url = `${BACKEND_URL}${endpoint}`;
+  console.log(`[API] DELETE ${endpoint}`);
+  console.log(`[API] Full URL: ${url}`);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+      credentials: 'include',
+    });
+  } catch (networkError: any) {
+    console.error(`[API] DELETE ${endpoint} network error:`, networkError);
+    throw networkError;
+  }
+
+  console.log(`[API] Response received: ${response.status} ${response.statusText}`);
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => response.statusText);
-    console.error(`[API] DELETE ${endpoint} error body:`, errorText);
-    throw new Error(`DELETE ${endpoint} failed: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text().catch(() => '');
+    console.error(`[API] DELETE ${endpoint} failed — status: ${response.status}, body: ${errorBody}`);
+    // Attach status and body to the thrown error so callers can surface the real cause
+    const err = new Error(`DELETE ${endpoint} failed: ${response.status} ${response.statusText}${errorBody ? ` — ${errorBody}` : ''}`);
+    (err as any).status = response.status;
+    (err as any).responseBody = errorBody;
+    throw err;
   }
 
   // 204 No Content — nothing to parse

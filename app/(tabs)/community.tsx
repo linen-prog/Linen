@@ -390,7 +390,14 @@ export default function CommunityScreen() {
   };
 
   const handleDeletePost = async (postId: string) => {
-    console.log('[Community] User tapped delete on post:', postId);
+    console.log('[Community] User tapped delete on post:', postId, '| current user id:', user?.id);
+
+    // Guard: never attempt a delete with a missing id
+    if (!postId) {
+      console.error('[Community] ❌ handleDeletePost called with null/undefined postId — aborting');
+      return;
+    }
+
     Alert.alert(
       'Delete Post',
       'Are you sure you want to delete this post? This cannot be undone.',
@@ -400,16 +407,40 @@ export default function CommunityScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            console.log('[Community] User confirmed delete for post:', postId);
+            console.log('[Community] User confirmed delete — postId:', postId, 'userId:', user?.id);
             try {
               const { authenticatedDelete } = await import('@/utils/api');
-              console.log('[Community] DELETE /api/community/posts/', postId);
+              console.log('[Community] → DELETE /api/community/posts/' + postId);
               await authenticatedDelete(`/api/community/posts/${postId}`);
               console.log('[Community] ✅ Post deleted successfully:', postId);
+              // Immediately remove from local state — no refresh needed
               setPosts(prev => prev.filter(p => p.id !== postId));
-            } catch (error) {
-              console.error('[Community] ❌ Failed to delete post:', postId, error);
-              Alert.alert('Error', 'Failed to delete post. Please try again.');
+            } catch (error: any) {
+              const status: number | undefined = error?.status;
+              const body: string = error?.responseBody || error?.message || 'Unknown error';
+              console.error('[Community] ❌ Delete failed — postId:', postId, '| userId:', user?.id, '| status:', status, '| error:', body);
+
+              let userMessage = 'Could not delete this post. Please try again.';
+              if (status === 403) {
+                userMessage = 'You can only delete your own posts.';
+              } else if (status === 404) {
+                userMessage = 'Post not found — it may have already been deleted.';
+                // Remove from local state anyway since it no longer exists
+                setPosts(prev => prev.filter(p => p.id !== postId));
+              } else if (body) {
+                // Surface the real backend error message
+                try {
+                  const parsed = JSON.parse(body);
+                  if (parsed?.error || parsed?.message) {
+                    userMessage = parsed.error || parsed.message;
+                  }
+                } catch {
+                  // body is plain text — use it directly if short enough
+                  if (body.length < 200) userMessage = body;
+                }
+              }
+
+              Alert.alert('Delete Failed', userMessage);
             }
           },
         },
@@ -581,6 +612,7 @@ export default function CommunityScreen() {
     { id: 'wisdom', label: 'Wisdom', icon: 'auto-stories' as const },
     { id: 'care', label: 'Care', icon: 'chat' as const },
     { id: 'prayers', label: 'Prayer', icon: 'church' as const },
+    { id: 'my-shared', label: 'My Posts', icon: 'person.fill' as const },
   ];
 
 
