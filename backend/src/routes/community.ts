@@ -483,77 +483,6 @@ export function registerCommunityRoutes(app: App) {
     }
   );
 
-  // Delete a community post (only manual posts or user's own posts)
-  app.fastify.delete(
-    '/api/community/posts/:postId',
-    async (
-      request: FastifyRequest<{ Params: { postId: string } }>,
-      reply: FastifyReply
-    ): Promise<void> => {
-      const session = await requireAuth(request, reply);
-      if (!session) return;
-
-      const { postId } = request.params;
-
-      app.logger.info(
-        { userId: session.user.id, postId },
-        'Deleting community post'
-      );
-
-      try {
-        // Check if post exists
-        const post = await app.db
-          .select()
-          .from(schema.communityPosts)
-          .where(eq(schema.communityPosts.id, postId as any))
-          .limit(1);
-
-        if (!post.length) {
-          app.logger.warn({ postId }, 'Post not found');
-          return reply.status(404).send({ error: 'Post not found' });
-        }
-
-        // Only allow deletion of manual posts created by the user
-        if (post[0].contentType !== 'manual' || post[0].userId !== session.user.id) {
-          app.logger.warn(
-            { userId: session.user.id, postId, contentType: post[0].contentType, authorId: post[0].userId },
-            'Unauthorized post deletion attempt'
-          );
-          return reply.status(403).send({
-            error: 'You can only delete your own manual posts',
-          });
-        }
-
-        // Delete all associated data (prayers, flags)
-        await app.db
-          .delete(schema.communityPrayers)
-          .where(eq(schema.communityPrayers.postId, postId as any));
-
-        await app.db
-          .delete(schema.flaggedPosts)
-          .where(eq(schema.flaggedPosts.postId, postId as any));
-
-        // Delete the post
-        await app.db
-          .delete(schema.communityPosts)
-          .where(eq(schema.communityPosts.id, postId as any));
-
-        app.logger.info(
-          { userId: session.user.id, postId },
-          'Community post deleted'
-        );
-
-        return reply.send({ success: true });
-      } catch (error) {
-        app.logger.error(
-          { err: error, userId: session.user.id, postId },
-          'Failed to delete post'
-        );
-        throw error;
-      }
-    }
-  );
-
   // Get community statistics (no auth required)
   app.fastify.get(
     '/api/community/stats',
@@ -1135,19 +1064,71 @@ export function registerCommunityRoutes(app: App) {
 
   // Delete a community post (authenticated user only, must own the post)
   app.fastify.delete(
-    '/api/posts/:id',
+    '/api/community/:id',
+    {
+      schema: {
+        description: 'Delete a community post (authenticated user only, must own the post)',
+        tags: ['community'],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid', description: 'Post ID' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              deleted_id: { type: 'string', format: 'uuid' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          403: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              post_id: { type: 'string', format: 'uuid' },
+              owner_id: { type: 'string' },
+              requester_id: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              post_id: { type: 'string', format: 'uuid' },
+            },
+          },
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              post_id: { type: 'string', format: 'uuid' },
+              detail: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
-      if (!session) return;
+      if (!session) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
-      const { id: postId } = request.params;
+      const { id } = request.params;
       const userId = session.user.id;
 
       app.logger.info(
-        { postId, userId },
+        { postId: id, userId },
         'Attempting to delete community post'
       );
 
@@ -1156,12 +1137,15 @@ export function registerCommunityRoutes(app: App) {
         const posts = await app.db
           .select()
           .from(schema.communityPosts)
-          .where(eq(schema.communityPosts.id, postId as any))
+          .where(eq(schema.communityPosts.id, id as any))
           .limit(1);
 
         if (!posts.length) {
-          app.logger.warn({ postId }, 'Post not found for deletion');
-          return reply.status(404).send({ error: 'Post not found' });
+          app.logger.warn({ postId: id }, 'Post not found for deletion');
+          return reply.status(404).send({
+            error: 'Post not found',
+            post_id: id,
+          });
         }
 
         const post = posts[0];
@@ -1169,76 +1153,78 @@ export function registerCommunityRoutes(app: App) {
         // Check ownership
         if (post.userId !== userId) {
           app.logger.warn(
-            { postId, userId, ownerId: post.userId },
+            { postId: id, userId, ownerId: post.userId },
             'User attempted to delete post they do not own'
           );
-          return reply.status(403).send({ error: 'Forbidden' });
+          return reply.status(403).send({
+            error: 'Forbidden: you do not own this post',
+            post_id: id,
+            owner_id: post.userId,
+            requester_id: userId,
+          });
         }
 
-        // Cascade delete related rows to avoid foreign key constraint violations
+        // Delete dependent records in order (to avoid FK constraint violations)
         app.logger.debug(
-          { postId },
-          'Deleting related rows (care_messages, community_prayers, flagged_posts, post_reactions)'
+          { postId: id },
+          'Deleting dependent records (community_prayers, care_messages, post_reactions, flagged_posts)'
         );
 
-        // Delete care messages for this post
-        try {
-          await app.db
-            .delete(schema.careMessages)
-            .where(eq(schema.careMessages.postId, postId as any));
-          app.logger.debug({ postId }, 'Care messages deleted');
-        } catch (error) {
-          app.logger.debug({ err: error, postId }, 'Error deleting care messages (may not exist)');
-        }
+        // 1. Delete community prayers for this post
+        await app.db
+          .delete(schema.communityPrayers)
+          .where(eq(schema.communityPrayers.postId, id as any));
+        app.logger.debug({ postId: id }, 'Community prayers deleted');
 
-        // Delete community prayers for this post
-        try {
-          await app.db
-            .delete(schema.communityPrayers)
-            .where(eq(schema.communityPrayers.postId, postId as any));
-          app.logger.debug({ postId }, 'Community prayers deleted');
-        } catch (error) {
-          app.logger.debug({ err: error, postId }, 'Error deleting community prayers (may not exist)');
-        }
+        // 2. Delete care messages for this post
+        await app.db
+          .delete(schema.careMessages)
+          .where(eq(schema.careMessages.postId, id as any));
+        app.logger.debug({ postId: id }, 'Care messages deleted');
 
-        // Delete flagged posts for this post
-        try {
-          await app.db
-            .delete(schema.flaggedPosts)
-            .where(eq(schema.flaggedPosts.postId, postId as any));
-          app.logger.debug({ postId }, 'Flagged posts deleted');
-        } catch (error) {
-          app.logger.debug({ err: error, postId }, 'Error deleting flagged posts (may not exist)');
-        }
+        // 3. Delete post reactions for this post
+        await app.db
+          .delete(schema.postReactions)
+          .where(eq(schema.postReactions.postId, id as any));
+        app.logger.debug({ postId: id }, 'Post reactions deleted');
 
-        // Delete post reactions for this post
-        try {
-          await app.db
-            .delete(schema.postReactions)
-            .where(eq(schema.postReactions.postId, postId as any));
-          app.logger.debug({ postId }, 'Post reactions deleted');
-        } catch (error) {
-          app.logger.debug({ err: error, postId }, 'Error deleting post reactions (may not exist)');
-        }
+        // 4. Delete flagged posts for this post
+        await app.db
+          .delete(schema.flaggedPosts)
+          .where(eq(schema.flaggedPosts.postId, id as any));
+        app.logger.debug({ postId: id }, 'Flagged posts deleted');
 
-        // Delete the post itself
-        app.logger.debug({ postId }, 'Deleting community post');
+        // 5. Delete the post itself
+        app.logger.debug({ postId: id }, 'Deleting community post');
         await app.db
           .delete(schema.communityPosts)
-          .where(eq(schema.communityPosts.id, postId as any));
+          .where(eq(schema.communityPosts.id, id as any));
 
         app.logger.info(
-          { postId, userId },
+          { postId: id, userId },
           'Community post deleted successfully'
         );
 
-        return reply.send({ success: true });
+        return reply.status(200).send({
+          success: true,
+          deleted_id: id,
+        });
       } catch (error) {
         app.logger.error(
-          { err: error, postId, userId },
+          {
+            err: error,
+            postId: id,
+            userId,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          },
           'Failed to delete community post'
         );
-        throw error;
+        return reply.status(500).send({
+          error: 'Failed to delete post',
+          post_id: id,
+          detail: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   );
