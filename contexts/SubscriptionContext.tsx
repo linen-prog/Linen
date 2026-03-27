@@ -19,6 +19,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
@@ -100,6 +101,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(false);
+
+  // Guard against concurrent checkSubscription calls (RC error 7638)
+  const isCheckingRef = useRef(false);
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
@@ -263,8 +267,34 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   const checkSubscription = async () => {
     if (isWeb) return;
+
+    // Deduplicate: skip if a check is already in flight (prevents RC error 7638)
+    if (isCheckingRef.current) {
+      console.log("[RevenueCat] checkSubscription skipped — already in progress");
+      return;
+    }
+
+    isCheckingRef.current = true;
     try {
-      const customerInfo = await Purchases.getCustomerInfo();
+      let customerInfo;
+      try {
+        customerInfo = await Purchases.getCustomerInfo();
+      } catch (firstError: any) {
+        // RC error 7638: another request in progress — wait and retry once
+        const isOverlapError =
+          firstError?.code === 16 ||
+          String(firstError?.underlyingErrorMessage ?? firstError?.message ?? "").includes("7638") ||
+          String(firstError?.message ?? "").includes("7638");
+
+        if (isOverlapError) {
+          console.warn("[RevenueCat] Overlapping request detected (7638), retrying in 2s...");
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          customerInfo = await Purchases.getCustomerInfo();
+        } else {
+          throw firstError;
+        }
+      }
+
       const hasEntitlement =
         typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
       // In __DEV__: RC test store purchases don't survive configure(), so only update state
@@ -277,11 +307,23 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       } else if (!__DEV__) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "false").catch(() => {});
       }
-    } catch (error) {
-      console.error("[RevenueCat] Failed to check subscription:", error);
+    } catch (error: any) {
+      // Suppress non-fatal overlap errors (7638) — these just mean calls raced
+      const isOverlapError =
+        error?.code === 16 ||
+        String(error?.underlyingErrorMessage ?? error?.message ?? "").includes("7638") ||
+        String(error?.message ?? "").includes("7638");
+
+      if (isOverlapError) {
+        console.warn("[RevenueCat] checkSubscription skipped after retry (7638 — overlapping request, non-fatal)");
+      } else {
+        console.error("[RevenueCat] Failed to check subscription:", error);
+      }
       // Don't reset isSubscribed on error — the customerInfoUpdateListener
       // already set it from local cache after configure(). Overriding with false
       // would incorrectly show the paywall to subscribed users on network errors.
+    } finally {
+      isCheckingRef.current = false;
     }
   };
 
