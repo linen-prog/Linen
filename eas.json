@@ -20,7 +20,8 @@
     "production": {
       "ios": {
         "distribution": "store",
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "autoIncrement": false
       },
       "android": {
         "buildType": "app-bundle"
