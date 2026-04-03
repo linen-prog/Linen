@@ -37,7 +37,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.linen.app",
-      "versionCode": 11,
+      "versionCode": 1,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
