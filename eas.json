@@ -22,7 +22,8 @@
       "ios": {
         "distribution": "store",
         "buildConfiguration": "Release",
-        "autoIncrement": false
+        "autoIncrement": false,
+        "autoSubmit": true
       },
       "android": {
         "buildType": "app-bundle",
