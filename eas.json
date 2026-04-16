@@ -7,12 +7,14 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+			"autoIncrement": true,
       "ios": {
         "simulator": true
       }
     },
     "preview": {
       "distribution": "internal",
+			"autoIncrement": true,
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"
@@ -22,11 +24,11 @@
       "ios": {
         "distribution": "store",
         "buildConfiguration": "Release",
-        "autoIncrement": false
+        "autoIncrement": true
       },
       "android": {
         "buildType": "app-bundle",
-        "autoIncrement": false
+        "autoIncrement": true
       }
     }
   },
