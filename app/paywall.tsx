@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -171,7 +172,11 @@ export default function PaywallScreen() {
     restorePurchases,
     mockWebPurchase,
     mockNativePurchase,
+    bypassPaywall,
   } = useSubscription();
+
+  // Show bypass button in __DEV__ or TestFlight (non-App-Store) builds
+  const showDevBypass = __DEV__ || Constants.appOwnership !== "store";
 
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(
     packages[0] || null
@@ -482,6 +487,19 @@ export default function PaywallScreen() {
                 {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account at
                 confirmation of purchase.
               </Text>
+
+              {showDevBypass && (
+                <Pressable
+                  style={styles.devBypassButton}
+                  onPress={async () => {
+                    console.log("[Paywall] Dev bypass button tapped");
+                    await bypassPaywall();
+                    router.replace("/(tabs)");
+                  }}
+                >
+                  <Text style={styles.devBypassText}>Skip (Dev only)</Text>
+                </Pressable>
+              )}
             </>
           )}
         </Reanimated.View>
@@ -782,6 +800,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 15,
     opacity: 0.5,
+  },
+  devBypassButton: {
+    marginTop: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    alignSelf: "center",
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#888",
+    borderStyle: "dashed",
+  },
+  devBypassText: {
+    fontSize: 11,
+    color: "#888",
+    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
 
   // Subscribed

@@ -23,6 +23,7 @@ import React, {
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Purchases, {
   PurchasesOfferings,
   PurchasesOffering,
@@ -52,6 +53,8 @@ const MOCK_PURCHASE_KEY = `rc_mock_purchased_${_PROJECT_SCOPE}`;
 const MOCK_NATIVE_KEY = `rc_dev_native_${_PROJECT_SCOPE}`;
 // Scoped native cache key — persists real subscription state for fast restore on bundle reload
 const NATIVE_PURCHASE_KEY = `rc_subscribed_${_PROJECT_SCOPE}`;
+// Dev/TestFlight bypass key — only honoured in non-production builds
+const DEV_BYPASS_KEY = `dev_paywall_bypass_${_PROJECT_SCOPE}`;
 
 interface SubscriptionContextType {
   /** Whether the user has an active subscription */
@@ -76,6 +79,8 @@ interface SubscriptionContextType {
   mockWebPurchase: () => void;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
   mockNativePurchase: () => Promise<void>;
+  /** Dev/TestFlight-only: bypass paywall without a real purchase — persists via AsyncStorage */
+  bypassPaywall: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(
@@ -95,6 +100,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const authLoading = (auth?.loading ?? false) as boolean;
 
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [devBypass, setDevBypass] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
     useState<PurchasesOffering | null>(null);
@@ -120,6 +126,25 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setPackages([mockPackage] as PurchasesPackage[]);
     console.log("[revenuecat] Web preview: showing real prices from dashboard");
   };
+
+  // Restore dev bypass on mount (non-production builds only)
+  useEffect(() => {
+    const restoreBypass = async () => {
+      if (isWeb) return;
+      // Only honour bypass in __DEV__ or TestFlight (non-store) builds
+      const isNonProduction = __DEV__ || Constants.appOwnership !== "store";
+      if (!isNonProduction) return;
+      try {
+        const stored = await AsyncStorage.getItem(DEV_BYPASS_KEY);
+        if (stored === "true") {
+          console.log("[Paywall] Dev bypass restored from AsyncStorage");
+          setDevBypass(true);
+          setIsSubscribed(true);
+        }
+      } catch {}
+    };
+    restoreBypass();
+  }, []);
 
   // Initialize RevenueCat on mount
   useEffect(() => {
@@ -388,6 +413,17 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setIsSubscribed(true);
   };
 
+  // Dev/TestFlight-only: bypass paywall without a real purchase.
+  // Persists via AsyncStorage so testers don't have to re-bypass after restarts.
+  const bypassPaywall = async (): Promise<void> => {
+    const isNonProduction = __DEV__ || Constants.appOwnership !== "store";
+    if (!isNonProduction || isWeb) return;
+    console.log("[Paywall] Dev bypass activated — granting access without purchase");
+    await AsyncStorage.setItem(DEV_BYPASS_KEY, "true").catch(() => {});
+    setDevBypass(true);
+    setIsSubscribed(true);
+  };
+
   return (
     <SubscriptionContext.Provider
       value={{
@@ -402,6 +438,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         checkSubscription,
         mockWebPurchase,
         mockNativePurchase,
+        bypassPaywall,
       }}
     >
       {children}
