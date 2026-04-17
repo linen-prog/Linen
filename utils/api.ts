@@ -263,6 +263,58 @@ export async function authenticatedDelete<T = any>(
   }
 }
 
+// Push subscription helpers
+export async function registerPushSubscription(
+  token: string,
+  oneSignalSubscriptionId: string,
+  platform: 'ios' | 'android' | 'web'
+): Promise<void> {
+  console.log('[PushSubscriptions] Registering subscription:', { oneSignalSubscriptionId, platform });
+  const url = `${BACKEND_URL}/api/push-subscriptions`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oneSignalSubscriptionId, platform }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('[PushSubscriptions] Register failed:', response.status, errorText);
+    } else {
+      console.log('[PushSubscriptions] Subscription registered successfully');
+    }
+  } catch (error) {
+    console.error('[PushSubscriptions] Register network error:', error);
+  }
+}
+
+export async function unregisterPushSubscription(
+  token: string,
+  oneSignalSubscriptionId: string
+): Promise<void> {
+  console.log('[PushSubscriptions] Unregistering subscription:', oneSignalSubscriptionId);
+  const url = `${BACKEND_URL}/api/push-subscriptions/${encodeURIComponent(oneSignalSubscriptionId)}`;
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('[PushSubscriptions] Unregister failed:', response.status, errorText);
+    } else {
+      console.log('[PushSubscriptions] Subscription unregistered successfully');
+    }
+  } catch (error) {
+    console.error('[PushSubscriptions] Unregister network error:', error);
+  }
+}
+
 // Public GET request (no authentication)
 export async function apiGet<T = any>(endpoint: string): Promise<T> {
   console.log(`[API] GET ${endpoint} (public)`);

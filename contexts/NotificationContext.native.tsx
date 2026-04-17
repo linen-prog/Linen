@@ -29,6 +29,8 @@ import Constants from "expo-constants";
 
 // Import auth hook for user targeting (validated at setup time)
 import { useAuth } from "./AuthContext";
+import { getBearerToken } from "@/lib/auth";
+import { registerPushSubscription } from "@/utils/api";
 
 // Read App ID from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -152,6 +154,35 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     } catch (error) {
       console.error("[OneSignal] Failed to update user:", error);
     }
+  }, [user?.id]);
+
+  // Register push subscription with backend when user is authenticated
+  useEffect(() => {
+    if (isWeb || !ONESIGNAL_APP_ID || !user?.id) return;
+
+    const syncSubscription = async () => {
+      try {
+        const subscriptionId = OneSignal.User.pushSubscription.id;
+        if (!subscriptionId) {
+          console.log("[OneSignal] No subscription ID available yet, skipping backend registration");
+          return;
+        }
+
+        const token = await getBearerToken();
+        if (!token) {
+          console.log("[OneSignal] No auth token available, skipping backend registration");
+          return;
+        }
+
+        const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+        console.log("[OneSignal] Registering push subscription with backend:", { subscriptionId, platform });
+        await registerPushSubscription(token, subscriptionId, platform as 'ios' | 'android' | 'web');
+      } catch (error) {
+        console.error("[OneSignal] Failed to register push subscription with backend:", error);
+      }
+    };
+
+    syncSubscription();
   }, [user?.id]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {

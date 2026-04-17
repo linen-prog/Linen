@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import { authClient, storeWebBearerToken, getBearerToken, getUserData, clearAuthTokens, storeUserData, storeBearerToken } from "@/lib/auth";
-import { BACKEND_URL } from "@/utils/api";
+import { BACKEND_URL, unregisterPushSubscription } from "@/utils/api";
 
 interface User {
   id: string;
@@ -297,6 +297,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('[AuthContext] Signing out...');
+
+      // Unregister push subscription before clearing the token
+      if (Platform.OS !== 'web') {
+        try {
+          const token = await getBearerToken();
+          if (token) {
+            // Dynamically import OneSignal to avoid web crashes
+            const { OneSignal } = await import('react-native-onesignal');
+            const subscriptionId = OneSignal.User.pushSubscription.id;
+            if (subscriptionId) {
+              console.log('[AuthContext] Unregistering push subscription on sign out:', subscriptionId);
+              await unregisterPushSubscription(token, subscriptionId);
+            }
+          }
+        } catch (pushError) {
+          console.warn('[AuthContext] Push subscription unregister failed (non-critical):', pushError);
+        }
+      }
+
       // Clear local state and persisted tokens immediately
       setUser(null);
       await clearAuthTokens();
