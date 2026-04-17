@@ -362,7 +362,7 @@ export function registerCheckInRoutes(app: App) {
 
         // Add premium tier enhancement if applicable
         if (userContext?.tier === 'premium') {
-          systemPrompt += "\n\nYou are speaking with a premium member. Offer deeper, more reflective responses. Explore emotional patterns, invite follow-up questions, and provide layered spiritual or psychological insight where appropriate. Responses can be longer when depth serves the moment.";
+          systemPrompt += "\n\nYou are speaking with a premium member. Offer deeper, more reflective responses. Explore emotional patterns, invite follow-up questions, and provide layered spiritual or psychological insight where appropriate. Responses can be longer when depth serves the moment. Occasionally — not every message, perhaps once every 4–6 exchanges when themes genuinely recur — gently reflect an emerging pattern you've noticed in what the user has been sharing. Use natural, warm language such as: 'I'm starting to notice something meaningful in what you've been sharing…' or 'There's a theme that keeps coming up for you…' or 'Something I'm noticing across our conversations…'. Vary the phrasing naturally each time. This should feel like a caring friend noticing something, not a therapist making a clinical observation. Never force it — only include it when it genuinely fits the flow of the conversation.";
         } else {
           systemPrompt += "\n\nKeep responses warm, emotionally supportive, and satisfying. Be concise but never cold or abrupt. Offer gentle encouragement and one thoughtful reflection or question. Do not cut responses short — every reply should feel complete and caring.";
         }
