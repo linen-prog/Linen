@@ -10,7 +10,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
-import { recordAIMessage } from '@/utils/chatSessionTracker';
+import { recordAIMessage, recordPromptShown, getLastPromptSession } from '@/utils/chatSessionTracker';
 
 // Module-level flag: once dismissed, don't show again this session
 let upgradePromptDismissedThisSession = false;
@@ -317,11 +317,19 @@ export default function CheckInScreen() {
       // Track session, then maybe show upgrade prompt.
       // Only for base_access subscribers (isSubscribed = base tier in this app).
       // Triggers:
-      //   1. Session count between 3 and 5 (fire once — signals growing engagement)
-      //   2. Emotional depth signal: AI response contains 2+ depth words AND
-      //      the user's message was substantive (>= 10 chars)
+      //   1. Session count between 3 and 5 (signals growing engagement)
+      //   2. Soft depth score >= 2 (replaces strict keyword count):
+      //      +1 per depth signal word in AI response
+      //      +1 if AI response > 200 chars (depth/length)
+      //      +1 if AI response contains a question (ends with "?")
+      //      +1 if user message > 40 chars (engaged/expressive)
+      //      Short-message guard: skip entirely if user message < 10 chars
+      // Cross-session cooldown: at least 2 sessions must pass since last prompt.
       if (isSubscribed && !upgradePromptDismissedThisSession) {
         const { sessionCount } = await recordAIMessage();
+        const lastPromptSession = await getLastPromptSession();
+        const sessionGapOk = sessionCount - lastPromptSession >= 2;
+
         const sessionTrigger = sessionCount >= 3 && sessionCount <= 5;
 
         const depthWords = [
@@ -330,25 +338,33 @@ export default function CheckInScreen() {
           'shame', 'joy', 'longing',
         ];
         const aiTextLower = response.response.toLowerCase();
-        const depthWordCount = depthWords.filter(word => aiTextLower.includes(word)).length;
-        const userMessageIsSubstantive = messageText.length >= 10;
-        const depthTrigger = depthWordCount >= 2 && userMessageIsSubstantive;
+        const userMsgLen = messageText.length;
 
-        const shouldPrompt = sessionTrigger || depthTrigger;
+        let depthScore = 0;
+        if (userMsgLen >= 10) {
+          depthScore += depthWords.filter(word => aiTextLower.includes(word)).length;
+          if (response.response.length > 200) depthScore += 1;
+          if (response.response.includes('?')) depthScore += 1;
+          if (userMsgLen > 40) depthScore += 1;
+        }
+        const depthTrigger = depthScore >= 2;
+
+        const shouldPrompt = (sessionTrigger || depthTrigger) && sessionGapOk;
+
+        console.log('[CheckIn] Upgrade prompt eval — sessions:', sessionCount, '| lastPromptSession:', lastPromptSession, '| sessionGapOk:', sessionGapOk, '| sessionTrigger:', sessionTrigger, '| depthScore:', depthScore, '| depthTrigger:', depthTrigger, '| userMsgLen:', userMsgLen, '| shouldPrompt:', shouldPrompt);
 
         if (shouldPrompt) {
-          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| sessionTrigger:', sessionTrigger, '| depthWordCount:', depthWordCount, '| userMsgLen:', messageText.length, '| depthTrigger:', depthTrigger);
           // 1.5 second delay after AI response before showing
           if (upgradePromptTimerRef.current) {
             clearTimeout(upgradePromptTimerRef.current);
           }
           upgradePromptTimerRef.current = setTimeout(() => {
             if (!upgradePromptDismissedThisSession) {
+              console.log('[CheckIn] Showing upgrade prompt');
+              recordPromptShown();
               setShowUpgradePrompt(true);
             }
           }, 1500);
-        } else {
-          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| depthWordCount:', depthWordCount, '| userMsgLen:', messageText.length);
         }
       }
     } catch (error) {
