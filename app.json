@@ -55,7 +55,8 @@
       [
         "onesignal-expo-plugin",
         {
-          "mode": "production"
+          "mode": "production",
+          "iosNSEBundleIdentifier": "com.linen.linen.onesignalnotificationserviceextension"
         }
       ],
       "expo-font",
