@@ -1,8 +1,9 @@
 /**
  * NotificationContext — default (web-safe) stub.
  *
- * The native implementation lives in NotificationContext.native.tsx,
- * which Metro loads on iOS/Android. This file is the fallback for web.
+ * The real OneSignal implementation lives in NotificationContext.native.tsx,
+ * which Metro loads on iOS/Android. This file is the fallback for web where
+ * react-native-onesignal would crash at import time.
  */
 
 import React, { createContext, useContext, ReactNode } from "react";

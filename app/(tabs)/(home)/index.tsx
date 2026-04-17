@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
+import { NotificationBell } from "@/components/NotificationBell";
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
@@ -201,7 +202,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.loveMessagesTextBlock}>
                 <Text style={styles.loveMessagesTitle}>{"You've received care"}</Text>
-</View>
+              </View>
             </View>
             {unreadCount > 0 && (
               <View style={styles.loveMessagesBadge}>
