@@ -1648,6 +1648,11 @@ export default function DailyGiftScreen() {
                       <Text style={[styles.libraryItemDuration, { color: textSecondaryColor }]}>
                         {techniqueDuration}
                       </Text>
+                      {isLocked && (
+                        <Text style={styles.premiumLabel}>
+                          Premium
+                        </Text>
+                      )}
                     </View>
                   </View>
                   {isLocked ? (
@@ -2913,6 +2918,14 @@ const styles = StyleSheet.create({
   },
   lockEmoji: {
     fontSize: 16,
+  },
+  premiumLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: colors.primary,
+    marginTop: 3,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
   },
   libraryUpgradeBanner: {
     marginTop: spacing.sm,
