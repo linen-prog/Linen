@@ -48,6 +48,10 @@ export function initializeNotificationHandler(): Promise<void> {
   return initializationPromise;
 }
 
+// Checks notification permission without prompting. OneSignal owns the
+// permission request flow (see NotificationContext.native.tsx); local
+// scheduled notifications share the same OS-level grant, so callers must
+// ensure OneSignal permission has been granted before scheduling.
 export async function ensureNotificationPermissionAsync(): Promise<boolean> {
   if (!Device.isDevice) {
     console.log('Not a physical device - notifications not available');
@@ -56,15 +60,8 @@ export async function ensureNotificationPermissionAsync(): Promise<boolean> {
 
   try {
     const perms = await Notifications.getPermissionsAsync();
-    let status = perms.status;
-
-    if (status !== "granted") {
-      const req = await Notifications.requestPermissionsAsync();
-      status = req.status;
-    }
-
-    if (status !== "granted") {
-      console.log('Notification permissions not granted');
+    if (perms.status !== "granted") {
+      console.log('[DailyGiftReminder] Notification permission not granted (request via OneSignal first)');
       return false;
     }
 
@@ -75,10 +72,9 @@ export async function ensureNotificationPermissionAsync(): Promise<boolean> {
       });
     }
 
-    console.log('✅ Notification permissions granted');
     return true;
   } catch (error) {
-    console.error('❌ Error ensuring notification permissions:', error);
+    console.error('❌ Error checking notification permissions:', error);
     return false;
   }
 }
