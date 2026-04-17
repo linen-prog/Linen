@@ -1258,10 +1258,6 @@ export default function WeeklyRecapScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.noticeNote}>
-            This isn't about progress — just noticing.
-          </Text>
-
           {/* Monthly Summary Section */}
           <MonthlySummarySection isDark={isDark} />
 
