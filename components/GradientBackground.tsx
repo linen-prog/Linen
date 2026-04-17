@@ -27,7 +27,7 @@ export function GradientBackground({ children, style }: GradientBackgroundProps)
         style={StyleSheet.absoluteFillObject}
       />
       {/* Subtle pattern overlay */}
-      <View style={styles.patternOverlay} />
+      <View style={styles.patternOverlay} pointerEvents="none" />
       {children}
     </View>
   );
