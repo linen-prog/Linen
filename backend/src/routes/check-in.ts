@@ -362,7 +362,9 @@ export function registerCheckInRoutes(app: App) {
 
         // Add premium tier enhancement if applicable
         if (userContext?.tier === 'premium') {
-          systemPrompt += "\n\nThis user has premium access. Give deeper, more reflective, and more personalized responses. Where appropriate, write longer — draw on emotional nuance, spiritual depth, and the full texture of what the user is sharing. Don't rush to resolution; sit with complexity. Offer richer connections to scripture, embodied experience, and the user's inner life.";
+          systemPrompt += "\n\nYou are speaking with a premium member. Offer deeper, more reflective responses. Explore emotional patterns, invite follow-up questions, and provide layered spiritual or psychological insight where appropriate. Responses can be longer when depth serves the moment.";
+        } else {
+          systemPrompt += "\n\nKeep responses warm, emotionally supportive, and satisfying. Be concise but never cold or abrupt. Offer gentle encouragement and one thoughtful reflection or question. Do not cut responses short — every reply should feel complete and caring.";
         }
 
         // Generate response using GPT-4o via the gateway
