@@ -696,7 +696,7 @@ Write only the prayer, nothing else.`;
         );
 
         const { text: prayerText } = await generateText({
-          model: 'gpt-4o-mini',
+          model: gateway('openai/gpt-4o-mini'),
           system: systemPrompt,
           prompt: prayerPrompt,
         });
