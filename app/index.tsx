@@ -7,7 +7,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
-import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LandingScreen() {
@@ -118,9 +117,7 @@ export default function LandingScreen() {
         >
           <View style={styles.header}>
             <Text style={styles.title}>{titleText}</Text>
-                        <NotificationBell />
-            
-<Text style={styles.tagline}>{taglineText}</Text>
+            <Text style={styles.tagline}>{taglineText}</Text>
           </View>
 
           <View style={styles.introSection}>

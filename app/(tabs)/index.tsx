@@ -7,7 +7,6 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import { Ionicons } from '@expo/vector-icons';
 import { GradientBackground } from '@/components/GradientBackground';
-import { NotificationBell } from "@/components/NotificationBell";
 import NotificationButton, { NotificationButtonHandle } from '@/components/NotificationButton';
 import { authenticatedGet } from '@/utils/api';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -222,9 +221,7 @@ export default function HomeScreen() {
                     <Text style={styles.companionBannerIcon}>✨</Text>
                     <View style={styles.companionBannerText}>
                       <Text style={styles.companionBannerTitle}>Shape your companion</Text>
-                                            <NotificationBell />
-                      
-<Text style={styles.companionBannerSubtitle}>Adjust how it meets you →</Text>
+                      <Text style={styles.companionBannerSubtitle}>Adjust how it meets you →</Text>
                     </View>
                   </View>
                   <TouchableOpacity
