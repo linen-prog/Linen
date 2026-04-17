@@ -229,14 +229,14 @@ export function registerCheckInRoutes(app: App) {
     '/api/check-in/message',
     async (
       request: FastifyRequest<{
-        Body: { message: string; conversationId?: string };
+        Body: { message: string; conversationId?: string; userContext?: { tier?: 'premium' | 'base' } };
       }>,
       reply: FastifyReply
     ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { message, conversationId } = request.body;
+      const { message, conversationId, userContext } = request.body;
 
       // Validate input
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -358,7 +358,12 @@ export function registerCheckInRoutes(app: App) {
           .concat([{ role: 'user' as const, content: message }]);
 
         // Build personalized system prompt with companion preferences
-        const systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
+        let systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
+
+        // Add premium tier enhancement if applicable
+        if (userContext?.tier === 'premium') {
+          systemPrompt += "\n\nThis user has premium access. Give deeper, more reflective, and more personalized responses. Where appropriate, write longer — draw on emotional nuance, spiritual depth, and the full texture of what the user is sharing. Don't rush to resolution; sit with complexity. Offer richer connections to scripture, embodied experience, and the user's inner life.";
+        }
 
         // Generate response using GPT-4o via the gateway
         app.logger.debug(
