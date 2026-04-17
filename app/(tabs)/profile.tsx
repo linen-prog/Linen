@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -114,6 +115,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { themeMode, isDark, setThemeMode } = useTheme();
+  const { hasPermission: pushPermission, requestPermission: requestPushPermission } = useNotifications();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -228,9 +230,21 @@ export default function ProfileScreen() {
     await saveReminderSettings(next);
 
     if (value) {
+      if (!pushPermission) {
+        const granted = await requestPushPermission();
+        if (!granted) {
+          await saveReminderSettings({ ...next, enabled: false });
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive daily gift reminders.'
+          );
+          return;
+        }
+      }
+
       const id = await scheduleDailyGiftReminderAsync(next.hour, next.minute);
       if (!id) {
-        console.log('ProfileScreen: User denied permissions or on simulator');
+        console.log('ProfileScreen: Failed to schedule reminder');
         await saveReminderSettings({ ...next, enabled: false });
         Alert.alert(
           'Permission Required',
