@@ -9,6 +9,7 @@ import {
   uniqueIndex,
   jsonb,
   index,
+  check,
 } from 'drizzle-orm/pg-core';
 
 // Check-in conversations table
@@ -447,5 +448,33 @@ export const notifications = pgTable(
     index('notifications_user').on(table.userId),
     index('notifications_user_read').on(table.userId, table.read),
     index('notifications_created').on(table.createdAt),
+  ]
+);
+
+// Push subscriptions table (for OneSignal token persistence)
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => {
+        return { id: true } as any;
+      }, { onDelete: 'cascade' }),
+    oneSignalSubscriptionId: text('onesignal_subscription_id').notNull(),
+    platform: text('platform', {
+      enum: ['ios', 'android', 'web'],
+    }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('push_subscriptions_user_subscription_unique').on(
+      table.userId,
+      table.oneSignalSubscriptionId
+    ),
+    index('push_subscriptions_user').on(table.userId),
+    index('push_subscriptions_subscription_id').on(table.oneSignalSubscriptionId),
   ]
 );
