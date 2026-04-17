@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.linen.app",
+      "bundleIdentifier": "com.linen.linen",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserTrackingUsageDescription": "This app does not track you. This permission is required by Apple for analytics.",
@@ -28,7 +28,7 @@
       "entitlements": {
         "aps-environment": "production",
         "com.apple.security.application-groups": [
-          "group.com.linen.app.onesignal"
+          "group.com.linen.linen.onesignal"
         ]
       }
     },
