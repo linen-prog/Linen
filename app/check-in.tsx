@@ -318,17 +318,26 @@ export default function CheckInScreen() {
       // Only for base_access subscribers (isSubscribed = base tier in this app).
       // Triggers:
       //   1. Session count between 3 and 5 (fire once — signals growing engagement)
-      //   2. Conversation thread reaches ~8 messages (signal of depth, not a hard limit)
+      //   2. Emotional depth signal: AI response contains 2+ depth words AND
+      //      the user's message was substantive (>= 10 chars)
       if (isSubscribed && !upgradePromptDismissedThisSession) {
         const { sessionCount } = await recordAIMessage();
-        // +2 accounts for the user message and this AI message just added
-        const threadLength = messages.length + 2;
         const sessionTrigger = sessionCount >= 3 && sessionCount <= 5;
-        const depthTrigger = threadLength >= 8;
+
+        const depthWords = [
+          'notice', 'pattern', 'feeling', 'grief', 'loss', 'fear', 'hope',
+          'healing', 'worth', 'struggle', 'meaning', 'peace', 'trust',
+          'shame', 'joy', 'longing',
+        ];
+        const aiTextLower = response.response.toLowerCase();
+        const depthWordCount = depthWords.filter(word => aiTextLower.includes(word)).length;
+        const userMessageIsSubstantive = messageText.length >= 10;
+        const depthTrigger = depthWordCount >= 2 && userMessageIsSubstantive;
+
         const shouldPrompt = sessionTrigger || depthTrigger;
 
         if (shouldPrompt) {
-          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| thread length:', threadLength, '| sessionTrigger:', sessionTrigger, '| depthTrigger:', depthTrigger);
+          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| sessionTrigger:', sessionTrigger, '| depthWordCount:', depthWordCount, '| userMsgLen:', messageText.length, '| depthTrigger:', depthTrigger);
           // 1.5 second delay after AI response before showing
           if (upgradePromptTimerRef.current) {
             clearTimeout(upgradePromptTimerRef.current);
@@ -339,7 +348,7 @@ export default function CheckInScreen() {
             }
           }, 1500);
         } else {
-          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| thread length:', threadLength);
+          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| depthWordCount:', depthWordCount, '| userMsgLen:', messageText.length);
         }
       }
     } catch (error) {

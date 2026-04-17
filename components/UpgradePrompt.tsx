@@ -75,10 +75,24 @@ export default function UpgradePrompt({ visible, onDismiss }: UpgradePromptProps
     onDismiss();
   };
 
-  const headingText = 'You\'re going deeper 🌿';
-  const bodyText =
-    "You've been showing up consistently. Unlock unlimited AI conversations and the full Linen experience.";
-  const upgradeLabel = 'Upgrade to Premium — $8.99/mo';
+  const variantIndex = useRef(Math.floor(Math.random() * 3)).current;
+
+  const variants = [
+    {
+      heading: "It feels like there's more here to gently uncover.",
+      upgradeLabel: 'Continue deeper',
+    },
+    {
+      heading: "I'd love to stay with you in a deeper way.",
+      upgradeLabel: 'Unlock deeper support',
+    },
+    {
+      heading: "You've been showing up in a meaningful way.",
+      upgradeLabel: 'Explore deeper reflection',
+    },
+  ];
+
+  const variant = variants[variantIndex];
   const dismissLabel = 'Maybe Later';
 
   return (
@@ -103,10 +117,7 @@ export default function UpgradePrompt({ visible, onDismiss }: UpgradePromptProps
           <Text style={styles.leafAccent}>🌿</Text>
 
           {/* Heading */}
-          <Text style={styles.heading}>{headingText}</Text>
-
-          {/* Body */}
-          <Text style={styles.body}>{bodyText}</Text>
+          <Text style={styles.heading}>{variant.heading}</Text>
 
           {/* Divider */}
           <View style={styles.divider} />
@@ -117,7 +128,7 @@ export default function UpgradePrompt({ visible, onDismiss }: UpgradePromptProps
             onPress={handleUpgrade}
             activeOpacity={0.82}
           >
-            <Text style={styles.upgradeButtonText}>{upgradeLabel}</Text>
+            <Text style={styles.upgradeButtonText}>{variant.upgradeLabel}</Text>
           </TouchableOpacity>
 
           {/* Dismiss button */}
@@ -179,14 +190,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.md,
     lineHeight: 30,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.lg,
   },
   divider: {
     width: '100%',
