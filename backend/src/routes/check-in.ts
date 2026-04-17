@@ -576,6 +576,40 @@ export function registerCheckInRoutes(app: App) {
   // Generate a prayer from conversation context
   app.fastify.post(
     '/api/check-in/generate-prayer',
+    {
+      schema: {
+        description: 'Generate a prayer based on check-in conversation context',
+        tags: ['check-in'],
+        body: {
+          type: 'object',
+          required: ['conversationId'],
+          properties: {
+            conversationId: { type: 'string', format: 'uuid', description: 'Conversation ID' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              prayer: { type: 'string' },
+              prayerId: { type: 'string', format: 'uuid' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          500: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Body: { conversationId: string } }>,
       reply: FastifyReply
@@ -592,38 +626,48 @@ export function registerCheckInRoutes(app: App) {
 
       try {
         // Verify conversation belongs to user
-        const conversation = await app.db.query.checkInConversations.findFirst({
-          where: and(
-            eq(schema.checkInConversations.id, conversationId as any),
-            eq(schema.checkInConversations.userId, session.user.id)
-          ),
-        });
+        let conversation = null;
+        let messages = [];
 
-        if (!conversation) {
-          app.logger.warn(
-            { userId: session.user.id, conversationId },
-            'Conversation not found or unauthorized'
-          );
-          return reply.status(404).send({ error: 'Conversation not found' });
+        if (conversationId) {
+          conversation = await app.db.query.checkInConversations.findFirst({
+            where: and(
+              eq(schema.checkInConversations.id, conversationId as any),
+              eq(schema.checkInConversations.userId, session.user.id)
+            ),
+          });
+
+          if (!conversation) {
+            app.logger.warn(
+              { userId: session.user.id, conversationId },
+              'Conversation not found or unauthorized'
+            );
+            return reply.status(404).send({ error: 'Conversation not found' });
+          }
+
+          // Get last 10 messages from conversation
+          messages = await app.db
+            .select()
+            .from(schema.checkInMessages)
+            .where(eq(schema.checkInMessages.conversationId, conversationId as any))
+            .orderBy(desc(schema.checkInMessages.createdAt))
+            .limit(10);
+
+          // Reverse to chronological order
+          messages = messages.reverse();
         }
 
-        // Get last 10 messages from conversation
-        const messages = await app.db
-          .select()
-          .from(schema.checkInMessages)
-          .where(eq(schema.checkInMessages.conversationId, conversationId as any))
-          .orderBy(schema.checkInMessages.createdAt);
+        // Build prayer prompt - use fallback if no messages
+        let prayerPrompt: string;
 
-        const lastMessages = messages.slice(-10);
+        if (messages.length > 0) {
+          const conversationText = messages
+            .map(
+              (m) => `${m.role === 'user' ? 'Person' : 'Companion'}: ${m.content}`
+            )
+            .join('\n');
 
-        // Format messages for AI
-        const conversationText = lastMessages
-          .map(
-            (m) => `${m.role === 'user' ? 'Person' : 'Companion'}: ${m.content}`
-          )
-          .join('\n');
-
-        const prayerPrompt = `Based on this conversation between a person and a spiritual companion, write a short, heartfelt prayer (2-4 sentences) in first person ("I" language) that:
+          prayerPrompt = `Based on this conversation between a person and a spiritual companion, write a short, heartfelt prayer (2-4 sentences) in first person ("I" language) that:
 - Names specific feelings or struggles shared
 - Is embodied and honest, not artificially positive
 - Is rooted in Christian tradition
@@ -633,22 +677,40 @@ Conversation:
 ${conversationText}
 
 Write only the prayer, nothing else.`;
+        } else {
+          // Fallback prompt for missing or empty conversations
+          prayerPrompt = `Generate a short, heartfelt prayer (2-4 sentences) in first person ("I" language) for someone seeking peace and comfort.
+- Be honest and embodied, not artificially positive
+- Root it in Christian tradition
+- Make it feel personal and sincere
+
+Write only the prayer, nothing else.`;
+        }
 
         // Build personalized system prompt with companion preferences
         const systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
 
+        app.logger.debug(
+          { conversationId, messageCount: messages.length },
+          'Calling AI to generate prayer'
+        );
+
         const { text: prayerText } = await generateText({
-          model: gateway('openai/gpt-4o'),
+          model: 'gpt-4o-mini',
           system: systemPrompt,
           prompt: prayerPrompt,
         });
+
+        if (!prayerText || prayerText.trim().length === 0) {
+          throw new Error('AI generated empty prayer response');
+        }
 
         // Save prayer to database
         const [prayer] = await app.db
           .insert(schema.conversationPrayers)
           .values({
             conversationId: conversationId as any,
-            content: prayerText,
+            content: prayerText.trim(),
           })
           .returning();
 
@@ -658,15 +720,24 @@ Write only the prayer, nothing else.`;
         );
 
         return reply.send({
-          prayer: prayerText,
+          prayer: prayerText.trim(),
           prayerId: prayer.id,
         });
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         app.logger.error(
-          { err: error, userId: session.user.id, conversationId },
+          {
+            err: error,
+            userId: session.user.id,
+            conversationId,
+            errorMessage,
+            errorStack: error instanceof Error ? error.stack : undefined,
+          },
           'Failed to generate prayer'
         );
-        throw error;
+        return reply.status(500).send({
+          error: 'Failed to generate prayer. Please try again.',
+        });
       }
     }
   );
