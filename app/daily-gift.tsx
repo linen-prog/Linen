@@ -12,6 +12,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { BREATHING_TECHNIQUES } from './somatic-practice';
 
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -143,6 +145,7 @@ export default function DailyGiftScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showLibraryUpgradePrompt, setShowLibraryUpgradePrompt] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [showAttachmentSheet, setShowAttachmentSheet] = useState(false);
 
@@ -1588,6 +1591,93 @@ export default function DailyGiftScreen() {
               </Text>
             </View>
           )}
+
+          {/* Breathing Library — first 3 free, rest locked for non-premium */}
+          <View style={styles.librarySection}>
+            <Text style={[styles.librarySectionTitle, { color: textColor }]}>
+              Breathing Library
+            </Text>
+            <Text style={[styles.librarySectionSubtitle, { color: textSecondaryColor }]}>
+              Guided breath practices for any moment
+            </Text>
+            {BREATHING_TECHNIQUES.map((technique, index) => {
+              const isLocked = !isSubscribed && index >= 3;
+              const techniqueTitle = technique.title;
+              const techniqueDuration = technique.duration;
+              return (
+                <TouchableOpacity
+                  key={technique.id}
+                  style={[
+                    styles.libraryItem,
+                    { backgroundColor: cardBg },
+                    isLocked && styles.libraryItemLocked,
+                  ]}
+                  activeOpacity={isLocked ? 0.6 : 0.8}
+                  onPress={() => {
+                    if (isLocked) {
+                      console.log('[DailyGift] User tapped locked practice:', technique.id);
+                      setShowLibraryUpgradePrompt(true);
+                    } else {
+                      console.log('[DailyGift] User tapped practice:', technique.id);
+                      router.push({
+                        pathname: '/somatic-practice',
+                        params: {
+                          exerciseId: technique.id,
+                          title: technique.title,
+                          description: technique.description,
+                          duration: technique.duration,
+                          instructions: JSON.stringify(technique.instructions),
+                        },
+                      });
+                    }
+                  }}
+                >
+                  <View style={styles.libraryItemLeft}>
+                    <View style={[styles.libraryItemIcon, { backgroundColor: isLocked ? colors.border : colors.primaryLight }]}>
+                      <IconSymbol
+                        ios_icon_name={isLocked ? 'lock.fill' : 'wind'}
+                        android_material_icon_name={isLocked ? 'lock' : 'air'}
+                        size={18}
+                        color={isLocked ? textSecondaryColor : colors.primary}
+                      />
+                    </View>
+                    <View style={styles.libraryItemText}>
+                      <Text style={[styles.libraryItemTitle, { color: isLocked ? textSecondaryColor : textColor }]}>
+                        {techniqueTitle}
+                      </Text>
+                      <Text style={[styles.libraryItemDuration, { color: textSecondaryColor }]}>
+                        {techniqueDuration}
+                      </Text>
+                    </View>
+                  </View>
+                  {isLocked ? (
+                    <Text style={styles.lockEmoji}>🔒</Text>
+                  ) : (
+                    <IconSymbol
+                      ios_icon_name="chevron.right"
+                      android_material_icon_name="chevron-right"
+                      size={16}
+                      color={textSecondaryColor}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            {!isSubscribed && (
+              <TouchableOpacity
+                style={styles.libraryUpgradeBanner}
+                onPress={() => {
+                  console.log('[DailyGift] User tapped library upgrade banner');
+                  setShowLibraryUpgradePrompt(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.libraryUpgradeBannerText}>
+                  Unlock all practices with Premium
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </ScrollView>
       )}
 
@@ -1814,6 +1904,15 @@ export default function DailyGiftScreen() {
 
       {/* Floating Tab Bar */}
       <FloatingTabBar tabs={tabs} />
+
+      {/* Somatic Library Upgrade Prompt */}
+      <UpgradePrompt
+        visible={showLibraryUpgradePrompt}
+        onDismiss={() => {
+          console.log('[DailyGift] Library upgrade prompt dismissed');
+          setShowLibraryUpgradePrompt(false);
+        }}
+      />
     </SafeAreaView>
     </GradientBackground>
   );
@@ -2756,5 +2855,75 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
+  },
+  librarySection: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.xxl,
+  },
+  librarySectionTitle: {
+    fontSize: typography.h3,
+    fontWeight: typography.semibold,
+    marginBottom: spacing.xs,
+  },
+  librarySectionSubtitle: {
+    fontSize: typography.bodySmall,
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  libraryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  libraryItemLocked: {
+    opacity: 0.5,
+  },
+  libraryItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.md,
+  },
+  libraryItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  libraryItemText: {
+    flex: 1,
+  },
+  libraryItemTitle: {
+    fontSize: typography.body,
+    fontWeight: typography.medium,
+    marginBottom: 2,
+  },
+  libraryItemDuration: {
+    fontSize: typography.small,
+  },
+  lockEmoji: {
+    fontSize: 16,
+  },
+  libraryUpgradeBanner: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight,
+  },
+  libraryUpgradeBannerText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.semibold,
+    color: colors.primary,
   },
 });

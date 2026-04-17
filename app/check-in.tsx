@@ -43,8 +43,13 @@ export default function CheckInScreen() {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
-  // Subscription context — used to gate upgrade prompt to base_access only
+  // Subscription context — used to gate upgrade prompt and pass tier to AI
   const { isSubscribed } = useSubscription();
+  // isPremium: true when user has an active subscription at the premium tier.
+  // SubscriptionContext tracks a single entitlement (configured as premium_access
+  // in app.json). isSubscribed is true only when that entitlement is active,
+  // so we use it directly as the premium flag.
+  const isPremium = isSubscribed;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [draftMessage, setDraftMessage] = useState('');
@@ -271,6 +276,9 @@ export default function CheckInScreen() {
     try {
       const { authenticatedPost } = await import('@/utils/api');
       console.log('[CheckIn] Sending message to backend with conversationId:', conversationId);
+      // tier field lets the backend optionally adjust AI response depth
+      const tier = isPremium ? 'premium' : 'base';
+      console.log('[CheckIn] Sending message with tier context:', tier);
       const response = await authenticatedPost<{ 
         response: string; 
         messageId: string;
@@ -278,6 +286,8 @@ export default function CheckInScreen() {
       }>('/api/check-in/message', {
         conversationId: conversationId || undefined,
         message: messageText,
+        // userContext: pass subscription tier so backend can adjust depth
+        userContext: { tier },
       });
       
       console.log('[CheckIn] AI response received:', response);
