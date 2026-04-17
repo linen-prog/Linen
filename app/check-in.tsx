@@ -304,23 +304,21 @@ export default function CheckInScreen() {
         }
       }, 100);
 
-      // Track session + message count, then maybe show upgrade prompt
-      // Only for base_access subscribers (isSubscribed = base tier in this app)
-      // Not for premium (handled by checking entitlement in SubscriptionContext)
-      // We use isSubscribed as a proxy for "has any subscription" — the prompt
-      // is only for base_access, so we show it when isSubscribed is true but
-      // the user hasn't upgraded to premium (premium check is done via entitlement
-      // key stored in app.json; here we rely on the base_access flag being the
-      // only active entitlement for base subscribers).
+      // Track session, then maybe show upgrade prompt.
+      // Only for base_access subscribers (isSubscribed = base tier in this app).
+      // Triggers:
+      //   1. Session count between 3 and 5 (fire once — signals growing engagement)
+      //   2. Conversation thread reaches ~8 messages (signal of depth, not a hard limit)
       if (isSubscribed && !upgradePromptDismissedThisSession) {
-        const { sessionCount, totalMessages } = await recordAIMessage();
-        const shouldPrompt =
-          sessionCount === 3 ||
-          totalMessages === 15 ||
-          (messages.length + 2 >= 20); // +2 for the user msg + this AI msg
+        const { sessionCount } = await recordAIMessage();
+        // +2 accounts for the user message and this AI message just added
+        const threadLength = messages.length + 2;
+        const sessionTrigger = sessionCount >= 3 && sessionCount <= 5;
+        const depthTrigger = threadLength >= 8;
+        const shouldPrompt = sessionTrigger || depthTrigger;
 
         if (shouldPrompt) {
-          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| messages:', totalMessages);
+          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| thread length:', threadLength, '| sessionTrigger:', sessionTrigger, '| depthTrigger:', depthTrigger);
           // 1.5 second delay after AI response before showing
           if (upgradePromptTimerRef.current) {
             clearTimeout(upgradePromptTimerRef.current);
@@ -331,8 +329,7 @@ export default function CheckInScreen() {
             }
           }, 1500);
         } else {
-          // Still record even if not triggering a prompt
-          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| messages:', totalMessages);
+          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| thread length:', threadLength);
         }
       }
     } catch (error) {
