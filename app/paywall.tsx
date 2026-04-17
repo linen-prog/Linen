@@ -44,17 +44,17 @@ const FEATURES = [
       "A gentle companion that helps you notice what's happening in your mind and body — and return to yourself and God",
   },
   {
-    icon: "✧",
+    icon: "✦",
     title: "Daily Sacred Gifts",
     description: "A daily rhythm of reflection, scripture, and embodied practice",
   },
   {
-    icon: "◯",
+    icon: "✦",
     title: "Community Care",
     description: "Share, receive encouragement, and be held in prayer",
   },
   {
-    icon: "◌",
+    icon: "✦",
     title: "Weekly Reflections",
     description: "A quiet look back to notice what's been unfolding in you",
   },
