@@ -569,6 +569,16 @@ export default function PaywallScreen() {
                   <Text style={styles.devBypassText}>Skip (Dev only)</Text>
                 </Pressable>
               )}
+
+              <Pressable
+                style={styles.skipTestingButton}
+                onPress={() => {
+                  console.log("[Paywall] Skip for Testing tapped — navigating away without purchase");
+                  handleClose();
+                }}
+              >
+                <Text style={styles.skipTestingText}>Skip (Testing Only)</Text>
+              </Pressable>
             </>
           )}
         </Reanimated.View>
@@ -907,6 +917,16 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  skipTestingButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    alignSelf: "center",
+  },
+  skipTestingText: {
+    fontSize: 12,
+    color: "#999",
+    textAlign: "center",
   },
 
   // ── Subscribed state ──
