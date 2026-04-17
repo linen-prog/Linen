@@ -5,7 +5,10 @@ import { Platform } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 export default function TabLayout() {
+  useSubscriptionGuard();
+
   const { isDark } = useTheme();
 
   return (

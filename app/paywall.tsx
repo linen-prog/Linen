@@ -1,6 +1,11 @@
 /**
- * Paywall Screen — redesigned as a gentle, emotional invitation.
- * All RevenueCat logic is preserved unchanged.
+ * Paywall Screen — 2-tier subscription (Base + Premium)
+ *
+ * Base plan:    $3.99/month — "Light & Supportive"   (entitlement: base_access)
+ * Premium plan: $8.99/month — "Full Depth & Unlimited AI" (entitlement: premium_access)
+ *
+ * All RevenueCat purchase/restore logic is preserved.
+ * Design: warm linen palette, Georgia serif headings, soft gradients.
  */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -8,7 +13,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -22,8 +26,9 @@ import Constants from "expo-constants";
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
+  withSpring,
   FadeInDown,
+  FadeIn,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,33 +39,61 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { colors, typography, spacing, borderRadius } from "@/styles/commonStyles";
 
-// ─── Feature list ────────────────────────────────────────────────────────────
+// ─── Plan definitions ─────────────────────────────────────────────────────────
 
-const FEATURES = [
+interface PlanDef {
+  key: "base" | "premium";
+  label: string;
+  tagline: string;
+  price: string;
+  period: string;
+  entitlement: string;
+  recommended: boolean;
+  features: string[];
+}
+
+const PLANS: PlanDef[] = [
   {
-    icon: "✦",
-    title: "AI Companion",
-    description:
-      "A gentle companion that helps you notice what's happening in your mind and body — and return to yourself and God",
+    key: "base",
+    label: "Light & Supportive",
+    tagline: "A gentle beginning",
+    price: "$3.99",
+    period: "/month",
+    entitlement: "base_access",
+    recommended: false,
+    features: [
+      "Daily sacred gifts & reflections",
+      "Guided somatic practices",
+      "Weekly recap & insights",
+      "Community care & prayer",
+    ],
   },
   {
-    icon: "✦",
-    title: "Daily Sacred Gifts",
-    description: "A daily rhythm of reflection, scripture, and embodied practice",
-  },
-  {
-    icon: "✦",
-    title: "Community Care",
-    description: "Share, receive encouragement, and be held in prayer",
-  },
-  {
-    icon: "✦",
-    title: "Weekly Reflections",
-    description: "A quiet look back to notice what's been unfolding in you",
+    key: "premium",
+    label: "Full Depth & Unlimited AI",
+    tagline: "The complete experience",
+    price: "$8.99",
+    period: "/month",
+    entitlement: "premium_access",
+    recommended: true,
+    features: [
+      "Everything in Light & Supportive",
+      "Unlimited AI companion conversations",
+      "Complete scripture library",
+      "Exclusive daily gifts & surprises",
+    ],
   },
 ];
 
-// ─── Animated feature row ────────────────────────────────────────────────────
+// Features shown in the "what you're stepping into" section
+const SHARED_FEATURES = [
+  { icon: "✦", title: "Unlimited AI Companion", description: "Deepen every conversation without limits" },
+  { icon: "🌿", title: "Full Emotional Support", description: "Access all guided practices and reflections" },
+  { icon: "📖", title: "Complete Scripture Library", description: "Explore the full depth of spiritual content" },
+  { icon: "🎁", title: "Exclusive Daily Gifts", description: "Unlock premium daily care and surprises" },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FeatureRow({
   icon,
@@ -80,7 +113,7 @@ function FeatureRow({
 
   return (
     <Reanimated.View
-      entering={FadeInDown.delay(300 + index * 90).duration(500)}
+      entering={FadeInDown.delay(200 + index * 80).duration(480)}
       style={styles.featureRow}
     >
       <View style={styles.featureIconWrap}>
@@ -94,66 +127,98 @@ function FeatureRow({
   );
 }
 
-// ─── Animated primary button ─────────────────────────────────────────────────
-
-function PrimaryButton({
-  label,
-  onPress,
-  disabled,
-  loading,
+function PlanCard({
+  plan,
+  selected,
+  onSelect,
+  isDark,
 }: {
-  label: string;
-  onPress: () => void;
-  disabled: boolean;
-  loading: boolean;
+  plan: PlanDef;
+  selected: boolean;
+  onSelect: () => void;
+  isDark: boolean;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const [tapFeedback, setTapFeedback] = useState(false);
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const handlePressIn = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setTapFeedback(true);
-    Animated.spring(scale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 0,
-    }).start();
+  const handlePress = () => {
+    console.log("[Paywall] Plan selected:", plan.key, plan.entitlement);
+    Haptics.selectionAsync();
+    scale.value = withSpring(0.97, { damping: 15 }, () => {
+      scale.value = withSpring(1, { damping: 12 });
+    });
+    onSelect();
   };
 
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1.0,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 2,
-    }).start();
-    setTapFeedback(false);
-    onPress();
-  };
+  const cardBg = isDark ? colors.cardDark : colors.card;
+  const textPrimary = isDark ? colors.textDark : colors.text;
+  const textSecond = isDark ? colors.textSecondaryDark : colors.textSecondary;
+  const borderCol = isDark ? colors.borderDark : colors.border;
 
-  const feedbackText = "Staying with this…";
+  const selectedBorder = colors.primary;
+  const selectedBg = isDark ? colors.primaryVeryDark + "40" : colors.primaryLight;
 
   return (
-    <View style={styles.primaryButtonWrap}>
-      {tapFeedback && !loading && (
-        <Text style={styles.tapFeedbackText}>{feedbackText}</Text>
-      )}
-      <Animated.View style={[{ transform: [{ scale }] }, disabled && styles.buttonDisabled]}>
-        <Pressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled || loading}
-          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>{label}</Text>
-          )}
-        </Pressable>
-      </Animated.View>
-    </View>
+    <Reanimated.View style={animStyle}>
+      <Pressable
+        onPress={handlePress}
+        style={[
+          styles.planCard,
+          {
+            backgroundColor: selected ? selectedBg : cardBg,
+            borderColor: selected ? selectedBorder : borderCol,
+            borderWidth: selected ? 2 : StyleSheet.hairlineWidth,
+          },
+        ]}
+      >
+        {/* Recommended badge */}
+        {plan.recommended && (
+          <View style={[styles.recommendedBadge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.recommendedText}>RECOMMENDED</Text>
+          </View>
+        )}
+
+        <View style={styles.planCardInner}>
+          {/* Left: label + features */}
+          <View style={styles.planCardLeft}>
+            <Text style={[styles.planLabel, { color: textPrimary }]}>{plan.label}</Text>
+            <Text style={[styles.planTagline, { color: textSecond }]}>{plan.tagline}</Text>
+            <View style={styles.planFeatureList}>
+              {plan.features.map((f, i) => (
+                <View key={i} style={styles.planFeatureRow}>
+                  <Ionicons
+                    name="checkmark"
+                    size={13}
+                    color={selected ? colors.primary : colors.textLight}
+                    style={{ marginTop: 1 }}
+                  />
+                  <Text style={[styles.planFeatureText, { color: textSecond }]}>{f}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Right: price + selector */}
+          <View style={styles.planCardRight}>
+            <Text style={[styles.planPrice, { color: selected ? colors.primary : textPrimary }]}>
+              {plan.price}
+            </Text>
+            <Text style={[styles.planPeriod, { color: textSecond }]}>{plan.period}</Text>
+            <View
+              style={[
+                styles.planSelector,
+                {
+                  borderColor: selected ? colors.primary : borderCol,
+                  backgroundColor: selected ? colors.primary : "transparent",
+                },
+              ]}
+            >
+              {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Reanimated.View>
   );
 }
 
@@ -175,35 +240,43 @@ export default function PaywallScreen() {
     bypassPaywall,
   } = useSubscription();
 
-  // Show bypass button in __DEV__ or TestFlight (non-App-Store) builds
   const showDevBypass = __DEV__ || Constants.appOwnership !== "store";
 
-  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(
-    packages[0] || null
-  );
+  // Default to premium plan selected
+  const [selectedPlan, setSelectedPlan] = useState<"base" | "premium">("premium");
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [webMockState, setWebMockState] = useState<"idle" | "processing">("idle");
   const [webMockDialogState, setWebMockDialogState] = useState<"hidden" | "selecting" | "failed">("hidden");
 
-  useEffect(() => {
-    if (packages.length > 0 && !selectedPackage) {
-      setSelectedPackage(packages[0]);
-    }
-  }, [packages, selectedPackage]);
+  // Map selected plan to a RevenueCat package (by identifier or index)
+  const resolvedPackage: PurchasesPackage | null = (() => {
+    if (packages.length === 0) return null;
+    // Try to match by entitlement/identifier hint
+    const entitlement = PLANS.find((p) => p.key === selectedPlan)?.entitlement ?? "";
+    const matched = packages.find(
+      (pkg) =>
+        pkg.identifier.toLowerCase().includes(selectedPlan) ||
+        pkg.product.identifier?.toLowerCase().includes(selectedPlan) ||
+        pkg.product.identifier?.toLowerCase().includes(entitlement)
+    );
+    if (matched) return matched;
+    // Fallback: base → first package, premium → last package
+    return selectedPlan === "base" ? packages[0] : packages[packages.length - 1];
+  })();
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handlePurchase = async () => {
-    if (!selectedPackage) return;
-    console.log("[Paywall] Purchase initiated:", selectedPackage.identifier);
+    if (!resolvedPackage) return;
+    console.log("[Paywall] Purchase initiated — plan:", selectedPlan, "package:", resolvedPackage.identifier);
     try {
       setPurchasing(true);
-      const success = await purchasePackage(selectedPackage);
+      const success = await purchasePackage(resolvedPackage);
       if (success) {
-        console.log("[Paywall] Purchase succeeded:", selectedPackage.identifier);
-        Alert.alert("Welcome!", "Thank you for your purchase.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") },
+        console.log("[Paywall] Purchase succeeded — plan:", selectedPlan);
+        Alert.alert("Welcome to Linen!", "Your journey begins now.", [
+          { text: "Begin", onPress: () => router.replace("/(tabs)") },
         ]);
       }
     } catch (error: any) {
@@ -242,36 +315,25 @@ export default function PaywallScreen() {
   };
 
   const handleWebMockPurchase = async () => {
-    if (!selectedPackage) return;
-    console.log("[Paywall] Web mock purchase initiated:", selectedPackage.identifier);
+    if (!resolvedPackage) return;
+    console.log("[Paywall] Web mock purchase initiated — plan:", selectedPlan);
     setWebMockState("processing");
     await new Promise((resolve) => setTimeout(resolve, 400));
     setWebMockState("idle");
     setWebMockDialogState("selecting");
   };
 
-  const handleDownloadApp = () => {
-    console.log("[Paywall] Download app tapped");
-    const iosUrl = "https://apps.apple.com/app/linen/id6744042512";
-    const androidUrl = "https://play.google.com/store/apps/details?id=com.linen.app";
-    Alert.alert(
-      "Download the App",
-      "To subscribe, please download our app from your device's app store.",
-      [
-        { text: "App Store (iOS)", onPress: () => Linking.openURL(iosUrl) },
-        { text: "Google Play", onPress: () => Linking.openURL(androidUrl) },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
-  };
+  // ── Derived ──────────────────────────────────────────────────────────────────
 
-  // ── Derived values ───────────────────────────────────────────────────────────
-
-  const surfaceBg = isDark ? colors.backgroundDark : colors.background;
-  const cardBg = isDark ? colors.cardDark : colors.card;
   const textPrimary = isDark ? colors.textDark : colors.text;
   const textSecond = isDark ? colors.textSecondaryDark : colors.textSecondary;
   const borderCol = isDark ? colors.borderDark : colors.border;
+  const cardBg = isDark ? colors.cardDark : colors.card;
+
+  const selectedPlanDef = PLANS.find((p) => p.key === selectedPlan)!;
+  const ctaLabel = selectedPlan === "premium"
+    ? "Begin with Full Depth — $8.99/mo"
+    : "Begin with Light & Supportive — $3.99/mo";
 
   // ── Already subscribed ───────────────────────────────────────────────────────
 
@@ -281,37 +343,31 @@ export default function PaywallScreen() {
         <SafeAreaView edges={["top", "bottom"]} style={styles.flex}>
           <Pressable
             onPress={handleClose}
-            style={[styles.closeButton, { backgroundColor: isDark ? colors.cardDark : colors.card, borderColor: borderCol }]}
+            style={[styles.closeButton, { backgroundColor: cardBg, borderColor: borderCol }]}
             hitSlop={12}
           >
-            <Ionicons name="close" size={18} color={isDark ? colors.textDark : colors.text} />
+            <Ionicons name="close" size={18} color={textPrimary} />
           </Pressable>
 
           <View style={styles.subscribedContent}>
             <View style={[styles.glowOrb, { backgroundColor: colors.primaryLight }]} />
-
             <Reanimated.View entering={FadeInDown.duration(500)} style={styles.subscribedInner}>
               <View style={[styles.badge, { backgroundColor: colors.primaryLight, borderColor: colors.primary + "30" }]}>
-                <Text style={[styles.badgeText, { color: colors.primary }]}>PRO MEMBER</Text>
+                <Text style={[styles.badgeText, { color: colors.primary }]}>MEMBER</Text>
               </View>
-
-              <Text style={[styles.subscribedTitle, { color: textPrimary }]}>
-                You're All Set
-              </Text>
+              <Text style={[styles.subscribedTitle, { color: textPrimary }]}>You're All Set</Text>
               <Text style={[styles.subscribedSubtitle, { color: textSecond }]}>
                 Welcome to the full Linen experience
               </Text>
-
               <View style={[styles.card, { backgroundColor: cardBg, borderColor: borderCol }]}>
                 <Text style={[styles.cardLabel, { color: textSecond }]}>UNLOCKED</Text>
-                {FEATURES.slice(0, 3).map((f, i) => (
+                {SHARED_FEATURES.slice(0, 3).map((f, i) => (
                   <View key={i} style={styles.unlockedRow}>
                     <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
                     <Text style={[styles.unlockedText, { color: textPrimary }]}>{f.title}</Text>
                   </View>
                 ))}
               </View>
-
               <Pressable
                 onPress={handleClose}
                 style={[styles.primaryButton, { backgroundColor: colors.primary }]}
@@ -347,10 +403,10 @@ export default function PaywallScreen() {
         {/* Close button */}
         <Pressable
           onPress={handleClose}
-          style={[styles.closeButton, { backgroundColor: isDark ? colors.cardDark : colors.card, borderColor: borderCol }]}
+          style={[styles.closeButton, { backgroundColor: cardBg, borderColor: borderCol }]}
           hitSlop={12}
         >
-          <Ionicons name="close" size={18} color={isDark ? colors.textDark : colors.text} />
+          <Ionicons name="close" size={18} color={textPrimary} />
         </Pressable>
 
         <ScrollView
@@ -363,23 +419,40 @@ export default function PaywallScreen() {
             <Text style={[styles.headline, { color: textPrimary }]}>
               A deeper knowing of{"\n"}yourself and God
             </Text>
-            <Text style={[styles.trialLine, { color: textPrimary }]}>
-              Begin with 7 days free
-            </Text>
-            <Text style={[styles.priceLine, { color: textSecond }]}>
-              Then $8.99/month
+            <Text style={[styles.subheadline, { color: textSecond }]}>
+              Choose the depth that feels right for you
             </Text>
           </Reanimated.View>
 
-          {/* ── Features section ── */}
+          {/* ── Plan cards ── */}
           <Reanimated.View
-            entering={FadeInDown.delay(150).duration(500)}
-            style={styles.featuresSection}
+            entering={FadeInDown.delay(120).duration(500)}
+            style={styles.plansSection}
           >
-            <Text style={[styles.sectionTitle, { color: textSecond }]}>
-              What you're stepping into
-            </Text>
-            {FEATURES.map((f, i) => (
+            {PLANS.map((plan) => (
+              <PlanCard
+                key={plan.key}
+                plan={plan}
+                selected={selectedPlan === plan.key}
+                onSelect={() => setSelectedPlan(plan.key)}
+                isDark={isDark}
+              />
+            ))}
+          </Reanimated.View>
+
+          {/* ── Divider with label ── */}
+          <Reanimated.View
+            entering={FadeInDown.delay(260).duration(400)}
+            style={styles.dividerRow}
+          >
+            <View style={[styles.dividerLine, { backgroundColor: borderCol }]} />
+            <Text style={[styles.dividerLabel, { color: textSecond }]}>What you're stepping into</Text>
+            <View style={[styles.dividerLine, { backgroundColor: borderCol }]} />
+          </Reanimated.View>
+
+          {/* ── Features ── */}
+          <View style={styles.featuresSection}>
+            {SHARED_FEATURES.map((f, i) => (
               <FeatureRow
                 key={i}
                 icon={f.icon}
@@ -389,7 +462,7 @@ export default function PaywallScreen() {
                 isDark={isDark}
               />
             ))}
-          </Reanimated.View>
+          </View>
 
           {/* ── No packages (Expo Go) ── */}
           {!isWeb && packages.length === 0 && !loading && (
@@ -407,7 +480,7 @@ export default function PaywallScreen() {
                 <Pressable
                   style={[styles.devButton, { borderColor: borderCol }]}
                   onPress={async () => {
-                    console.log("[Paywall] Dev: simulate purchase tapped");
+                    console.log("[Paywall] Dev: simulate purchase tapped — plan:", selectedPlan);
                     await mockNativePurchase();
                     router.replace("/(tabs)");
                   }}
@@ -425,33 +498,42 @@ export default function PaywallScreen() {
 
         {/* ── Bottom actions ── */}
         <Reanimated.View
-          entering={FadeInDown.delay(600).duration(500)}
-          style={[styles.bottomActions, { borderTopColor: "transparent", backgroundColor: isDark ? colors.backgroundDark + "F0" : colors.background + "F0" }]}
+          entering={FadeInDown.delay(500).duration(500)}
+          style={[
+            styles.bottomActions,
+            {
+              backgroundColor: isDark
+                ? colors.backgroundDark + "F4"
+                : colors.background + "F4",
+            },
+          ]}
         >
-          {/* Emotional bridge line */}
           <Text style={[styles.bridgeLine, { color: textSecond }]}>
             Stay with what's opening in you
           </Text>
 
           {isWeb ? (
             <>
-              <PrimaryButton
-                label="Begin your 7-day free trial"
-                onPress={handleWebMockPurchase}
-                disabled={!selectedPackage || webMockState === "processing"}
-                loading={webMockState === "processing"}
-              />
               <Pressable
-                style={styles.ghostButton}
-                onPress={handleRestore}
-                disabled={restoring}
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                  (!resolvedPackage || webMockState === "processing") && styles.buttonDisabled,
+                ]}
+                onPress={handleWebMockPurchase}
+                disabled={!resolvedPackage || webMockState === "processing"}
               >
+                {webMockState === "processing" ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>{ctaLabel}</Text>
+                )}
+              </Pressable>
+              <Pressable style={styles.ghostButton} onPress={handleRestore} disabled={restoring}>
                 {restoring ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>
-                    Restore Purchases
-                  </Text>
+                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>Restore Purchases</Text>
                 )}
               </Pressable>
               <Text style={[styles.legalText, { color: textSecond }]}>
@@ -460,39 +542,41 @@ export default function PaywallScreen() {
             </>
           ) : (
             <>
-              <PrimaryButton
-                label="Begin your 7-day free trial"
-                onPress={handlePurchase}
-                disabled={!selectedPackage || purchasing}
-                loading={purchasing}
-              />
-
               <Pressable
-                style={styles.ghostButton}
-                onPress={handleRestore}
-                disabled={restoring}
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                  (!resolvedPackage || purchasing) && styles.buttonDisabled,
+                ]}
+                onPress={handlePurchase}
+                disabled={!resolvedPackage || purchasing}
               >
+                {purchasing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>{ctaLabel}</Text>
+                )}
+              </Pressable>
+
+              <Pressable style={styles.ghostButton} onPress={handleRestore} disabled={restoring}>
                 {restoring ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>
-                    Restore Purchases
-                  </Text>
+                  <Text style={[styles.ghostButtonText, { color: textSecond }]}>Restore Purchases</Text>
                 )}
               </Pressable>
 
               <Text style={[styles.legalText, { color: textSecond }]}>
-                7-day free trial, then $8.99/month. Auto-renews unless canceled.
-                Cancel anytime before trial ends. Payment charged to your{" "}
-                {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account at
-                confirmation of purchase.
+                {selectedPlan === "premium" ? "$8.99" : "$3.99"}/month. Auto-renews unless canceled.
+                Cancel anytime. Payment charged to your{" "}
+                {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account at confirmation.
               </Text>
 
               {showDevBypass && (
                 <Pressable
                   style={styles.devBypassButton}
                   onPress={async () => {
-                    console.log("[Paywall] Dev bypass button tapped");
+                    console.log("[Paywall] Dev bypass tapped");
                     await bypassPaywall();
                     router.replace("/(tabs)");
                   }}
@@ -505,65 +589,46 @@ export default function PaywallScreen() {
         </Reanimated.View>
       </SafeAreaView>
 
-      {/* ── Web mock purchase dialog ── */}
+      {/* ── Web mock dialog ── */}
       {isWeb && webMockDialogState !== "hidden" && (
         <View style={styles.dialogOverlay}>
           <View style={[styles.dialogBox, { backgroundColor: isDark ? colors.cardDark : "#f2f2f7" }]}>
             {webMockDialogState === "selecting" && (
               <>
-                <Text style={[styles.dialogTitle, { color: isDark ? colors.textDark : colors.text }]}>
-                  Test Purchase
-                </Text>
-                <Text style={[styles.dialogBody, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
-                  {`⚠️ This is a test purchase for development only.\n\nPackage: ${selectedPackage?.identifier}\nPrice: ${selectedPackage?.product.priceString || "N/A"}`}
+                <Text style={[styles.dialogTitle, { color: textPrimary }]}>Test Purchase</Text>
+                <Text style={[styles.dialogBody, { color: textSecond }]}>
+                  {`⚠️ Development preview only.\n\nPlan: ${selectedPlanDef.label}\nPackage: ${resolvedPackage?.identifier ?? "—"}\nPrice: ${resolvedPackage?.product.priceString ?? selectedPlanDef.price + selectedPlanDef.period}`}
                 </Text>
                 <View style={[styles.dialogDivider, { backgroundColor: borderCol }]} />
-                <Pressable
-                  style={styles.dialogButton}
-                  onPress={() => setWebMockDialogState("failed")}
-                >
-                  <Text style={[styles.dialogButtonText, { color: colors.error }]}>
-                    Test Failed Purchase
-                  </Text>
+                <Pressable style={styles.dialogButton} onPress={() => setWebMockDialogState("failed")}>
+                  <Text style={[styles.dialogButtonText, { color: colors.error }]}>Test Failed Purchase</Text>
                 </Pressable>
                 <View style={[styles.dialogDivider, { backgroundColor: borderCol }]} />
                 <Pressable
                   style={styles.dialogButton}
                   onPress={() => {
-                    console.log("[Paywall] Web mock: valid purchase");
+                    console.log("[Paywall] Web mock: valid purchase — plan:", selectedPlan);
                     setWebMockDialogState("hidden");
                     mockWebPurchase();
                     router.replace("/(tabs)");
                   }}
                 >
-                  <Text style={[styles.dialogButtonText, { color: colors.primary }]}>
-                    Test Valid Purchase
-                  </Text>
+                  <Text style={[styles.dialogButtonText, { color: colors.primary }]}>Test Valid Purchase</Text>
                 </Pressable>
                 <View style={[styles.dialogDivider, { backgroundColor: borderCol }]} />
-                <Pressable
-                  style={styles.dialogButton}
-                  onPress={() => setWebMockDialogState("hidden")}
-                >
-                  <Text style={[styles.dialogButtonText, { color: colors.textSecondary }]}>
-                    Cancel
-                  </Text>
+                <Pressable style={styles.dialogButton} onPress={() => setWebMockDialogState("hidden")}>
+                  <Text style={[styles.dialogButtonText, { color: textSecond }]}>Cancel</Text>
                 </Pressable>
               </>
             )}
             {webMockDialogState === "failed" && (
               <>
-                <Text style={[styles.dialogTitle, { color: isDark ? colors.textDark : colors.text }]}>
-                  Purchase Failed
-                </Text>
-                <Text style={[styles.dialogBody, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                <Text style={[styles.dialogTitle, { color: textPrimary }]}>Purchase Failed</Text>
+                <Text style={[styles.dialogBody, { color: textSecond }]}>
                   Test purchase failure — no real transaction occurred.
                 </Text>
                 <View style={[styles.dialogDivider, { backgroundColor: borderCol }]} />
-                <Pressable
-                  style={styles.dialogButton}
-                  onPress={() => setWebMockDialogState("hidden")}
-                >
+                <Pressable style={styles.dialogButton} onPress={() => setWebMockDialogState("hidden")}>
                   <Text style={[styles.dialogButtonText, { color: colors.primary }]}>OK</Text>
                 </Pressable>
               </>
@@ -578,20 +643,10 @@ export default function PaywallScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  loadingText: {
-    fontSize: typography.body,
-    marginTop: spacing.sm,
-  },
+  flex: { flex: 1 },
+  centered: { justifyContent: "center", alignItems: "center", gap: spacing.md },
+  loadingText: { fontSize: typography.body, marginTop: spacing.sm },
 
-  // Close button
   closeButton: {
     position: "absolute",
     top: 56,
@@ -605,7 +660,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // Scroll
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: 56,
@@ -617,73 +671,126 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     paddingTop: spacing.xl * 1.5,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  badge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontSize: typography.caption,
-    fontWeight: typography.bold,
-    letterSpacing: 1.2,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
   },
   headline: {
     fontSize: 27,
-    fontWeight: typography.bold,
+    fontWeight: "700",
     textAlign: "center",
     lineHeight: 34,
     fontFamily: "Georgia",
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
   },
-  trialLine: {
-    fontSize: typography.h4,
-    fontWeight: typography.semibold,
+  subheadline: {
+    fontSize: typography.body,
     textAlign: "center",
-  },
-  priceLine: {
-    fontSize: typography.bodySmall,
-    textAlign: "center",
-    opacity: 0.7,
-    marginTop: 2,
+    lineHeight: 22,
+    opacity: 0.75,
   },
 
-  // Features section
-  featuresSection: {
+  // Plans
+  plansSection: {
     gap: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.xl,
   },
-  sectionTitle: {
+  planCard: {
+    borderRadius: borderRadius.xl,
+    overflow: "hidden",
+  },
+  planCardInner: {
+    flexDirection: "row",
+    padding: spacing.md,
+    gap: spacing.md,
+    alignItems: "flex-start",
+  },
+  planCardLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  planCardRight: {
+    alignItems: "center",
+    gap: 4,
+    paddingTop: 2,
+    minWidth: 64,
+  },
+  recommendedBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    alignItems: "center",
+  },
+  recommendedText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 1.4,
+  },
+  planLabel: {
     fontSize: typography.body,
-    fontWeight: typography.medium,
-    letterSpacing: 0.3,
-    textAlign: "center",
-    opacity: 0.88,
-    marginTop: spacing.xs,
+    fontWeight: "700",
+    lineHeight: 22,
+    fontFamily: "Georgia",
+  },
+  planTagline: {
+    fontSize: typography.bodySmall,
+    opacity: 0.7,
     marginBottom: 4,
   },
+  planFeatureList: {
+    gap: 5,
+  },
+  planFeatureRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  planFeatureText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  planPrice: {
+    fontSize: 22,
+    fontWeight: "700",
+    fontFamily: "Georgia",
+  },
+  planPeriod: {
+    fontSize: 11,
+    opacity: 0.65,
+    marginTop: -2,
+  },
+  planSelector: {
+    width: 22,
+    height: 22,
+    borderRadius: borderRadius.full,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.sm,
+  },
 
-  // Card (used in subscribed state + no-packages)
-  card: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+  // Divider
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
+    marginVertical: spacing.xs,
   },
-  cardLabel: {
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerLabel: {
     fontSize: typography.caption,
-    fontWeight: typography.semibold,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: spacing.xs,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+    opacity: 0.7,
+    textAlign: "center",
   },
 
-  // Feature row
+  // Features
+  featuresSection: {
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+  },
   featureRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -697,16 +804,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 2,
   },
-  featureIconText: {
-    fontSize: 20,
-  },
-  featureTextWrap: {
-    flex: 1,
-    gap: 4,
-  },
+  featureIconText: { fontSize: 20 },
+  featureTextWrap: { flex: 1, gap: 4 },
   featureTitle: {
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: "600",
     lineHeight: 22,
   },
   featureDesc: {
@@ -730,47 +832,42 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     alignItems: "center",
   },
-  devButtonText: {
-    fontSize: typography.bodySmall,
-    textAlign: "center",
+  devButtonText: { fontSize: typography.bodySmall, textAlign: "center" },
+
+  // Card (subscribed state)
+  card: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.sm,
+  },
+  cardLabel: {
+    fontSize: typography.caption,
+    fontWeight: "600",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: spacing.xs,
   },
 
   // Bottom actions
   bottomActions: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
-
-  // Bridge line
   bridgeLine: {
     fontSize: typography.bodySmall - 1,
     textAlign: "center",
-    opacity: 0.55,
-    marginBottom: spacing.sm,
-  },
-
-  // Primary button
-  primaryButtonWrap: {
-    gap: spacing.xs,
-    alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  tapFeedbackText: {
-    fontSize: typography.bodySmall,
-    color: colors.primary,
-    opacity: 0.75,
-    textAlign: "center",
-    fontStyle: "italic",
+    opacity: 0.5,
+    marginBottom: 2,
   },
   primaryButton: {
     height: 56,
     borderRadius: borderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.xl,
-    minWidth: 280,
+    paddingHorizontal: spacing.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
@@ -780,21 +877,12 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#fff",
     fontSize: typography.body,
-    fontWeight: typography.semibold,
+    fontWeight: "600",
     letterSpacing: 0.2,
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  ghostButton: {
-    paddingVertical: spacing.xs,
-    alignItems: "center",
-  },
-  ghostButtonText: {
-    fontSize: typography.bodySmall,
-    fontWeight: "300",
-    opacity: 0.6,
-  },
+  buttonDisabled: { opacity: 0.5 },
+  ghostButton: { paddingVertical: spacing.xs, alignItems: "center" },
+  ghostButtonText: { fontSize: typography.bodySmall, fontWeight: "300", opacity: 0.6 },
   legalText: {
     fontSize: 10,
     textAlign: "center",
@@ -839,9 +927,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
   },
+  badge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: typography.caption,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+  },
   subscribedTitle: {
     fontSize: 34,
-    fontWeight: typography.bold,
+    fontWeight: "700",
     textAlign: "center",
     fontFamily: "Georgia",
   },
@@ -858,7 +957,7 @@ const styles = StyleSheet.create({
   },
   unlockedText: {
     fontSize: typography.body,
-    fontWeight: typography.medium,
+    fontWeight: "500",
   },
 
   // Web dialog
@@ -877,7 +976,7 @@ const styles = StyleSheet.create({
   },
   dialogTitle: {
     fontSize: 17,
-    fontWeight: typography.semibold,
+    fontWeight: "600",
     textAlign: "center",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
@@ -890,15 +989,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     lineHeight: 18,
   },
-  dialogDivider: {
-    height: StyleSheet.hairlineWidth,
-  },
-  dialogButton: {
-    paddingVertical: spacing.md,
-    alignItems: "center",
-  },
-  dialogButtonText: {
-    fontSize: 17,
-    fontWeight: typography.medium,
-  },
+  dialogDivider: { height: StyleSheet.hairlineWidth },
+  dialogButton: { paddingVertical: spacing.md, alignItems: "center" },
+  dialogButtonText: { fontSize: 17, fontWeight: "500" },
 });

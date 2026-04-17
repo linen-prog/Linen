@@ -8,6 +8,12 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GradientBackground } from '@/components/GradientBackground';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { recordAIMessage } from '@/utils/chatSessionTracker';
+
+// Module-level flag: once dismissed, don't show again this session
+let upgradePromptDismissedThisSession = false;
 
 interface Message {
   id: string;
@@ -37,11 +43,16 @@ export default function CheckInScreen() {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
+  // Subscription context — used to gate upgrade prompt to base_access only
+  const { isSubscribed } = useSubscription();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [draftMessage, setDraftMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [companionName, setCompanionName] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const upgradePromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [showPrayerOptions, setShowPrayerOptions] = useState(false);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
@@ -111,6 +122,21 @@ export default function CheckInScreen() {
     });
     return () => sub.remove();
   }, []);
+
+  // Cleanup upgrade prompt timer on unmount
+  useEffect(() => {
+    return () => {
+      if (upgradePromptTimerRef.current) {
+        clearTimeout(upgradePromptTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleUpgradePromptDismiss = () => {
+    console.log('[CheckIn] Upgrade prompt dismissed for this session');
+    upgradePromptDismissedThisSession = true;
+    setShowUpgradePrompt(false);
+  };
 
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -277,6 +303,38 @@ export default function CheckInScreen() {
           flatListRef.current.scrollToEnd({ animated: true });
         }
       }, 100);
+
+      // Track session + message count, then maybe show upgrade prompt
+      // Only for base_access subscribers (isSubscribed = base tier in this app)
+      // Not for premium (handled by checking entitlement in SubscriptionContext)
+      // We use isSubscribed as a proxy for "has any subscription" — the prompt
+      // is only for base_access, so we show it when isSubscribed is true but
+      // the user hasn't upgraded to premium (premium check is done via entitlement
+      // key stored in app.json; here we rely on the base_access flag being the
+      // only active entitlement for base subscribers).
+      if (isSubscribed && !upgradePromptDismissedThisSession) {
+        const { sessionCount, totalMessages } = await recordAIMessage();
+        const shouldPrompt =
+          sessionCount === 3 ||
+          totalMessages === 15 ||
+          (messages.length + 2 >= 20); // +2 for the user msg + this AI msg
+
+        if (shouldPrompt) {
+          console.log('[CheckIn] Upgrade prompt trigger — sessions:', sessionCount, '| messages:', totalMessages);
+          // 1.5 second delay after AI response before showing
+          if (upgradePromptTimerRef.current) {
+            clearTimeout(upgradePromptTimerRef.current);
+          }
+          upgradePromptTimerRef.current = setTimeout(() => {
+            if (!upgradePromptDismissedThisSession) {
+              setShowUpgradePrompt(true);
+            }
+          }, 1500);
+        } else {
+          // Still record even if not triggering a prompt
+          console.log('[CheckIn] Session tracking updated — sessions:', sessionCount, '| messages:', totalMessages);
+        }
+      }
     } catch (error) {
       console.error('[CheckIn] Failed to send message:', error);
       setIsLoading(false);
@@ -1523,6 +1581,12 @@ export default function CheckInScreen() {
         </Modal>
 
         {/* Floating Tab Bar */}
+
+        {/* Soft upgrade prompt — shown between messages for base_access subscribers */}
+        <UpgradePrompt
+          visible={showUpgradePrompt}
+          onDismiss={handleUpgradePromptDismiss}
+        />
 
     </GradientBackground>
   );
