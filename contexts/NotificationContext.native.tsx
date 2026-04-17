@@ -20,6 +20,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   useCallback,
   ReactNode,
 } from "react";
@@ -29,8 +30,7 @@ import Constants from "expo-constants";
 
 // Import auth hook for user targeting (validated at setup time)
 import { useAuth } from "./AuthContext";
-import { getBearerToken } from "@/lib/auth";
-import { registerPushSubscription } from "@/utils/api";
+import { authenticatedPost, authenticatedDelete } from "@/utils/api";
 
 // Read App ID from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -77,6 +77,30 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastNotification, setLastNotification] = useState<Record<string, unknown> | null>(null);
+
+  // Refs so OneSignal event listeners can read the latest values without re-subscribing
+  const currentUserIdRef = useRef<string | null>(null);
+  const lastRegisteredSubscriptionIdRef = useRef<string | null>(null);
+
+  const registerPushSubscription = useCallback(async (subscriptionId: string | null | undefined) => {
+    if (!subscriptionId) return;
+    const uid = currentUserIdRef.current;
+    if (!uid) return;
+    if (lastRegisteredSubscriptionIdRef.current === subscriptionId) return;
+
+    try {
+      await authenticatedPost("/api/push-subscriptions", {
+        oneSignalSubscriptionId: subscriptionId,
+        platform: Platform.OS,
+      });
+      lastRegisteredSubscriptionIdRef.current = subscriptionId;
+      if (__DEV__) {
+        console.log("[OneSignal] Registered push subscription:", subscriptionId);
+      }
+    } catch (error) {
+      console.error("[OneSignal] Failed to register push subscription:", error);
+    }
+  }, []);
 
   // Initialize OneSignal on mount
   useEffect(() => {
@@ -127,9 +151,20 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       };
       OneSignal.Notifications.addEventListener("permissionChange", permissionHandler);
 
+      // Track OneSignal push subscription ID and persist it server-side
+      // so we have a fallback to external_id targeting for this device.
+      const subscriptionChangeHandler = (event: { current: { id?: string | null } }) => {
+        const newId = event?.current?.id ?? null;
+        if (newId && newId !== lastRegisteredSubscriptionIdRef.current) {
+          void registerPushSubscription(newId);
+        }
+      };
+      OneSignal.User.pushSubscription.addEventListener("change", subscriptionChangeHandler);
+
       return () => {
         OneSignal.Notifications.removeEventListener("foregroundWillDisplay", foregroundHandler);
         OneSignal.Notifications.removeEventListener("permissionChange", permissionHandler);
+        OneSignal.User.pushSubscription.removeEventListener("change", subscriptionChangeHandler);
       };
     } catch (error) {
       console.error("[OneSignal] Failed to initialize:", error);
@@ -142,48 +177,43 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   useEffect(() => {
     if (isWeb || !ONESIGNAL_APP_ID) return;
 
+    const previousUserId = currentUserIdRef.current;
+    currentUserIdRef.current = user?.id ?? null;
+
     try {
       if (user?.id) {
         OneSignal.login(user.id);
         if (__DEV__) {
           console.log("[OneSignal] Linked user ID:", user.id);
         }
+        // Register the current subscription ID with the backend.
+        // If it's not ready yet, the "change" observer will handle it when it becomes available.
+        OneSignal.User.pushSubscription
+          .getIdAsync()
+          .then((subscriptionId: string | null) => {
+            if (subscriptionId) void registerPushSubscription(subscriptionId);
+          })
+          .catch((error: unknown) => {
+            console.error("[OneSignal] Failed to read push subscription id:", error);
+          });
       } else {
+        // User logged out — detach this device's subscription from the previous user
+        // and clear OneSignal's external_id mapping.
+        const subscriptionIdToRemove = lastRegisteredSubscriptionIdRef.current;
+        if (previousUserId && subscriptionIdToRemove) {
+          void authenticatedDelete(
+            `/api/push-subscriptions/${encodeURIComponent(subscriptionIdToRemove)}`
+          ).catch((error) => {
+            console.error("[OneSignal] Failed to unregister push subscription:", error);
+          });
+        }
+        lastRegisteredSubscriptionIdRef.current = null;
         OneSignal.logout();
       }
     } catch (error) {
       console.error("[OneSignal] Failed to update user:", error);
     }
-  }, [user?.id]);
-
-  // Register push subscription with backend when user is authenticated
-  useEffect(() => {
-    if (isWeb || !ONESIGNAL_APP_ID || !user?.id) return;
-
-    const syncSubscription = async () => {
-      try {
-        const subscriptionId = OneSignal.User.pushSubscription.id;
-        if (!subscriptionId) {
-          console.log("[OneSignal] No subscription ID available yet, skipping backend registration");
-          return;
-        }
-
-        const token = await getBearerToken();
-        if (!token) {
-          console.log("[OneSignal] No auth token available, skipping backend registration");
-          return;
-        }
-
-        const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
-        console.log("[OneSignal] Registering push subscription with backend:", { subscriptionId, platform });
-        await registerPushSubscription(token, subscriptionId, platform as 'ios' | 'android' | 'web');
-      } catch (error) {
-        console.error("[OneSignal] Failed to register push subscription with backend:", error);
-      }
-    };
-
-    syncSubscription();
-  }, [user?.id]);
+  }, [user?.id, registerPushSubscription]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (isWeb) return false;
