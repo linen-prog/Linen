@@ -24,6 +24,7 @@ import { BACKEND_URL } from "@/utils/api";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
+import { isPaywallSkipped } from "@/utils/paywallSkipFlag";
 // Note: Error logging is auto-initialized via index.ts import
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -246,6 +247,9 @@ function SubscriptionRedirect() {
     const onOnboarding = pathname.startsWith("/onboarding");
     if (onOnboarding) return;
 
+    // User explicitly skipped the paywall — do not redirect back.
+    if (isPaywallSkipped()) return;
+
     let cancelled = false;
     isOnboardingComplete().then((done) => {
       if (cancelled) return;
@@ -255,14 +259,14 @@ function SubscriptionRedirect() {
       }
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
-      if (!isSubscribed) {
+      if (!isSubscribed && !isPaywallSkipped()) {
         router.replace("/paywall");
       }
     }).catch(() => {
       if (cancelled) return;
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
-      if (!isSubscribed) {
+      if (!isSubscribed && !isPaywallSkipped()) {
         router.replace("/paywall");
       }
     });

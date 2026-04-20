@@ -36,6 +36,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { colors, typography, spacing, borderRadius } from "@/styles/commonStyles";
+import { setPaywallSkipped } from "@/utils/paywallSkipFlag";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -292,7 +293,8 @@ export default function PaywallScreen() {
   };
 
   const handleClose = () => {
-    console.log("[Paywall] Close tapped");
+    console.log("[Paywall] Close/skip tapped — setting paywallSkipped flag and navigating to tabs");
+    setPaywallSkipped(true);
     router.replace("/(tabs)");
   };
 
