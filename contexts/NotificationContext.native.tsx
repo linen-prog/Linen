@@ -100,7 +100,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     } catch (error) {
       console.error("[OneSignal] Failed to register push subscription:", error);
     }
-  }, []);
+  }, [registerPushSubscription]);
 
   // Initialize OneSignal on mount
   useEffect(() => {
