@@ -6,8 +6,8 @@ import { polyfillGlobal } from 'react-native/Libraries/Utilities/PolyfillFunctio
 polyfillGlobal('fetch', () => expoFetch);
 
 // Dynamic imports so missing packages don't break the bundle
-// eslint-disable-next-line import/no-unresolved
 Promise.all([
+  // eslint-disable-next-line import/no-unresolved
   import('@stardazed/streams-text-encoding').catch(() => null),
   import('@ungap/structured-clone').catch(() => null),
 ]).then(([streamsModule, structuredCloneModule]) => {

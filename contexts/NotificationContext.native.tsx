@@ -100,7 +100,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     } catch (error) {
       console.error("[OneSignal] Failed to register push subscription:", error);
     }
-  }, [registerPushSubscription]);
+  }, []);
 
   // Initialize OneSignal on mount
   useEffect(() => {
@@ -171,7 +171,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registerPushSubscription]);
 
   // Sync OneSignal external user ID with authenticated user
   useEffect(() => {
