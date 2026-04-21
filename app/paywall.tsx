@@ -70,7 +70,6 @@ export default function PaywallScreen() {
     purchasePackage,
     restorePurchases,
     mockWebPurchase,
-    mockNativePurchase,
   } = useSubscription();
 
   const [selectedPackage, setSelectedPackage] =
@@ -360,17 +359,7 @@ export default function PaywallScreen() {
                   To test purchases, use a development build or production build.
                   {"\n"}This is expected — your onboarding and storage are working correctly.
                 </Text>
-                {__DEV__ && (
-                  <TouchableOpacity
-                    style={styles.devMockButton}
-                    onPress={async () => {
-                      await mockNativePurchase();
-                      router.replace("/(tabs)/(home)");
-                    }}
-                  >
-                    <Text style={styles.devMockButtonText}>Dev: Simulate Purchase</Text>
-                  </TouchableOpacity>
-                )}
+
               </View>
             )}
           </ScrollView>
@@ -717,21 +706,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.85)",
     textAlign: "center",
   },
-  devMockButton: {
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    borderStyle: "dashed",
-    alignItems: "center",
-  },
-  devMockButtonText: {
-    color: "rgba(255, 255, 255, 0.7)",
-    fontSize: 13,
-    textAlign: "center",
-  },
+
   bottomActions: {
     padding: 24,
     paddingBottom: 32,
