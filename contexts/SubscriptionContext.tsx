@@ -234,16 +234,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           // Log in with your app's user ID to sync subscriptions across devices
           await Purchases.logIn(user.id);
         } else {
-          // Anonymous user - only log out if RevenueCat has a non-anonymous user logged in
-          try {
-            const customerInfo = await Purchases.getCustomerInfo();
-            const isAnonymous = customerInfo.originalAppUserId.startsWith("$RCAnonymousID:");
-            if (!isAnonymous) {
-              await Purchases.logOut();
-            }
-          } catch {
-            // Silently swallow any errors during logout guard check
-          }
+          // Anonymous user - only log out once auth has fully resolved
+          await Purchases.logOut();
         }
         await checkSubscription();
       } catch (error) {
