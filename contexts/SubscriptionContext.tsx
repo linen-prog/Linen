@@ -135,6 +135,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           await fetchOfferingsViaRest();
           // Restore mock purchase state persisted from a previous session
           if (typeof window !== "undefined" && localStorage.getItem(MOCK_PURCHASE_KEY) === "true") {
+            console.log("[SubscriptionContext] isSubscribed set to:", true, "(web mock restore)");
             setIsSubscribed(true);
           }
           setLoading(false);
@@ -149,14 +150,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             "[RevenueCat] react-native-purchases native module not available. " +
             "Purchases require a custom dev build or production build, not standard Expo Go."
           );
-          // In DEV mode, restore any previously simulated subscription state from expo-secure-store.
-          // This lets you test subscription-gated features in standard Expo Go across reloads.
+          // In DEV mode, clear any stale mock keys so they never bypass the real entitlement check.
           if (__DEV__) {
-            const mockState = await SecureStore.getItemAsync(MOCK_NATIVE_KEY).catch(() => null);
-            if (mockState === "true") {
-              setIsSubscribed(true);
-            }
+            await SecureStore.deleteItemAsync(MOCK_NATIVE_KEY).catch(() => {});
+            await SecureStore.deleteItemAsync(NATIVE_PURCHASE_KEY).catch(() => {});
+            console.log("[SubscriptionContext] DEV: cleared mock/cache keys — isSubscribed stays false");
           }
+          console.log("[SubscriptionContext] isSubscribed set to:", false, "(native module unavailable)");
           setLoading(false);
           return;
         }
@@ -196,8 +196,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             const hasEntitlement = hasAnyActiveEntitlement(
               customerInfo.entitlements.active as Record<string, unknown>
             );
-            // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
-            // in-memory only and won't be known to RC after a configure() call on reload.
+            console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(customerInfoUpdateListener)", { activeEntitlements: Object.keys(customerInfo.entitlements.active) });
             setIsSubscribed(hasEntitlement);
           }
         );
@@ -272,12 +271,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const hasEntitlement = hasAnyActiveEntitlement(
         customerInfo.entitlements.active as Record<string, unknown>
       );
+      console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(checkSubscription)", { activeEntitlements: Object.keys(customerInfo.entitlements.active) });
       setIsSubscribed(hasEntitlement);
-      if (hasEntitlement) {
-        await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
-      } else if (!__DEV__) {
-        await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "false").catch(() => {});
-      }
+      // Always persist the authoritative result — including in __DEV__ — so the cache
+      // never holds a stale "true" after a real entitlement check returns false.
+      await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, hasEntitlement ? "true" : "false").catch(() => {});
     } catch (error) {
       console.error("[RevenueCat] Failed to check subscription:", error);
       // Don't reset isSubscribed on error — the customerInfoUpdateListener
@@ -301,6 +299,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         hasEntitlement,
         activeEntitlements: Object.keys(customerInfo.entitlements.active),
       });
+      console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(purchasePackage)");
       setIsSubscribed(hasEntitlement);
       if (hasEntitlement) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
@@ -330,11 +329,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         hasEntitlement,
         activeEntitlements: Object.keys(customerInfo.entitlements.active),
       });
+      console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(restorePurchases)");
       setIsSubscribed(hasEntitlement);
-      // In __DEV__: don't clear the cache on restore failure (test store purchases are ephemeral)
-      if (hasEntitlement || !__DEV__) {
-        await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, hasEntitlement ? "true" : "false").catch(() => {});
-      }
+      // Always persist the authoritative result so the cache never holds a stale "true".
+      await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, hasEntitlement ? "true" : "false").catch(() => {});
       return hasEntitlement;
     } catch (error) {
       console.error("[RevenueCat] Restore failed:", error);
@@ -347,14 +345,16 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     if (typeof window !== "undefined") {
       localStorage.setItem(MOCK_PURCHASE_KEY, "true");
     }
+    console.log("[SubscriptionContext] isSubscribed set to:", true, "(mockWebPurchase)");
     setIsSubscribed(true);
   };
 
   // Dev-only: simulate a purchase in standard Expo Go for testing subscription-gated features.
-  // Persists to expo-secure-store so the state survives Expo Go reloads.
+  // NOTE: mockNativePurchase is NEVER called automatically — only when explicitly invoked by the user.
   const mockNativePurchase = async (): Promise<void> => {
     if (!__DEV__ || isWeb) return;
     await SecureStore.setItemAsync(MOCK_NATIVE_KEY, "true").catch(() => {});
+    console.log("[SubscriptionContext] isSubscribed set to:", true, "(mockNativePurchase — explicit dev call)");
     setIsSubscribed(true);
   };
 
