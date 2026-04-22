@@ -58,6 +58,48 @@ const MOCK_PURCHASE_KEY = `rc_mock_purchased_${_PROJECT_SCOPE}`;
 const MOCK_NATIVE_KEY = `rc_dev_native_${_PROJECT_SCOPE}`;
 // Scoped native cache key — persists real subscription state for fast restore on bundle reload
 const NATIVE_PURCHASE_KEY = `rc_subscribed_${_PROJECT_SCOPE}`;
+// TTL for the native subscription cache: 24 hours in milliseconds
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface CacheEntry {
+  value: boolean;
+  ts: number;
+}
+
+/** Write a timestamped cache entry to SecureStore */
+async function writeCacheEntry(key: string, value: boolean): Promise<void> {
+  const entry: CacheEntry = { value, ts: Date.now() };
+  await SecureStore.setItemAsync(key, JSON.stringify(entry)).catch(() => {});
+}
+
+/**
+ * Read a cache entry from SecureStore.
+ * Returns the cached boolean if the entry exists and is within TTL.
+ * Returns null if missing, expired, or unparseable (treats old plain-string values as expired).
+ */
+async function readCacheEntry(key: string): Promise<boolean | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(key);
+    if (!raw) return null;
+    let entry: CacheEntry;
+    try {
+      entry = JSON.parse(raw) as CacheEntry;
+    } catch {
+      // Old plain-string format ("true"/"false") — treat as expired
+      console.log("[SubscriptionContext] Cache entry is legacy plain-string format, treating as expired");
+      return null;
+    }
+    if (typeof entry.value !== "boolean" || typeof entry.ts !== "number") return null;
+    const age = Date.now() - entry.ts;
+    if (age > CACHE_TTL_MS) {
+      console.log("[SubscriptionContext] Cache entry expired (age:", Math.round(age / 3600000), "h), ignoring");
+      return null;
+    }
+    return entry.value;
+  } catch {
+    return null;
+  }
+}
 
 interface SubscriptionContextType {
   /** Whether the user has an active subscription */
@@ -298,14 +340,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       );
       console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(checkSubscription)", { activeEntitlements: Object.keys(customerInfo.entitlements.active) });
       setIsSubscribed(hasEntitlement);
-      // Always persist the authoritative result — including in __DEV__ — so the cache
-      // never holds a stale "true" after a real entitlement check returns false.
-      await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, hasEntitlement ? "true" : "false").catch(() => {});
+      // Always persist the authoritative result with a fresh timestamp so the
+      // cache never holds a stale value after a real entitlement check.
+      await writeCacheEntry(NATIVE_PURCHASE_KEY, hasEntitlement);
     } catch (error) {
       console.error("[RevenueCat] Failed to check subscription:", error);
-      // Don't reset isSubscribed on error — the customerInfoUpdateListener
-      // already set it from local cache after configure(). Overriding with false
-      // would incorrectly show the paywall to subscribed users on network errors.
+      // On network error, fall back to the cache — but only if it is still fresh.
+      // An expired or missing cache entry defaults to false so a stale "true"
+      // can never bypass the paywall indefinitely.
+      const cached = await readCacheEntry(NATIVE_PURCHASE_KEY);
+      const fallback = cached === true;
+      console.log("[SubscriptionContext] checkSubscription error fallback — cached:", cached, "→ isSubscribed:", fallback);
+      setIsSubscribed(fallback);
     }
   };
 
@@ -326,9 +372,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       });
       console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(purchasePackage)");
       setIsSubscribed(hasEntitlement);
-      if (hasEntitlement) {
-        await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
-      }
+      await writeCacheEntry(NATIVE_PURCHASE_KEY, hasEntitlement);
       return hasEntitlement;
     } catch (error: any) {
       // Don't treat user cancellation as an error
@@ -356,8 +400,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       });
       console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(restorePurchases)");
       setIsSubscribed(hasEntitlement);
-      // Always persist the authoritative result so the cache never holds a stale "true".
-      await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, hasEntitlement ? "true" : "false").catch(() => {});
+      // Always persist the authoritative result with a fresh timestamp.
+      await writeCacheEntry(NATIVE_PURCHASE_KEY, hasEntitlement);
       return hasEntitlement;
     } catch (error) {
       console.error("[RevenueCat] Restore failed:", error);
