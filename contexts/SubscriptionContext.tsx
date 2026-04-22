@@ -110,17 +110,25 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
-    // Mock package with real prices from RevenueCat dashboard
-    const mockPackage = {
-      identifier: "$rc_monthly",
+    // Two mock packages matching the real RevenueCat dashboard tiers
+    const basePackage = {
+      identifier: "base",
+      product: {
+        title: "Base",
+        priceString: "$3.99",
+        description: "A gentle daily companion for reflection, encouragement, and light support.",
+      },
+    };
+    const premiumPackage = {
+      identifier: "premium",
       product: {
         title: "Premium",
-        priceString: "$3.99/month",
-        description: "Unlock all premium features",
+        priceString: "$8.99",
+        description: "A deeper, more personalized space for ongoing reflection, richer AI support, and full access.",
       },
     };
 
-    setPackages([mockPackage] as PurchasesPackage[]);
+    setPackages([basePackage, premiumPackage] as PurchasesPackage[]);
     console.log("[revenuecat] Web preview: showing real prices from dashboard");
   };
 

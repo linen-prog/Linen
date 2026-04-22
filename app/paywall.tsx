@@ -198,7 +198,7 @@ export default function PaywallScreen() {
     (packages.length >= 1 ? packages[packages.length - 1] : null);
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const basePrice = resolvedBase?.product?.priceString ?? "$3.99";
+  const basePrice = basePackage?.product?.priceString ?? "$3.99";
   const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99";
   const noOfferings = !isWeb && packages.length === 0;
   const anyPurchasing = purchasingId !== null;
