@@ -15,13 +15,13 @@ export function registerPushSubscriptionRoutes(app: App) {
         tags: ['push-subscriptions'],
         body: {
           type: 'object',
-          required: ['oneSignalSubscriptionId', 'platform'],
+          required: ['user_id', 'onesignal_subscription_id'],
           properties: {
-            oneSignalSubscriptionId: { type: 'string', description: 'OneSignal subscription ID' },
+            user_id: { type: 'string', description: 'User ID' },
+            onesignal_subscription_id: { type: 'string', description: 'OneSignal subscription ID' },
             platform: {
               type: 'string',
-              enum: ['ios', 'android', 'web'],
-              description: 'Platform type',
+              description: 'Platform type (optional)',
             },
           },
         },
@@ -30,7 +30,13 @@ export function registerPushSubscriptionRoutes(app: App) {
             description: 'Subscription saved successfully',
             type: 'object',
             properties: {
-              success: { type: 'boolean' },
+              id: { type: 'string', format: 'uuid' },
+              user_id: { type: 'string' },
+              onesignal_subscription_id: { type: 'string' },
+              platform: { type: 'string' },
+              created_at: { type: 'string', format: 'date-time' },
+              updated_at: { type: 'string', format: 'date-time' },
+              last_seen_at: { type: 'string', format: 'date-time' },
             },
           },
           400: {
@@ -51,45 +57,40 @@ export function registerPushSubscriptionRoutes(app: App) {
       },
     },
     async (request: FastifyRequest<{
-      Body: { oneSignalSubscriptionId: string; platform: 'ios' | 'android' | 'web' };
+      Body: { user_id: string; onesignal_subscription_id: string; platform?: string };
     }>, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { oneSignalSubscriptionId, platform } = request.body;
+      const { user_id, onesignal_subscription_id, platform } = request.body;
 
       // Validate input
-      if (!oneSignalSubscriptionId || typeof oneSignalSubscriptionId !== 'string') {
-        app.logger.warn(
-          { userId: session.user.id },
-          'Missing or invalid oneSignalSubscriptionId'
-        );
-        return reply.status(400).send({ error: 'oneSignalSubscriptionId is required' });
+      if (!user_id || typeof user_id !== 'string') {
+        app.logger.warn({ userId: session.user.id }, 'Missing or invalid user_id');
+        return reply.status(400).send({ error: 'user_id is required' });
       }
 
-      if (!platform || !['ios', 'android', 'web'].includes(platform)) {
-        app.logger.warn(
-          { userId: session.user.id, platform },
-          'Missing or invalid platform'
-        );
-        return reply.status(400).send({ error: 'Valid platform (ios, android, web) is required' });
+      if (!onesignal_subscription_id || typeof onesignal_subscription_id !== 'string') {
+        app.logger.warn({ userId: session.user.id }, 'Missing or invalid onesignal_subscription_id');
+        return reply.status(400).send({ error: 'onesignal_subscription_id is required' });
       }
 
       app.logger.info(
-        { userId: session.user.id, platform, subscriptionId: oneSignalSubscriptionId },
+        { userId: session.user.id, targetUserId: user_id, subscriptionId: onesignal_subscription_id, platform },
         'Upserting push subscription'
       );
 
       try {
         const now = new Date();
+        const platformValue = (platform as 'ios' | 'android' | 'web') || 'web';
 
-        // Upsert: try to insert, if conflict update last_seen_at and updated_at
-        await app.db
+        // Upsert: try to insert, if conflict update platform, updated_at, and last_seen_at
+        const result = await app.db
           .insert(schema.pushSubscriptions)
           .values({
-            userId: session.user.id,
-            oneSignalSubscriptionId,
-            platform,
+            userId: user_id,
+            oneSignalSubscriptionId: onesignal_subscription_id,
+            platform: platformValue,
             createdAt: now,
             updatedAt: now,
             lastSeenAt: now,
@@ -97,20 +98,32 @@ export function registerPushSubscriptionRoutes(app: App) {
           .onConflictDoUpdate({
             target: [schema.pushSubscriptions.userId, schema.pushSubscriptions.oneSignalSubscriptionId],
             set: {
+              platform: platformValue,
               lastSeenAt: now,
               updatedAt: now,
             },
-          });
+          })
+          .returning();
 
         app.logger.info(
-          { userId: session.user.id, subscriptionId: oneSignalSubscriptionId },
+          { userId: session.user.id, targetUserId: user_id, subscriptionId: onesignal_subscription_id },
           'Push subscription saved'
         );
 
-        return reply.send({ success: true });
+        const row = Array.isArray(result) ? result[0] : result;
+
+        return reply.send({
+          id: row.id,
+          user_id: row.userId,
+          onesignal_subscription_id: row.oneSignalSubscriptionId,
+          platform: row.platform,
+          created_at: row.createdAt,
+          updated_at: row.updatedAt,
+          last_seen_at: row.lastSeenAt,
+        });
       } catch (error) {
         app.logger.error(
-          { err: error, userId: session.user.id, subscriptionId: oneSignalSubscriptionId },
+          { err: error, userId: session.user.id, targetUserId: user_id, subscriptionId: onesignal_subscription_id },
           'Failed to save push subscription'
         );
         throw error;
