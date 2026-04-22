@@ -2,7 +2,7 @@
   "expo": {
     "name": "Linen",
     "slug": "linen",
-    "version": "1.0.3",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
     "userInterfaceStyle": "automatic",
@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.linen.linen",
+      "buildNumber": "28",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Linen uses your location to provide personalized content and community features near you.",
