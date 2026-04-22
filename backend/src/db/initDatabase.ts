@@ -656,7 +656,7 @@ export async function initializeDatabase(db: any, app?: App) {
     // Seed test community post with artwork_url
     try {
       const seedUserId = 'seed-user-001';
-      const seedTimestamp = new Date();
+      const seedTimestamp = new Date().toISOString();
 
       // Use raw SQL to insert with ON CONFLICT DO NOTHING
       await db.execute(sql`
@@ -721,10 +721,10 @@ export async function initializeDatabase(db: any, app?: App) {
 
         if (userId) {
           const now = new Date();
-          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-          const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+          const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+          const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
           await db.execute(sql`
             INSERT INTO "notifications" (id, user_id, type, message, read, post_id, created_at)
