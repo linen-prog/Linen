@@ -1,8 +1,8 @@
 /**
  * Paywall Screen — Two-tier pricing (Base + Premium)
  *
- * Deep purple gradient background matching the original screenshot aesthetic.
- * Stacked vertical plan cards with colorful rounded-square feature icons.
+ * Warm cream/beige background with white plan cards.
+ * Tapping a card selects it; CTA button label updates to match.
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -18,103 +18,38 @@ import {
   Animated,
   Pressable,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PurchasesPackage } from "react-native-purchases";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
-// ─── Purple palette ──────────────────────────────────────────────────────────
-const PURPLE = {
-  gradTop: "#4A3878",
-  gradMid: "#6B5B9E",
-  gradBot: "#8B7BB8",
-  cardBg: "rgba(255,255,255,0.13)",
-  cardBgPremium: "rgba(255,255,255,0.20)",
-  cardBorder: "rgba(255,255,255,0.18)",
-  cardBorderPremium: "rgba(255,255,255,0.50)",
-  white: "#FFFFFF",
-  whiteAlpha90: "rgba(255,255,255,0.90)",
-  whiteAlpha70: "rgba(255,255,255,0.70)",
-  whiteAlpha50: "rgba(255,255,255,0.50)",
-  whiteAlpha30: "rgba(255,255,255,0.30)",
-  whiteAlpha20: "rgba(255,255,255,0.20)",
-  whiteAlpha15: "rgba(255,255,255,0.15)",
-  badgeBg: "rgba(255,255,255,0.20)",
-  sectionLabel: "rgba(255,255,255,0.60)",
-  iconPurple: "#7C5CBF",
-  iconGreen: "#4CAF82",
-  iconBrown: "#A0785A",
-  iconRed: "#E05C5C",
-  iconBlue: "#5B8FD4",
-  iconGold: "#D4A843",
-  recommendedBg: "rgba(255,200,50,0.9)",
+// ─── Palette ─────────────────────────────────────────────────────────────────
+const C = {
+  bg: "#F5F0E8",
+  cardBg: "#FFFFFF",
+  selectedBorder: "#6B9E6B",
+  selectedPrice: "#4A7C4A",
+  ctaBg: "#8BAF8B",
+  ctaText: "#FFFFFF",
+  titleText: "#1A1A1A",
+  descText: "#666666",
+  badgeBg: "#6B9E6B",
+  badgeText: "#FFFFFF",
+  closeBg: "#E8E4DC",
+  closeText: "#555555",
+  restoreText: "#888888",
+  legalText: "#AAAAAA",
+  skipText: "#BBBBBB",
+  cardShadow: "#00000014",
 };
 
-// ─── Feature definitions ─────────────────────────────────────────────────────
-interface Feature {
-  icon: string;
-  iconBg: string;
-  title: string;
-  subtitle: string;
-}
-
-const BASE_FEATURES: Feature[] = [
-  {
-    icon: "🎁",
-    iconBg: PURPLE.iconPurple,
-    title: "Daily Gift",
-    subtitle: "1 gift per day",
-  },
-  {
-    icon: "💬",
-    iconBg: PURPLE.iconGreen,
-    title: "Limited AI Chat",
-    subtitle: "15 messages or 3 sessions",
-  },
-  {
-    icon: "🧘",
-    iconBg: PURPLE.iconBrown,
-    title: "Somatic Library",
-    subtitle: "First 3 practices unlocked",
-  },
-];
-
-const PREMIUM_FEATURES: Feature[] = [
-  {
-    icon: "✦",
-    iconBg: PURPLE.iconPurple,
-    title: "Daily Companion",
-    subtitle: "Personalized daily reflections and encouragement",
-  },
-  {
-    icon: "💬",
-    iconBg: PURPLE.iconGreen,
-    title: "Deeper AI Support",
-    subtitle: "Richer, more meaningful AI-powered conversations",
-  },
-  {
-    icon: "📖",
-    iconBg: PURPLE.iconBrown,
-    title: "Full Scripture Access",
-    subtitle: "Complete library of guided scripture and practices",
-  },
-  {
-    icon: "🎁",
-    iconBg: PURPLE.iconRed,
-    title: "Daily Gifts & Recaps",
-    subtitle: "Exclusive daily gifts and weekly spiritual recaps",
-  },
-];
-
-// ─── AnimatedPressable ───────────────────────────────────────────────────────
+// ─── AnimatedPressable ────────────────────────────────────────────────────────
 interface AnimatedPressableProps {
   onPress?: () => void;
   style?: object | object[];
   children: React.ReactNode;
   disabled?: boolean;
-  scaleValue?: number;
 }
 
 function AnimatedPressable({
@@ -122,18 +57,17 @@ function AnimatedPressable({
   style,
   children,
   disabled,
-  scaleValue = 0.97,
 }: AnimatedPressableProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const animateIn = useCallback(() => {
     Animated.spring(scale, {
-      toValue: scaleValue,
+      toValue: 0.97,
       useNativeDriver: true,
       speed: 50,
       bounciness: 4,
     }).start();
-  }, [scale, scaleValue]);
+  }, [scale]);
 
   const animateOut = useCallback(() => {
     Animated.spring(scale, {
@@ -161,88 +95,63 @@ function AnimatedPressable({
   );
 }
 
-// ─── Animated entrance ───────────────────────────────────────────────────────
-function AnimatedCard({
-  index,
-  children,
-}: {
-  index: number;
-  children: React.ReactNode;
-}) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(24)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 480,
-        delay: 180 + index * 140,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 480,
-        delay: 180 + index * 140,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {children}
-    </Animated.View>
-  );
+// ─── Plan card ────────────────────────────────────────────────────────────────
+interface PlanCardProps {
+  title: string;
+  priceAmount: string;
+  description: string;
+  selected: boolean;
+  recommended?: boolean;
+  onPress: () => void;
 }
 
-// ─── Feature row ─────────────────────────────────────────────────────────────
-function FeatureRow({ feature }: { feature: Feature }) {
-  return (
-    <View style={styles.featureRow}>
-      <View style={[styles.featureIconBox, { backgroundColor: feature.iconBg }]}>
-        <Text style={styles.featureIconText}>{feature.icon}</Text>
-      </View>
-      <View style={styles.featureTextBlock}>
-        <Text style={styles.featureTitle}>{feature.title}</Text>
-        <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
-      </View>
-    </View>
-  );
-}
-
-// ─── Skeleton pulse ──────────────────────────────────────────────────────────
-function SkeletonLine({
-  width,
-  height = 14,
-  style,
-}: {
-  width: number | string;
-  height?: number;
-  style?: object;
-}) {
-  const opacity = useRef(new Animated.Value(0.2)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.5, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.2, duration: 800, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
+function PlanCard({
+  title,
+  priceAmount,
+  description,
+  selected,
+  recommended,
+  onPress,
+}: PlanCardProps) {
+  const priceColor = selected ? C.selectedPrice : C.titleText;
+  const borderColor = selected ? C.selectedBorder : "transparent";
+  const borderWidth = selected ? 2 : 2;
 
   return (
-    <Animated.View
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
       style={[
-        { width, height, borderRadius: height / 2, backgroundColor: PURPLE.whiteAlpha30, opacity },
-        style,
+        styles.planCard,
+        { borderColor, borderWidth },
       ]}
-    />
+    >
+      {/* Header row */}
+      <View style={styles.cardHeaderRow}>
+        <Text style={styles.planTitle}>{title}</Text>
+        {recommended && (
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedCheck}>✓</Text>
+            <Text style={styles.recommendedText}>RECOMMENDED</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Price row */}
+      <View style={styles.priceRow}>
+        <Text style={[styles.priceAmount, { color: priceColor }]}>
+          {priceAmount}
+        </Text>
+        <Text style={styles.priceUnit}> /month</Text>
+      </View>
+
+      {/* Description */}
+      <Text style={styles.planDescription}>{description}</Text>
+    </TouchableOpacity>
   );
 }
 
-// ─── Main component ──────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function PaywallScreen() {
   const router = useRouter();
 
@@ -256,6 +165,10 @@ export default function PaywallScreen() {
     mockWebPurchase,
   } = useSubscription();
 
+  // "base" | "premium"
+  const [selectedPlan, setSelectedPlan] = useState<"base" | "premium">(
+    "premium"
+  );
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [webMockDialogState, setWebMockDialogState] = useState<
@@ -263,7 +176,7 @@ export default function PaywallScreen() {
   >("hidden");
   const [webMockPkg, setWebMockPkg] = useState<PurchasesPackage | null>(null);
 
-  // ── Package resolution ──────────────────────────────────────────────────
+  // ── Package resolution ────────────────────────────────────────────────────
   const basePackage =
     packages.find((p) => {
       const id = (p.identifier + " " + (p.product?.identifier ?? "")).toLowerCase();
@@ -282,19 +195,62 @@ export default function PaywallScreen() {
     premiumPackage ??
     (packages.length >= 1 ? packages[packages.length - 1] : null);
 
-  // ── Handlers ────────────────────────────────────────────────────────────
+  // ── Derived values ────────────────────────────────────────────────────────
+  const basePrice = resolvedBase?.product?.priceString ?? "$3.99";
+  const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99";
+  const noOfferings = !isWeb && packages.length === 0;
+  const anyPurchasing = purchasingId !== null;
+
+  const selectedPackage = selectedPlan === "base" ? resolvedBase : resolvedPremium;
+  const selectedPlanLabel = selectedPlan === "base" ? "Base" : "Premium";
+  const ctaLabel = anyPurchasing ? "" : "Continue with " + selectedPlanLabel;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleSelectBase = () => {
+    console.log("[Paywall] Base plan card tapped");
+    setSelectedPlan("base");
+  };
+
+  const handleSelectPremium = () => {
+    console.log("[Paywall] Premium plan card tapped");
+    setSelectedPlan("premium");
+  };
+
+  const handleContinue = () => {
+    console.log("[Paywall] Continue button tapped", {
+      selectedPlan,
+      packageId: selectedPackage?.identifier,
+      price: selectedPackage?.product?.priceString,
+    });
+
+    if (isWeb) {
+      setWebMockPkg(selectedPackage);
+      setWebMockDialogState("selecting");
+      return;
+    }
+
+    if (packages.length === 0) {
+      Alert.alert(
+        "Not available",
+        "Please wait for subscriptions to load, or try restarting the app."
+      );
+      return;
+    }
+
+    if (!selectedPackage) {
+      Alert.alert("Not available", "Packages not loaded yet. Please try again.");
+      return;
+    }
+
+    handlePurchase(selectedPackage);
+  };
+
   const handlePurchase = async (pkg: PurchasesPackage) => {
-    console.log("[Paywall] Purchase button pressed", {
+    console.log("[Paywall] Purchase initiated", {
       packageId: pkg.identifier,
       productId: pkg.product.identifier,
       price: pkg.product.priceString,
     });
-
-    if (isWeb) {
-      setWebMockPkg(pkg);
-      setWebMockDialogState("selecting");
-      return;
-    }
 
     try {
       setPurchasingId(pkg.identifier);
@@ -347,24 +303,21 @@ export default function PaywallScreen() {
     router.replace("/(tabs)/(home)");
   };
 
-  const gradientColors: [string, string, string] = [
-    PURPLE.gradTop,
-    PURPLE.gradMid,
-    PURPLE.gradBot,
-  ];
+  const handleSkip = () => {
+    console.log("[Paywall] Skip (Testing Only) tapped");
+    router.replace("/(tabs)/(home)");
+  };
 
-  // ── Already subscribed ──────────────────────────────────────────────────
+  // ── Already subscribed ────────────────────────────────────────────────────
   if (isSubscribed) {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            activeOpacity={0.85}
+          >
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
           <View style={styles.subscribedContent}>
@@ -382,65 +335,22 @@ export default function PaywallScreen() {
     );
   }
 
-  // ── Loading skeleton ────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-          <View style={styles.skeletonContainer}>
-            <SkeletonLine width={80} height={22} style={{ alignSelf: "center", marginBottom: 20, borderRadius: 11 }} />
-            <SkeletonLine width={220} height={32} style={{ alignSelf: "center", marginBottom: 12 }} />
-            <SkeletonLine width={180} height={16} style={{ alignSelf: "center", marginBottom: 40 }} />
-            <View style={styles.skeletonCard}>
-              <SkeletonLine width={60} height={12} style={{ marginBottom: 10 }} />
-              <SkeletonLine width={100} height={20} style={{ marginBottom: 16 }} />
-              {[0, 1, 2].map((i) => (
-                <SkeletonLine key={i} width="85%" height={12} style={{ marginBottom: 10 }} />
-              ))}
-              <SkeletonLine width="100%" height={48} style={{ borderRadius: 28, marginTop: 8 }} />
-            </View>
-            <View style={[styles.skeletonCard, { marginTop: 16 }]}>
-              <SkeletonLine width={80} height={12} style={{ marginBottom: 10 }} />
-              <SkeletonLine width={100} height={20} style={{ marginBottom: 16 }} />
-              {[0, 1, 2, 3].map((i) => (
-                <SkeletonLine key={i} width="85%" height={12} style={{ marginBottom: 10 }} />
-              ))}
-              <SkeletonLine width="100%" height={48} style={{ borderRadius: 28, marginTop: 8 }} />
-            </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={C.selectedBorder} />
           </View>
         </SafeAreaView>
       </View>
     );
   }
 
-  // ── Derived values ──────────────────────────────────────────────────────
-  const noOfferings = !isWeb && packages.length === 0;
-  const basePrice = resolvedBase?.product?.priceString ?? "$3.99";
-  const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99";
-  const basePriceLabel = basePrice + "/month";
-  const premiumPriceLabel = premiumPrice + "/month";
-  const isBaseLoading = purchasingId === resolvedBase?.identifier;
-  const isPremiumLoading = purchasingId === resolvedPremium?.identifier;
-  const anyPurchasing = purchasingId !== null;
-  const baseButtonLabel = isBaseLoading ? "" : "Start Base";
-  const premiumButtonLabel = isPremiumLoading ? "" : "Subscribe for " + premiumPrice;
-
-  // ── Main render ─────────────────────────────────────────────────────────
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={gradientColors}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
       <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
         {/* Close button */}
         <TouchableOpacity
@@ -456,185 +366,85 @@ export default function PaywallScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero ── */}
-          <AnimatedCard index={0}>
-            <View style={styles.hero}>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>PREMIUM</Text>
-              </View>
-              <Text style={styles.heroTitle}>Upgrade to Premium</Text>
-              <Text style={styles.heroSubtitle}>
-                Unlock all features and get the most out of the app
+          {/* ── Title ── */}
+          <Text style={styles.heroTitle}>Choose Your Plan</Text>
+          <Text style={styles.heroSubtitle}>
+            Start gently. Go deeper when you're ready.
+          </Text>
+
+          {/* ── No offerings notice ── */}
+          {noOfferings && (
+            <View style={styles.noOfferingsCard}>
+              <Text style={styles.noOfferingsTitle}>Plans unavailable</Text>
+              <Text style={styles.noOfferingsBody}>
+                Subscriptions require a development or production build.
+                Standard Expo Go does not support in-app purchases.
               </Text>
             </View>
-          </AnimatedCard>
-
-          {/* ── No offerings ── */}
-          {noOfferings && (
-            <AnimatedCard index={1}>
-              <View style={styles.noOfferingsCard}>
-                <Text style={styles.noOfferingsTitle}>Plans unavailable</Text>
-                <Text style={styles.noOfferingsBody}>
-                  Subscriptions require a development or production build.
-                  Standard Expo Go does not support in-app purchases.
-                </Text>
-              </View>
-            </AnimatedCard>
           )}
 
-          {/* ── Plan cards (stacked vertically) ── */}
-          {!noOfferings && (
-            <View style={styles.cardsColumn}>
+          {/* ── Plan cards ── */}
+          <View style={styles.cardsColumn}>
+            {/* Base */}
+            <PlanCard
+              title="Base"
+              priceAmount={basePrice}
+              description="A gentle daily companion for reflection, encouragement, and light support."
+              selected={selectedPlan === "base"}
+              onPress={handleSelectBase}
+            />
 
-              {/* ── BASE CARD ── */}
-              <AnimatedCard index={1}>
-                <View style={styles.baseCard}>
-                  {/* Card header */}
-                  <View style={styles.cardTopRow}>
-                    <View style={styles.basePill}>
-                      <Text style={styles.basePillText}>BASE</Text>
-                    </View>
-                    <Text style={styles.cardPrice}>{basePriceLabel}</Text>
-                  </View>
+            {/* Premium */}
+            <PlanCard
+              title="Premium"
+              priceAmount={premiumPrice}
+              description="A deeper, more personalized space for ongoing reflection, richer AI support, and full access."
+              selected={selectedPlan === "premium"}
+              recommended
+              onPress={handleSelectPremium}
+            />
+          </View>
 
-                  {/* Section label */}
-                  <Text style={styles.sectionLabel}>WHAT YOU'LL GET</Text>
+          {/* ── CTA ── */}
+          <AnimatedPressable
+            onPress={handleContinue}
+            disabled={anyPurchasing}
+            style={[styles.ctaButton, anyPurchasing && styles.buttonDisabled]}
+          >
+            {anyPurchasing ? (
+              <ActivityIndicator size="small" color={C.ctaText} />
+            ) : (
+              <Text style={styles.ctaButtonText}>{ctaLabel}</Text>
+            )}
+          </AnimatedPressable>
 
-                  {/* Features */}
-                  <View style={styles.featuresList}>
-                    {BASE_FEATURES.map((f) => (
-                      <FeatureRow key={f.title} feature={f} />
-                    ))}
-                  </View>
+          {/* ── Restore ── */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleRestore}
+            disabled={restoring}
+            style={styles.restoreButton}
+          >
+            {restoring ? (
+              <ActivityIndicator size="small" color={C.restoreText} />
+            ) : (
+              <Text style={styles.restoreText}>Restore Purchases</Text>
+            )}
+          </TouchableOpacity>
 
-                  {/* CTA */}
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      console.log("[Paywall] Start Base tapped", {
-                        packageId: resolvedBase?.identifier,
-                        price: resolvedBase?.product?.priceString,
-                        packagesCount: packages.length,
-                      });
-                      if (packages.length === 0) {
-                        Alert.alert("Not available", "Please wait for subscriptions to load, or try restarting the app.");
-                        return;
-                      }
-                      if (!resolvedBase) {
-                        Alert.alert("Not available", "Packages not loaded yet. Please try again.");
-                        return;
-                      }
-                      handlePurchase(resolvedBase);
-                    }}
-                    disabled={anyPurchasing}
-                    style={[
-                      styles.ctaButton,
-                      anyPurchasing && styles.buttonDisabled,
-                    ]}
-                  >
-                    {isBaseLoading ? (
-                      <ActivityIndicator size="small" color={PURPLE.gradTop} />
-                    ) : (
-                      <Text style={styles.ctaButtonText}>{baseButtonLabel}</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </AnimatedCard>
+          {/* ── Legal ── */}
+          <Text style={styles.legalText}>Cancel anytime. Billed monthly.</Text>
 
-              {/* ── PREMIUM CARD ── */}
-              <AnimatedCard index={2}>
-                <View style={styles.premiumCard}>
-                  {/* Recommended badge */}
-                  <View style={styles.recommendedBadgeWrap}>
-                    <View style={styles.recommendedBadge}>
-                      <Text style={styles.recommendedText}>Recommended</Text>
-                    </View>
-                  </View>
-
-                  {/* Card header */}
-                  <View style={styles.cardTopRow}>
-                    <View style={styles.premiumPill}>
-                      <Text style={styles.premiumPillText}>PREMIUM</Text>
-                    </View>
-                    <Text style={styles.cardPricePremium}>{premiumPriceLabel}</Text>
-                  </View>
-
-                  {/* Section label */}
-                  <Text style={styles.sectionLabel}>WHAT YOU'LL GET</Text>
-
-                  {/* Features */}
-                  <View style={styles.featuresList}>
-                    {PREMIUM_FEATURES.map((f) => (
-                      <FeatureRow key={f.title} feature={f} />
-                    ))}
-                  </View>
-
-                  {/* CTA */}
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      console.log("[Paywall] Start Premium tapped", {
-                        packageId: resolvedPremium?.identifier,
-                        price: resolvedPremium?.product?.priceString,
-                        packagesCount: packages.length,
-                      });
-                      if (packages.length === 0) {
-                        Alert.alert("Not available", "Please wait for subscriptions to load, or try restarting the app.");
-                        return;
-                      }
-                      if (!resolvedPremium) {
-                        Alert.alert("Not available", "Packages not loaded yet. Please try again.");
-                        return;
-                      }
-                      handlePurchase(resolvedPremium);
-                    }}
-                    disabled={anyPurchasing}
-                    style={[
-                      styles.ctaButton,
-                      anyPurchasing && styles.buttonDisabled,
-                    ]}
-                  >
-                    {isPremiumLoading ? (
-                      <ActivityIndicator size="small" color={PURPLE.gradTop} />
-                    ) : (
-                      <Text style={styles.ctaButtonText}>{premiumButtonLabel}</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </AnimatedCard>
-            </View>
+          {/* ── Skip (dev only) ── */}
+          {__DEV__ && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleSkip}
+              style={styles.skipButton}
+            >
+              <Text style={styles.skipText}>Skip (Testing Only)</Text>
+            </TouchableOpacity>
           )}
-
-          {/* ── Bottom actions ── */}
-          <AnimatedCard index={3}>
-            <View style={styles.bottomActions}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handleRestore}
-                disabled={restoring}
-                style={styles.restoreButton}
-              >
-                {restoring ? (
-                  <ActivityIndicator size="small" color={PURPLE.whiteAlpha70} />
-                ) : (
-                  <Text style={styles.restoreText}>Restore Purchases</Text>
-                )}
-              </TouchableOpacity>
-
-              {isWeb ? (
-                <Text style={styles.legalText}>
-                  Preview mode — purchases available in the mobile app
-                </Text>
-              ) : (
-                <Text style={styles.legalText}>
-                  Payment will be charged to your{" "}
-                  {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account.
-                  Subscription automatically renews unless cancelled at least 24
-                  hours before the end of the current period.
-                </Text>
-              )}
-            </View>
-          </AnimatedCard>
         </ScrollView>
       </SafeAreaView>
 
@@ -712,11 +522,11 @@ export default function PaywallScreen() {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PURPLE.gradTop,
+    backgroundColor: C.bg,
   },
   safeArea: {
     flex: 1,
@@ -726,7 +536,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 52,
+    paddingTop: 56,
     paddingBottom: 40,
     flexGrow: 1,
   },
@@ -737,281 +547,194 @@ const styles = StyleSheet.create({
     top: 52,
     right: 18,
     zIndex: 10,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: PURPLE.whiteAlpha15,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.closeBg,
     justifyContent: "center",
     alignItems: "center",
   },
   closeButtonText: {
-    fontSize: 13,
-    color: PURPLE.whiteAlpha90,
+    fontSize: 14,
+    color: C.closeText,
     fontWeight: "600",
   },
 
   // ── Hero ──
-  hero: {
-    alignItems: "center",
-    marginBottom: 28,
-    paddingTop: 4,
-  },
-  heroBadge: {
-    backgroundColor: PURPLE.badgeBg,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  heroBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: PURPLE.white,
-    letterSpacing: 1.5,
-  },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: "800",
-    color: PURPLE.white,
-    letterSpacing: -0.3,
-    marginBottom: 10,
+    color: C.titleText,
     textAlign: "center",
+    letterSpacing: -0.5,
+    marginBottom: 12,
+    marginTop: 8,
   },
   heroSubtitle: {
-    fontSize: 15,
-    color: PURPLE.white,
-    opacity: 0.85,
+    fontSize: 16,
+    color: C.descText,
     textAlign: "center",
-    lineHeight: 22,
-    maxWidth: 280,
+    lineHeight: 24,
+    marginBottom: 32,
+    paddingHorizontal: 16,
   },
 
-  // ── Cards column ──
+  // ── Cards ──
   cardsColumn: {
-    gap: 20,
-    marginBottom: 24,
+    gap: 16,
+    marginBottom: 28,
   },
-
-  // ── Base card ──
-  baseCard: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 16,
+  planCard: {
+    backgroundColor: C.cardBg,
+    borderRadius: 18,
     padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
-
-  // ── Premium card ──
-  premiumCard: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 16,
-    padding: 20,
-    paddingTop: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.50)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
-    overflow: "visible",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  planTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: C.titleText,
   },
 
   // ── Recommended badge ──
-  recommendedBadgeWrap: {
-    position: "absolute",
-    top: -13,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 2,
-  },
   recommendedBadge: {
-    backgroundColor: PURPLE.recommendedBg,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.badgeBg,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
+  },
+  recommendedCheck: {
+    fontSize: 11,
+    color: C.badgeText,
+    fontWeight: "700",
   },
   recommendedText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#3A2800",
-    letterSpacing: 0.6,
+    color: C.badgeText,
+    letterSpacing: 0.8,
   },
 
-  // ── Card top row ──
-  cardTopRow: {
+  // ── Price ──
+  priceRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
+    alignItems: "baseline",
+    marginBottom: 10,
   },
-  basePill: {
-    backgroundColor: PURPLE.whiteAlpha20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+  priceAmount: {
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
-  basePillText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: PURPLE.white,
-    letterSpacing: 1.2,
-  },
-  premiumPill: {
-    backgroundColor: PURPLE.whiteAlpha20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  premiumPillText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: PURPLE.white,
-    letterSpacing: 1.2,
-  },
-  cardPrice: {
+  priceUnit: {
     fontSize: 15,
-    fontWeight: "700",
-    color: PURPLE.white,
-    letterSpacing: -0.2,
-  },
-  cardPricePremium: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: PURPLE.white,
-    letterSpacing: -0.2,
+    color: C.descText,
+    fontWeight: "400",
   },
 
-  // ── Section label ──
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: PURPLE.white,
-    opacity: 0.6,
-    letterSpacing: 2,
-    marginTop: 24,
-    marginBottom: 12,
+  // ── Description ──
+  planDescription: {
+    fontSize: 14,
+    color: C.descText,
+    lineHeight: 21,
   },
 
-  // ── Features ──
-  featuresList: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  featureIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    flexShrink: 0,
-  },
-  featureIconText: {
-    fontSize: 16,
-  },
-  featureTextBlock: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: PURPLE.white,
-    marginBottom: 1,
-  },
-  featureSubtitle: {
-    fontSize: 13,
-    color: PURPLE.white,
-    opacity: 0.7,
-    lineHeight: 17,
-  },
-
-  // ── CTA button ──
+  // ── CTA ──
   ctaButton: {
-    backgroundColor: PURPLE.white,
+    backgroundColor: C.ctaBg,
     borderRadius: 30,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 56,
+    marginBottom: 20,
   },
   ctaButtonText: {
     fontSize: 17,
     fontWeight: "700",
-    color: PURPLE.gradTop,
-    letterSpacing: 0.1,
+    color: C.ctaText,
+    letterSpacing: 0.2,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
 
-  // ── Bottom actions ──
-  bottomActions: {
-    alignItems: "center",
-    gap: 14,
-  },
+  // ── Restore ──
   restoreButton: {
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    minHeight: 44,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    marginBottom: 12,
   },
   restoreText: {
-    fontSize: 14,
-    color: PURPLE.white,
-    opacity: 0.7,
+    fontSize: 15,
+    color: C.restoreText,
     fontWeight: "500",
   },
+
+  // ── Legal ──
   legalText: {
-    fontSize: 11,
-    color: PURPLE.white,
-    opacity: 0.5,
+    fontSize: 12,
+    color: C.legalText,
     textAlign: "center",
-    lineHeight: 16,
-    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
+
+  // ── Skip ──
+  skipButton: {
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  skipText: {
+    fontSize: 12,
+    color: C.skipText,
   },
 
   // ── No offerings ──
   noOfferingsCard: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: C.cardBg,
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
     marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   noOfferingsTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: PURPLE.white,
+    color: C.titleText,
     marginBottom: 8,
   },
   noOfferingsBody: {
     fontSize: 14,
-    color: PURPLE.whiteAlpha70,
+    color: C.descText,
     textAlign: "center",
     lineHeight: 20,
   },
 
-  // ── Skeleton ──
-  skeletonContainer: {
+  // ── Loading ──
+  loadingContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 80,
-  },
-  skeletonCard: {
-    backgroundColor: "rgba(255,255,255,0.13)",
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   // ── Subscribed ──
@@ -1023,19 +746,19 @@ const styles = StyleSheet.create({
   },
   subscribedEmoji: {
     fontSize: 48,
-    color: PURPLE.white,
+    color: C.selectedBorder,
     marginBottom: 20,
   },
   subscribedTitle: {
     fontSize: 28,
     fontWeight: "700",
-    color: PURPLE.white,
+    color: C.titleText,
     letterSpacing: -0.3,
     marginBottom: 8,
   },
   subscribedSubtitle: {
     fontSize: 15,
-    color: PURPLE.whiteAlpha70,
+    color: C.descText,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
@@ -1048,24 +771,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.50)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
   },
   webDialogBox: {
-    backgroundColor: "#2D2050",
+    backgroundColor: C.cardBg,
     borderRadius: 16,
     width: "85%",
     maxWidth: 380,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: PURPLE.cardBorder,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   webDialogTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: PURPLE.white,
+    color: C.titleText,
     textAlign: "center",
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -1073,7 +799,7 @@ const styles = StyleSheet.create({
   },
   webDialogBody: {
     fontSize: 13,
-    color: PURPLE.whiteAlpha70,
+    color: C.descText,
     textAlign: "center",
     paddingHorizontal: 16,
     paddingBottom: 20,
@@ -1081,7 +807,7 @@ const styles = StyleSheet.create({
   },
   webDialogDivider: {
     height: 1,
-    backgroundColor: PURPLE.cardBorder,
+    backgroundColor: "#E8E4DC",
   },
   webDialogButton: {
     paddingVertical: 14,
