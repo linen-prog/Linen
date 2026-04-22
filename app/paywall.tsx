@@ -515,12 +515,16 @@ export default function PaywallScreen() {
                         packageId: resolvedBase?.identifier,
                         price: resolvedBase?.product?.priceString,
                       });
-                      if (resolvedBase) handlePurchase(resolvedBase);
+                      if (!resolvedBase) {
+                        Alert.alert('Not available', 'Subscriptions require a native build. Please install via TestFlight or a development build.');
+                        return;
+                      }
+                      handlePurchase(resolvedBase);
                     }}
-                    disabled={!resolvedBase || anyPurchasing}
+                    disabled={anyPurchasing}
                     style={[
                       styles.ctaButton,
-                      (!resolvedBase || anyPurchasing) && styles.buttonDisabled,
+                      anyPurchasing && styles.buttonDisabled,
                     ]}
                   >
                     {isBaseLoading ? (
@@ -568,12 +572,16 @@ export default function PaywallScreen() {
                         packageId: resolvedPremium?.identifier,
                         price: resolvedPremium?.product?.priceString,
                       });
-                      if (resolvedPremium) handlePurchase(resolvedPremium);
+                      if (!resolvedPremium) {
+                        Alert.alert('Not available', 'Subscriptions require a native build. Please install via TestFlight or a development build.');
+                        return;
+                      }
+                      handlePurchase(resolvedPremium);
                     }}
-                    disabled={!resolvedPremium || anyPurchasing}
+                    disabled={anyPurchasing}
                     style={[
                       styles.ctaButton,
-                      (!resolvedPremium || anyPurchasing) && styles.buttonDisabled,
+                      anyPurchasing && styles.buttonDisabled,
                     ]}
                   >
                     {isPremiumLoading ? (

@@ -97,8 +97,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       if (__DEV__) {
         console.log("[OneSignal] Registered push subscription:", subscriptionId);
       }
-    } catch (error) {
-      console.error("[OneSignal] Failed to register push subscription:", error);
+    } catch {
+      // Non-fatal — silently ignore push subscription registration failures
     }
   }, []);
 
