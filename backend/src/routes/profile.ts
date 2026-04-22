@@ -258,6 +258,29 @@ export function registerProfileRoutes(app: App) {
   // Get user journey stats
   app.fastify.get(
     '/api/profile/stats',
+    {
+      schema: {
+        description: 'Get user journey statistics',
+        tags: ['profile'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              checkInStreak: { type: 'integer' },
+              reflectionStreak: { type: 'integer' },
+              totalReflections: { type: 'integer' },
+              daysInCommunity: { type: 'integer' },
+              memberSince: { type: ['string', 'null'], format: 'date-time' },
+              totalSharedPosts: { type: 'integer' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
@@ -276,16 +299,14 @@ export function registerProfileRoutes(app: App) {
         let reflectionStreak = 0;
         let totalReflections = 0;
         let daysInCommunity = 0;
-        let memberSince = null;
-        let companionName = null;
+        let memberSince: string | null = null;
 
         if (profile.length > 0) {
           checkInStreak = profile[0].checkInStreak;
           reflectionStreak = profile[0].reflectionStreak;
           totalReflections = profile[0].totalReflections;
           daysInCommunity = profile[0].daysInCommunity;
-          memberSince = profile[0].memberSince;
-          companionName = profile[0].companionName;
+          memberSince = profile[0].memberSince ? new Date(profile[0].memberSince).toISOString() : null;
         }
 
         // Count user's community posts
@@ -304,7 +325,6 @@ export function registerProfileRoutes(app: App) {
             totalReflections,
             daysInCommunity,
             totalSharedPosts,
-            companionName,
           },
           'User journey stats retrieved'
         );
@@ -316,11 +336,18 @@ export function registerProfileRoutes(app: App) {
           daysInCommunity,
           memberSince,
           totalSharedPosts,
-          companionName,
         });
       } catch (error) {
         app.logger.error({ err: error, userId: session.user.id }, 'Failed to fetch user stats');
-        throw error;
+        // Return safe defaults instead of throwing
+        return reply.send({
+          checkInStreak: 0,
+          reflectionStreak: 0,
+          totalReflections: 0,
+          daysInCommunity: 0,
+          memberSince: null,
+          totalSharedPosts: 0,
+        });
       }
     }
   );
