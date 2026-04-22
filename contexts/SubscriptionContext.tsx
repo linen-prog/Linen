@@ -41,6 +41,13 @@ const ANDROID_API_KEY = extra.revenueCatApiKeyAndroid || "";
 const TEST_IOS_API_KEY = extra.revenueCatTestApiKeyIos || "";
 const TEST_ANDROID_API_KEY = extra.revenueCatTestApiKeyAndroid || "";
 const ENTITLEMENT_ID = extra.revenueCatEntitlementId || "pro";
+// All entitlement IDs that grant access — broadened to support multi-tier pricing
+const ALL_ENTITLEMENT_IDS = ["base_access", "premium_access", "pro", ENTITLEMENT_ID];
+
+/** Returns true if customerInfo has ANY active entitlement from the known set */
+function hasAnyActiveEntitlement(active: Record<string, unknown>): boolean {
+  return ALL_ENTITLEMENT_IDS.some((id) => typeof active[id] !== "undefined");
+}
 
 // Check if running on web
 const isWeb = Platform.OS === "web";
@@ -190,9 +197,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Listen for real-time subscription changes (e.g., purchase from another device)
         customerInfoListener = Purchases.addCustomerInfoUpdateListener(
           (customerInfo) => {
-            const hasEntitlement =
-              typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
-              "undefined";
+            const hasEntitlement = hasAnyActiveEntitlement(
+              customerInfo.entitlements.active as Record<string, unknown>
+            );
             // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
             // in-memory only and won't be known to RC after a configure() call on reload.
             if (hasEntitlement || !__DEV__) {
@@ -268,8 +275,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     if (isWeb) return;
     try {
       const customerInfo = await Purchases.getCustomerInfo();
-      const hasEntitlement =
-        typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+      const hasEntitlement = hasAnyActiveEntitlement(
+        customerInfo.entitlements.active as Record<string, unknown>
+      );
       // In __DEV__: RC test store purchases don't survive configure(), so only update state
       // positively — mock/test purchase state persists across reloads via SecureStore cache.
       if (hasEntitlement || !__DEV__) {
@@ -295,8 +303,14 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      const hasEntitlement =
-        typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+      const hasEntitlement = hasAnyActiveEntitlement(
+        customerInfo.entitlements.active as Record<string, unknown>
+      );
+      console.log("[RevenueCat] purchasePackage result", {
+        packageId: pkg.identifier,
+        hasEntitlement,
+        activeEntitlements: Object.keys(customerInfo.entitlements.active),
+      });
       setIsSubscribed(hasEntitlement);
       if (hasEntitlement) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
@@ -319,8 +333,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
     try {
       const customerInfo = await Purchases.restorePurchases();
-      const hasEntitlement =
-        typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+      const hasEntitlement = hasAnyActiveEntitlement(
+        customerInfo.entitlements.active as Record<string, unknown>
+      );
+      console.log("[RevenueCat] restorePurchases result", {
+        hasEntitlement,
+        activeEntitlements: Object.keys(customerInfo.entitlements.active),
+      });
       setIsSubscribed(hasEntitlement);
       // In __DEV__: don't clear the cache on restore failure (test store purchases are ephemeral)
       if (hasEntitlement || !__DEV__) {

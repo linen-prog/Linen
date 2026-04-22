@@ -514,9 +514,14 @@ export default function PaywallScreen() {
                       console.log("[Paywall] Start Base tapped", {
                         packageId: resolvedBase?.identifier,
                         price: resolvedBase?.product?.priceString,
+                        packagesCount: packages.length,
                       });
+                      if (packages.length === 0) {
+                        Alert.alert("Not available", "Please wait for subscriptions to load, or try restarting the app.");
+                        return;
+                      }
                       if (!resolvedBase) {
-                        Alert.alert('Not available', 'Subscriptions require a native build. Please install via TestFlight or a development build.');
+                        Alert.alert("Not available", "Packages not loaded yet. Please try again.");
                         return;
                       }
                       handlePurchase(resolvedBase);
@@ -571,9 +576,14 @@ export default function PaywallScreen() {
                       console.log("[Paywall] Start Premium tapped", {
                         packageId: resolvedPremium?.identifier,
                         price: resolvedPremium?.product?.priceString,
+                        packagesCount: packages.length,
                       });
+                      if (packages.length === 0) {
+                        Alert.alert("Not available", "Please wait for subscriptions to load, or try restarting the app.");
+                        return;
+                      }
                       if (!resolvedPremium) {
-                        Alert.alert('Not available', 'Subscriptions require a native build. Please install via TestFlight or a development build.');
+                        Alert.alert("Not available", "Packages not loaded yet. Please try again.");
                         return;
                       }
                       handlePurchase(resolvedPremium);
