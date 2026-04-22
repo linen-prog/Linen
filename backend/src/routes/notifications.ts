@@ -197,11 +197,12 @@ export function registerNotificationsRoutes(app: App) {
               type: 'object',
               properties: {
                 id: { type: 'string', format: 'uuid' },
+                user_id: { type: 'string' },
                 type: { type: 'string', enum: ['reaction', 'feedback', 'care_message', 'encouragement'] },
                 message: { type: 'string' },
                 read: { type: 'boolean' },
-                createdAt: { type: 'string', format: 'date-time' },
-                postId: { type: ['string', 'null'] },
+                post_id: { type: ['string', 'null'] },
+                created_at: { type: 'string', format: 'date-time' },
               },
             },
           },
@@ -225,11 +226,12 @@ export function registerNotificationsRoutes(app: App) {
         const notifications = await app.db
           .select({
             id: schema.notifications.id,
+            userId: schema.notifications.userId,
             type: schema.notifications.type,
             message: schema.notifications.message,
             read: schema.notifications.read,
-            createdAt: schema.notifications.createdAt,
             postId: schema.notifications.postId,
+            createdAt: schema.notifications.createdAt,
           })
           .from(schema.notifications)
           .where(eq(schema.notifications.userId, session.user.id))
@@ -243,11 +245,12 @@ export function registerNotificationsRoutes(app: App) {
         return reply.send(
           notifications.map((n) => ({
             id: n.id,
+            user_id: n.userId,
             type: n.type,
             message: n.message,
             read: n.read,
-            createdAt: n.createdAt,
-            postId: n.postId || null,
+            post_id: n.postId || null,
+            created_at: n.createdAt,
           }))
         );
       } catch (error) {
