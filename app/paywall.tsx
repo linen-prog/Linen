@@ -1,8 +1,8 @@
 /**
  * Paywall Screen — Two-tier pricing (Base + Premium)
  *
- * Shows Base and Premium plans side by side with staggered entrance animation.
- * Matches the Linen aesthetic: calm, minimal, warm off-white tones.
+ * Deep purple gradient background matching the original screenshot aesthetic.
+ * Stacked vertical plan cards with colorful rounded-square feature icons.
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -15,8 +15,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Linking,
-  Dimensions,
   Animated,
   Pressable,
 } from "react-native";
@@ -27,41 +25,87 @@ import { PurchasesPackage } from "react-native-purchases";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-// ─── Linen color palette ────────────────────────────────────────────────────
-const LINEN = {
-  parchment: "#FAF7F2",       // warm off-white background
-  parchmentDeep: "#F2EDE4",   // slightly deeper warm surface
-  ink: "#2C2416",             // near-black warm text
-  inkMuted: "#6B5E4A",        // secondary text
-  inkFaint: "#A89880",        // tertiary / captions
-  sage: "#5A7A5C",            // base plan accent (calm green)
-  sageMuted: "rgba(90,122,92,0.12)",
-  amber: "#8B6914",           // premium accent (warm gold)
-  amberMuted: "rgba(139,105,20,0.12)",
-  amberGlow: "rgba(139,105,20,0.22)",
-  border: "rgba(44,36,22,0.10)",
-  borderStrong: "rgba(44,36,22,0.20)",
+// ─── Purple palette ──────────────────────────────────────────────────────────
+const PURPLE = {
+  gradTop: "#4A3878",
+  gradMid: "#6B5B9E",
+  gradBot: "#8B7BB8",
+  cardBg: "rgba(255,255,255,0.13)",
+  cardBgPremium: "rgba(255,255,255,0.20)",
+  cardBorder: "rgba(255,255,255,0.18)",
+  cardBorderPremium: "rgba(255,255,255,0.50)",
   white: "#FFFFFF",
-  // gradient stops — warm linen
-  gradTop: "#F5EFE6",
-  gradMid: "#EDE4D6",
-  gradBot: "#E4D9C8",
+  whiteAlpha90: "rgba(255,255,255,0.90)",
+  whiteAlpha70: "rgba(255,255,255,0.70)",
+  whiteAlpha50: "rgba(255,255,255,0.50)",
+  whiteAlpha30: "rgba(255,255,255,0.30)",
+  whiteAlpha20: "rgba(255,255,255,0.20)",
+  whiteAlpha15: "rgba(255,255,255,0.15)",
+  badgeBg: "rgba(255,255,255,0.20)",
+  sectionLabel: "rgba(255,255,255,0.60)",
+  iconPurple: "#7C5CBF",
+  iconGreen: "#4CAF82",
+  iconBrown: "#A0785A",
+  iconRed: "#E05C5C",
+  iconBlue: "#5B8FD4",
+  iconGold: "#D4A843",
+  recommendedBg: "rgba(255,200,50,0.9)",
 };
 
-// ─── Plan definitions ────────────────────────────────────────────────────────
-const BASE_FEATURES = [
-  "Daily Gift (1 per day)",
-  "Up to 15 AI chat messages",
-  "3 somatic practices unlocked",
+// ─── Feature definitions ─────────────────────────────────────────────────────
+interface Feature {
+  icon: string;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+}
+
+const BASE_FEATURES: Feature[] = [
+  {
+    icon: "🎁",
+    iconBg: PURPLE.iconPurple,
+    title: "Daily Gift",
+    subtitle: "1 gift per day",
+  },
+  {
+    icon: "💬",
+    iconBg: PURPLE.iconGreen,
+    title: "Limited AI Chat",
+    subtitle: "15 messages or 3 sessions",
+  },
+  {
+    icon: "🧘",
+    iconBg: PURPLE.iconBrown,
+    title: "Somatic Library",
+    subtitle: "First 3 practices unlocked",
+  },
 ];
 
-const PREMIUM_FEATURES = [
-  "Unlimited AI chat",
-  "Full somatic library",
-  "Full scripture access",
-  "Daily gifts + extras",
+const PREMIUM_FEATURES: Feature[] = [
+  {
+    icon: "✦",
+    iconBg: PURPLE.iconPurple,
+    title: "Daily Companion",
+    subtitle: "Personalized daily reflections and encouragement",
+  },
+  {
+    icon: "💬",
+    iconBg: PURPLE.iconGreen,
+    title: "Deeper AI Support",
+    subtitle: "Richer, more meaningful AI-powered conversations",
+  },
+  {
+    icon: "📖",
+    iconBg: PURPLE.iconBrown,
+    title: "Full Scripture Access",
+    subtitle: "Complete library of guided scripture and practices",
+  },
+  {
+    icon: "🎁",
+    iconBg: PURPLE.iconRed,
+    title: "Daily Gifts & Recaps",
+    subtitle: "Exclusive daily gifts and weekly spiritual recaps",
+  },
 ];
 
 // ─── AnimatedPressable ───────────────────────────────────────────────────────
@@ -117,7 +161,7 @@ function AnimatedPressable({
   );
 }
 
-// ─── Staggered card entrance ─────────────────────────────────────────────────
+// ─── Animated entrance ───────────────────────────────────────────────────────
 function AnimatedCard({
   index,
   children,
@@ -126,20 +170,20 @@ function AnimatedCard({
   children: React.ReactNode;
 }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+  const translateY = useRef(new Animated.Value(24)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 420,
-        delay: 200 + index * 120,
+        duration: 480,
+        delay: 180 + index * 140,
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 420,
-        delay: 200 + index * 120,
+        duration: 480,
+        delay: 180 + index * 140,
         useNativeDriver: true,
       }),
     ]).start();
@@ -152,7 +196,22 @@ function AnimatedCard({
   );
 }
 
-// ─── Skeleton loader ─────────────────────────────────────────────────────────
+// ─── Feature row ─────────────────────────────────────────────────────────────
+function FeatureRow({ feature }: { feature: Feature }) {
+  return (
+    <View style={styles.featureRow}>
+      <View style={[styles.featureIconBox, { backgroundColor: feature.iconBg }]}>
+        <Text style={styles.featureIconText}>{feature.icon}</Text>
+      </View>
+      <View style={styles.featureTextBlock}>
+        <Text style={styles.featureTitle}>{feature.title}</Text>
+        <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── Skeleton pulse ──────────────────────────────────────────────────────────
 function SkeletonLine({
   width,
   height = 14,
@@ -162,21 +221,13 @@ function SkeletonLine({
   height?: number;
   style?: object;
 }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const opacity = useRef(new Animated.Value(0.2)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.3,
-          duration: 800,
-          useNativeDriver: true,
-        }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.2, duration: 800, useNativeDriver: true }),
       ])
     ).start();
   }, []);
@@ -184,32 +235,10 @@ function SkeletonLine({
   return (
     <Animated.View
       style={[
-        {
-          width,
-          height,
-          borderRadius: height / 2,
-          backgroundColor: LINEN.parchmentDeep,
-          opacity,
-        },
+        { width, height, borderRadius: height / 2, backgroundColor: PURPLE.whiteAlpha30, opacity },
         style,
       ]}
     />
-  );
-}
-
-// ─── Feature row ─────────────────────────────────────────────────────────────
-function FeatureRow({
-  text,
-  accentColor,
-}: {
-  text: string;
-  accentColor: string;
-}) {
-  return (
-    <View style={styles.featureRow}>
-      <View style={[styles.featureDot, { backgroundColor: accentColor }]} />
-      <Text style={styles.featureText}>{text}</Text>
-    </View>
   );
 }
 
@@ -235,20 +264,23 @@ export default function PaywallScreen() {
   const [webMockPkg, setWebMockPkg] = useState<PurchasesPackage | null>(null);
 
   // ── Package resolution ──────────────────────────────────────────────────
-  const basePackage = packages.find((p) => {
-    const id = (p.identifier + " " + p.product.identifier).toLowerCase();
-    return id.includes("base");
-  }) ?? null;
+  const basePackage =
+    packages.find((p) => {
+      const id = (p.identifier + " " + (p.product?.identifier ?? "")).toLowerCase();
+      return id.includes("base");
+    }) ?? null;
 
-  const premiumPackage = packages.find((p) => {
-    const id = (p.identifier + " " + p.product.identifier).toLowerCase();
-    return id.includes("premium");
-  }) ?? null;
+  const premiumPackage =
+    packages.find((p) => {
+      const id = (p.identifier + " " + (p.product?.identifier ?? "")).toLowerCase();
+      return id.includes("premium");
+    }) ?? null;
 
-  // Fallback: if only one package exists, treat it as premium
-  const resolvedBase = basePackage ?? (packages.length >= 2 ? packages[0] : null);
+  const resolvedBase =
+    basePackage ?? (packages.length >= 2 ? packages[0] : null);
   const resolvedPremium =
-    premiumPackage ?? (packages.length >= 2 ? packages[1] : packages[0] ?? null);
+    premiumPackage ??
+    (packages.length >= 2 ? packages[1] : packages[0] ?? null);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handlePurchase = async (pkg: PurchasesPackage) => {
@@ -267,7 +299,10 @@ export default function PaywallScreen() {
     try {
       setPurchasingId(pkg.identifier);
       const success = await purchasePackage(pkg);
-      console.log("[Paywall] Purchase result", { success, packageId: pkg.identifier });
+      console.log("[Paywall] Purchase result", {
+        success,
+        packageId: pkg.identifier,
+      });
       if (success) {
         Alert.alert("Welcome to Linen!", "Your subscription is now active.", [
           { text: "Continue", onPress: () => router.replace("/(tabs)/(home)") },
@@ -312,18 +347,24 @@ export default function PaywallScreen() {
     router.replace("/(tabs)/(home)");
   };
 
+  const gradientColors: [string, string, string] = [
+    PURPLE.gradTop,
+    PURPLE.gradMid,
+    PURPLE.gradBot,
+  ];
+
   // ── Already subscribed ──────────────────────────────────────────────────
   if (isSubscribed) {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={[LINEN.gradTop, LINEN.gradMid, LINEN.gradBot]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.3, y: 1 }}
+          colors={gradientColors}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleClose} activeOpacity={0.85}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
           <View style={styles.subscribedContent}>
@@ -332,11 +373,8 @@ export default function PaywallScreen() {
             <Text style={styles.subscribedSubtitle}>
               Your subscription is active. Enjoy Linen.
             </Text>
-            <AnimatedPressable
-              onPress={handleClose}
-              style={styles.continueButton}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
+            <AnimatedPressable onPress={handleClose} style={styles.ctaButton}>
+              <Text style={styles.ctaButtonText}>Continue</Text>
             </AnimatedPressable>
           </View>
         </SafeAreaView>
@@ -349,34 +387,31 @@ export default function PaywallScreen() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={[LINEN.gradTop, LINEN.gradMid, LINEN.gradBot]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.3, y: 1 }}
+          colors={gradientColors}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
           <View style={styles.skeletonContainer}>
-            <SkeletonLine width={120} height={12} style={{ marginBottom: 20, alignSelf: "center" }} />
-            <SkeletonLine width={220} height={28} style={{ marginBottom: 10, alignSelf: "center" }} />
-            <SkeletonLine width={180} height={16} style={{ marginBottom: 40, alignSelf: "center" }} />
-            <View style={styles.skeletonCards}>
-              <View style={[styles.skeletonCard, { marginRight: 8 }]}>
-                <SkeletonLine width="60%" height={14} style={{ marginBottom: 12 }} />
-                <SkeletonLine width="40%" height={22} style={{ marginBottom: 16 }} />
-                <SkeletonLine width="90%" height={11} style={{ marginBottom: 8 }} />
-                <SkeletonLine width="80%" height={11} style={{ marginBottom: 8 }} />
-                <SkeletonLine width="85%" height={11} style={{ marginBottom: 20 }} />
-                <SkeletonLine width="100%" height={44} style={{ borderRadius: 12 }} />
-              </View>
-              <View style={[styles.skeletonCard, { marginLeft: 8 }]}>
-                <SkeletonLine width="60%" height={14} style={{ marginBottom: 12 }} />
-                <SkeletonLine width="40%" height={22} style={{ marginBottom: 16 }} />
-                <SkeletonLine width="90%" height={11} style={{ marginBottom: 8 }} />
-                <SkeletonLine width="80%" height={11} style={{ marginBottom: 8 }} />
-                <SkeletonLine width="85%" height={11} style={{ marginBottom: 8 }} />
-                <SkeletonLine width="75%" height={11} style={{ marginBottom: 20 }} />
-                <SkeletonLine width="100%" height={44} style={{ borderRadius: 12 }} />
-              </View>
+            <SkeletonLine width={80} height={22} style={{ alignSelf: "center", marginBottom: 20, borderRadius: 11 }} />
+            <SkeletonLine width={220} height={32} style={{ alignSelf: "center", marginBottom: 12 }} />
+            <SkeletonLine width={180} height={16} style={{ alignSelf: "center", marginBottom: 40 }} />
+            <View style={styles.skeletonCard}>
+              <SkeletonLine width={60} height={12} style={{ marginBottom: 10 }} />
+              <SkeletonLine width={100} height={20} style={{ marginBottom: 16 }} />
+              {[0, 1, 2].map((i) => (
+                <SkeletonLine key={i} width="85%" height={12} style={{ marginBottom: 10 }} />
+              ))}
+              <SkeletonLine width="100%" height={48} style={{ borderRadius: 28, marginTop: 8 }} />
+            </View>
+            <View style={[styles.skeletonCard, { marginTop: 16 }]}>
+              <SkeletonLine width={80} height={12} style={{ marginBottom: 10 }} />
+              <SkeletonLine width={100} height={20} style={{ marginBottom: 16 }} />
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonLine key={i} width="85%" height={12} style={{ marginBottom: 10 }} />
+              ))}
+              <SkeletonLine width="100%" height={48} style={{ borderRadius: 28, marginTop: 8 }} />
             </View>
           </View>
         </SafeAreaView>
@@ -384,30 +419,35 @@ export default function PaywallScreen() {
     );
   }
 
-  // ── No offerings ────────────────────────────────────────────────────────
+  // ── Derived values ──────────────────────────────────────────────────────
   const noOfferings = !isWeb && packages.length === 0;
-
-  // ── Price display helpers ───────────────────────────────────────────────
-  const basePrice = resolvedBase?.product?.priceString ?? "$3.99/mo";
-  const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99/mo";
-
+  const basePrice = resolvedBase?.product?.priceString ?? "$3.99";
+  const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99";
+  const basePriceLabel = basePrice + "/month";
+  const premiumPriceLabel = premiumPrice + "/month";
   const isBaseLoading = purchasingId === resolvedBase?.identifier;
   const isPremiumLoading = purchasingId === resolvedPremium?.identifier;
   const anyPurchasing = purchasingId !== null;
+  const baseButtonLabel = isBaseLoading ? "" : "Start Base";
+  const premiumButtonLabel = isPremiumLoading ? "" : "Subscribe for " + premiumPrice;
 
   // ── Main render ─────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[LINEN.gradTop, LINEN.gradMid, LINEN.gradBot]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.3, y: 1 }}
+        colors={gradientColors}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
       <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
         {/* Close button */}
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={handleClose}
+          activeOpacity={0.85}
+        >
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 
@@ -417,141 +457,166 @@ export default function PaywallScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Hero ── */}
-          <Animated.View style={styles.hero}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>LINEN PLANS</Text>
-            </View>
-            <Text style={styles.heroTitle}>Choose your path</Text>
-            <Text style={styles.heroSubtitle}>
-              "Be still, and know that I am God."
-            </Text>
-            <Text style={styles.heroReference}>Psalm 46:10</Text>
-          </Animated.View>
-
-          {/* ── No offerings message ── */}
-          {noOfferings && (
-            <View style={styles.noOfferingsCard}>
-              <Text style={styles.noOfferingsTitle}>Plans unavailable</Text>
-              <Text style={styles.noOfferingsBody}>
-                Subscriptions require a development or production build.
-                Standard Expo Go does not support in-app purchases.
+          <AnimatedCard index={0}>
+            <View style={styles.hero}>
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>PREMIUM</Text>
+              </View>
+              <Text style={styles.heroTitle}>Upgrade to Premium</Text>
+              <Text style={styles.heroSubtitle}>
+                Unlock all features and get the most out of the app
               </Text>
             </View>
+          </AnimatedCard>
+
+          {/* ── No offerings ── */}
+          {noOfferings && (
+            <AnimatedCard index={1}>
+              <View style={styles.noOfferingsCard}>
+                <Text style={styles.noOfferingsTitle}>Plans unavailable</Text>
+                <Text style={styles.noOfferingsBody}>
+                  Subscriptions require a development or production build.
+                  Standard Expo Go does not support in-app purchases.
+                </Text>
+              </View>
+            </AnimatedCard>
           )}
 
-          {/* ── Plan cards ── */}
+          {/* ── Plan cards (stacked vertically) ── */}
           {!noOfferings && (
-            <View style={styles.cardsRow}>
-              {/* BASE CARD */}
-              <AnimatedCard index={0}>
+            <View style={styles.cardsColumn}>
+
+              {/* ── BASE CARD ── */}
+              <AnimatedCard index={1}>
                 <View style={styles.baseCard}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.planLabel}>Base</Text>
+                  {/* Card header */}
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.basePill}>
+                      <Text style={styles.basePillText}>BASE</Text>
+                    </View>
+                    <Text style={styles.cardPrice}>{basePriceLabel}</Text>
                   </View>
 
-                  <Text style={styles.planPrice}>{basePrice}</Text>
-                  <Text style={styles.planPeriod}>per month</Text>
+                  {/* Section label */}
+                  <Text style={styles.sectionLabel}>WHAT YOU'LL GET</Text>
 
-                  <View style={styles.divider} />
-
+                  {/* Features */}
                   <View style={styles.featuresList}>
                     {BASE_FEATURES.map((f) => (
-                      <FeatureRow key={f} text={f} accentColor={LINEN.sage} />
+                      <FeatureRow key={f.title} feature={f} />
                     ))}
                   </View>
 
-                  <AnimatedPressable
-                    onPress={() => resolvedBase && handlePurchase(resolvedBase)}
+                  {/* CTA */}
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      console.log("[Paywall] Start Base tapped", {
+                        packageId: resolvedBase?.identifier,
+                        price: resolvedBase?.product?.priceString,
+                      });
+                      if (resolvedBase) handlePurchase(resolvedBase);
+                    }}
                     disabled={!resolvedBase || anyPurchasing}
                     style={[
-                      styles.baseButton,
+                      styles.ctaButton,
                       (!resolvedBase || anyPurchasing) && styles.buttonDisabled,
                     ]}
                   >
                     {isBaseLoading ? (
-                      <ActivityIndicator size="small" color={LINEN.sage} />
+                      <ActivityIndicator size="small" color={PURPLE.gradTop} />
                     ) : (
-                      <Text style={styles.baseButtonText}>Start Base</Text>
+                      <Text style={styles.ctaButtonText}>{baseButtonLabel}</Text>
                     )}
-                  </AnimatedPressable>
+                  </TouchableOpacity>
                 </View>
               </AnimatedCard>
 
-              {/* PREMIUM CARD */}
-              <AnimatedCard index={1}>
+              {/* ── PREMIUM CARD ── */}
+              <AnimatedCard index={2}>
                 <View style={styles.premiumCard}>
                   {/* Recommended badge */}
-                  <View style={styles.recommendedBadge}>
-                    <Text style={styles.recommendedText}>Recommended</Text>
+                  <View style={styles.recommendedBadgeWrap}>
+                    <View style={styles.recommendedBadge}>
+                      <Text style={styles.recommendedText}>Recommended</Text>
+                    </View>
                   </View>
 
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.planLabelPremium}>Premium</Text>
+                  {/* Card header */}
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.premiumPill}>
+                      <Text style={styles.premiumPillText}>PREMIUM</Text>
+                    </View>
+                    <Text style={styles.cardPricePremium}>{premiumPriceLabel}</Text>
                   </View>
 
-                  <Text style={styles.planPricePremium}>{premiumPrice}</Text>
-                  <Text style={styles.planPeriodPremium}>per month</Text>
+                  {/* Section label */}
+                  <Text style={styles.sectionLabel}>WHAT YOU'LL GET</Text>
 
-                  <View style={styles.dividerAmber} />
-
+                  {/* Features */}
                   <View style={styles.featuresList}>
                     {PREMIUM_FEATURES.map((f) => (
-                      <FeatureRow key={f} text={f} accentColor={LINEN.amber} />
+                      <FeatureRow key={f.title} feature={f} />
                     ))}
                   </View>
 
-                  <AnimatedPressable
-                    onPress={() =>
-                      resolvedPremium && handlePurchase(resolvedPremium)
-                    }
+                  {/* CTA */}
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      console.log("[Paywall] Start Premium tapped", {
+                        packageId: resolvedPremium?.identifier,
+                        price: resolvedPremium?.product?.priceString,
+                      });
+                      if (resolvedPremium) handlePurchase(resolvedPremium);
+                    }}
                     disabled={!resolvedPremium || anyPurchasing}
                     style={[
-                      styles.premiumButton,
-                      (!resolvedPremium || anyPurchasing) &&
-                        styles.buttonDisabled,
+                      styles.ctaButton,
+                      (!resolvedPremium || anyPurchasing) && styles.buttonDisabled,
                     ]}
                   >
                     {isPremiumLoading ? (
-                      <ActivityIndicator size="small" color={LINEN.white} />
+                      <ActivityIndicator size="small" color={PURPLE.gradTop} />
                     ) : (
-                      <Text style={styles.premiumButtonText}>
-                        Start Premium
-                      </Text>
+                      <Text style={styles.ctaButtonText}>{premiumButtonLabel}</Text>
                     )}
-                  </AnimatedPressable>
+                  </TouchableOpacity>
                 </View>
               </AnimatedCard>
             </View>
           )}
 
           {/* ── Bottom actions ── */}
-          <View style={styles.bottomActions}>
-            <AnimatedPressable
-              onPress={handleRestore}
-              disabled={restoring}
-              style={styles.restoreButton}
-            >
-              {restoring ? (
-                <ActivityIndicator size="small" color={LINEN.inkMuted} />
-              ) : (
-                <Text style={styles.restoreText}>Restore purchases</Text>
-              )}
-            </AnimatedPressable>
+          <AnimatedCard index={3}>
+            <View style={styles.bottomActions}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleRestore}
+                disabled={restoring}
+                style={styles.restoreButton}
+              >
+                {restoring ? (
+                  <ActivityIndicator size="small" color={PURPLE.whiteAlpha70} />
+                ) : (
+                  <Text style={styles.restoreText}>Restore Purchases</Text>
+                )}
+              </TouchableOpacity>
 
-            {isWeb && (
-              <Text style={styles.legalText}>
-                Preview mode — purchases available in the mobile app
-              </Text>
-            )}
-            {!isWeb && (
-              <Text style={styles.legalText}>
-                Payment charged to your{" "}
-                {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account.
-                Subscription renews automatically unless cancelled at least 24
-                hours before the end of the current period.
-              </Text>
-            )}
-          </View>
+              {isWeb ? (
+                <Text style={styles.legalText}>
+                  Preview mode — purchases available in the mobile app
+                </Text>
+              ) : (
+                <Text style={styles.legalText}>
+                  Payment will be charged to your{" "}
+                  {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account.
+                  Subscription automatically renews unless cancelled at least 24
+                  hours before the end of the current period.
+                </Text>
+              )}
+            </View>
+          </AnimatedCard>
         </ScrollView>
       </SafeAreaView>
 
@@ -568,6 +633,7 @@ export default function PaywallScreen() {
                 <View style={styles.webDialogDivider} />
                 <TouchableOpacity
                   style={styles.webDialogButton}
+                  activeOpacity={0.85}
                   onPress={() => setWebMockDialogState("failed")}
                 >
                   <Text style={[styles.webDialogButtonText, { color: "#FF3B30" }]}>
@@ -577,6 +643,7 @@ export default function PaywallScreen() {
                 <View style={styles.webDialogDivider} />
                 <TouchableOpacity
                   style={styles.webDialogButton}
+                  activeOpacity={0.85}
                   onPress={() => {
                     console.log("[Paywall] Web mock purchase confirmed", {
                       packageId: webMockPkg?.identifier,
@@ -593,6 +660,7 @@ export default function PaywallScreen() {
                 <View style={styles.webDialogDivider} />
                 <TouchableOpacity
                   style={styles.webDialogButton}
+                  activeOpacity={0.85}
                   onPress={() => setWebMockDialogState("hidden")}
                 >
                   <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
@@ -610,6 +678,7 @@ export default function PaywallScreen() {
                 <View style={styles.webDialogDivider} />
                 <TouchableOpacity
                   style={styles.webDialogButton}
+                  activeOpacity={0.85}
                   onPress={() => setWebMockDialogState("hidden")}
                 >
                   <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
@@ -626,12 +695,10 @@ export default function PaywallScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const CARD_WIDTH = (SCREEN_WIDTH - 48 - 12) / 2; // 24px side padding + 12px gap
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LINEN.parchment,
+    backgroundColor: PURPLE.gradTop,
   },
   safeArea: {
     flex: 1,
@@ -640,244 +707,226 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 32,
+    paddingHorizontal: 20,
+    paddingTop: 52,
+    paddingBottom: 40,
+    flexGrow: 1,
   },
 
   // ── Close button ──
   closeButton: {
     position: "absolute",
     top: 52,
-    right: 20,
+    right: 18,
     zIndex: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(44,36,22,0.08)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: PURPLE.whiteAlpha15,
     justifyContent: "center",
     alignItems: "center",
   },
   closeButtonText: {
-    fontSize: 14,
-    color: LINEN.inkMuted,
+    fontSize: 13,
+    color: PURPLE.whiteAlpha90,
     fontWeight: "600",
   },
 
   // ── Hero ──
   hero: {
     alignItems: "center",
-    marginBottom: 32,
-    paddingTop: 8,
+    marginBottom: 28,
+    paddingTop: 4,
   },
   heroBadge: {
-    backgroundColor: "rgba(44,36,22,0.07)",
+    backgroundColor: PURPLE.badgeBg,
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 20,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   heroBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: LINEN.inkMuted,
-    letterSpacing: 1.4,
+    color: PURPLE.white,
+    letterSpacing: 1.5,
   },
   heroTitle: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: LINEN.ink,
-    letterSpacing: -0.4,
-    marginBottom: 12,
+    fontSize: 28,
+    fontWeight: "800",
+    color: PURPLE.white,
+    letterSpacing: -0.3,
+    marginBottom: 10,
     textAlign: "center",
   },
   heroSubtitle: {
     fontSize: 15,
-    color: LINEN.inkMuted,
+    color: PURPLE.white,
+    opacity: 0.85,
     textAlign: "center",
-    fontStyle: "italic",
     lineHeight: 22,
-  },
-  heroReference: {
-    fontSize: 12,
-    color: LINEN.inkFaint,
-    marginTop: 4,
-    letterSpacing: 0.3,
+    maxWidth: 280,
   },
 
-  // ── Cards row ──
-  cardsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 28,
+  // ── Cards column ──
+  cardsColumn: {
+    gap: 20,
+    marginBottom: 24,
   },
 
   // ── Base card ──
   baseCard: {
-    width: CARD_WIDTH,
-    backgroundColor: LINEN.parchment,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: LINEN.border,
-    shadowColor: LINEN.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: "rgba(255,255,255,0.25)",
   },
 
   // ── Premium card ──
   premiumCard: {
-    width: CARD_WIDTH,
-    backgroundColor: "#FFFBF0",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: "rgba(139,105,20,0.30)",
-    shadowColor: LINEN.amber,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 4,
-    position: "relative",
+    padding: 20,
+    paddingTop: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.50)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
     overflow: "visible",
   },
 
   // ── Recommended badge ──
-  recommendedBadge: {
+  recommendedBadgeWrap: {
     position: "absolute",
-    top: -11,
-    alignSelf: "center",
+    top: -13,
     left: 0,
     right: 0,
     alignItems: "center",
     zIndex: 2,
   },
+  recommendedBadge: {
+    backgroundColor: PURPLE.recommendedBg,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
   recommendedText: {
-    backgroundColor: LINEN.amber,
-    color: LINEN.white,
     fontSize: 10,
     fontWeight: "700",
-    letterSpacing: 0.8,
+    color: "#3A2800",
+    letterSpacing: 0.6,
+  },
+
+  // ── Card top row ──
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  basePill: {
+    backgroundColor: PURPLE.whiteAlpha20,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    overflow: "hidden",
+  },
+  basePillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: PURPLE.white,
+    letterSpacing: 1.2,
+  },
+  premiumPill: {
+    backgroundColor: PURPLE.whiteAlpha20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  premiumPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: PURPLE.white,
+    letterSpacing: 1.2,
+  },
+  cardPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: PURPLE.white,
+    letterSpacing: -0.2,
+  },
+  cardPricePremium: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: PURPLE.white,
+    letterSpacing: -0.2,
   },
 
-  // ── Card shared ──
-  cardHeader: {
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  planLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: LINEN.sage,
-    letterSpacing: 0.2,
-  },
-  planLabelPremium: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: LINEN.amber,
-    letterSpacing: 0.2,
-  },
-  planPrice: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: LINEN.ink,
-    letterSpacing: -0.3,
-  },
-  planPricePremium: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: LINEN.ink,
-    letterSpacing: -0.3,
-  },
-  planPeriod: {
+  // ── Section label ──
+  sectionLabel: {
     fontSize: 11,
-    color: LINEN.inkFaint,
-    marginTop: 1,
-    marginBottom: 12,
-  },
-  planPeriodPremium: {
-    fontSize: 11,
-    color: LINEN.inkFaint,
-    marginTop: 1,
-    marginBottom: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: LINEN.border,
-    marginBottom: 12,
-  },
-  dividerAmber: {
-    height: 1,
-    backgroundColor: "rgba(139,105,20,0.15)",
+    fontWeight: "600",
+    color: PURPLE.white,
+    opacity: 0.6,
+    letterSpacing: 2,
+    marginTop: 24,
     marginBottom: 12,
   },
 
   // ── Features ──
   featuresList: {
-    gap: 7,
-    marginBottom: 16,
-    flex: 1,
+    gap: 12,
+    marginBottom: 20,
   },
   featureRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 7,
+    alignItems: "center",
+    gap: 12,
   },
-  featureDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 5,
+  featureIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
     flexShrink: 0,
   },
-  featureText: {
-    fontSize: 12,
-    color: LINEN.inkMuted,
-    lineHeight: 17,
+  featureIconText: {
+    fontSize: 16,
+  },
+  featureTextBlock: {
     flex: 1,
   },
-
-  // ── Buttons ──
-  baseButton: {
-    backgroundColor: LINEN.sageMuted,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(90,122,92,0.25)",
-    minHeight: 48,
-    justifyContent: "center",
-  },
-  baseButtonText: {
-    fontSize: 14,
+  featureTitle: {
+    fontSize: 15,
     fontWeight: "600",
-    color: LINEN.sage,
-    letterSpacing: 0.2,
+    color: PURPLE.white,
+    marginBottom: 1,
   },
-  premiumButton: {
-    backgroundColor: LINEN.amber,
-    borderRadius: 12,
-    paddingVertical: 13,
+  featureSubtitle: {
+    fontSize: 13,
+    color: PURPLE.white,
+    opacity: 0.7,
+    lineHeight: 17,
+  },
+
+  // ── CTA button ──
+  ctaButton: {
+    backgroundColor: PURPLE.white,
+    borderRadius: 30,
+    paddingVertical: 16,
     alignItems: "center",
-    minHeight: 48,
     justifyContent: "center",
-    shadowColor: LINEN.amber,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    minHeight: 52,
   },
-  premiumButtonText: {
-    fontSize: 14,
+  ctaButtonText: {
+    fontSize: 17,
     fontWeight: "700",
-    color: LINEN.white,
-    letterSpacing: 0.2,
+    color: PURPLE.gradTop,
+    letterSpacing: 0.1,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -886,7 +935,7 @@ const styles = StyleSheet.create({
   // ── Bottom actions ──
   bottomActions: {
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
   restoreButton: {
     paddingVertical: 10,
@@ -897,36 +946,38 @@ const styles = StyleSheet.create({
   },
   restoreText: {
     fontSize: 14,
-    color: LINEN.inkMuted,
-    textDecorationLine: "underline",
+    color: PURPLE.white,
+    opacity: 0.7,
+    fontWeight: "500",
   },
   legalText: {
     fontSize: 11,
-    color: LINEN.inkFaint,
+    color: PURPLE.white,
+    opacity: 0.5,
     textAlign: "center",
     lineHeight: 16,
-    maxWidth: 300,
+    paddingHorizontal: 24,
   },
 
   // ── No offerings ──
   noOfferingsCard: {
-    backgroundColor: LINEN.parchmentDeep,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: LINEN.border,
+    borderColor: "rgba(255,255,255,0.25)",
     marginBottom: 24,
   },
   noOfferingsTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: LINEN.ink,
+    color: PURPLE.white,
     marginBottom: 8,
   },
   noOfferingsBody: {
     fontSize: 14,
-    color: LINEN.inkMuted,
+    color: PURPLE.whiteAlpha70,
     textAlign: "center",
     lineHeight: 20,
   },
@@ -934,19 +985,15 @@ const styles = StyleSheet.create({
   // ── Skeleton ──
   skeletonContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 80,
   },
-  skeletonCards: {
-    flexDirection: "row",
-  },
   skeletonCard: {
-    flex: 1,
-    backgroundColor: LINEN.parchmentDeep,
+    backgroundColor: "rgba(255,255,255,0.13)",
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: LINEN.border,
+    borderColor: "rgba(255,255,255,0.18)",
   },
 
   // ── Subscribed ──
@@ -958,36 +1005,22 @@ const styles = StyleSheet.create({
   },
   subscribedEmoji: {
     fontSize: 48,
-    color: LINEN.amber,
+    color: PURPLE.white,
     marginBottom: 20,
   },
   subscribedTitle: {
     fontSize: 28,
     fontWeight: "700",
-    color: LINEN.ink,
+    color: PURPLE.white,
     letterSpacing: -0.3,
     marginBottom: 8,
   },
   subscribedSubtitle: {
     fontSize: 15,
-    color: LINEN.inkMuted,
+    color: PURPLE.whiteAlpha70,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
-  },
-  continueButton: {
-    backgroundColor: LINEN.amber,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 48,
-    minHeight: 52,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: LINEN.white,
   },
 
   // ── Web mock dialog ──
@@ -997,24 +1030,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(0,0,0,0.50)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
   },
   webDialogBox: {
-    backgroundColor: "#F2EDE4",
+    backgroundColor: "#2D2050",
     borderRadius: 16,
     width: "85%",
     maxWidth: 380,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: LINEN.border,
+    borderColor: PURPLE.cardBorder,
   },
   webDialogTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: LINEN.ink,
+    color: PURPLE.white,
     textAlign: "center",
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -1022,7 +1055,7 @@ const styles = StyleSheet.create({
   },
   webDialogBody: {
     fontSize: 13,
-    color: LINEN.inkMuted,
+    color: PURPLE.whiteAlpha70,
     textAlign: "center",
     paddingHorizontal: 16,
     paddingBottom: 20,
@@ -1030,7 +1063,7 @@ const styles = StyleSheet.create({
   },
   webDialogDivider: {
     height: 1,
-    backgroundColor: LINEN.border,
+    backgroundColor: PURPLE.cardBorder,
   },
   webDialogButton: {
     paddingVertical: 14,

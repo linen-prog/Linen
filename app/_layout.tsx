@@ -207,6 +207,14 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
         <Stack.Screen name="recap-settings" options={{ headerShown: false }} />
         {/* Scripture Verification (dev tool) */}
         <Stack.Screen name="scripture-verification" options={{ headerShown: false }} />
+        {/* Paywall — must be transparent so the purple gradient shows through */}
+        <Stack.Screen
+          name="paywall"
+          options={{
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         {/* Main app with tabs */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
