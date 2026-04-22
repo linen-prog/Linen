@@ -654,52 +654,62 @@ export async function initializeDatabase(db: any, app?: App) {
     }
 
     // Seed test community post with artwork_url
+    // Skip if the referenced user doesn't exist (graceful degradation)
     try {
       const seedUserId = 'seed-user-001';
       const seedTimestamp = new Date().toISOString();
 
-      // Use raw SQL to insert with ON CONFLICT DO NOTHING
-      await db.execute(sql`
-        INSERT INTO "community_posts" (
-          "id",
-          "user_id",
-          "author_name",
-          "is_anonymous",
-          "category",
-          "content",
-          "prayer_count",
-          "content_type",
-          "scripture_reference",
-          "is_flagged",
-          "created_at",
-          "artwork_url"
-        ) VALUES (
-          gen_random_uuid(),
-          ${seedUserId},
-          'Seed User',
-          false,
-          'reflection',
-          'This is a seed post to verify artwork_url storage.',
-          0,
-          'artwork',
-          NULL,
-          false,
-          ${seedTimestamp},
-          'https://picsum.photos/seed/linen-artwork/800/600'
-        )
-        ON CONFLICT DO NOTHING
+      // Check if the seed user exists before trying to insert
+      const userExists = await db.execute(sql`
+        SELECT id FROM "user" WHERE id = ${seedUserId} LIMIT 1
       `);
 
-      app?.logger.info({}, 'Seed community post inserted');
+      if ((userExists as any).rows?.length > 0) {
+        // Use raw SQL to insert with ON CONFLICT DO NOTHING
+        await db.execute(sql`
+          INSERT INTO "community_posts" (
+            "id",
+            "user_id",
+            "author_name",
+            "is_anonymous",
+            "category",
+            "content",
+            "prayer_count",
+            "content_type",
+            "scripture_reference",
+            "is_flagged",
+            "created_at",
+            "artwork_url"
+          ) VALUES (
+            gen_random_uuid(),
+            ${seedUserId},
+            'Seed User',
+            false,
+            'reflection',
+            'This is a seed post to verify artwork_url storage.',
+            0,
+            'artwork',
+            NULL,
+            false,
+            ${seedTimestamp},
+            'https://picsum.photos/seed/linen-artwork/800/600'
+          )
+          ON CONFLICT DO NOTHING
+        `);
 
-      // Query and log results to confirm
-      const results = await db.execute(sql`
-        SELECT id, user_id, artwork_url FROM community_posts WHERE artwork_url IS NOT NULL LIMIT 5
-      `);
+        app?.logger.info({}, 'Seed community post inserted');
 
-      app?.logger.info({ results }, 'Community posts with artwork_url');
+        // Query and log results to confirm
+        const results = await db.execute(sql`
+          SELECT id, user_id, artwork_url FROM community_posts WHERE artwork_url IS NOT NULL LIMIT 5
+        `);
+
+        app?.logger.info({ results }, 'Community posts with artwork_url');
+      } else {
+        app?.logger.warn({}, 'Skipping seed community post - referenced user does not exist');
+      }
     } catch (error) {
-      app?.logger.warn({ err: error }, 'Failed to seed community post data');
+      app?.logger.warn({ err: error }, 'Failed to seed community post data - skipping gracefully');
       // Don't throw - this is optional seed data
     }
 
