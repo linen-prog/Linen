@@ -235,7 +235,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           await Purchases.logIn(user.id);
         } else {
           // Anonymous user - only log out once auth has fully resolved
-          await Purchases.logOut();
+          const isAnon = await Purchases.isAnonymous();
+          if (!isAnon) {
+            await Purchases.logOut();
+          }
         }
         await checkSubscription();
       } catch (error) {
