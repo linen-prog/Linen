@@ -30,7 +30,7 @@ import Constants from "expo-constants";
 
 // Import auth hook for user targeting (validated at setup time)
 import { useAuth } from "./AuthContext";
-import { authenticatedPost, authenticatedDelete } from "@/utils/api";
+import { authenticatedDelete, getAuthToken, BACKEND_URL } from "@/utils/api";
 
 // Read App ID from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -83,19 +83,30 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const lastRegisteredSubscriptionIdRef = useRef<string | null>(null);
 
   const registerPushSubscription = useCallback(async (subscriptionId: string | null | undefined) => {
-    if (!subscriptionId) return;
+    if (!subscriptionId || typeof subscriptionId !== "string" || subscriptionId.trim() === "") return;
     const uid = currentUserIdRef.current;
     if (!uid) return;
     if (lastRegisteredSubscriptionIdRef.current === subscriptionId) return;
 
     try {
-      await authenticatedPost("/api/push-subscriptions", {
-        oneSignalSubscriptionId: subscriptionId,
-        platform: Platform.OS,
+      const authToken = await getAuthToken();
+      const response = await fetch(`${BACKEND_URL}/api/push-subscriptions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          onesignal_subscription_id: subscriptionId,
+          platform: Platform.OS,
+        }),
       });
-      lastRegisteredSubscriptionIdRef.current = subscriptionId;
-      if (__DEV__) {
-        console.log("[OneSignal] Registered push subscription:", subscriptionId);
+      if (response.ok) {
+        lastRegisteredSubscriptionIdRef.current = subscriptionId;
+        if (__DEV__) {
+          console.log("[OneSignal] Registered push subscription:", subscriptionId);
+        }
       }
     } catch {
       // Non-fatal — silently ignore push subscription registration failures
@@ -194,8 +205,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           .then((subscriptionId: string | null) => {
             if (subscriptionId) void registerPushSubscription(subscriptionId);
           })
-          .catch((error: unknown) => {
-            console.error("[OneSignal] Failed to read push subscription id:", error);
+          .catch(() => {
+            // Non-fatal — silently ignore
           });
       } else {
         // User logged out — detach this device's subscription from the previous user
@@ -204,15 +215,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         if (previousUserId && subscriptionIdToRemove) {
           void authenticatedDelete(
             `/api/push-subscriptions/${encodeURIComponent(subscriptionIdToRemove)}`
-          ).catch((error) => {
-            console.error("[OneSignal] Failed to unregister push subscription:", error);
+          ).catch(() => {
+            // Non-fatal — silently ignore
           });
         }
         lastRegisteredSubscriptionIdRef.current = null;
         OneSignal.logout();
       }
-    } catch (error) {
-      console.error("[OneSignal] Failed to update user:", error);
+    } catch {
+      // Non-fatal — silently ignore
     }
   }, [user?.id, registerPushSubscription]);
 
