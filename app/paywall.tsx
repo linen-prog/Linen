@@ -277,10 +277,10 @@ export default function PaywallScreen() {
     }) ?? null;
 
   const resolvedBase =
-    basePackage ?? (packages.length >= 2 ? packages[0] : null);
+    basePackage ?? (packages.length >= 1 ? packages[0] : null);
   const resolvedPremium =
     premiumPackage ??
-    (packages.length >= 2 ? packages[1] : packages[0] ?? null);
+    (packages.length >= 1 ? packages[packages.length - 1] : null);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handlePurchase = async (pkg: PurchasesPackage) => {
