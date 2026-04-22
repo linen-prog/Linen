@@ -110,7 +110,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
-    // Two mock packages matching the real RevenueCat dashboard tiers
+    // Two mock packages matching the exact RevenueCat dashboard package identifiers
     const basePackage = {
       identifier: "base",
       product: {
@@ -119,17 +119,20 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         description: "A gentle daily companion for reflection, encouragement, and light support.",
       },
     };
-    const premiumPackage = {
-      identifier: "premium",
+    const monthlyPackage = {
+      identifier: "monthly",
       product: {
-        title: "Premium",
+        title: "Pro",
         priceString: "$8.99",
         description: "A deeper, more personalized space for ongoing reflection, richer AI support, and full access.",
       },
     };
 
-    setPackages([basePackage, premiumPackage] as PurchasesPackage[]);
-    console.log("[revenuecat] Web preview: showing real prices from dashboard");
+    setPackages([basePackage, monthlyPackage] as PurchasesPackage[]);
+    console.log("[RevenueCat] Web preview: mock packages set", [
+      { identifier: "base", priceString: "$3.99" },
+      { identifier: "monthly", priceString: "$8.99" },
+    ]);
   };
 
   // Initialize RevenueCat on mount
@@ -263,9 +266,23 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const fetchedOfferings = await Purchases.getOfferings();
       setOfferings(fetchedOfferings);
 
-      if (fetchedOfferings.current) {
+      console.log('[RevenueCat] Offering identifier:', fetchedOfferings.current?.identifier);
+      console.log('[RevenueCat] Available packages:', fetchedOfferings.current?.availablePackages.map(p => ({
+        packageId: p.identifier,
+        productId: p.product.identifier,
+        price: p.product.priceString,
+      })));
+
+      if (!fetchedOfferings.current) {
+        console.error('[RevenueCat] ERROR: offerings.current is null');
+      } else {
         setCurrentOffering(fetchedOfferings.current);
-        setPackages(fetchedOfferings.current.availablePackages);
+        const pkgs = fetchedOfferings.current.availablePackages;
+        const baseFound = pkgs.find(p => p.identifier === 'base');
+        const monthlyFound = pkgs.find(p => p.identifier === 'monthly');
+        if (!baseFound) console.warn('[RevenueCat] WARNING: "base" package not found');
+        if (!monthlyFound) console.warn('[RevenueCat] WARNING: "monthly" package not found');
+        setPackages(pkgs);
       }
     } catch (error) {
       console.error("[RevenueCat] Failed to fetch offerings:", error);

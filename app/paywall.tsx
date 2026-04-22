@@ -167,9 +167,9 @@ export default function PaywallScreen() {
     mockWebPurchase,
   } = useSubscription();
 
-  // "base" | "premium"
-  const [selectedPlan, setSelectedPlan] = useState<"base" | "premium">(
-    "premium"
+  // "base" | "pro"
+  const [selectedPlan, setSelectedPlan] = useState<"base" | "pro">(
+    "pro"
   );
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -179,32 +179,22 @@ export default function PaywallScreen() {
   const [webMockPkg, setWebMockPkg] = useState<PurchasesPackage | null>(null);
 
   // ── Package resolution ────────────────────────────────────────────────────
-  const basePackage =
-    packages.find((p) => {
-      const id = (p.identifier + " " + (p.product?.identifier ?? "")).toLowerCase();
-      return id.includes("base");
-    }) ?? null;
+  const basePackage = packages.find(p => p.identifier === 'base') ?? null;
+  const proPackage = packages.find(p => p.identifier === 'monthly') ?? null;
 
-  const premiumPackage =
-    packages.find((p) => {
-      const id = (p.identifier + " " + (p.product?.identifier ?? "")).toLowerCase();
-      return id.includes("premium");
-    }) ?? null;
-
-  const resolvedBase =
-    basePackage ?? (packages.length >= 1 ? packages[0] : null);
-  const resolvedPremium =
-    premiumPackage ??
-    (packages.length >= 1 ? packages[packages.length - 1] : null);
+  if (packages.length > 0) {
+    if (!basePackage) console.warn('[Paywall] WARNING: "base" package not found in packages');
+    if (!proPackage) console.warn('[Paywall] WARNING: "monthly" package not found in packages');
+  }
 
   // ── Derived values ────────────────────────────────────────────────────────
   const basePrice = basePackage?.product?.priceString ?? "$3.99";
-  const premiumPrice = resolvedPremium?.product?.priceString ?? "$8.99";
+  const proPrice = proPackage?.product?.priceString ?? "$8.99";
   const noOfferings = !isWeb && packages.length === 0;
   const anyPurchasing = purchasingId !== null;
 
-  const selectedPackage = selectedPlan === "base" ? resolvedBase : resolvedPremium;
-  const selectedPlanLabel = selectedPlan === "base" ? "Base" : "Premium";
+  const selectedPackage = selectedPlan === "base" ? basePackage : proPackage;
+  const selectedPlanLabel = selectedPlan === "base" ? "Base" : "Pro";
   const ctaLabel = anyPurchasing ? "" : "Continue with " + selectedPlanLabel;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -214,8 +204,8 @@ export default function PaywallScreen() {
   };
 
   const handleSelectPremium = () => {
-    console.log("[Paywall] Premium plan card tapped");
-    setSelectedPlan("premium");
+    console.log("[Paywall] Pro plan card tapped");
+    setSelectedPlan("pro");
   };
 
   const handleContinue = () => {
@@ -409,12 +399,12 @@ export default function PaywallScreen() {
               onPress={handleSelectBase}
             />
 
-            {/* Premium */}
+            {/* Pro */}
             <PlanCard
-              title="Premium"
-              priceAmount={premiumPrice}
+              title="Pro"
+              priceAmount={proPrice}
               description="A deeper, more personalized space for ongoing reflection, richer AI support, and full access."
-              selected={selectedPlan === "premium"}
+              selected={selectedPlan === "pro"}
               recommended
               onPress={handleSelectPremium}
             />
