@@ -182,13 +182,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
         if (__DEV__) {
           console.log("[RevenueCat] Initializing in DEV mode with key:", apiKey.substring(0, 10) + "...");
-          // Restore cached subscription state immediately to avoid paywall flash on bundle reload.
-          // The customerInfoUpdateListener (fired by configure() below) is the authoritative
-          // source and will immediately overwrite this with real RC Keychain data.
-          const cached = await SecureStore.getItemAsync(NATIVE_PURCHASE_KEY).catch(() => null);
-          if (cached === "true") {
-            setIsSubscribed(true);
-          }
+          // Always clear the cached subscription value in dev mode so the real
+          // RevenueCat entitlement check is the authoritative source of truth.
+          await SecureStore.deleteItemAsync(NATIVE_PURCHASE_KEY).catch(() => {});
         }
 
         await Purchases.configure({ apiKey });
@@ -202,9 +198,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             );
             // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
             // in-memory only and won't be known to RC after a configure() call on reload.
-            if (hasEntitlement || !__DEV__) {
-              setIsSubscribed(hasEntitlement);
-            }
+            setIsSubscribed(hasEntitlement);
           }
         );
 
@@ -278,11 +272,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const hasEntitlement = hasAnyActiveEntitlement(
         customerInfo.entitlements.active as Record<string, unknown>
       );
-      // In __DEV__: RC test store purchases don't survive configure(), so only update state
-      // positively — mock/test purchase state persists across reloads via SecureStore cache.
-      if (hasEntitlement || !__DEV__) {
-        setIsSubscribed(hasEntitlement);
-      }
+      setIsSubscribed(hasEntitlement);
       if (hasEntitlement) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
       } else if (!__DEV__) {
