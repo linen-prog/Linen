@@ -21,20 +21,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PurchasesPackage } from "react-native-purchases";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { gradientConfig } from "@/styles/commonStyles";
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
 const C = {
   bg: "#F5F0E8",
   cardBg: "#FFFFFF",
-  selectedBorder: "#6B9E6B",
-  selectedPrice: "#4A7C4A",
-  ctaBg: "#8BAF8B",
+  selectedBorder: "#7EC87E",
+  selectedPrice: "#5BAD5B",
+  ctaBg: "#7EC87E",
   ctaText: "#FFFFFF",
   titleText: "#1A1A1A",
   descText: "#666666",
-  badgeBg: "#6B9E6B",
+  badgeBg: "#7EC87E",
   badgeText: "#FFFFFF",
   closeBg: "#E8E4DC",
   closeText: "#555555",
@@ -303,15 +305,16 @@ export default function PaywallScreen() {
     router.replace("/(tabs)/(home)");
   };
 
-  const handleSkip = () => {
-    console.log("[Paywall] Skip (Testing Only) tapped");
-    router.replace("/(tabs)/(home)");
-  };
-
   // ── Already subscribed ────────────────────────────────────────────────────
   if (isSubscribed) {
     return (
-      <View style={styles.container}>
+      <LinearGradient
+        colors={gradientConfig.colors as unknown as readonly [string, string, ...string[]]}
+        locations={gradientConfig.locations}
+        start={gradientConfig.start}
+        end={gradientConfig.end}
+        style={styles.container}
+      >
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
           <TouchableOpacity
             style={styles.closeButton}
@@ -331,26 +334,38 @@ export default function PaywallScreen() {
             </AnimatedPressable>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
     );
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.container}>
+      <LinearGradient
+        colors={gradientConfig.colors as unknown as readonly [string, string, ...string[]]}
+        locations={gradientConfig.locations}
+        start={gradientConfig.start}
+        end={gradientConfig.end}
+        style={styles.container}
+      >
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={C.selectedBorder} />
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
     );
   }
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={gradientConfig.colors as unknown as readonly [string, string, ...string[]]}
+      locations={gradientConfig.locations}
+      start={gradientConfig.start}
+      end={gradientConfig.end}
+      style={styles.container}
+    >
       <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
         {/* Close button */}
         <TouchableOpacity
@@ -434,17 +449,6 @@ export default function PaywallScreen() {
 
           {/* ── Legal ── */}
           <Text style={styles.legalText}>Cancel anytime. Billed monthly.</Text>
-
-          {/* ── Skip (dev only) ── */}
-          {__DEV__ && (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleSkip}
-              style={styles.skipButton}
-            >
-              <Text style={styles.skipText}>Skip (Testing Only)</Text>
-            </TouchableOpacity>
-          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -518,7 +522,7 @@ export default function PaywallScreen() {
           </View>
         </View>
       )}
-    </View>
+    </LinearGradient>
   );
 }
 
