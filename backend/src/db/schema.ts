@@ -484,7 +484,7 @@ export const contentReports = pgTable(
   'content_reports',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    postId: uuid('post_id').notNull(),
+    postId: text('post_id').notNull(),
     reporterUserId: text('reporter_user_id').notNull(),
     reportedUserId: text('reported_user_id').notNull(),
     reason: text('reason', {
@@ -497,7 +497,6 @@ export const contentReports = pgTable(
     index('content_reports_post').on(table.postId),
     index('content_reports_reporter').on(table.reporterUserId),
     index('content_reports_reported').on(table.reportedUserId),
-    index('content_reports_created').on(table.createdAt),
   ]
 );
 
@@ -508,7 +507,7 @@ export const userBlocks = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     blockerUserId: text('blocker_user_id').notNull(),
     blockedUserId: text('blocked_user_id').notNull(),
-    postId: uuid('post_id'),
+    postId: text('post_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
