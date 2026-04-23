@@ -19,7 +19,8 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated, ImageSourcePropType } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated, ImageSourcePropType, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter } from 'expo-router';
@@ -106,6 +107,22 @@ export default function CommunityScreen() {
   const [fullscreenArtworkUrl, setFullscreenArtworkUrl] = useState<string | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
+  // Moderation state
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+  const [showPostMenu, setShowPostMenu] = useState<string | null>(null);
+  const [showReportModal, setShowReportModal] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportNote, setReportNote] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState<{ postId: string; userId: string } | null>(null);
+  const [isBlocking, setIsBlocking] = useState(false);
+
+  // Load blocked users from cache on first mount for instant filtering
+  useEffect(() => {
+    loadBlockedUsersFromCache();
+  }, []);
+
   useEffect(() => {
     console.log('[Community] Tab changed to:', selectedTab);
     if (selectedTab === 'care' && user) {
@@ -114,6 +131,7 @@ export default function CommunityScreen() {
     }
     loadPosts(selectedTab);
     loadStats();
+    loadBlockedUsers();
   }, [selectedTab, user]);
 
   // Reload posts every time the screen comes into focus (e.g. after sharing artwork)
@@ -156,6 +174,8 @@ export default function CommunityScreen() {
         return [];
       };
       
+      const excludeParam = blockedUserIds.length > 0 ? `excludeUserIds=${blockedUserIds.join(',')}` : '';
+
       if (category === 'my-shared') {
         const endpoint = '/api/community/my-posts';
         console.log('[Community] 🔵 Fetching user\'s shared posts from:', endpoint);
@@ -163,7 +183,7 @@ export default function CommunityScreen() {
         allPosts = unwrapPosts(raw);
       } else if (category === 'feed') {
         // For feed tab, fetch all posts (no category filter)
-        const endpoint = '/api/community/posts';
+        const endpoint = excludeParam ? `/api/community/posts?${excludeParam}` : '/api/community/posts';
         console.log('[Community] 🔵 Fetching all posts for feed from:', endpoint);
         const raw = await authenticatedGet<unknown>(endpoint);
         allPosts = unwrapPosts(raw);
@@ -174,7 +194,9 @@ export default function CommunityScreen() {
         // Map tab id to the correct category query param
         // prayers tab → category=prayer (singular, matches what check-in posts)
         const categoryParam = category === 'prayers' ? 'prayer' : category;
-        const endpoint = `/api/community/posts?category=${categoryParam}`;
+        const endpoint = excludeParam
+          ? `/api/community/posts?category=${categoryParam}&${excludeParam}`
+          : `/api/community/posts?category=${categoryParam}`;
         console.log('[Community] 🔵 Fetching posts from:', endpoint);
         const raw = await authenticatedGet<unknown>(endpoint);
         allPosts = unwrapPosts(raw);
@@ -301,6 +323,83 @@ export default function CommunityScreen() {
       loadPosts(selectedTab);
     } catch (error) {
       console.error('[Community] Failed to flag post:', error);
+    }
+  };
+
+  const loadBlockedUsersFromCache = async () => {
+    try {
+      const cached = await AsyncStorage.getItem('linen_blocked_users');
+      if (cached) {
+        setBlockedUserIds(JSON.parse(cached));
+      }
+    } catch {}
+  };
+
+  const loadBlockedUsers = async () => {
+    if (!user?.id) return;
+    try {
+      console.log('[Community] Loading blocked users from API');
+      const { authenticatedGet } = await import('@/utils/api');
+      const res = await authenticatedGet<{ blockedUserIds: string[] }>('/api/community/blocks');
+      const ids = res.blockedUserIds || [];
+      setBlockedUserIds(ids);
+      await AsyncStorage.setItem('linen_blocked_users', JSON.stringify(ids));
+      console.log('[Community] Blocked users loaded:', ids.length);
+    } catch (e) {
+      console.error('[Community] Failed to load blocked users:', e);
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!showReportModal || !reportReason) return;
+    console.log('[Community] User submitting report for post:', showReportModal, '| reason:', reportReason);
+    setIsSubmittingReport(true);
+    try {
+      const post = posts.find(p => p.id === showReportModal);
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/community/report', {
+        postId: showReportModal,
+        reportedUserId: post?.userId || '',
+        reason: reportReason,
+        note: reportNote || undefined,
+      });
+      console.log('[Community] Report submitted successfully');
+      setReportSubmitted(true);
+      setTimeout(() => {
+        const reportedPostId = showReportModal;
+        setPosts(prev => prev.filter(p => p.id !== reportedPostId));
+        setShowReportModal(null);
+        setReportReason('');
+        setReportNote('');
+        setReportSubmitted(false);
+      }, 2000);
+    } catch (e) {
+      console.error('[Community] Failed to submit report:', e);
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!showBlockModal) return;
+    console.log('[Community] User blocking userId:', showBlockModal.userId, '| from postId:', showBlockModal.postId);
+    setIsBlocking(true);
+    try {
+      const { authenticatedPost } = await import('@/utils/api');
+      await authenticatedPost('/api/community/block', {
+        blockedUserId: showBlockModal.userId,
+        postId: showBlockModal.postId,
+      });
+      console.log('[Community] User blocked successfully:', showBlockModal.userId);
+      const newBlockedIds = [...blockedUserIds, showBlockModal.userId];
+      setBlockedUserIds(newBlockedIds);
+      setPosts(prev => prev.filter(p => p.userId !== showBlockModal.userId));
+      await AsyncStorage.setItem('linen_blocked_users', JSON.stringify(newBlockedIds));
+      setShowBlockModal(null);
+    } catch (e) {
+      console.error('[Community] Failed to block user:', e);
+    } finally {
+      setIsBlocking(false);
     }
   };
 
@@ -898,16 +997,14 @@ export default function CommunityScreen() {
                         </TouchableOpacity>
                       )}
                       {!isOwnPost && (
-                        <TouchableOpacity 
-                          style={styles.flagButton}
-                          onPress={() => handleFlagPost(post.id)}
+                        <TouchableOpacity
+                          style={styles.moreButton}
+                          onPress={() => {
+                            console.log('[Community] User tapped 3-dot menu for post:', post.id);
+                            setShowPostMenu(post.id);
+                          }}
                         >
-                          <IconSymbol 
-                            ios_icon_name="flag"
-                            android_material_icon_name="flag"
-                            size={18}
-                            color={textSecondaryColor}
-                          />
+                          <Text style={{ fontSize: 20, color: textSecondaryColor, lineHeight: 20 }}>⋯</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1394,6 +1491,237 @@ export default function CommunityScreen() {
               <Text style={styles.celebrationDismissText}>
                 Close
               </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Post Action Menu Modal */}
+      <Modal
+        visible={showPostMenu !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPostMenu(null)}
+      >
+        <Pressable
+          style={styles.bottomSheetOverlay}
+          onPress={() => setShowPostMenu(null)}
+        >
+          <Pressable
+            style={[styles.postMenuModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.bottomSheetHandle} />
+            <TouchableOpacity
+              style={styles.postMenuOption}
+              onPress={() => {
+                console.log('[Community] User tapped Report from post menu for post:', showPostMenu);
+                const menuPostId = showPostMenu;
+                setShowPostMenu(null);
+                setShowReportModal(menuPostId);
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="flag"
+                android_material_icon_name="flag"
+                size={22}
+                color="#EF4444"
+              />
+              <Text style={[styles.postMenuOptionText, { color: textColor }]}>Report</Text>
+            </TouchableOpacity>
+            <View style={styles.postMenuDivider} />
+            <TouchableOpacity
+              style={styles.postMenuOption}
+              onPress={() => {
+                console.log('[Community] User tapped Block User from post menu for post:', showPostMenu);
+                const menuPostId = showPostMenu;
+                const menuPost = posts.find(p => p.id === menuPostId);
+                setShowPostMenu(null);
+                setShowBlockModal({ postId: menuPostId!, userId: menuPost?.userId || '' });
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="person.fill.xmark"
+                android_material_icon_name="person-off"
+                size={22}
+                color={textColor}
+              />
+              <Text style={[styles.postMenuOptionText, { color: textColor }]}>Block User</Text>
+            </TouchableOpacity>
+            <View style={styles.postMenuDivider} />
+            <TouchableOpacity
+              style={styles.postMenuOption}
+              onPress={() => {
+                console.log('[Community] User tapped Cancel on post menu');
+                setShowPostMenu(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.postMenuOptionText, { color: textSecondaryColor }]}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal
+        visible={showReportModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowReportModal(null);
+          setReportReason('');
+          setReportNote('');
+          setReportSubmitted(false);
+        }}
+      >
+        <Pressable
+          style={styles.bottomSheetOverlay}
+          onPress={() => {
+            setShowReportModal(null);
+            setReportReason('');
+            setReportNote('');
+            setReportSubmitted(false);
+          }}
+        >
+          <Pressable
+            style={[styles.reportModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.bottomSheetHandle} />
+            {reportSubmitted ? (
+              <View style={styles.reportSuccessContainer}>
+                <Text style={styles.reportSuccessIcon}>✓</Text>
+                <Text style={[styles.reportSuccessTitle, { color: textColor }]}>Thanks. Your report has been submitted.</Text>
+                <Text style={[styles.reportSuccessSubtitle, { color: textSecondaryColor }]}>We review all reports to keep this space safe.</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.reportModalHeader}>
+                  <Text style={[styles.reportTitle, { color: textColor }]}>Report this post</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log('[Community] User closed report modal');
+                      setShowReportModal(null);
+                      setReportReason('');
+                      setReportNote('');
+                    }}
+                    hitSlop={8}
+                  >
+                    <IconSymbol
+                      ios_icon_name="xmark"
+                      android_material_icon_name="close"
+                      size={22}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.reportSubtitle, { color: textSecondaryColor }]}>Why are you reporting this post?</Text>
+                {[
+                  { value: 'harassment_bullying', label: 'Harassment or bullying' },
+                  { value: 'hate_abusive', label: 'Hate or abusive content' },
+                  { value: 'sexual_inappropriate', label: 'Sexual or inappropriate content' },
+                  { value: 'self_harm_dangerous', label: 'Self-harm or dangerous content' },
+                  { value: 'spam', label: 'Spam' },
+                  { value: 'other', label: 'Other' },
+                ].map(option => {
+                  const isSelected = reportReason === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.reportReasonButton,
+                        { borderColor: isSelected ? colors.primary : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)') },
+                        isSelected && styles.reportReasonButtonSelected,
+                        isSelected && { backgroundColor: colors.primary + '12' },
+                      ]}
+                      onPress={() => {
+                        console.log('[Community] User selected report reason:', option.value);
+                        setReportReason(option.value);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.reportReasonText, { color: isSelected ? colors.primary : textColor }]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                {reportReason !== '' && (
+                  <TextInput
+                    style={[styles.reportNoteInput, { color: textColor, borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}
+                    placeholder="Add a note (optional)"
+                    placeholderTextColor={textSecondaryColor}
+                    value={reportNote}
+                    onChangeText={setReportNote}
+                    multiline
+                    numberOfLines={3}
+                  />
+                )}
+                <TouchableOpacity
+                  style={[styles.reportSubmitButton, { backgroundColor: reportReason ? colors.primary : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)') }]}
+                  onPress={() => {
+                    console.log('[Community] User tapped Submit Report button');
+                    handleSubmitReport();
+                  }}
+                  disabled={!reportReason || isSubmittingReport}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.reportSubmitButtonText}>
+                    {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ height: 16 }} />
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Block Confirmation Modal */}
+      <Modal
+        visible={showBlockModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBlockModal(null)}
+      >
+        <Pressable
+          style={styles.bottomSheetOverlay}
+          onPress={() => setShowBlockModal(null)}
+        >
+          <Pressable
+            style={[styles.blockModal, { backgroundColor: cardBg }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.bottomSheetHandle} />
+            <Text style={[styles.blockModalTitle, { color: textColor }]}>Block this user?</Text>
+            <Text style={[styles.blockModalBody, { color: textSecondaryColor }]}>
+              Their content will be removed from your feed. You can manage blocked users in settings.
+            </Text>
+            <TouchableOpacity
+              style={styles.blockConfirmButton}
+              onPress={() => {
+                console.log('[Community] User confirmed block for userId:', showBlockModal?.userId);
+                handleBlockUser();
+              }}
+              disabled={isBlocking}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.blockConfirmButtonText}>
+                {isBlocking ? 'Blocking...' : 'Block User'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.blockCancelButton}
+              onPress={() => {
+                console.log('[Community] User cancelled block');
+                setShowBlockModal(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.blockCancelButtonText, { color: textSecondaryColor }]}>Cancel</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -2525,5 +2853,169 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
+  },
+  // Moderation styles
+  moreButton: {
+    padding: 8,
+    marginLeft: 4,
+  },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  postMenuModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  postMenuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 12,
+  },
+  postMenuOptionText: {
+    fontSize: 16,
+  },
+  postMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    marginVertical: 4,
+  },
+  reportModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  reportModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  reportSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+    opacity: 0.6,
+  },
+  reportReasonButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  reportReasonButtonSelected: {
+    borderWidth: 2,
+  },
+  reportReasonText: {
+    fontSize: 15,
+  },
+  reportNoteInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    marginTop: 8,
+    marginBottom: 4,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  reportSubmitButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  reportSubmitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  reportSuccessContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  reportSuccessIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+    color: '#22c55e',
+  },
+  reportSuccessTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  reportSuccessSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.6,
+  },
+  blockModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  blockModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  blockModalBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+    opacity: 0.7,
+  },
+  blockConfirmButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    marginBottom: 12,
+  },
+  blockConfirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  blockCancelButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  blockCancelButtonText: {
+    fontSize: 16,
   },
 });
