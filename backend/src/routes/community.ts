@@ -1505,4 +1505,77 @@ export function registerCommunityRoutes(app: App) {
       }
     }
   );
+
+  // Unblock a user
+  app.fastify.delete(
+    '/api/community/blocks/:blocked_user_id',
+    {
+      schema: {
+        description: 'Unblock a user',
+        tags: ['community', 'moderation'],
+        params: {
+          type: 'object',
+          required: ['blocked_user_id'],
+          properties: {
+            blocked_user_id: { type: 'string', description: 'User ID to unblock' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{ Params: { blocked_user_id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { blocked_user_id } = request.params;
+      const blockerUserId = session.user.id;
+
+      app.logger.info(
+        { blockerUserId, blockedUserId: blocked_user_id },
+        '[moderation] Processing user unblock'
+      );
+
+      try {
+        const result = await app.db
+          .delete(schema.userBlocks)
+          .where(
+            and(
+              eq(schema.userBlocks.blockerUserId, blockerUserId),
+              eq(schema.userBlocks.blockedUserId, blocked_user_id)
+            )
+          );
+
+        app.logger.info(
+          { blockerUserId, blockedUserId: blocked_user_id },
+          '[moderation] User unblocked: blockerUserId=' + blockerUserId + ' blockedUserId=' + blocked_user_id
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        app.logger.error(
+          { err: error, blockerUserId, blockedUserId: blocked_user_id },
+          'Failed to unblock user'
+        );
+        throw error;
+      }
+    }
+  );
 }
