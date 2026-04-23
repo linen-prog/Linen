@@ -117,6 +117,8 @@ interface SubscriptionContextType {
   packages: PurchasesPackage[];
   /** Loading state during initialization */
   loading: boolean;
+  /** Whether offerings are currently being fetched */
+  offeringsLoading: boolean;
   /** Whether running on web (purchases not available) */
   isWeb: boolean;
   /** Purchase a package - returns true if successful */
@@ -155,6 +157,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     useState<PurchasesOffering | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offeringsLoading, setOfferingsLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(false);
 
     // Fetch offerings via REST API for web platform
@@ -293,11 +296,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         if (user?.id) {
           // Log in with your app's user ID to sync subscriptions across devices
           await Purchases.logIn(user.id);
+          console.log("[RevenueCat] Re-fetching offerings after logIn for user:", user.id);
+          await fetchOfferings();
         } else {
           // Anonymous user - only log out once auth has fully resolved
           const isAnon = await Purchases.isAnonymous();
           if (!isAnon) {
             await Purchases.logOut();
+            console.log("[RevenueCat] Re-fetching offerings after logOut (anonymous)");
+            await fetchOfferings();
           }
         }
         await checkSubscription();
@@ -311,6 +318,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   const fetchOfferings = async () => {
     if (isWeb) return;
+    console.log("[RevenueCat] offeringsLoading: true");
+    setOfferingsLoading(true);
     try {
       const fetchedOfferings = await Purchases.getOfferings();
       setOfferings(fetchedOfferings);
@@ -335,6 +344,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
     } catch (error) {
       console.error("[RevenueCat] Failed to fetch offerings:", error);
+    } finally {
+      console.log("[RevenueCat] offeringsLoading: false");
+      setOfferingsLoading(false);
     }
   };
 
@@ -452,6 +464,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         currentOffering,
         packages,
         loading,
+        offeringsLoading,
         isWeb,
         purchasePackage,
         restorePurchases,

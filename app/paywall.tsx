@@ -160,6 +160,7 @@ export default function PaywallScreen() {
   const {
     packages,
     loading,
+    offeringsLoading,
     isSubscribed,
     isWeb,
     purchasePackage,
@@ -190,7 +191,7 @@ export default function PaywallScreen() {
   // ── Derived values ────────────────────────────────────────────────────────
   const basePrice = basePackage?.product?.priceString ?? "$3.99";
   const proPrice = proPackage?.product?.priceString ?? "$8.99";
-  const noOfferings = !isWeb && packages.length === 0;
+  const noOfferings = !isWeb && !offeringsLoading && packages.length === 0;
   const anyPurchasing = purchasingId !== null;
 
   const selectedPackage = selectedPlan === "base" ? basePackage : proPackage;
@@ -376,6 +377,14 @@ export default function PaywallScreen() {
           <Text style={styles.heroSubtitle}>
             Start gently. Go deeper when you're ready.
           </Text>
+
+          {/* ── Offerings loading spinner ── */}
+          {!isWeb && offeringsLoading && packages.length === 0 && (
+            <View style={styles.noOfferingsCard}>
+              <ActivityIndicator size="small" color={C.selectedBorder} />
+              <Text style={[styles.noOfferingsBody, { marginTop: 8 }]}>Loading plans…</Text>
+            </View>
+          )}
 
           {/* ── No offerings notice ── */}
           {noOfferings && (
