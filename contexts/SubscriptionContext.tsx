@@ -316,8 +316,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     updateUser();
   }, [user?.id, isConfigured, authLoading]);
 
-  const fetchOfferings = async () => {
+  const fetchOfferings = async (userId?: string) => {
     if (isWeb) return;
+    console.log("[RevenueCat] fetchOfferings called, userId:", userId ?? "anonymous");
     console.log("[RevenueCat] offeringsLoading: true");
     setOfferingsLoading(true);
     try {
@@ -341,6 +342,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         if (!baseFound) console.warn('[RevenueCat] WARNING: "base" package not found');
         if (!monthlyFound) console.warn('[RevenueCat] WARNING: "monthly" package not found');
         setPackages(pkgs);
+        console.log("[RevenueCat] offerings result:", pkgs.length, "packages loaded");
       }
     } catch (error) {
       console.error("[RevenueCat] Failed to fetch offerings:", error);

@@ -22,6 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PurchasesPackage } from "react-native-purchases";
 import { LinearGradient } from "expo-linear-gradient";
+import Constants from "expo-constants";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { gradientConfig } from "@/styles/commonStyles";
@@ -188,11 +189,23 @@ export default function PaywallScreen() {
     if (!proPackage) console.warn('[Paywall] WARNING: "monthly" package not found in packages');
   }
 
+  // ── Expo Go detection ─────────────────────────────────────────────────────
+  const isExpoGo = Constants.appOwnership === "expo";
+
   // ── Derived values ────────────────────────────────────────────────────────
   const basePrice = basePackage?.product?.priceString ?? "$3.99";
   const proPrice = proPackage?.product?.priceString ?? "$8.99";
-  const noOfferings = !isWeb && !offeringsLoading && packages.length === 0;
+  // Only show "unavailable" when we're in Expo Go — never based on package count alone
+  const noOfferings = !isWeb && isExpoGo;
   const anyPurchasing = purchasingId !== null;
+
+  // Log every render
+  console.log("[Paywall] rendering, packages:", packages.length, ", offeringsLoading:", offeringsLoading);
+
+  // Log Expo Go gate
+  if (noOfferings) {
+    console.log("[Paywall] Expo Go detected, showing unavailable message");
+  }
 
   const selectedPackage = selectedPlan === "base" ? basePackage : proPackage;
   const selectedPlanLabel = selectedPlan === "base" ? "Base" : "Pro";
@@ -219,6 +232,14 @@ export default function PaywallScreen() {
     if (isWeb) {
       setWebMockPkg(selectedPackage);
       setWebMockDialogState("selecting");
+      return;
+    }
+
+    if (offeringsLoading) {
+      Alert.alert(
+        "Loading",
+        "Subscription plans are still loading. Please wait a moment and try again."
+      );
       return;
     }
 
@@ -379,14 +400,14 @@ export default function PaywallScreen() {
           </Text>
 
           {/* ── Offerings loading spinner ── */}
-          {!isWeb && offeringsLoading && packages.length === 0 && (
+          {!isWeb && !isExpoGo && offeringsLoading && (
             <View style={styles.noOfferingsCard}>
               <ActivityIndicator size="small" color={C.selectedBorder} />
               <Text style={[styles.noOfferingsBody, { marginTop: 8 }]}>Loading plans…</Text>
             </View>
           )}
 
-          {/* ── No offerings notice ── */}
+          {/* ── No offerings notice — only shown in Expo Go ── */}
           {noOfferings && (
             <View style={styles.noOfferingsCard}>
               <Text style={styles.noOfferingsTitle}>Plans unavailable</Text>
