@@ -120,6 +120,8 @@ interface SubscriptionContextType {
   restorePurchases: () => Promise<boolean>;
   /** Manually re-check subscription status */
   checkSubscription: () => Promise<void>;
+  /** Force a live RevenueCat check and update subscription state */
+  refreshSubscription: () => Promise<void>;
   /** Mock a successful purchase on web (preview only) - sets isSubscribed to true */
   mockWebPurchase: () => void;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
@@ -409,6 +411,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   };
 
+  const refreshSubscription = async (): Promise<void> => {
+    console.log('[SubscriptionContext] refreshSubscription called — performing live RevenueCat check');
+    await checkSubscription();
+  };
+
   const mockWebPurchase = () => {
     if (!isWeb) return;
     if (typeof window !== "undefined") {
@@ -439,6 +446,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         purchasePackage,
         restorePurchases,
         checkSubscription,
+        refreshSubscription,
         mockWebPurchase,
         mockNativePurchase,
       }}

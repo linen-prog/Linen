@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -116,6 +117,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { themeMode, isDark, setThemeMode } = useTheme();
   const { hasPermission: pushPermission, requestPermission: requestPushPermission } = useNotifications();
+  const { isSubscribed } = useSubscription();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -1178,6 +1180,83 @@ export default function ProfileScreen() {
               color={colors.textLight} 
             />
           </TouchableOpacity>
+        </View>
+
+        {/* Subscription */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+            Subscription
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: isDark ? colors.cardDark : colors.card }]}>
+          {!isSubscribed ? (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('[Profile] Manual paywall open — user tapped Unlock Full Access');
+                router.push('/paywall');
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#F0FDF4' }]}>
+                  <IconSymbol
+                    ios_icon_name="star.fill"
+                    android_material_icon_name="star"
+                    size={20}
+                    color="#16A34A"
+                  />
+                </View>
+                <View style={styles.menuItemTextContainer}>
+                  <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                    Unlock Full Access
+                  </Text>
+                  <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    View subscription plans
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('[Profile] Manual paywall open — subscribed user tapped Manage Subscription');
+                router.push('/paywall');
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#F0FDF4' }]}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.seal.fill"
+                    android_material_icon_name="verified"
+                    size={20}
+                    color="#16A34A"
+                  />
+                </View>
+                <View style={styles.menuItemTextContainer}>
+                  <Text style={[styles.menuItemText, { color: isDark ? colors.textDark : colors.text }]}>
+                    Subscription Active
+                  </Text>
+                  <Text style={[styles.menuItemSubtext, { color: isDark ? colors.textSecondaryDark : colors.textSecondary }]}>
+                    Manage your plan
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Account */}

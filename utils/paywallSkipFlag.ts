@@ -1,17 +1,4 @@
-/**
- * Module-level flag that records whether the user has explicitly skipped
- * the paywall in the current app session.
- *
- * Using a standalone module (not _layout.tsx) avoids circular imports
- * between paywall.tsx and the root layout.
- */
-
-let _skipped = false;
-
-export function setPaywallSkipped(value: boolean): void {
-  _skipped = value;
-}
-
-export function isPaywallSkipped(): boolean {
-  return _skipped;
-}
+// Paywall skip flag — permanently disabled.
+// The paywall is now suppressed only by a live subscription check.
+export function setPaywallSkipped(_value: boolean): void {}
+export function isPaywallSkipped(): boolean { return false; }

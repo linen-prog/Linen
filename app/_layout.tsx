@@ -24,7 +24,6 @@ import { BACKEND_URL } from "@/utils/api";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
-import { isPaywallSkipped } from "@/utils/paywallSkipFlag";
 // Note: Error logging is auto-initialized via index.ts import
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -239,48 +238,71 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
  */
 
 function SubscriptionRedirect() {
-  const { isSubscribed, loading } = useSubscription();
+  const { isSubscribed, loading, checkSubscription } = useSubscription();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (loading || authLoading) return;
-    const onAuthScreen = pathname === "/auth";
+
+    const onAuthScreen = pathname === '/auth';
     if (onAuthScreen) return;
+
     if (!user) {
-      router.replace("/auth");
+      console.log('[RootLayout] No user — redirecting to /auth');
+      router.replace('/auth');
       return;
     }
-    const onOnboarding = pathname.startsWith("/onboarding");
+
+    const onOnboarding = pathname.startsWith('/onboarding');
     if (onOnboarding) return;
 
-    // User explicitly skipped the paywall — do not redirect back.
-    if (isPaywallSkipped()) return;
-
     let cancelled = false;
-    isOnboardingComplete().then((done) => {
+
+    const runPaywallCheck = async () => {
+      // Always do a fresh live check before deciding to suppress the paywall.
+      // This prevents stale SecureStore cache from bypassing the paywall.
+      console.log('[RootLayout] Running live subscription check before paywall decision...');
+      try {
+        await checkSubscription();
+      } catch (e) {
+        console.warn('[RootLayout] Live subscription check failed, will use current isSubscribed state:', e);
+      }
       if (cancelled) return;
-      if (!done) {
-        router.replace("/onboarding");
-        return;
-      }
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed && !isPaywallSkipped()) {
-        router.replace("/paywall");
-      }
-    }).catch(() => {
-      if (cancelled) return;
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed && !isPaywallSkipped()) {
-        router.replace("/paywall");
-      }
-    });
+    };
+
+    runPaywallCheck();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSubscribed, loading, authLoading, pathname, user]);
+  }, [loading, authLoading, user, pathname]);
+
+  // Separate effect: once loading is done and we have a user, decide on paywall.
+  useEffect(() => {
+    if (loading || authLoading) return;
+    if (!user) return;
+    if (pathname === '/auth' || pathname.startsWith('/onboarding') || pathname === '/paywall') return;
+
+    isOnboardingComplete().then((done) => {
+      if (!done) {
+        console.log('[RootLayout] Onboarding incomplete — redirecting to /onboarding');
+        router.replace('/onboarding');
+        return;
+      }
+      if (!isSubscribed) {
+        console.log('[RootLayout] Automatic paywall trigger — isSubscribed=false, source=SubscriptionContext, redirecting to /paywall');
+        router.replace('/paywall');
+      } else {
+        console.log('[RootLayout] Paywall suppressed — isSubscribed=true (live RevenueCat check passed)');
+      }
+    }).catch(() => {
+      if (!isSubscribed) {
+        console.log('[RootLayout] Automatic paywall trigger (onboarding check failed) — isSubscribed=false, redirecting to /paywall');
+        router.replace('/paywall');
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSubscribed, loading, authLoading, user, pathname]);
 
   return null;
 }
