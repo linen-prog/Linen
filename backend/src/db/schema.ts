@@ -484,11 +484,11 @@ export const contentReports = pgTable(
   'content_reports',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    postId: text('post_id').notNull(),
+    postId: uuid('post_id').notNull(),
     reporterUserId: text('reporter_user_id').notNull(),
     reportedUserId: text('reported_user_id').notNull(),
     reason: text('reason', {
-      enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'other'],
+      enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'user_blocked', 'other'],
     }).notNull(),
     note: text('note'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -508,7 +508,7 @@ export const userBlocks = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     blockerUserId: text('blocker_user_id').notNull(),
     blockedUserId: text('blocked_user_id').notNull(),
-    postId: text('post_id'),
+    postId: uuid('post_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

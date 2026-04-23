@@ -1248,11 +1248,11 @@ export function registerCommunityRoutes(app: App) {
           type: 'object',
           required: ['postId', 'reportedUserId', 'reason'],
           properties: {
-            postId: { type: 'string', description: 'Post ID being reported' },
+            postId: { type: 'string', format: 'uuid', description: 'Post ID being reported' },
             reportedUserId: { type: 'string', description: 'User ID of the post author' },
             reason: {
               type: 'string',
-              enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'other'],
+              enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'user_blocked', 'other'],
               description: 'Reason for the report',
             },
             note: { type: 'string', description: 'Optional additional details' },
@@ -1263,7 +1263,6 @@ export function registerCommunityRoutes(app: App) {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
-              reportId: { type: 'string', format: 'uuid' },
             },
           },
           400: {
@@ -1331,7 +1330,6 @@ export function registerCommunityRoutes(app: App) {
 
         return reply.status(201).send({
           success: true,
-          reportId: report.id,
         });
       } catch (error) {
         app.logger.error(
@@ -1355,11 +1353,11 @@ export function registerCommunityRoutes(app: App) {
           required: ['blockedUserId'],
           properties: {
             blockedUserId: { type: 'string', description: 'User ID to block' },
-            postId: { type: 'string', description: 'Optional post ID related to the block' },
+            postId: { type: 'string', format: 'uuid', description: 'Optional post ID related to the block' },
           },
         },
         response: {
-          200: {
+          201: {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
@@ -1410,11 +1408,11 @@ export function registerCommunityRoutes(app: App) {
             await app.db
               .insert(schema.contentReports)
               .values({
-                postId,
+                postId: postId as any,
                 reporterUserId: blockerUserId,
                 reportedUserId: blockedUserId,
-                reason: 'other' as any,
-                note: 'User blocked',
+                reason: 'user_blocked' as any,
+                note: null,
               });
 
             // Flag the post
@@ -1436,7 +1434,7 @@ export function registerCommunityRoutes(app: App) {
           '[moderation] User blocked: blockerUserId=' + blockerUserId + ' blockedUserId=' + blockedUserId
         );
 
-        return reply.send({ success: true });
+        return reply.status(201).send({ success: true });
       } catch (error) {
         app.logger.error(
           { err: error, blockerUserId, blockedUserId },
