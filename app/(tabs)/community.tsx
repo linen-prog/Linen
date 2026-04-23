@@ -996,17 +996,15 @@ export default function CommunityScreen() {
                           />
                         </TouchableOpacity>
                       )}
-                      {!isOwnPost && (
-                        <TouchableOpacity
-                          style={styles.moreButton}
-                          onPress={() => {
-                            console.log('[Community] User tapped 3-dot menu for post:', post.id);
-                            setShowPostMenu(post.id);
-                          }}
-                        >
-                          <Text style={{ fontSize: 20, color: textSecondaryColor, lineHeight: 20 }}>⋯</Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        style={styles.moreButton}
+                        onPress={() => {
+                          console.log('[Moderation] menu rendered for post:', post.id);
+                          setShowPostMenu(post.id);
+                        }}
+                      >
+                        <Text style={{ fontSize: 20, color: textSecondaryColor, lineHeight: 20 }}>⋯</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -1530,26 +1528,30 @@ export default function CommunityScreen() {
               />
               <Text style={[styles.postMenuOptionText, { color: textColor }]}>Report</Text>
             </TouchableOpacity>
-            <View style={styles.postMenuDivider} />
-            <TouchableOpacity
-              style={styles.postMenuOption}
-              onPress={() => {
-                console.log('[Community] User tapped Block User from post menu for post:', showPostMenu);
-                const menuPostId = showPostMenu;
-                const menuPost = posts.find(p => p.id === menuPostId);
-                setShowPostMenu(null);
-                setShowBlockModal({ postId: menuPostId!, userId: menuPost?.userId || '' });
-              }}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="person.fill.xmark"
-                android_material_icon_name="person-off"
-                size={22}
-                color={textColor}
-              />
-              <Text style={[styles.postMenuOptionText, { color: textColor }]}>Block User</Text>
-            </TouchableOpacity>
+            {posts.find(p => p.id === showPostMenu)?.userId !== user?.id && (
+              <>
+                <View style={styles.postMenuDivider} />
+                <TouchableOpacity
+                  style={styles.postMenuOption}
+                  onPress={() => {
+                    console.log('[Community] User tapped Block User from post menu for post:', showPostMenu);
+                    const menuPostId = showPostMenu;
+                    const menuPost = posts.find(p => p.id === menuPostId);
+                    setShowPostMenu(null);
+                    setShowBlockModal({ postId: menuPostId!, userId: menuPost?.userId || '' });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    ios_icon_name="person.fill.xmark"
+                    android_material_icon_name="person-off"
+                    size={22}
+                    color={textColor}
+                  />
+                  <Text style={[styles.postMenuOptionText, { color: textColor }]}>Block User</Text>
+                </TouchableOpacity>
+              </>
+            )}
             <View style={styles.postMenuDivider} />
             <TouchableOpacity
               style={styles.postMenuOption}
