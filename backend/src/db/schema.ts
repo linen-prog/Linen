@@ -484,9 +484,7 @@ export const contentReports = pgTable(
   'content_reports',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    postId: uuid('post_id')
-      .notNull()
-      .references(() => communityPosts.id, { onDelete: 'cascade' }),
+    postId: text('post_id').notNull(),
     reporterUserId: text('reporter_user_id').notNull(),
     reportedUserId: text('reported_user_id').notNull(),
     reason: text('reason', {
@@ -510,7 +508,7 @@ export const userBlocks = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     blockerUserId: text('blocker_user_id').notNull(),
     blockedUserId: text('blocked_user_id').notNull(),
-    postId: uuid('post_id'),
+    postId: text('post_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

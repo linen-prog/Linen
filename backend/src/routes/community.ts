@@ -1248,7 +1248,7 @@ export function registerCommunityRoutes(app: App) {
           type: 'object',
           required: ['postId', 'reportedUserId', 'reason'],
           properties: {
-            postId: { type: 'string', format: 'uuid', description: 'Post ID being reported' },
+            postId: { type: 'string', description: 'Post ID being reported' },
             reportedUserId: { type: 'string', description: 'User ID of the post author' },
             reason: {
               type: 'string',
@@ -1304,7 +1304,7 @@ export function registerCommunityRoutes(app: App) {
         const [report] = await app.db
           .insert(schema.contentReports)
           .values({
-            postId: postId as any,
+            postId,
             reporterUserId,
             reportedUserId,
             reason: reason as any,
@@ -1355,7 +1355,7 @@ export function registerCommunityRoutes(app: App) {
           required: ['blockedUserId'],
           properties: {
             blockedUserId: { type: 'string', description: 'User ID to block' },
-            postId: { type: 'string', format: 'uuid', description: 'Optional post ID related to the block' },
+            postId: { type: 'string', description: 'Optional post ID related to the block' },
           },
         },
         response: {
@@ -1410,7 +1410,7 @@ export function registerCommunityRoutes(app: App) {
             await app.db
               .insert(schema.contentReports)
               .values({
-                postId: postId as any,
+                postId,
                 reporterUserId: blockerUserId,
                 reportedUserId: blockedUserId,
                 reason: 'other' as any,
