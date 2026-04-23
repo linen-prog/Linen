@@ -1259,7 +1259,7 @@ export function registerCommunityRoutes(app: App) {
           },
         },
         response: {
-          201: {
+          200: {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
@@ -1328,7 +1328,7 @@ export function registerCommunityRoutes(app: App) {
           '[moderation] New report: postId=' + postId + ' reportedUserId=' + reportedUserId + ' reason=' + reason + ' reporterUserId=' + reporterUserId
         );
 
-        return reply.status(201).send({
+        return reply.send({
           success: true,
         });
       } catch (error) {
@@ -1357,7 +1357,7 @@ export function registerCommunityRoutes(app: App) {
           },
         },
         response: {
-          201: {
+          200: {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
@@ -1434,7 +1434,7 @@ export function registerCommunityRoutes(app: App) {
           '[moderation] User blocked: blockerUserId=' + blockerUserId + ' blockedUserId=' + blockedUserId
         );
 
-        return reply.status(201).send({ success: true });
+        return reply.send({ success: true });
       } catch (error) {
         app.logger.error(
           { err: error, blockerUserId, blockedUserId },
