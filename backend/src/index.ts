@@ -18,6 +18,7 @@ import { registerMonthlySummaryRoutes } from './routes/monthly-summary.js';
 import { registerNotificationsRoutes } from './routes/notifications.js';
 import { registerPushSubscriptionRoutes } from './routes/push-subscriptions.js';
 import { initializeDatabase } from './db/initDatabase.js';
+import { runModerationMigration } from './db/moderationMigration.js';
 
 const schema = { ...appSchema, ...authSchema };
 
@@ -30,6 +31,7 @@ export type App = typeof app;
 // Initialize database tables on startup
 try {
   await initializeDatabase(app.db, app);
+  await runModerationMigration(app.db);
 } catch (error) {
   app.logger.error({ err: error }, 'Failed to initialize database');
   process.exit(1);
