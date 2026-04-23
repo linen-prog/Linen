@@ -40,13 +40,18 @@ const IOS_API_KEY = extra.revenueCatApiKeyIos || "";
 const ANDROID_API_KEY = extra.revenueCatApiKeyAndroid || "";
 const TEST_IOS_API_KEY = extra.revenueCatTestApiKeyIos || "";
 const TEST_ANDROID_API_KEY = extra.revenueCatTestApiKeyAndroid || "";
-const ENTITLEMENT_ID = extra.revenueCatEntitlementId || "pro";
-// All entitlement IDs that grant access — broadened to support multi-tier pricing
-const ALL_ENTITLEMENT_IDS = ["base_access", "premium_access", "pro", ENTITLEMENT_ID];
+// All entitlement IDs that grant access
+const ALL_ENTITLEMENT_IDS = ["Base", "pro"];
 
 /** Returns true if customerInfo has ANY active entitlement from the known set */
 function hasAnyActiveEntitlement(active: Record<string, unknown>): boolean {
-  return ALL_ENTITLEMENT_IDS.some((id) => typeof active[id] !== "undefined");
+  const matched = ALL_ENTITLEMENT_IDS.filter((id) => typeof active[id] !== "undefined");
+  if (matched.length > 0) {
+    console.log("[RevenueCat] Active entitlements matched:", matched);
+  } else {
+    console.log("[RevenueCat] No matching entitlements found. Active keys:", Object.keys(active));
+  }
+  return matched.length > 0;
 }
 
 // Check if running on web
@@ -342,6 +347,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       );
       console.log("[SubscriptionContext] isSubscribed set to:", hasEntitlement, "(checkSubscription)", { activeEntitlements: Object.keys(customerInfo.entitlements.active) });
       setIsSubscribed(hasEntitlement);
+      if (hasEntitlement) {
+        console.log("[Paywall] Suppressed — at least one entitlement active:", Object.keys(customerInfo.entitlements.active));
+      } else {
+        console.log("[Paywall] Will show — no active entitlements found");
+      }
       // Always persist the authoritative result with a fresh timestamp so the
       // cache never holds a stale value after a real entitlement check.
       await writeCacheEntry(NATIVE_PURCHASE_KEY, hasEntitlement);
