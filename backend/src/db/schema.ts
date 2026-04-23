@@ -478,3 +478,44 @@ export const pushSubscriptions = pgTable(
     index('push_subscriptions_subscription_id').on(table.oneSignalSubscriptionId),
   ]
 );
+
+// Content reports table (for community moderation)
+export const contentReports = pgTable(
+  'content_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: 'cascade' }),
+    reporterUserId: text('reporter_user_id').notNull(),
+    reportedUserId: text('reported_user_id').notNull(),
+    reason: text('reason', {
+      enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'other'],
+    }).notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('content_reports_post').on(table.postId),
+    index('content_reports_reporter').on(table.reporterUserId),
+    index('content_reports_reported').on(table.reportedUserId),
+    index('content_reports_created').on(table.createdAt),
+  ]
+);
+
+// User blocks table (for blocking users)
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    blockerUserId: text('blocker_user_id').notNull(),
+    blockedUserId: text('blocked_user_id').notNull(),
+    postId: uuid('post_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_blocks_blocker_blocked_unique').on(table.blockerUserId, table.blockedUserId),
+    index('user_blocks_blocker').on(table.blockerUserId),
+    index('user_blocks_blocked').on(table.blockedUserId),
+  ]
+);
