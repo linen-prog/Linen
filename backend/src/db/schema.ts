@@ -488,7 +488,7 @@ export const contentReports = pgTable(
     reporterUserId: text('reporter_user_id').notNull(),
     reportedUserId: text('reported_user_id').notNull(),
     reason: text('reason', {
-      enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'other'],
+      enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'user_blocked', 'other'],
     }).notNull(),
     note: text('note'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -497,7 +497,6 @@ export const contentReports = pgTable(
     index('content_reports_post').on(table.postId),
     index('content_reports_reporter').on(table.reporterUserId),
     index('content_reports_reported').on(table.reportedUserId),
-    index('content_reports_created').on(table.createdAt),
   ]
 );
 

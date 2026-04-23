@@ -1239,20 +1239,20 @@ export function registerCommunityRoutes(app: App) {
 
   // Report a community post
   app.fastify.post(
-    '/api/community/report',
+    '/api/community/reports',
     {
       schema: {
         description: 'Report a community post for moderation',
         tags: ['community', 'moderation'],
         body: {
           type: 'object',
-          required: ['postId', 'reportedUserId', 'reason'],
+          required: ['post_id', 'reported_user_id', 'reason'],
           properties: {
-            postId: { type: 'string', description: 'Post ID being reported' },
-            reportedUserId: { type: 'string', description: 'User ID of the post author' },
+            post_id: { type: 'string', description: 'Post ID being reported' },
+            reported_user_id: { type: 'string', description: 'User ID of the post author' },
             reason: {
               type: 'string',
-              enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'other'],
+              enum: ['harassment_bullying', 'hate_abusive', 'sexual_inappropriate', 'self_harm_dangerous', 'spam', 'user_blocked', 'other'],
               description: 'Reason for the report',
             },
             note: { type: 'string', description: 'Optional additional details' },
@@ -1262,8 +1262,13 @@ export function registerCommunityRoutes(app: App) {
           201: {
             type: 'object',
             properties: {
-              success: { type: 'boolean' },
-              reportId: { type: 'string', format: 'uuid' },
+              id: { type: 'string', format: 'uuid' },
+              post_id: { type: 'string' },
+              reporter_user_id: { type: 'string' },
+              reported_user_id: { type: 'string' },
+              reason: { type: 'string' },
+              note: { type: ['string', 'null'] },
+              created_at: { type: 'string', format: 'date-time' },
             },
           },
           400: {
@@ -1280,8 +1285,8 @@ export function registerCommunityRoutes(app: App) {
     async (
       request: FastifyRequest<{
         Body: {
-          postId: string;
-          reportedUserId: string;
+          post_id: string;
+          reported_user_id: string;
           reason: string;
           note?: string;
         };
@@ -1291,11 +1296,11 @@ export function registerCommunityRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { postId, reportedUserId, reason, note } = request.body;
+      const { post_id, reported_user_id, reason, note } = request.body;
       const reporterUserId = session.user.id;
 
       app.logger.info(
-        { postId, reportedUserId, reason, reporterUserId },
+        { postId: post_id, reportedUserId: reported_user_id, reason, reporterUserId },
         '[moderation] Processing content report'
       );
 
@@ -1304,9 +1309,9 @@ export function registerCommunityRoutes(app: App) {
         const [report] = await app.db
           .insert(schema.contentReports)
           .values({
-            postId,
+            postId: post_id,
             reporterUserId,
-            reportedUserId,
+            reportedUserId: reported_user_id,
             reason: reason as any,
             note: note || null,
           })
@@ -1316,26 +1321,31 @@ export function registerCommunityRoutes(app: App) {
         await app.db
           .update(schema.communityPosts)
           .set({ isFlagged: true })
-          .where(eq(schema.communityPosts.id, postId as any));
+          .where(eq(schema.communityPosts.id, post_id as any));
 
         app.logger.info(
           {
             reportId: report.id,
-            postId,
-            reportedUserId,
+            postId: post_id,
+            reportedUserId: reported_user_id,
             reason,
             reporterUserId,
           },
-          '[moderation] New report: postId=' + postId + ' reportedUserId=' + reportedUserId + ' reason=' + reason + ' reporterUserId=' + reporterUserId
+          '[moderation] New report: postId=' + post_id + ' reportedUserId=' + reported_user_id + ' reason=' + reason + ' reporterUserId=' + reporterUserId
         );
 
         return reply.status(201).send({
-          success: true,
-          reportId: report.id,
+          id: report.id,
+          post_id: report.postId,
+          reporter_user_id: report.reporterUserId,
+          reported_user_id: report.reportedUserId,
+          reason: report.reason,
+          note: report.note,
+          created_at: report.createdAt.toISOString(),
         });
       } catch (error) {
         app.logger.error(
-          { err: error, postId, reportedUserId, reason, reporterUserId },
+          { err: error, postId: post_id, reportedUserId: reported_user_id, reason, reporterUserId },
           'Failed to create report'
         );
         throw error;
@@ -1345,24 +1355,38 @@ export function registerCommunityRoutes(app: App) {
 
   // Block a user
   app.fastify.post(
-    '/api/community/block',
+    '/api/community/blocks',
     {
       schema: {
         description: 'Block a user from the community',
         tags: ['community', 'moderation'],
         body: {
           type: 'object',
-          required: ['blockedUserId'],
+          required: ['blocked_user_id'],
           properties: {
-            blockedUserId: { type: 'string', description: 'User ID to block' },
-            postId: { type: 'string', description: 'Optional post ID related to the block' },
+            blocked_user_id: { type: 'string', description: 'User ID to block' },
+            post_id: { type: 'string', description: 'Optional post ID related to the block' },
           },
         },
         response: {
           200: {
             type: 'object',
             properties: {
-              success: { type: 'boolean' },
+              id: { type: 'string', format: 'uuid' },
+              blocker_user_id: { type: 'string' },
+              blocked_user_id: { type: 'string' },
+              post_id: { type: ['string', 'null'] },
+              created_at: { type: 'string', format: 'date-time' },
+            },
+          },
+          201: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              blocker_user_id: { type: 'string' },
+              blocked_user_id: { type: 'string' },
+              post_id: { type: ['string', 'null'] },
+              created_at: { type: 'string', format: 'date-time' },
             },
           },
           400: {
@@ -1379,8 +1403,8 @@ export function registerCommunityRoutes(app: App) {
     async (
       request: FastifyRequest<{
         Body: {
-          blockedUserId: string;
-          postId?: string;
+          blocked_user_id: string;
+          post_id?: string;
         };
       }>,
       reply: FastifyReply
@@ -1388,43 +1412,62 @@ export function registerCommunityRoutes(app: App) {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      const { blockedUserId, postId } = request.body;
+      const { blocked_user_id, post_id } = request.body;
       const blockerUserId = session.user.id;
 
       app.logger.info(
-        { blockerUserId, blockedUserId, postId },
+        { blockerUserId, blockedUserId: blocked_user_id, postId: post_id },
         '[moderation] Processing user block'
       );
 
       try {
-        // Upsert into user_blocks
-        await app.db.execute(sql`
-          INSERT INTO "user_blocks" (blocker_user_id, blocked_user_id, post_id)
-          VALUES (${blockerUserId}, ${blockedUserId}, ${postId || null})
-          ON CONFLICT (blocker_user_id, blocked_user_id) DO NOTHING
-        `);
+        // Try to insert; on conflict, fetch existing
+        const existingBlock = await app.db.query.userBlocks.findFirst({
+          where: and(
+            eq(schema.userBlocks.blockerUserId, blockerUserId),
+            eq(schema.userBlocks.blockedUserId, blocked_user_id)
+          ),
+        });
+
+        let block;
+        let statusCode = 201;
+
+        if (existingBlock) {
+          block = existingBlock;
+          statusCode = 200;
+        } else {
+          const [newBlock] = await app.db
+            .insert(schema.userBlocks)
+            .values({
+              blockerUserId,
+              blockedUserId: blocked_user_id,
+              postId: post_id || null,
+            })
+            .returning();
+          block = newBlock;
+        }
 
         // If postId is provided, also create a report
-        if (postId) {
+        if (post_id) {
           try {
             await app.db
               .insert(schema.contentReports)
               .values({
-                postId,
+                postId: post_id as any,
                 reporterUserId: blockerUserId,
-                reportedUserId: blockedUserId,
-                reason: 'other' as any,
-                note: 'User blocked',
+                reportedUserId: blocked_user_id,
+                reason: 'user_blocked' as any,
+                note: null,
               });
 
             // Flag the post
             await app.db
               .update(schema.communityPosts)
               .set({ isFlagged: true })
-              .where(eq(schema.communityPosts.id, postId as any));
+              .where(eq(schema.communityPosts.id, post_id as any));
           } catch (error) {
             app.logger.debug(
-              { err: error, postId },
+              { err: error, postId: post_id },
               'Failed to create automatic report for block'
             );
             // Don't throw - block should still succeed even if report fails
@@ -1432,14 +1475,20 @@ export function registerCommunityRoutes(app: App) {
         }
 
         app.logger.info(
-          { blockerUserId, blockedUserId },
-          '[moderation] User blocked: blockerUserId=' + blockerUserId + ' blockedUserId=' + blockedUserId
+          { blockerUserId, blockedUserId: blocked_user_id, isNew: statusCode === 201 },
+          '[moderation] User block: blockerUserId=' + blockerUserId + ' blockedUserId=' + blocked_user_id
         );
 
-        return reply.send({ success: true });
+        return reply.status(statusCode).send({
+          id: block.id,
+          blocker_user_id: block.blockerUserId,
+          blocked_user_id: block.blockedUserId,
+          post_id: block.postId,
+          created_at: block.createdAt.toISOString(),
+        });
       } catch (error) {
         app.logger.error(
-          { err: error, blockerUserId, blockedUserId },
+          { err: error, blockerUserId, blockedUserId: blocked_user_id },
           'Failed to block user'
         );
         throw error;
@@ -1458,9 +1507,18 @@ export function registerCommunityRoutes(app: App) {
           200: {
             type: 'object',
             properties: {
-              blockedUserIds: {
+              blocks: {
                 type: 'array',
-                items: { type: 'string' },
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    blocker_user_id: { type: 'string' },
+                    blocked_user_id: { type: 'string' },
+                    post_id: { type: ['string', 'null'] },
+                    created_at: { type: 'string', format: 'date-time' },
+                  },
+                },
               },
             },
           },
@@ -1483,25 +1541,115 @@ export function registerCommunityRoutes(app: App) {
       app.logger.info({ blockerUserId }, 'Fetching blocked users list');
 
       try {
-        const blocks = await app.db
-          .select({
-            blockedUserId: schema.userBlocks.blockedUserId,
-          })
+        const userBlocks = await app.db
+          .select()
           .from(schema.userBlocks)
           .where(eq(schema.userBlocks.blockerUserId, blockerUserId));
 
-        const blockedUserIds = blocks.map(b => b.blockedUserId);
+        const blocks = userBlocks.map(b => ({
+          id: b.id,
+          blocker_user_id: b.blockerUserId,
+          blocked_user_id: b.blockedUserId,
+          post_id: b.postId,
+          created_at: b.createdAt.toISOString(),
+        }));
 
         app.logger.info(
-          { blockerUserId, count: blockedUserIds.length },
+          { blockerUserId, count: blocks.length },
           'Blocked users list retrieved'
         );
 
-        return reply.send({ blockedUserIds });
+        return reply.send({ blocks });
       } catch (error) {
         app.logger.error(
           { err: error, blockerUserId },
           'Failed to fetch blocked users'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Unblock a user
+  app.fastify.delete(
+    '/api/community/blocks/:blocked_user_id',
+    {
+      schema: {
+        description: 'Unblock a user',
+        tags: ['community', 'moderation'],
+        params: {
+          type: 'object',
+          required: ['blocked_user_id'],
+          properties: {
+            blocked_user_id: { type: 'string', description: 'User ID to unblock' },
+          },
+        },
+        response: {
+          204: {
+            description: 'Block deleted successfully',
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{ Params: { blocked_user_id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { blocked_user_id } = request.params;
+      const blockerUserId = session.user.id;
+
+      app.logger.info(
+        { blockerUserId, blockedUserId: blocked_user_id },
+        '[moderation] Processing user unblock'
+      );
+
+      try {
+        // First check if the block exists
+        const existingBlock = await app.db.query.userBlocks.findFirst({
+          where: and(
+            eq(schema.userBlocks.blockerUserId, blockerUserId),
+            eq(schema.userBlocks.blockedUserId, blocked_user_id)
+          ),
+        });
+
+        if (!existingBlock) {
+          app.logger.info(
+            { blockerUserId, blockedUserId: blocked_user_id },
+            '[moderation] Block not found for unblock attempt'
+          );
+          return reply.status(404).send({ error: 'Block not found' });
+        }
+
+        await app.db
+          .delete(schema.userBlocks)
+          .where(
+            and(
+              eq(schema.userBlocks.blockerUserId, blockerUserId),
+              eq(schema.userBlocks.blockedUserId, blocked_user_id)
+            )
+          );
+
+        app.logger.info(
+          { blockerUserId, blockedUserId: blocked_user_id },
+          '[moderation] User unblocked: blockerUserId=' + blockerUserId + ' blockedUserId=' + blocked_user_id
+        );
+
+        return reply.status(204).send();
+      } catch (error) {
+        app.logger.error(
+          { err: error, blockerUserId, blockedUserId: blocked_user_id },
+          'Failed to unblock user'
         );
         throw error;
       }
