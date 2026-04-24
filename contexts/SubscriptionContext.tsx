@@ -162,17 +162,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
-    // Two mock packages matching the exact RevenueCat dashboard package identifiers
-    const basePackage = {
-      identifier: "base",
-      product: {
-        title: "Base",
-        priceString: "$3.99",
-        description: "A gentle daily companion for reflection, encouragement, and light support.",
-      },
-    };
-    const monthlyPackage = {
-      identifier: "monthly",
+    const proPackage = {
+      identifier: "$rc_monthly",
+      packageType: "MONTHLY",
       product: {
         title: "Pro",
         priceString: "$8.99",
@@ -180,11 +172,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       },
     };
 
-    setPackages([basePackage, monthlyPackage] as PurchasesPackage[]);
-    console.log("[RevenueCat] Web preview: mock packages set", [
-      { identifier: "base", priceString: "$3.99" },
-      { identifier: "monthly", priceString: "$8.99" },
-    ]);
+    setPackages([proPackage] as PurchasesPackage[]);
+    console.log("[RevenueCat] Web preview: mock package set", {
+      identifier: "$rc_monthly",
+      priceString: "$8.99",
+    });
   };
 
   // Initialize RevenueCat on mount

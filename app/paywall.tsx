@@ -169,10 +169,6 @@ export default function PaywallScreen() {
     mockWebPurchase,
   } = useSubscription();
 
-  // "base" | "pro"
-  const [selectedPlan, setSelectedPlan] = useState<"base" | "pro">(
-    "pro"
-  );
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [webMockDialogState, setWebMockDialogState] = useState<
@@ -180,21 +176,10 @@ export default function PaywallScreen() {
   >("hidden");
   const [webMockPkg, setWebMockPkg] = useState<PurchasesPackage | null>(null);
 
-  // ── Package resolution ────────────────────────────────────────────────────
-  const basePackage = packages.find(p => p.identifier === 'base') ?? null;
-  const proPackage = packages.find(p => p.identifier === 'monthly') ?? null;
-
-  if (packages.length > 0) {
-    if (!basePackage) console.warn('[Paywall] WARNING: "base" package not found in packages');
-    if (!proPackage) console.warn('[Paywall] WARNING: "monthly" package not found in packages');
-  }
-
   // ── Expo Go detection ─────────────────────────────────────────────────────
   const isExpoGo = Constants.appOwnership === "expo";
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const basePrice = basePackage?.product?.priceString ?? "$3.99";
-  const proPrice = proPackage?.product?.priceString ?? "$8.99";
   // Only show "unavailable" when we're in Expo Go — never based on package count alone
   const noOfferings = !isWeb && isExpoGo;
   const anyPurchasing = purchasingId !== null;
@@ -207,30 +192,22 @@ export default function PaywallScreen() {
     console.log("[Paywall] Expo Go detected, showing unavailable message");
   }
 
-  const selectedPackage = selectedPlan === "base" ? basePackage : proPackage;
-  const selectedPlanLabel = selectedPlan === "base" ? "Base" : "Pro";
-  const ctaLabel = anyPurchasing ? "" : "Continue with " + selectedPlanLabel;
+  const activePackage =
+    packages.find(p => p.packageType === 'MONTHLY') ??
+    packages[0] ??
+    null;
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleSelectBase = () => {
-    console.log("[Paywall] Base plan card tapped");
-    setSelectedPlan("base");
-  };
-
-  const handleSelectPremium = () => {
-    console.log("[Paywall] Pro plan card tapped");
-    setSelectedPlan("pro");
-  };
+  const proPrice = activePackage?.product?.priceString ?? "$8.99";
+  const ctaLabel = anyPurchasing ? "" : "Subscribe";
 
   const handleContinue = () => {
     console.log("[Paywall] Continue button tapped", {
-      selectedPlan,
-      packageId: selectedPackage?.identifier,
-      price: selectedPackage?.product?.priceString,
+      packageId: activePackage?.identifier,
+      price: activePackage?.product?.priceString,
     });
 
     if (isWeb) {
-      setWebMockPkg(selectedPackage);
+      setWebMockPkg(activePackage);
       setWebMockDialogState("selecting");
       return;
     }
@@ -251,12 +228,12 @@ export default function PaywallScreen() {
       return;
     }
 
-    if (!selectedPackage) {
+    if (!activePackage) {
       Alert.alert("Not available", "Packages not loaded yet. Please try again.");
       return;
     }
 
-    handlePurchase(selectedPackage);
+    handlePurchase(activePackage);
   };
 
   const handlePurchase = async (pkg: PurchasesPackage) => {
@@ -394,7 +371,7 @@ export default function PaywallScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Title ── */}
-          <Text style={styles.heroTitle}>Choose Your Plan</Text>
+          <Text style={styles.heroTitle}>Unlock Full Access</Text>
           <Text style={styles.heroSubtitle}>
             Start gently. Go deeper when you're ready.
           </Text>
@@ -420,23 +397,12 @@ export default function PaywallScreen() {
 
           {/* ── Plan cards ── */}
           <View style={styles.cardsColumn}>
-            {/* Base */}
-            <PlanCard
-              title="Base"
-              priceAmount={basePrice}
-              description="A gentle daily companion for reflection, encouragement, and light support."
-              selected={selectedPlan === "base"}
-              onPress={handleSelectBase}
-            />
-
-            {/* Pro */}
             <PlanCard
               title="Pro"
               priceAmount={proPrice}
               description="A deeper, more personalized space for ongoing reflection, richer AI support, and full access."
-              selected={selectedPlan === "pro"}
-              recommended
-              onPress={handleSelectPremium}
+              selected={true}
+              onPress={() => {}}
             />
           </View>
 
