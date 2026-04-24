@@ -3,6 +3,13 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
+import { gateway } from '@specific-dev/framework';
+import { generateText } from 'ai';
+import {
+  getUserPersonalizationContext,
+  buildPersonalizationBlock,
+  TONE_AND_CONTENT_RULES,
+} from '../utils/personalization.js';
 
 // Utility function to get current Sunday in Pacific Time
 function getCurrentSundayPacific(): string {
@@ -30,6 +37,10 @@ function getCurrentDayOfWeekPacific(): number {
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
   return pacificTime.getDay();
 }
+
+// In-memory cache for personalized reflection prompts
+// Key: `${userId}-${dateYYYY-MM-DD}`, Value: personalized prompt string
+const personalizedPromptCache = new Map<string, string>();
 
 export function registerDailyGiftRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
@@ -83,10 +94,15 @@ export function registerDailyGiftRoutes(app: App) {
 
       // Check if current user has reflected today (if authenticated)
       let hasReflected = false;
+      let userId: string | null = null;
+      let reflectionPrompt = dailyContentRecord[0].reflectionPrompt;
+
       try {
         // Try to get session without requiring auth (won't throw)
         const session = (request as any).session;
         if (session?.user?.id) {
+          userId = session.user.id;
+
           const reflection = await app.db
             .select()
             .from(schema.userReflections)
@@ -100,6 +116,65 @@ export function registerDailyGiftRoutes(app: App) {
             .limit(1);
 
           hasReflected = reflection.length > 0;
+
+          // Personalize reflection prompt for authenticated users
+          try {
+            const personalizationContext = await getUserPersonalizationContext(app, userId);
+
+            if (personalizationContext.engagementDepth === 'new') {
+              // New users: return original prompt unchanged
+              reflectionPrompt = dailyContentRecord[0].reflectionPrompt;
+            } else if (
+              personalizationContext.engagementDepth === 'growing' ||
+              personalizationContext.engagementDepth === 'established'
+            ) {
+              // Check cache
+              const cacheKey = `${userId}-${today}`;
+              if (personalizedPromptCache.has(cacheKey)) {
+                app.logger.info(
+                  { userId, date: today },
+                  '[Personalization] Using cached personalized prompt'
+                );
+                reflectionPrompt = personalizedPromptCache.get(cacheKey)!;
+              } else {
+                // Generate personalized prompt
+                app.logger.info(
+                  { userId, date: today },
+                  '[Personalization] Generating personalized reflection prompt'
+                );
+
+                const personalizationBlock = buildPersonalizationBlock(personalizationContext);
+
+                const systemPrompt = `You are a spiritual companion. Generate a single personalized reflection prompt (1-2 sentences max) that is ~40% grounded in the liturgical theme and ~60% personalized to this user's emotional and spiritual patterns. Never quote the user's words directly. Be gentle, grounded, non-preachy.
+
+${personalizationBlock}
+
+${TONE_AND_CONTENT_RULES}`;
+
+                const userMessage = `Liturgical theme: ${theme[0].themeTitle}. Scripture: ${dailyContentRecord[0].scriptureReference} - "${dailyContentRecord[0].scriptureText.substring(0, 150)}". Base reflection prompt: "${dailyContentRecord[0].reflectionPrompt}". ${personalizationBlock}`;
+
+                const { text: personalizedPrompt } = await generateText({
+                  model: gateway('openai/gpt-4o-mini'),
+                  system: systemPrompt,
+                  messages: [
+                    {
+                      role: 'user',
+                      content: userMessage,
+                    },
+                  ],
+                });
+
+                reflectionPrompt = personalizedPrompt;
+                personalizedPromptCache.set(cacheKey, personalizedPrompt);
+              }
+            }
+          } catch (error) {
+            app.logger.warn(
+              { err: error, userId },
+              'Failed to personalize reflection prompt, using original'
+            );
+            reflectionPrompt = dailyContentRecord[0].reflectionPrompt;
+          }
         }
       } catch {
         // User not authenticated, hasReflected remains false
@@ -115,7 +190,7 @@ export function registerDailyGiftRoutes(app: App) {
         date: today,
         scriptureText: dailyContentRecord[0].scriptureText,
         scriptureReference: dailyContentRecord[0].scriptureReference,
-        reflectionPrompt: dailyContentRecord[0].reflectionPrompt,
+        reflectionPrompt,
         hasReflected,
         weeklyTheme: {
           id: theme[0].id,

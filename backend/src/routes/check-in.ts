@@ -5,6 +5,11 @@ import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
+import {
+  getUserPersonalizationContext,
+  buildPersonalizationBlock,
+  TONE_AND_CONTENT_RULES,
+} from '../utils/personalization.js';
 
 // Verify API key is available from environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -183,18 +188,65 @@ export function registerCheckInRoutes(app: App) {
           conversation = newConversation;
           isNewConversation = true;
 
-          // Create initial assistant message
-          const initialMessage = "Peace to you. What's on your heart today?";
-          await app.db.insert(schema.checkInMessages).values({
-            conversationId: conversation.id,
-            role: 'assistant',
-            content: initialMessage,
-          });
+          // Generate personalized greeting
+          try {
+            const personalizationContext = await getUserPersonalizationContext(app, session.user.id);
+            let systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
+            const personalizationBlock = buildPersonalizationBlock(personalizationContext);
 
-          app.logger.info(
-            { conversationId: conversation.id, userId: session.user.id },
-            'New check-in conversation started'
-          );
+            systemPrompt += `\n\n${personalizationBlock}\n\n${TONE_AND_CONTENT_RULES}`;
+
+            // Add engagement-depth-based instruction
+            let greetingInstruction = '';
+            if (personalizationContext.engagementDepth === 'new') {
+              greetingInstruction =
+                'Generate a warm, gentle, general welcome message for someone beginning their spiritual journey with this companion. Keep it brief and inviting.';
+            } else if (personalizationContext.engagementDepth === 'growing') {
+              greetingInstruction =
+                'Generate a warm greeting that gently acknowledges this person is returning. Lightly reference their emotional themes without quoting them directly. Keep it brief.';
+            } else {
+              greetingInstruction =
+                'Generate a deeply personal, attuned greeting. Speak directly to this person\'s recurring emotional patterns and spiritual themes. Keep it brief but meaningful.';
+            }
+
+            const { text: initialMessage } = await generateText({
+              model: gateway('openai/gpt-4o-mini'),
+              system: systemPrompt,
+              messages: [
+                {
+                  role: 'user',
+                  content: greetingInstruction,
+                },
+              ],
+            });
+
+            await app.db.insert(schema.checkInMessages).values({
+              conversationId: conversation.id,
+              role: 'assistant',
+              content: initialMessage,
+            });
+
+            app.logger.info(
+              {
+                conversationId: conversation.id,
+                userId: session.user.id,
+                engagementDepth: personalizationContext.engagementDepth,
+              },
+              'New check-in conversation started with personalized greeting'
+            );
+          } catch (error) {
+            app.logger.warn(
+              { err: error, userId: session.user.id, conversationId: conversation.id },
+              'Failed to generate personalized greeting, using fallback'
+            );
+            // Fallback to static message
+            const initialMessage = "Peace to you. What's on your heart today?";
+            await app.db.insert(schema.checkInMessages).values({
+              conversationId: conversation.id,
+              role: 'assistant',
+              content: initialMessage,
+            });
+          }
         }
 
         // Get all messages for this conversation
@@ -357,8 +409,28 @@ export function registerCheckInRoutes(app: App) {
           }))
           .concat([{ role: 'user' as const, content: message }]);
 
+        // Get personalization context
+        const personalizationContext = await getUserPersonalizationContext(app, session.user.id);
+        app.logger.info(
+          {
+            userId: session.user.id,
+            engagementDepth: personalizationContext.engagementDepth,
+            dominantMoods: personalizationContext.dominantMoods,
+            recentTopics: personalizationContext.recentTopics,
+          },
+          '[Personalization] userId engagement and patterns'
+        );
+
         // Build personalized system prompt with companion preferences
         let systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
+
+        app.logger.info(
+          { userId: session.user.id, engagementDepth: personalizationContext.engagementDepth },
+          '[CheckIn] Building personalized system prompt'
+        );
+
+        // Build personalization block
+        const personalizationBlock = buildPersonalizationBlock(personalizationContext);
 
         // Add premium tier enhancement if applicable
         if (userContext?.tier === 'premium') {
@@ -366,6 +438,9 @@ export function registerCheckInRoutes(app: App) {
         } else {
           systemPrompt += "\n\nKeep responses warm, emotionally supportive, and satisfying. Be concise but never cold or abrupt. Offer gentle encouragement and one thoughtful reflection or question. Do not cut responses short — every reply should feel complete and caring.";
         }
+
+        // Append personalization block and tone rules
+        systemPrompt += `\n\n${personalizationBlock}\n\n${TONE_AND_CONTENT_RULES}`;
 
         // Generate response using GPT-4o via the gateway
         app.logger.debug(
