@@ -118,28 +118,28 @@ function FadeInView({ children }: { children: React.ReactNode }) {
 const VALUE_ITEMS = [
   {
     Icon: MessageCircle,
-    title: "Emotional processing space",
+    title: "A space to process what you're carrying",
     subtitle: "Talk, reflect, and express freely without judgment",
   },
   {
     Icon: BookOpen,
-    title: "Saved reflections",
-    subtitle: "All entries stored privately, revisit anytime",
+    title: "Your reflections, saved privately",
+    subtitle: "Everything you share is stored so you can revisit it anytime",
   },
   {
     Icon: Gift,
-    title: "Daily encouragement",
-    subtitle: "A daily gift — reflection, scripture, or supportive message",
+    title: "A daily moment of encouragement",
+    subtitle: "A gentle daily gift — reflection, scripture, or supportive message",
   },
   {
     Icon: Wind,
-    title: "Somatic grounding",
-    subtitle: "Optional body-based exercises for regulation and reset",
+    title: "Simple ways to ground your body",
+    subtitle: "Optional practices to help you reset and reconnect",
   },
   {
     Icon: Users,
-    title: "Optional community",
-    subtitle: "Share and receive support if you choose",
+    title: "Optional, supportive community",
+    subtitle: "Share and receive encouragement only if you want to",
   },
 ];
 
@@ -385,9 +385,8 @@ export default function PaywallScreen() {
 
             {/* ── 2. AI Emphasis Pill ── */}
             <View style={styles.aiPill}>
-              <Text style={styles.aiPillLabel}>PERSONALIZED AI</Text>
               <Text style={styles.aiPillMain}>
-                The more you engage, the more the AI adapts and reflects you
+                The more you engage, the more the AI understands you — offering reflections that feel truly personal
               </Text>
               <Text style={styles.aiPillCaption}>
                 Your experience becomes uniquely yours over time
@@ -416,13 +415,19 @@ export default function PaywallScreen() {
               })}
             </View>
 
+            {/* ── Transition line ── */}
+            <Text style={styles.transitionLine}>
+              Try it for yourself and see how it feels
+            </Text>
+
             {/* ── 4. Trial Card ── */}
             <View style={styles.trialCard}>
               <View style={styles.trialTopRow}>
                 <View style={styles.sageDot} />
                 <Text style={styles.trialLabel}>FREE 7-DAY TRIAL</Text>
               </View>
-              <Text style={styles.trialMain}>Full access to everything</Text>
+              <Text style={styles.trialMain}>Start with 7 days of full access</Text>
+              <Text style={styles.trialSub}>Experience everything — including personalized AI</Text>
               <View style={styles.trialPriceRow}>
                 <Text style={styles.trialPriceThen}>Then </Text>
                 <Text style={styles.trialPriceAmount}>{priceString}</Text>
@@ -605,22 +610,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: C.sage,
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
     marginBottom: 24,
   },
-  aiPillLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    color: C.sage,
-    textTransform: "uppercase",
-  },
   aiPillMain: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: "600",
     color: C.text,
-    lineHeight: 26,
-    marginTop: 6,
+    lineHeight: 28,
   },
   aiPillCaption: {
     fontSize: 14,
@@ -729,6 +726,21 @@ const styles = StyleSheet.create({
   trialPriceUnit: {
     fontSize: 15,
     color: C.textSecondary,
+  },
+  transitionLine: {
+    fontSize: 15,
+    color: C.textSecondary,
+    textAlign: "center",
+    fontStyle: "italic",
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    lineHeight: 22,
+  },
+  trialSub: {
+    fontSize: 14,
+    color: C.textSecondary,
+    lineHeight: 20,
+    marginTop: 4,
   },
   trialSubtext: {
     fontSize: 13,
