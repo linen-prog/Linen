@@ -163,19 +163,29 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
     const proPackage = {
-      identifier: "$rc_monthly",
-      packageType: "MONTHLY",
+      identifier: '$rc_monthly',
+      packageType: 'MONTHLY',
       product: {
-        title: "Pro",
-        priceString: "$8.99",
-        description: "A deeper, more personalized space for ongoing reflection, richer AI support, and full access.",
+        identifier: 'pro_monthly_15_a7bbde',
+        priceString: '$8.99',
+        price: 8.99,
+        currencyCode: 'USD',
+        title: 'Pro Monthly',
+        description: 'Full access to Linen',
+        introPrice: {
+          priceString: '$0.00',
+          price: 0,
+          periodNumberOfUnits: 7,
+          periodUnit: 'DAY',
+        },
       },
+      offeringIdentifier: 'default',
     };
 
     setPackages([proPackage] as PurchasesPackage[]);
     console.log("[RevenueCat] Web preview: mock package set", {
-      identifier: "$rc_monthly",
-      priceString: "$8.99",
+      identifier: '$rc_monthly',
+      priceString: '$8.99',
     });
   };
 
