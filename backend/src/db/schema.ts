@@ -516,3 +516,29 @@ export const userBlocks = pgTable(
     index('user_blocks_blocked').on(table.blockedUserId),
   ]
 );
+
+// User somatic prompts table (caches daily generated somatic prompts)
+export const userSomaticPrompts = pgTable(
+  'user_somatic_prompts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => {
+        return { id: true } as any;
+      }, { onDelete: 'cascade' }),
+    promptDate: date('prompt_date', { mode: 'string' }).notNull(),
+    category: text('category', {
+      enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'],
+    }).notNull(),
+    generatedPrompt: text('generated_prompt').notNull(),
+    selectedExerciseId: uuid('selected_exercise_id')
+      .notNull()
+      .references(() => somaticExercises.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_somatic_prompts_user_date_unique').on(table.userId, table.promptDate),
+    index('user_somatic_prompts_user').on(table.userId),
+  ]
+);
