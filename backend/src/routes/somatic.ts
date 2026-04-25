@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, gte, lt } from 'drizzle-orm';
+import { eq, and, desc, gte, lt, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { getUserPersonalizationContext } from '../utils/personalization.js';
@@ -465,51 +465,36 @@ export function registerSomaticRoutes(app: App) {
       console.log('[Somatic] Request received for user:', userId);
 
       try {
-        // Step 2: Strict one-per-day cache check
+        // Step 2: Strict one-per-day cache check using raw SQL
         console.log('[Somatic] Cache check — today:', todayDate);
 
-        const cachedPrompt = await app.db
-          .select({
-            promptText: schema.userSomaticPrompts.promptText,
-            category: schema.userSomaticPrompts.category,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(
-            and(
-              eq(schema.userSomaticPrompts.userId, userId),
-              eq(schema.userSomaticPrompts.promptDate, todayDate)
-            )
-          )
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(1);
+        const cachedResults = await app.db.execute(
+          sql`SELECT prompt_text, category FROM user_somatic_prompts WHERE user_id = ${userId} AND prompt_date = ${todayDate} ORDER BY generated_at DESC LIMIT 1`
+        );
 
-        if (cachedPrompt.length > 0) {
-          console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt[0].promptText, category: cachedPrompt[0].category });
-          app.logger.info({ userId, fallbackUsed: false, category: cachedPrompt[0].category, cached: true }, '[Somatic] Fallback used: false');
+        if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+          const cachedPrompt = cachedResults[0] as { prompt_text: string; category: string };
+          console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt.prompt_text, category: cachedPrompt.category });
+          app.logger.info({ userId, fallbackUsed: false, category: cachedPrompt.category, cached: true }, '[Somatic] Fallback used: false');
           return reply.send({
-            somatic_prompt: cachedPrompt[0].promptText,
-            category: cachedPrompt[0].category,
+            somatic_prompt: cachedPrompt.prompt_text,
+            category: cachedPrompt.category,
             cached: true,
           });
         }
 
         console.log('[Somatic] Generating new prompt');
 
-        // Step 3a: Category rotation
-        const lastCategoryResult = await app.db
-          .select({
-            category: schema.userSomaticPrompts.category,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(1);
+        // Step 3a: Category rotation using raw SQL
+        const lastCategoryResults = await app.db.execute(
+          sql`SELECT category FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 1`
+        );
 
         let nextCategory: string;
-        if (lastCategoryResult.length === 0) {
+        if (!lastCategoryResults || !Array.isArray(lastCategoryResults) || lastCategoryResults.length === 0) {
           nextCategory = CATEGORIES[0];
         } else {
-          const lastCategory = lastCategoryResult[0].category;
+          const lastCategory = (lastCategoryResults[0] as { category: string }).category;
           const currentIndex = CATEGORIES.indexOf(lastCategory);
           const nextIndex = (currentIndex + 1) % CATEGORIES.length;
           nextCategory = CATEGORIES[nextIndex];
@@ -521,17 +506,13 @@ export function registerSomaticRoutes(app: App) {
         // Step 3c: Theme context
         const { themeTitle, themeDescription, liturgicalSeason, reflectionPrompt } = request.query;
 
-        // Step 3d: Recent prompts to avoid repetition
-        const recentPromptsData = await app.db
-          .select({
-            promptText: schema.userSomaticPrompts.promptText,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(5);
+        // Step 3d: Recent prompts to avoid repetition using raw SQL
+        const recentPromptsResults = await app.db.execute(
+          sql`SELECT prompt_text FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 10`
+        );
 
-        const recentPromptTexts = recentPromptsData.map((p) => p.promptText);
+        const recentPromptTexts = (recentPromptsResults && Array.isArray(recentPromptsResults) ? recentPromptsResults : [])
+          .map((p: { prompt_text: string }) => p.prompt_text);
 
         // Step 3e: Build AI system prompt
         let systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic invitation — a brief, embodied practice (2-4 sentences) that invites the user to notice or gently move their body in a spiritually grounded way.
@@ -550,7 +531,7 @@ User context:
 - Engagement depth: ${personalization.engagementDepth}
 
 Recent prompts to avoid repeating (do not reuse these):
-${recentPromptTexts.map((t) => `- "${t}"`).join('\n')}
+${recentPromptTexts.map((t: string) => `- "${t}"`).join('\n')}
 
 Style examples (match this tone and length):
 1. "Place both feet flat on the floor. Feel the ground holding you. Take one slow breath and let your shoulders drop."
@@ -589,25 +570,23 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
 
         const generatedPrompt = result.text.trim();
 
-        // Step 4: Save to user_somatic_prompts
-        await app.db.insert(schema.userSomaticPrompts).values({
-          userId,
-          promptText: generatedPrompt,
-          category: nextCategory as any,
-          promptDate: todayDate,
-        });
+        // Step 4: Save to user_somatic_prompts using raw SQL
+        await app.db.execute(
+          sql`INSERT INTO user_somatic_prompts (user_id, prompt_text, category, prompt_date)
+              VALUES (${userId}, ${generatedPrompt}, ${nextCategory}, ${todayDate})
+              ON CONFLICT (user_id, prompt_date) DO NOTHING`
+        );
 
-        // Step 5: Write back to daily_content.somatic_prompt
+        // Step 5: Write back to daily_content.somatic_prompt using raw SQL
         const now = new Date();
         const start = new Date(now.getFullYear(), 0, 0);
         const diff = now.getTime() - start.getTime();
         const oneDay = 1000 * 60 * 60 * 24;
         const dayOfYear = Math.floor(diff / oneDay);
 
-        await app.db
-          .update(schema.dailyContent)
-          .set({ somaticPrompt: generatedPrompt })
-          .where(eq(schema.dailyContent.dayOfYear, dayOfYear));
+        await app.db.execute(
+          sql`UPDATE daily_content SET somatic_prompt = ${generatedPrompt} WHERE day_of_year = ${dayOfYear}`
+        );
 
         // Step 6: Return
         app.logger.info({ userId, fallbackUsed: false, category: nextCategory, cached: false }, '[Somatic] Fallback used: false');
