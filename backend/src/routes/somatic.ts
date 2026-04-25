@@ -477,8 +477,7 @@ export function registerSomaticRoutes(app: App) {
           .where(
             and(
               eq(schema.userSomaticPrompts.userId, userId),
-              gte(schema.userSomaticPrompts.generatedAt, new Date(todayDate)),
-              lt(schema.userSomaticPrompts.generatedAt, new Date(new Date(todayDate).getTime() + 86400000))
+              eq(schema.userSomaticPrompts.promptDate, todayDate)
             )
           )
           .orderBy(desc(schema.userSomaticPrompts.generatedAt))
@@ -493,7 +492,7 @@ export function registerSomaticRoutes(app: App) {
           });
         }
 
-        console.log('[Somatic] No cache found — generating new prompt');
+        console.log('[Somatic] Generating new prompt');
 
         // Step 3a: Category rotation
         const lastCategoryResult = await app.db
@@ -515,17 +514,11 @@ export function registerSomaticRoutes(app: App) {
           nextCategory = CATEGORIES[nextIndex];
         }
 
-        console.log('[Somatic] Next category selected:', nextCategory);
-
         // Step 3b: Personalization context
         const personalization = await getUserPersonalizationContext(app, userId);
-        console.log('[Somatic] Personalization applied:', { engagementDepth: personalization.engagementDepth, dominantMoods: personalization.dominantMoods });
 
         // Step 3c: Theme context
         const { themeTitle, themeDescription, liturgicalSeason, reflectionPrompt } = request.query;
-        if (themeTitle || liturgicalSeason) {
-          console.log('[Somatic] Daily gift theme context received:', { themeTitle, liturgicalSeason });
-        }
 
         // Step 3d: Recent prompts to avoid repetition
         const recentPromptsData = await app.db
@@ -538,7 +531,6 @@ export function registerSomaticRoutes(app: App) {
           .limit(5);
 
         const recentPromptTexts = recentPromptsData.map((p) => p.promptText);
-        console.log('[Somatic] Recent prompts to avoid:', recentPromptTexts.length);
 
         // Step 3e: Build AI system prompt
         let systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic invitation — a brief, embodied practice (2-4 sentences) that invites the user to notice or gently move their body in a spiritually grounded way.
@@ -595,16 +587,14 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
         });
 
         const generatedPrompt = result.text.trim();
-        console.log('[Somatic] Generated prompt:', generatedPrompt);
 
         // Step 4: Save to user_somatic_prompts
         await app.db.insert(schema.userSomaticPrompts).values({
           userId,
           promptText: generatedPrompt,
           category: nextCategory as any,
+          promptDate: todayDate,
         });
-
-        console.log('[Somatic] Saved new prompt for user:', userId);
 
         // Step 5: Write back to daily_content.somatic_prompt
         const now = new Date();
@@ -618,8 +608,6 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
           .set({ somaticPrompt: generatedPrompt })
           .where(eq(schema.dailyContent.dayOfYear, dayOfYear));
 
-        console.log('[Somatic] Updated daily_content.somatic_prompt for day_of_year:', dayOfYear);
-
         // Step 6: Return
         return reply.send({
           somatic_prompt: generatedPrompt,
@@ -627,11 +615,21 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
           cached: false,
         });
       } catch (error) {
-        app.logger.error(
-          { err: error, userId },
-          'Failed to generate somatic prompt'
-        );
-        return reply.status(500).send({ error: 'Failed to generate somatic prompt' });
+        // Safe fallback: always return HTTP 200 with a default prompt
+        const errorDetails = {
+          userId,
+          'err.message': error instanceof Error ? error.message : 'Unknown error',
+          'err.stack': error instanceof Error ? error.stack : '',
+          label: '[Somatic] Fatal error details',
+        };
+        app.logger.error(errorDetails);
+        console.error('[Somatic] Fatal error details:', errorDetails);
+
+        return reply.send({
+          somatic_prompt: 'Place one hand on your chest. Take three slow breaths and notice the rise and fall.',
+          category: 'grounding',
+          cached: false,
+        });
       }
     }
   );

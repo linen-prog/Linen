@@ -532,9 +532,11 @@ export const userSomaticPrompts = pgTable(
       enum: ['grounding', 'awareness', 'release', 'playful', 'spiritual'],
     }).notNull(),
     generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
+    promptDate: date('prompt_date').defaultNow().notNull(),
   },
   (table) => [
     index('user_somatic_prompts_user').on(table.userId),
-    index('user_somatic_prompts_user_generated_at').on(table.userId, table.generatedAt),
+    index('user_somatic_prompts_prompt_date').on(table.promptDate),
+    uniqueIndex('user_somatic_prompts_user_date_unique').on(table.userId, table.promptDate),
   ]
 );
