@@ -522,15 +522,9 @@ export const userSomaticPrompts = pgTable(
   'user_somatic_prompts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => {
-        return { id: true } as any;
-      }, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull(),
     promptText: text('prompt_text').notNull(),
-    category: text('category', {
-      enum: ['grounding', 'awareness', 'release', 'playful', 'spiritual'],
-    }).notNull(),
+    category: text('category').notNull(),
     generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
     promptDate: date('prompt_date').defaultNow().notNull(),
   },
