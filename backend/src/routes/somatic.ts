@@ -460,22 +460,21 @@ export function registerSomaticRoutes(app: App) {
       if (!session) return;
 
       const userId = session.user.id;
-      const todayDate = new Date().toISOString().split('T')[0];
 
       console.log('[Somatic] Request received for user:', userId);
 
       try {
         // Step 2: Strict one-per-day cache check using raw SQL
-        console.log('[Somatic] Cache check — today:', todayDate);
+        console.log('[Somatic] Cache check — checking for cached prompt');
 
         const cachedResults = await app.db.execute(
-          sql`SELECT prompt_text, category FROM user_somatic_prompts WHERE user_id = ${userId} AND prompt_date = ${todayDate} ORDER BY generated_at DESC LIMIT 1`
+          sql`SELECT prompt_text, category FROM user_somatic_prompts WHERE user_id = ${userId} AND prompt_date = CURRENT_DATE ORDER BY generated_at DESC LIMIT 1`
         );
 
-        if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+        if (cachedResults?.[0]?.prompt_text) {
           const cachedPrompt = cachedResults[0] as { prompt_text: string; category: string };
           console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt.prompt_text, category: cachedPrompt.category });
-          app.logger.info({ userId, fallbackUsed: false, category: cachedPrompt.category, cached: true }, '[Somatic] Fallback used: false');
+          app.logger.info({ userId, fallbackUsed: false, category: cachedPrompt.category }, '[Somatic] Fallback used: false');
           return reply.send({
             somatic_prompt: cachedPrompt.prompt_text,
             category: cachedPrompt.category,
@@ -573,7 +572,7 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
         // Step 4: Save to user_somatic_prompts using raw SQL
         await app.db.execute(
           sql`INSERT INTO user_somatic_prompts (user_id, prompt_text, category, prompt_date)
-              VALUES (${userId}, ${generatedPrompt}, ${nextCategory}, ${todayDate})
+              VALUES (${userId}, ${generatedPrompt}, ${nextCategory}, CURRENT_DATE)
               ON CONFLICT (user_id, prompt_date) DO NOTHING`
         );
 
