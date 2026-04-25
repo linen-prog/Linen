@@ -526,9 +526,8 @@ export default function DailyGiftScreen() {
           prompt: result.somatic_prompt,
         });
       }
-    } catch (error) {
-      console.log('[DailyGift] Failed to load somatic prompt (non-critical):', error);
-      // Silently fall back to dailyContent.somaticPrompt
+    } catch {
+      // Silently ignore — static somaticPrompt from dailyContent is already shown
     } finally {
       setIsSomaticLoading(false);
     }
