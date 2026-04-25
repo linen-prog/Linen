@@ -527,18 +527,14 @@ export const userSomaticPrompts = pgTable(
       .references(() => {
         return { id: true } as any;
       }, { onDelete: 'cascade' }),
-    promptDate: date('prompt_date', { mode: 'string' }).notNull(),
+    promptText: text('prompt_text').notNull(),
     category: text('category', {
-      enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'],
+      enum: ['grounding', 'awareness', 'release', 'playful', 'spiritual'],
     }).notNull(),
-    generatedPrompt: text('generated_prompt').notNull(),
-    selectedExerciseId: uuid('selected_exercise_id')
-      .notNull()
-      .references(() => somaticExercises.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('user_somatic_prompts_user_date_unique').on(table.userId, table.promptDate),
     index('user_somatic_prompts_user').on(table.userId),
+    index('user_somatic_prompts_user_generated_at').on(table.userId, table.generatedAt),
   ]
 );
