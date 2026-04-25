@@ -485,6 +485,7 @@ export function registerSomaticRoutes(app: App) {
 
         if (cachedPrompt.length > 0) {
           console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt[0].promptText, category: cachedPrompt[0].category });
+          app.logger.info({ userId, fallbackUsed: false, category: cachedPrompt[0].category, cached: true }, '[Somatic] Fallback used: false');
           return reply.send({
             somatic_prompt: cachedPrompt[0].promptText,
             category: cachedPrompt[0].category,
