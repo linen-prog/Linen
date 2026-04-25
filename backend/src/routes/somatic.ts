@@ -269,6 +269,8 @@ async function seedExercises(app: App) {
   }
 }
 
+const CATEGORIES = ['grounding', 'awareness', 'release', 'playful', 'spiritual'];
+
 export function registerSomaticRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
 
@@ -464,6 +466,7 @@ export function registerSomaticRoutes(app: App) {
           .limit(1);
 
         if (cachedPrompt.length > 0) {
+          console.log('[Somatic] Returning cached prompt for today');
           app.logger.info({ userId }, 'Using cached daily somatic prompt');
           const exercise = await app.db
             .select()
@@ -536,8 +539,7 @@ export function registerSomaticRoutes(app: App) {
               );
             } else {
               // Random category excluding the blocked one
-              const categories = ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'];
-              const availableCategories = categories.filter((c) => c !== blockedCategory);
+              const availableCategories = CATEGORIES.filter((c) => c !== blockedCategory);
               categoryToUse = availableCategories[Math.floor(Math.random() * availableCategories.length)];
             }
           }
@@ -559,41 +561,87 @@ export function registerSomaticRoutes(app: App) {
             }
           } else {
             // Random category
-            const categories = ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'];
-            categoryToUse = categories[Math.floor(Math.random() * categories.length)];
+            categoryToUse = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
           }
         }
 
         // Get exercises in the selected category
-        const categoryExercises = await app.db
+        let categoryExercises = await app.db
           .select()
           .from(schema.somaticExercises)
           .where(eq(schema.somaticExercises.category, categoryToUse as any));
 
+        // Fallback to grounding if no exercises found for selected category
         if (categoryExercises.length === 0) {
-          app.logger.warn({ userId, category: categoryToUse }, 'No exercises found for category');
-          return reply.status(500).send({ error: 'No exercises available' });
+          app.logger.warn({ userId, category: categoryToUse }, 'No exercises found for category, falling back to grounding');
+          categoryToUse = 'grounding';
+          categoryExercises = await app.db
+            .select()
+            .from(schema.somaticExercises)
+            .where(eq(schema.somaticExercises.category, 'grounding'));
         }
 
         const selectedExercise = categoryExercises[Math.floor(Math.random() * categoryExercises.length)];
 
+        console.log('[Somatic] Next category selected:', categoryToUse);
+        console.log('[Somatic] Personalization applied:', { engagementDepth: personalization.engagementDepth, dominantMoods: personalization.dominantMoods });
+
+        // Fetch recent prompts to avoid duplication
+        const recentPromptsData = await app.db
+          .select({
+            prompt: schema.userSomaticPrompts.generatedPrompt,
+          })
+          .from(schema.userSomaticPrompts)
+          .where(eq(schema.userSomaticPrompts.userId, userId))
+          .orderBy(desc(schema.userSomaticPrompts.promptDate))
+          .limit(10);
+
+        const recentPromptTexts = recentPromptsData.map((p) => p.prompt);
+        console.log('[Somatic] Recent prompts to avoid:', recentPromptTexts.length);
+
         // Build AI system prompt
-        const systemPrompt = `You are a warm, somatic guide helping someone explore their body and breath with gentle awareness. Generate a personalized somatic prompt for the "${categoryToUse}" practice.
+        const nextCategory = categoryToUse;
+        const systemPrompt = `You are a somatic wellness guide for a Christian women's app. Generate a single, short somatic awareness prompt (1–3 sentences max) for today.
 
-STYLE GUIDE:
-- Write in second person (you, your)
-- Be warm, gentle, and non-judgmental
-- Include sensory language (notice, feel, sense)
-- Keep it under 100 words
-- Be specific to the "${selectedExercise.title}" exercise
-- For "new" engagement: keep it simple and grounded
-- For "growing" engagement: add gentle emotional language
-- For "established" engagement: weave in their patterns subtly (if available: moods: ${personalization.dominantMoods.join(', ') || 'none'})
+USER CONTEXT:
+Dominant moods: ${personalization.dominantMoods.join(', ') || 'none'}
+Recurring topics: ${personalization.recurringTopics.join(', ') || 'none'}
+Engagement depth: ${personalization.engagementDepth}
 
-EXAMPLE FORMAT:
-"Begin by finding a comfortable position. Notice [specific body sensation]. As you [exercise-specific action], feel [what they might experience]. There's nothing to fix or achieve — just bring gentle awareness to [focus area]. Take your time."
+STYLE GUIDE — learn the tone and structure from these examples. Do NOT copy, reword, or closely resemble any of them:
+1. "Place one hand on your chest and one on your belly. Take 3 slow breaths and notice which moves first."
+2. "Press your feet firmly into the ground for 10 seconds, then release. Notice the shift."
+3. "Inhale for 4, exhale for 6 — repeat 3 times slowly."
+4. "Look around and name 3 things you can see. Let your gaze move gently."
+5. "Sit back slightly and feel the support beneath you. Let your body rest into it."
+6. "Gently sway side to side. Find a rhythm that feels natural."
+7. "Take one slow breath and extend your exhale just a little longer than usual."
+8. "Place your hand on your heart and pause for a moment of stillness."
+9. "Where in your body do you feel the most sensation right now? Stay there for one breath."
+10. "Notice if your body feels more heavy or light today. No need to change it."
+11. "Scan from head to toe and notice one place holding tension."
+12. "Ask quietly: 'What am I carrying right now?' Notice what arises in your body."
+13. "Pay attention to your shoulders — are they lifted or relaxed? Let them drop slightly."
+14. "Notice your breathing without changing it. Just observe."
+15. "Gently unclench your jaw and soften your tongue."
+16. "Take a deeper inhale and sigh it out through your mouth."
+17. "Roll your shoulders back slowly 5 times."
+18. "Open and close your hands slowly, releasing any tightness."
+19. "Stretch your arms overhead and take a full breath in."
+20. "Let your face soften — especially around your eyes."
+21. "Gently shake out your hands for a few seconds."
+22. "Tap your chest lightly with your fingertips for a few seconds."
+23. "Wiggle your fingers and toes for a few seconds — just for fun."
+24. "Make a tiny circle with your nose in the air. Slow and easy."
+25. "Take an exaggerated stretch like you just woke up."
+26. "Smile gently (even if it feels silly) and notice what shifts."
+27. "Place your hand on your heart and take a breath. 'Be still, and know that I am God.' (Psalm 46:10)"
+28. "As you breathe in, think 'peace'… as you breathe out, release tension. 'Peace I leave with you.' (John 14:27)"
+29. "Rest your hands open on your lap. 'Come to me, all who are weary…' (Matthew 11:28) Take a slow breath."
+30. "Take a slow breath and notice your body. 'The Lord is near.' (Psalm 34:18)"
 
-Generate a prompt for "${selectedExercise.title}" (${selectedExercise.duration}). Engagement level: ${personalization.engagementDepth}.`;
+${recentPromptTexts.length > 0 ? `RECENT PROMPTS TO AVOID (do not repeat or closely resemble any of these):\n${recentPromptTexts.map((t) => `- "${t}"`).join('\n')}\n` : ''}
+OUTPUT: Return only the prompt text. No labels, no quotes, no explanation. Category: ${nextCategory}.`;
 
         app.logger.info(
           { userId, selectedCategory: categoryToUse, exerciseTitle: selectedExercise.title },
@@ -626,19 +674,8 @@ Generate a prompt for "${selectedExercise.title}" (${selectedExercise.duration})
               continue;
             }
 
-            // Check for duplication with last 5 prompts
-            const recentPrompts = await app.db
-              .select({
-                prompt: schema.userSomaticPrompts.generatedPrompt,
-                promptDate: schema.userSomaticPrompts.promptDate,
-              })
-              .from(schema.userSomaticPrompts)
-              .where(eq(schema.userSomaticPrompts.userId, userId))
-              .orderBy(desc(schema.userSomaticPrompts.promptDate))
-              .limit(5);
-
-            const isDuplicate = recentPrompts.some(
-              (p) => p.prompt.toLowerCase().includes(rawPrompt.substring(0, 30).toLowerCase())
+            const isDuplicate = recentPromptTexts.some(
+              (p) => p.toLowerCase().includes(rawPrompt.substring(0, 30).toLowerCase())
             );
 
             if (isDuplicate) {
@@ -648,6 +685,7 @@ Generate a prompt for "${selectedExercise.title}" (${selectedExercise.duration})
             }
 
             generatedPrompt = rawPrompt;
+            console.log('[Somatic] Generated prompt:', generatedPrompt);
             app.logger.info(
               { userId, wordCount, retries },
               'AI prompt generated successfully'
@@ -682,9 +720,25 @@ Generate a prompt for "${selectedExercise.title}" (${selectedExercise.duration})
           })
           .returning();
 
+        console.log('[Somatic] Saved new prompt for user:', userId);
+
         app.logger.info(
           { userId, promptId: cachedRecord.id },
           'Daily somatic prompt cached and returned'
+        );
+
+        // Update daily_content with the generated prompt
+        const currentDate = new Date();
+        const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
+
+        await app.db
+          .update(schema.dailyContent)
+          .set({ somaticPrompt: generatedPrompt })
+          .where(eq(schema.dailyContent.dayOfYear, dayOfYear));
+
+        app.logger.info(
+          { userId, dayOfYear },
+          '[Somatic] Updated daily_content.somatic_prompt for day_of_year'
         );
 
         return reply.send({
