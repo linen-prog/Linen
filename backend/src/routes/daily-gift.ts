@@ -7,8 +7,8 @@ import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import {
   getUserPersonalizationContext,
-  buildPersonalizationBlock,
-  TONE_AND_CONTENT_RULES,
+  getLiturgicalContext,
+  buildLiturgicalSystemPrompt,
 } from '../utils/personalization.js';
 
 // Utility function to get current Sunday in Pacific Time
@@ -37,10 +37,6 @@ function getCurrentDayOfWeekPacific(): number {
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
   return pacificTime.getDay();
 }
-
-// In-memory cache for personalized reflection prompts
-// Key: `${userId}-${dateYYYY-MM-DD}`, Value: personalized prompt string
-const personalizedPromptCache = new Map<string, string>();
 
 export function registerDailyGiftRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
@@ -117,61 +113,36 @@ export function registerDailyGiftRoutes(app: App) {
 
           hasReflected = reflection.length > 0;
 
-          // Personalize reflection prompt for authenticated users
+          // Get liturgical context for personalized daily gift
           try {
-            const personalizationContext = await getUserPersonalizationContext(app, userId);
+            const liturgical = await getLiturgicalContext(app);
+            console.log('[DailyGift] Liturgical context loaded:', {
+              season: liturgical.liturgicalSeason,
+              theme: liturgical.themeTitle,
+              scripture: liturgical.scriptureReference,
+            });
 
-            if (personalizationContext.engagementDepth === 'new') {
-              // New users: return original prompt unchanged
-              reflectionPrompt = dailyContentRecord[0].reflectionPrompt;
-            } else if (
-              personalizationContext.engagementDepth === 'growing' ||
-              personalizationContext.engagementDepth === 'established'
-            ) {
-              // Check cache
-              const cacheKey = `${userId}-${today}`;
-              if (personalizedPromptCache.has(cacheKey)) {
-                app.logger.info(
-                  { userId, date: today },
-                  '[Personalization] Using cached personalized prompt'
-                );
-                reflectionPrompt = personalizedPromptCache.get(cacheKey)!;
-              } else {
-                // Generate personalized prompt
-                app.logger.info(
-                  { userId, date: today },
-                  '[Personalization] Generating personalized reflection prompt'
-                );
+            const personalization = await getUserPersonalizationContext(app, userId);
+            console.log('[DailyGift] Personalization block injected for user:', userId);
 
-                const personalizationBlock = buildPersonalizationBlock(personalizationContext);
+            const systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'daily-gift');
+            console.log('[DailyGift] Liturgical calendar context included: true');
 
-                const systemPrompt = `You are a spiritual companion. Generate a single personalized reflection prompt (1-2 sentences max) that is ~40% grounded in the liturgical theme and ~60% personalized to this user's emotional and spiritual patterns. Never quote the user's words directly. Be gentle, grounded, non-preachy.
+            // Generate personalized daily reflection using the system prompt
+            const { text: generatedReflection } = await generateText({
+              model: gateway('openai/gpt-4o-mini'),
+              system: systemPrompt,
+              messages: [],
+            });
 
-${personalizationBlock}
-
-${TONE_AND_CONTENT_RULES}`;
-
-                const userMessage = `Liturgical theme: ${theme[0].themeTitle}. Scripture: ${dailyContentRecord[0].scriptureReference} - "${dailyContentRecord[0].scriptureText.substring(0, 150)}". Base reflection prompt: "${dailyContentRecord[0].reflectionPrompt}". ${personalizationBlock}`;
-
-                const { text: personalizedPrompt } = await generateText({
-                  model: gateway('openai/gpt-4o-mini'),
-                  system: systemPrompt,
-                  messages: [
-                    {
-                      role: 'user',
-                      content: userMessage,
-                    },
-                  ],
-                });
-
-                reflectionPrompt = personalizedPrompt;
-                personalizedPromptCache.set(cacheKey, personalizedPrompt);
-              }
+            // Use the generated reflection as the prompt for the user
+            if (generatedReflection && generatedReflection.trim().length > 0) {
+              reflectionPrompt = generatedReflection;
             }
           } catch (error) {
             app.logger.warn(
               { err: error, userId },
-              'Failed to personalize reflection prompt, using original'
+              'Failed to generate personalized daily reflection, using original'
             );
             reflectionPrompt = dailyContentRecord[0].reflectionPrompt;
           }

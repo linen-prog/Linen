@@ -2,46 +2,40 @@ import type { App } from '../index.js';
 import { eq, desc } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
-export const TONE_AND_CONTENT_RULES = `TONE AND CONTENT RULES:
-- Never say "you mentioned before" or "last time you said" — weave context in naturally
-- Do not fabricate details about the user — only reference what is in the personalization context
-- Be gentle, grounded, non-preachy, supportive not instructive
-- Do not be overly long — match the user's response length preference
-- The liturgical calendar is the foundation; interpret it through the user's current life context
-- Early users (new): be general and welcoming. Established users: speak directly to their patterns`;
-
 const STOP_WORDS = new Set([
-  'about', 'really', 'would', 'could', 'should', 'there', 'their', 'where', 'which',
-  'these', 'those', 'being', 'having', 'doing', 'think', 'feels', 'feeling', 'things',
-  'something', 'everything', 'nothing', 'because', 'through', 'myself', 'yourself',
-  'always', 'never', 'still', 'again', 'after', 'before', 'during', 'while',
+  'the', 'a', 'an', 'is', 'it', 'in', 'of', 'to', 'and', 'that', 'this', 'was', 'for', 'with',
+  'my', 'me', 'i', 'be', 'have', 'has', 'had', 'are', 'but', 'not', 'so', 'we', 'you', 'he',
+  'she', 'they', 'do', 'did', 'on', 'at', 'by', 'as', 'or', 'if', 'up', 'out', 'no', 'can',
+  'all', 'just', 'from', 'about', 'when', 'what', 'how', 'who', 'there', 'their', 'them',
+  'then', 'than', 'its', 'been', 'were', 'will', 'would', 'could', 'should', 'more', 'also',
+  'into', 'over', 'after', 'before', 'very', 'some', 'one', 'two', 'three', 'get', 'got',
+  'feel', 'felt', 'like', 'know', 'think', 'thought', 'want', 'wanted', 'need', 'needed',
+  'see', 'saw', 'time', 'day', 'days', 'way', 'back', 'still', 'even', 'much', 'many', 'well',
+  'good', 'great', 'little', 'new', 'old', 'first', 'last', 'long', 'right', 'too', 'here',
+  'now', 'again', 'never', 'always', 'every', 'each', 'both', 'few', 'most', 'other', 'such',
+  'only', 'own', 'same', 'than', 'while', 'though', 'through', 'during', 'between', 'against',
+  'without', 'within', 'along', 'following', 'across', 'behind', 'beyond', 'plus', 'except',
+  'since', 'until', 'although', 'because', 'unless', 'where', 'which', 'whom', 'whose', 'why',
 ]);
 
 export type PersonalizationContext = {
-  recentReflections: Array<{
-    text: string;
-    moods: string[];
-    sensations: string[];
-    date: string;
-  }>;
   dominantMoods: string[];
   dominantSensations: string[];
-  recentTopics: string[];
+  recurringTopics: string[];
   engagementDepth: 'new' | 'growing' | 'established';
-  companionPrefs: {
-    name: string;
-    tone: string;
-    directness: string;
-    spiritualIntegration: string;
-    responseLength: string;
-    customPreferences: string;
-  };
+  recentReflectionSnippets: string[];
 };
 
-export async function getUserPersonalizationContext(
-  app: App,
-  userId: string
-): Promise<PersonalizationContext> {
+export type LiturgicalContext = {
+  liturgicalSeason: string;
+  themeTitle: string;
+  themeDescription: string;
+  scriptureText: string;
+  scriptureReference: string;
+  reflectionPrompt: string;
+};
+
+export async function getUserPersonalizationContext(app: App, userId: string): Promise<PersonalizationContext> {
   try {
     // Fetch last 10 reflections
     const reflections = await app.db
@@ -49,52 +43,35 @@ export async function getUserPersonalizationContext(
         reflectionText: schema.userReflections.reflectionText,
         moods: schema.userReflections.moods,
         sensations: schema.userReflections.sensations,
-        createdAt: schema.userReflections.createdAt,
       })
       .from(schema.userReflections)
       .where(eq(schema.userReflections.userId, userId))
       .orderBy(desc(schema.userReflections.createdAt))
       .limit(10);
 
-    // Calculate engagement depth
-    const totalCount = await app.db
-      .select({ count: schema.userReflections.id })
-      .from(schema.userReflections)
-      .where(eq(schema.userReflections.userId, userId));
-
-    const reflectionCount = totalCount[0]?.count ? 1 : 0; // drizzle returns different structure
-    const totalReflections = reflections.length === 0 ? 0 : reflections.length;
-
-    // Count total using a simpler approach
-    const countResult = await app.db
+    // Count total reflections
+    const allReflections = await app.db
       .select()
       .from(schema.userReflections)
       .where(eq(schema.userReflections.userId, userId));
 
-    const totalCount_ = countResult.length;
+    const totalCount = allReflections.length;
 
     let engagementDepth: 'new' | 'growing' | 'established';
-    if (totalCount_ <= 3) {
+    if (totalCount <= 2) {
       engagementDepth = 'new';
-    } else if (totalCount_ <= 10) {
+    } else if (totalCount <= 9) {
       engagementDepth = 'growing';
     } else {
       engagementDepth = 'established';
     }
 
-    // Extract dominant moods and sensations
+    // Extract dominant moods
     const moodCounts = new Map<string, number>();
-    const sensationCounts = new Map<string, number>();
-
     reflections.forEach((r) => {
       if (r.moods && Array.isArray(r.moods)) {
         r.moods.forEach((mood) => {
           moodCounts.set(mood, (moodCounts.get(mood) || 0) + 1);
-        });
-      }
-      if (r.sensations && Array.isArray(r.sensations)) {
-        r.sensations.forEach((sensation) => {
-          sensationCounts.set(sensation, (sensationCounts.get(sensation) || 0) + 1);
         });
       }
     });
@@ -104,127 +81,205 @@ export async function getUserPersonalizationContext(
       .slice(0, 3)
       .map(([mood]) => mood);
 
+    // Extract dominant sensations
+    const sensationCounts = new Map<string, number>();
+    reflections.forEach((r) => {
+      if (r.sensations && Array.isArray(r.sensations)) {
+        r.sensations.forEach((sensation) => {
+          sensationCounts.set(sensation, (sensationCounts.get(sensation) || 0) + 1);
+        });
+      }
+    });
+
     const dominantSensations = Array.from(sensationCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([sensation]) => sensation);
 
-    // Extract topics from reflection text
+    // Extract recurring topics
     const topicCounts = new Map<string, number>();
     reflections.forEach((r) => {
       if (r.reflectionText) {
-        const words = r.reflectionText
-          .toLowerCase()
-          .match(/\b\w+\b/g) || [];
+        const words = r.reflectionText.toLowerCase().match(/\b\w+\b/g) || [];
         words.forEach((word) => {
-          // Keep words longer than 5 chars, not in stop words
-          if (word.length > 5 && !STOP_WORDS.has(word)) {
+          if (!STOP_WORDS.has(word)) {
             topicCounts.set(word, (topicCounts.get(word) || 0) + 1);
           }
         });
       }
     });
 
-    const recentTopics = Array.from(topicCounts.entries())
+    const recurringTopics = Array.from(topicCounts.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
+      .slice(0, 5)
       .map(([topic]) => topic);
 
-    // Fetch companion preferences
-    const userProfile = await app.db
-      .select({
-        companionName: schema.userProfiles.companionName,
-        companionTone: schema.userProfiles.companionTone,
-        companionDirectness: schema.userProfiles.companionDirectness,
-        companionSpiritualIntegration: schema.userProfiles.companionSpiritualIntegration,
-        companionResponseLength: schema.userProfiles.companionResponseLength,
-        companionCustomPreferences: schema.userProfiles.companionCustomPreferences,
-      })
-      .from(schema.userProfiles)
-      .where(eq(schema.userProfiles.userId, userId))
-      .limit(1);
+    // Extract recent reflection snippets (first 80 chars, max 3, only for growing/established)
+    const recentReflectionSnippets =
+      engagementDepth === 'new'
+        ? []
+        : reflections.slice(0, 3).map((r) => r.reflectionText.substring(0, 80));
 
-    const profile = userProfile[0];
-
-    // Build recent reflections (first 3)
-    const recentReflections = reflections.slice(0, 3).map((r) => ({
-      text: r.reflectionText.substring(0, 200),
-      moods: r.moods || [],
-      sensations: r.sensations || [],
-      date: r.createdAt.toISOString().split('T')[0],
-    }));
+    console.log('[Personalization] Generating context for user:', userId);
+    console.log('[Personalization] Engagement depth:', engagementDepth);
+    console.log('[Personalization] Dominant moods:', dominantMoods);
+    console.log('[Personalization] Dominant topics:', recurringTopics);
 
     return {
-      recentReflections,
       dominantMoods,
       dominantSensations,
-      recentTopics,
+      recurringTopics,
       engagementDepth,
-      companionPrefs: {
-        name: profile?.companionName || 'Companion',
-        tone: profile?.companionTone || 'warm',
-        directness: profile?.companionDirectness || 'gentle',
-        spiritualIntegration: profile?.companionSpiritualIntegration || 'moderate',
-        responseLength: profile?.companionResponseLength || 'medium',
-        customPreferences: profile?.companionCustomPreferences || '',
-      },
+      recentReflectionSnippets,
     };
   } catch (error) {
-    // Return safe defaults on error
+    console.log('[Personalization] Error fetching context, returning defaults');
     return {
-      recentReflections: [],
       dominantMoods: [],
       dominantSensations: [],
-      recentTopics: [],
+      recurringTopics: [],
       engagementDepth: 'new',
-      companionPrefs: {
-        name: 'Companion',
-        tone: 'warm',
-        directness: 'gentle',
-        spiritualIntegration: 'moderate',
-        responseLength: 'medium',
-        customPreferences: '',
-      },
+      recentReflectionSnippets: [],
     };
   }
 }
 
-export function buildPersonalizationBlock(context: PersonalizationContext): string {
-  const {
-    engagementDepth,
-    dominantMoods,
-    dominantSensations,
-    recentTopics,
-    recentReflections,
-    companionPrefs,
-  } = context;
+export async function getLiturgicalContext(app: App): Promise<LiturgicalContext> {
+  try {
+    const today = new Date();
+    const dayOfYear = Math.floor(
+      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+    );
 
-  const moodsText = dominantMoods.length > 0 ? dominantMoods.join(', ') : 'not yet established';
-  const sensationsText = dominantSensations.length > 0 ? dominantSensations.join(', ') : 'not yet established';
-  const topicsText = recentTopics.length > 0 ? recentTopics.join(', ') : 'not yet established';
-  const customPrefsText = companionPrefs.customPreferences ? companionPrefs.customPreferences : '(none)';
-
-  let recentReflectionsText = '';
-  if (recentReflections.length > 0) {
-    recentReflectionsText = recentReflections
-      .map((r, i) => {
-        const moodsStr = r.moods.length > 0 ? r.moods.join(', ') : 'none noted';
-        const sensationsStr = r.sensations.length > 0 ? r.sensations.join(', ') : 'none noted';
-        return `[${i + 1}] ${r.date}: "${r.text}..." moods: ${moodsStr}, sensations: ${sensationsStr}`;
+    // Try to find daily content for today
+    const dailyContent = await app.db
+      .select({
+        scriptureText: schema.dailyContent.scriptureText,
+        scriptureReference: schema.dailyContent.scriptureReference,
+        reflectionPrompt: schema.dailyContent.reflectionPrompt,
+        weeklyThemeId: schema.dailyContent.weeklyThemeId,
       })
-      .join('\n');
-  } else {
-    recentReflectionsText = 'No prior reflections yet.';
+      .from(schema.dailyContent)
+      .where(eq(schema.dailyContent.dayOfYear, dayOfYear))
+      .limit(1);
+
+    if (dailyContent.length > 0) {
+      // Get the weekly theme
+      const weeklyTheme = await app.db
+        .select({
+          liturgicalSeason: schema.weeklyThemes.liturgicalSeason,
+          themeTitle: schema.weeklyThemes.themeTitle,
+          themeDescription: schema.weeklyThemes.themeDescription,
+        })
+        .from(schema.weeklyThemes)
+        .where(eq(schema.weeklyThemes.id, dailyContent[0].weeklyThemeId!))
+        .limit(1);
+
+      if (weeklyTheme.length > 0) {
+        return {
+          liturgicalSeason: weeklyTheme[0].liturgicalSeason,
+          themeTitle: weeklyTheme[0].themeTitle,
+          themeDescription: weeklyTheme[0].themeDescription,
+          scriptureText: dailyContent[0].scriptureText,
+          scriptureReference: dailyContent[0].scriptureReference,
+          reflectionPrompt: dailyContent[0].reflectionPrompt,
+        };
+      }
+    }
+
+    // Fallback: get most recent daily gift
+    const fallbackDailyGift = await app.db
+      .select()
+      .from(schema.dailyContent)
+      .orderBy(desc(schema.dailyContent.dayOfYear))
+      .limit(1);
+
+    if (fallbackDailyGift.length > 0) {
+      return {
+        liturgicalSeason: 'Ordinary Time',
+        themeTitle: '',
+        themeDescription: '',
+        scriptureText: fallbackDailyGift[0].scriptureText,
+        scriptureReference: fallbackDailyGift[0].scriptureReference,
+        reflectionPrompt: fallbackDailyGift[0].reflectionPrompt,
+      };
+    }
+
+    // Last fallback
+    return {
+      liturgicalSeason: 'Ordinary Time',
+      themeTitle: '',
+      themeDescription: '',
+      scriptureText: 'Be still, and know that I am God.',
+      scriptureReference: 'Psalm 46:10',
+      reflectionPrompt: 'In stillness, what do you notice? What is God saying to you?',
+    };
+  } catch (error) {
+    console.log('[Personalization] Error fetching liturgical context, using fallback');
+    return {
+      liturgicalSeason: 'Ordinary Time',
+      themeTitle: '',
+      themeDescription: '',
+      scriptureText: 'Be still, and know that I am God.',
+      scriptureReference: 'Psalm 46:10',
+      reflectionPrompt: 'In stillness, what do you notice? What is God saying to you?',
+    };
+  }
+}
+
+export function buildLiturgicalSystemPrompt(
+  liturgical: LiturgicalContext,
+  personalization: PersonalizationContext,
+  mode: 'daily-gift' | 'check-in'
+): string {
+  const { dominantMoods, dominantSensations, recurringTopics, engagementDepth, recentReflectionSnippets } =
+    personalization;
+
+  let userContextSection = `USER CONTEXT:
+Engagement level: ${engagementDepth}`;
+
+  if (engagementDepth === 'growing' || engagementDepth === 'established') {
+    if (dominantMoods.length > 0) {
+      userContextSection += `\nRecurring emotional themes: ${dominantMoods.join(', ')}`;
+    }
+    if (recurringTopics.length > 0) {
+      userContextSection += `\nTopics this person often returns to: ${recurringTopics.join(', ')}`;
+    }
   }
 
-  return `PERSONALIZATION CONTEXT (use subtly, never quote directly):
-- Engagement depth: ${engagementDepth} (new=gentle/general, growing=more specific, established=deeply attuned)
-- Recurring emotional themes: ${moodsText}
-- Recurring body sensations: ${sensationsText}
-- Topics this user returns to: ${topicsText}
-- Companion style: tone=${companionPrefs.tone}, directness=${companionPrefs.directness}, spiritual integration=${companionPrefs.spiritualIntegration}, length=${companionPrefs.responseLength}
-- User preferences: ${customPrefsText}
+  if (engagementDepth === 'established' && recentReflectionSnippets.length > 0) {
+    userContextSection += `\nRecent reflection snippets (for tone/continuity, do not quote directly): ${recentReflectionSnippets.join(' | ')}`;
+  }
 
-Recent reflections (last 3, for continuity — reference subtly if relevant):
-${recentReflectionsText}`;
+  let instructions = '';
+  if (mode === 'daily-gift') {
+    instructions = `INSTRUCTIONS:
+Write a warm, grounded reflection for today. Begin with the liturgical theme and scripture as your foundation. Then interpret that theme through the lens of what this person has been carrying — their emotional patterns, recurring concerns, and inner life.
+- For new users: keep it warm and general, rooted in the scripture
+- For growing/established users: make it feel personally attuned without quoting them or saying 'based on your reflections'
+Do not fabricate details. Keep it gentle, non-preachy, and under 150 words.`;
+  } else if (mode === 'check-in') {
+    instructions = `INSTRUCTIONS:
+You are a warm, grounded spiritual companion leading a gentle check-in conversation. Use the liturgical theme and scripture as your foundation — always return to them. Then interpret that theme through the lens of what this person has been carrying. Ask open, gentle questions. Do not rush. Do not quote the user back to them or say 'based on your reflections'. For new users: keep it warm and scripture-grounded. For growing/established users: let your questions feel personally attuned to their inner life.`;
+  }
+
+  const toneRules = `TONE RULES (always apply):
+- Never say "based on your reflections" or "you mentioned before"
+- Never fabricate emotional details not present in the user context
+- Keep references subtle — weave them in naturally, do not announce them
+- New users get warm, complete, scripture-grounded responses
+- Established users get more specific, emotionally resonant responses
+- Always stay connected to the liturgical rhythm`;
+
+  return `LITURGICAL FOUNDATION:
+Season: ${liturgical.liturgicalSeason}
+Theme: ${liturgical.themeTitle}${liturgical.themeDescription ? ` — ${liturgical.themeDescription}` : ''}
+Scripture: ${liturgical.scriptureReference} — "${liturgical.scriptureText}"
+Today's reflection prompt: ${liturgical.reflectionPrompt}
+
+${userContextSection}
+
+${instructions}
+
+${toneRules}`;
 }
