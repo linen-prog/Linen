@@ -7,8 +7,8 @@ import { generateText } from 'ai';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
 import {
   getUserPersonalizationContext,
-  buildPersonalizationBlock,
-  TONE_AND_CONTENT_RULES,
+  getLiturgicalContext,
+  buildLiturgicalSystemPrompt,
 } from '../utils/personalization.js';
 
 // Verify API key is available from environment variables
@@ -188,36 +188,24 @@ export function registerCheckInRoutes(app: App) {
           conversation = newConversation;
           isNewConversation = true;
 
-          // Generate personalized greeting
+          // Generate personalized greeting with liturgical context
           try {
-            const personalizationContext = await getUserPersonalizationContext(app, session.user.id);
-            let systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
-            const personalizationBlock = buildPersonalizationBlock(personalizationContext);
+            const liturgical = await getLiturgicalContext(app);
+            console.log('[CheckIn] Liturgical context loaded:', {
+              season: liturgical.liturgicalSeason,
+              theme: liturgical.themeTitle,
+            });
 
-            systemPrompt += `\n\n${personalizationBlock}\n\n${TONE_AND_CONTENT_RULES}`;
+            const personalization = await getUserPersonalizationContext(app, session.user.id);
+            console.log('[CheckIn] Personalization block injected for user:', session.user.id);
 
-            // Add engagement-depth-based instruction
-            let greetingInstruction = '';
-            if (personalizationContext.engagementDepth === 'new') {
-              greetingInstruction =
-                'Generate a warm, gentle, general welcome message for someone beginning their spiritual journey with this companion. Keep it brief and inviting.';
-            } else if (personalizationContext.engagementDepth === 'growing') {
-              greetingInstruction =
-                'Generate a warm greeting that gently acknowledges this person is returning. Lightly reference their emotional themes without quoting them directly. Keep it brief.';
-            } else {
-              greetingInstruction =
-                'Generate a deeply personal, attuned greeting. Speak directly to this person\'s recurring emotional patterns and spiritual themes. Keep it brief but meaningful.';
-            }
+            const systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'check-in');
+            console.log('[CheckIn] Liturgical calendar context included: true');
 
             const { text: initialMessage } = await generateText({
               model: gateway('openai/gpt-4o-mini'),
               system: systemPrompt,
-              messages: [
-                {
-                  role: 'user',
-                  content: greetingInstruction,
-                },
-              ],
+              messages: [],
             });
 
             await app.db.insert(schema.checkInMessages).values({
@@ -230,7 +218,7 @@ export function registerCheckInRoutes(app: App) {
               {
                 conversationId: conversation.id,
                 userId: session.user.id,
-                engagementDepth: personalizationContext.engagementDepth,
+                engagementDepth: personalization.engagementDepth,
               },
               'New check-in conversation started with personalized greeting'
             );
@@ -409,28 +397,19 @@ export function registerCheckInRoutes(app: App) {
           }))
           .concat([{ role: 'user' as const, content: message }]);
 
-        // Get personalization context
-        const personalizationContext = await getUserPersonalizationContext(app, session.user.id);
-        app.logger.info(
-          {
-            userId: session.user.id,
-            engagementDepth: personalizationContext.engagementDepth,
-            dominantMoods: personalizationContext.dominantMoods,
-            recentTopics: personalizationContext.recentTopics,
-          },
-          '[Personalization] userId engagement and patterns'
-        );
+        // Get liturgical and personalization context
+        const liturgical = await getLiturgicalContext(app);
+        console.log('[CheckIn] Liturgical context loaded:', {
+          season: liturgical.liturgicalSeason,
+          theme: liturgical.themeTitle,
+        });
 
-        // Build personalized system prompt with companion preferences
-        let systemPrompt = await buildPersonalizedSystemPrompt(app, session.user.id);
+        const personalization = await getUserPersonalizationContext(app, session.user.id);
+        console.log('[CheckIn] Personalization block injected for user:', session.user.id);
 
-        app.logger.info(
-          { userId: session.user.id, engagementDepth: personalizationContext.engagementDepth },
-          '[CheckIn] Building personalized system prompt'
-        );
-
-        // Build personalization block
-        const personalizationBlock = buildPersonalizationBlock(personalizationContext);
+        // Build system prompt with liturgical foundation
+        let systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'check-in');
+        console.log('[CheckIn] Liturgical calendar context included: true');
 
         // Add premium tier enhancement if applicable
         if (userContext?.tier === 'premium') {
@@ -438,9 +417,6 @@ export function registerCheckInRoutes(app: App) {
         } else {
           systemPrompt += "\n\nKeep responses warm, emotionally supportive, and satisfying. Be concise but never cold or abrupt. Offer gentle encouragement and one thoughtful reflection or question. Do not cut responses short — every reply should feel complete and caring.";
         }
-
-        // Append personalization block and tone rules
-        systemPrompt += `\n\n${personalizationBlock}\n\n${TONE_AND_CONTENT_RULES}`;
 
         // Generate response using GPT-4o via the gateway
         app.logger.debug(
