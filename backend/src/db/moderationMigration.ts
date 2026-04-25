@@ -28,5 +28,18 @@ export async function runModerationMigration(db: any) {
   `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "user_blocks_blocker" ON "user_blocks"("blocker_user_id")`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "user_blocks_blocked" ON "user_blocks"("blocked_user_id")`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "user_somatic_prompts" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "user_id" text NOT NULL,
+      "prompt_text" text NOT NULL,
+      "category" text NOT NULL,
+      "generated_at" timestamp with time zone NOT NULL DEFAULT now(),
+      "prompt_date" date NOT NULL DEFAULT CURRENT_DATE
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "user_somatic_prompts_user" ON "user_somatic_prompts"("user_id")`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "user_somatic_prompts_date" ON "user_somatic_prompts"("prompt_date")`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS "user_somatic_prompts_unique" ON "user_somatic_prompts"("user_id", "prompt_date")`);
   console.log('[Migration] Moderation tables ready');
 }

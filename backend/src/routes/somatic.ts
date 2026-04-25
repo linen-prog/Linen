@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, gte, lt } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { getUserPersonalizationContext } from '../utils/personalization.js';
@@ -269,7 +269,7 @@ async function seedExercises(app: App) {
   }
 }
 
-const CATEGORIES = ['grounding', 'awareness', 'release', 'playful', 'spiritual'];
+const DAILY_PROMPT_CATEGORIES = ['grounding', 'awareness', 'release', 'playful', 'spiritual'];
 
 export function registerSomaticRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
@@ -292,15 +292,17 @@ export function registerSomaticRoutes(app: App) {
       app.logger.info({ count: exercises.length }, 'Exercises retrieved');
 
       return reply.send({
-        exercises: exercises.map((ex) => ({
-          id: ex.id,
-          title: ex.title,
-          description: ex.description,
-          category: ex.category,
-          duration: ex.duration,
-          instructions: ex.instructions,
-          createdAt: ex.createdAt,
-        })),
+        exercises: exercises.map((ex) => (
+          {
+            id: ex.id,
+            title: ex.title,
+            description: ex.description,
+            category: ex.category,
+            duration: ex.duration,
+            instructions: ex.instructions,
+            createdAt: ex.createdAt,
+          }
+        )),
       });
     } catch (error) {
       app.logger.error({ err: error }, 'Failed to fetch exercises');
@@ -329,15 +331,17 @@ export function registerSomaticRoutes(app: App) {
         app.logger.info({ category: validCategory, count: exercises.length }, 'Category exercises retrieved');
 
         return reply.send({
-          exercises: exercises.map((ex) => ({
-            id: ex.id,
-            title: ex.title,
-            description: ex.description,
-            category: ex.category,
-            duration: ex.duration,
-            instructions: ex.instructions,
-            createdAt: ex.createdAt,
-          })),
+          exercises: exercises.map((ex) => (
+            {
+              id: ex.id,
+              title: ex.title,
+              description: ex.description,
+              category: ex.category,
+              duration: ex.duration,
+              instructions: ex.instructions,
+              createdAt: ex.createdAt,
+            }
+          )),
         });
       } catch (error) {
         app.logger.error({ err: error, category: validCategory }, 'Failed to fetch category exercises');
@@ -460,79 +464,58 @@ export function registerSomaticRoutes(app: App) {
       if (!session) return;
 
       const userId = session.user.id;
-      const todayDate = new Date().toISOString().split('T')[0];
 
-      console.log('[Somatic] Request received for user:', userId);
+      app.logger.info({ userId }, 'Somatic daily prompt request');
 
       try {
-        // Step 2: Strict one-per-day cache check
-        console.log('[Somatic] Cache check — today:', todayDate);
+        // Step 1: Strict one-per-day cache check using raw SQL
+        const cachedResults = await app.db.execute(
+          sql`SELECT prompt_text, category FROM user_somatic_prompts WHERE user_id = ${userId} AND prompt_date = CURRENT_DATE ORDER BY generated_at DESC LIMIT 1`
+        );
 
-        const cachedPrompt = await app.db
-          .select({
-            promptText: schema.userSomaticPrompts.promptText,
-            category: schema.userSomaticPrompts.category,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(
-            and(
-              eq(schema.userSomaticPrompts.userId, userId),
-              eq(schema.userSomaticPrompts.promptDate, todayDate)
-            )
-          )
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(1);
-
-        if (cachedPrompt.length > 0) {
-          console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt[0].promptText, category: cachedPrompt[0].category });
+        if (cachedResults?.[0]?.prompt_text) {
+          const cachedPrompt = cachedResults[0] as { prompt_text: string; category: string };
+          app.logger.info(
+            { userId, fallbackUsed: false, category: cachedPrompt.category },
+            '[Somatic] Returning cached prompt'
+          );
           return reply.send({
-            somatic_prompt: cachedPrompt[0].promptText,
-            category: cachedPrompt[0].category,
+            somatic_prompt: cachedPrompt.prompt_text,
+            category: cachedPrompt.category,
             cached: true,
           });
         }
 
-        console.log('[Somatic] Generating new prompt');
-
-        // Step 3a: Category rotation
-        const lastCategoryResult = await app.db
-          .select({
-            category: schema.userSomaticPrompts.category,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(1);
+        // Step 2: Category rotation using raw SQL
+        const lastCategoryResults = await app.db.execute(
+          sql`SELECT category FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 1`
+        );
 
         let nextCategory: string;
-        if (lastCategoryResult.length === 0) {
-          nextCategory = CATEGORIES[0];
+        if (!lastCategoryResults || !Array.isArray(lastCategoryResults) || lastCategoryResults.length === 0) {
+          nextCategory = DAILY_PROMPT_CATEGORIES[0];
         } else {
-          const lastCategory = lastCategoryResult[0].category;
-          const currentIndex = CATEGORIES.indexOf(lastCategory);
-          const nextIndex = (currentIndex + 1) % CATEGORIES.length;
-          nextCategory = CATEGORIES[nextIndex];
+          const lastCategory = (lastCategoryResults[0] as { category: string }).category;
+          const currentIndex = DAILY_PROMPT_CATEGORIES.indexOf(lastCategory);
+          const nextIndex = (currentIndex + 1) % DAILY_PROMPT_CATEGORIES.length;
+          nextCategory = DAILY_PROMPT_CATEGORIES[nextIndex];
         }
 
-        // Step 3b: Personalization context
+        // Step 3: Personalization context
         const personalization = await getUserPersonalizationContext(app, userId);
 
-        // Step 3c: Theme context
+        // Step 4: Theme context from query params
         const { themeTitle, themeDescription, liturgicalSeason, reflectionPrompt } = request.query;
 
-        // Step 3d: Recent prompts to avoid repetition
-        const recentPromptsData = await app.db
-          .select({
-            promptText: schema.userSomaticPrompts.promptText,
-          })
-          .from(schema.userSomaticPrompts)
-          .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
-          .limit(5);
+        // Step 5: Recent prompts to avoid repetition using raw SQL
+        const recentPromptsResults = await app.db.execute(
+          sql`SELECT prompt_text FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 10`
+        );
 
-        const recentPromptTexts = recentPromptsData.map((p) => p.promptText);
+        const recentPromptTexts = (recentPromptsResults && Array.isArray(recentPromptsResults) ? recentPromptsResults : [])
+          .map((p: { prompt_text: string }) => p.prompt_text);
 
-        // Step 3e: Build AI system prompt
+        // Step 6: Build AI system prompt
         let systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic invitation — a brief, embodied practice (2-4 sentences) that invites the user to notice or gently move their body in a spiritually grounded way.
 
 Category for today: ${nextCategory}
@@ -549,7 +532,7 @@ User context:
 - Engagement depth: ${personalization.engagementDepth}
 
 Recent prompts to avoid repeating (do not reuse these):
-${recentPromptTexts.map((t) => `- "${t}"`).join('\n')}
+${recentPromptTexts.map((t: string) => `- "${t}"`).join('\n')}
 
 Style examples (match this tone and length):
 1. "Place both feet flat on the floor. Feel the ground holding you. Take one slow breath and let your shoulders drop."
@@ -579,36 +562,27 @@ Cohesion guidance:
 
 Return ONLY the somatic invitation text. No title, no label, no explanation. Just the 2-4 sentence invitation.`;
 
-        // Step 3f: Call AI
+        // Step 7: Call AI with google/gemini-3-pro
         const result = await generateText({
-          model: gateway('openai/gpt-4o-mini'),
+          model: gateway('google/gemini-3-pro'),
           system: systemPrompt,
           prompt: 'Generate the somatic invitation now.',
         });
 
         const generatedPrompt = result.text.trim();
 
-        // Step 4: Save to user_somatic_prompts
-        await app.db.insert(schema.userSomaticPrompts).values({
-          userId,
-          promptText: generatedPrompt,
-          category: nextCategory as any,
-          promptDate: todayDate,
-        });
+        // Step 8: Save to user_somatic_prompts using raw SQL
+        await app.db.execute(
+          sql`INSERT INTO user_somatic_prompts (user_id, prompt_text, category, prompt_date)
+              VALUES (${userId}, ${generatedPrompt}, ${nextCategory}, CURRENT_DATE)
+              ON CONFLICT (user_id, prompt_date) DO NOTHING`
+        );
 
-        // Step 5: Write back to daily_content.somatic_prompt
-        const now = new Date();
-        const start = new Date(now.getFullYear(), 0, 0);
-        const diff = now.getTime() - start.getTime();
-        const oneDay = 1000 * 60 * 60 * 24;
-        const dayOfYear = Math.floor(diff / oneDay);
-
-        await app.db
-          .update(schema.dailyContent)
-          .set({ somaticPrompt: generatedPrompt })
-          .where(eq(schema.dailyContent.dayOfYear, dayOfYear));
-
-        // Step 6: Return
+        // Step 9: Return success response
+        app.logger.info(
+          { userId, fallbackUsed: false, category: nextCategory },
+          '[Somatic] Fallback used: false'
+        );
         return reply.send({
           somatic_prompt: generatedPrompt,
           category: nextCategory,
@@ -616,14 +590,11 @@ Return ONLY the somatic invitation text. No title, no label, no explanation. Jus
         });
       } catch (error) {
         // Safe fallback: always return HTTP 200 with a default prompt
-        const errorDetails = {
-          userId,
-          'err.message': error instanceof Error ? error.message : 'Unknown error',
-          'err.stack': error instanceof Error ? error.stack : '',
-          label: '[Somatic] Fatal error details',
-        };
-        app.logger.error(errorDetails);
-        console.error('[Somatic] Fatal error details:', errorDetails);
+        const errMessage = error instanceof Error ? error.message : 'Unknown error';
+        app.logger.error(
+          { userId, fallbackUsed: true, errMessage },
+          `[Somatic] Fallback used: true — reason: ${errMessage}`
+        );
 
         return reply.send({
           somatic_prompt: 'Place one hand on your chest. Take three slow breaths and notice the rise and fall.',
