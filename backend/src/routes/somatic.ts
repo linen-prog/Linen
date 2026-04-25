@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, gte, lt } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { getUserPersonalizationContext } from '../utils/personalization.js';
@@ -412,354 +412,226 @@ export function registerSomaticRoutes(app: App) {
       schema: {
         description: 'Get personalized daily somatic prompt with AI-generated guidance',
         tags: ['somatic'],
+        querystring: {
+          type: 'object',
+          properties: {
+            themeTitle: { type: 'string' },
+            themeDescription: { type: 'string' },
+            liturgicalSeason: { type: 'string' },
+            reflectionPrompt: { type: 'string' },
+          },
+        },
         response: {
           200: {
             type: 'object',
             properties: {
-              promptDate: { type: 'string', format: 'date' },
-              category: { type: 'string', enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'] },
-              prompt: { type: 'string' },
-              exercise: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', format: 'uuid' },
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  category: { type: 'string' },
-                  duration: { type: 'string' },
-                  instructions: { type: 'string' },
-                },
-              },
+              somatic_prompt: { type: 'string' },
+              category: { type: 'string', enum: ['grounding', 'awareness', 'release', 'playful', 'spiritual'] },
+              cached: { type: 'boolean' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
         },
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          themeTitle?: string;
+          themeDescription?: string;
+          liturgicalSeason?: string;
+          reflectionPrompt?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ): Promise<void> => {
       const session = await requireAuth(request, reply);
       if (!session) return;
 
-      app.logger.info({ userId: session.user.id }, 'Fetching daily somatic prompt');
+      const userId = session.user.id;
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      console.log('[Somatic] Request received for user:', userId);
 
       try {
-        const today = new Date().toISOString().split('T')[0];
-        const userId = session.user.id;
+        // Step 2: Strict one-per-day cache check
+        console.log('[Somatic] Cache check — today:', todayDate);
 
-        // Check for cached prompt for today
         const cachedPrompt = await app.db
           .select({
-            id: schema.userSomaticPrompts.id,
-            userId: schema.userSomaticPrompts.userId,
-            promptDate: schema.userSomaticPrompts.promptDate,
+            promptText: schema.userSomaticPrompts.promptText,
             category: schema.userSomaticPrompts.category,
-            generatedPrompt: schema.userSomaticPrompts.generatedPrompt,
-            selectedExerciseId: schema.userSomaticPrompts.selectedExerciseId,
-            createdAt: schema.userSomaticPrompts.createdAt,
           })
           .from(schema.userSomaticPrompts)
           .where(
             and(
               eq(schema.userSomaticPrompts.userId, userId),
-              eq(schema.userSomaticPrompts.promptDate, today)
+              gte(schema.userSomaticPrompts.generatedAt, new Date(todayDate)),
+              lt(schema.userSomaticPrompts.generatedAt, new Date(new Date(todayDate).getTime() + 86400000))
             )
           )
+          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
           .limit(1);
 
         if (cachedPrompt.length > 0) {
-          console.log('[Somatic] Returning cached prompt for today');
-          app.logger.info({ userId }, 'Using cached daily somatic prompt');
-          const exercise = await app.db
-            .select()
-            .from(schema.somaticExercises)
-            .where(eq(schema.somaticExercises.id, cachedPrompt[0].selectedExerciseId as any))
-            .limit(1);
-
+          console.log('[Somatic] Returning cached prompt:', { prompt: cachedPrompt[0].promptText, category: cachedPrompt[0].category });
           return reply.send({
-            promptDate: cachedPrompt[0].promptDate,
+            somatic_prompt: cachedPrompt[0].promptText,
             category: cachedPrompt[0].category,
-            prompt: cachedPrompt[0].generatedPrompt,
-            exercise: exercise.length > 0 ? exercise[0] : null,
+            cached: true,
           });
         }
 
-        // Get user personalization context
-        const personalization = await getUserPersonalizationContext(app, userId);
-        app.logger.info(
-          {
-            userId,
-            engagementDepth: personalization.engagementDepth,
-            dominantMoods: personalization.dominantMoods,
-          },
-          'User personalization context loaded'
-        );
+        console.log('[Somatic] No cache found — generating new prompt');
 
-        // Get last 3 somatic prompts to implement category rotation
-        const lastPrompts = await app.db
+        // Step 3a: Category rotation
+        const lastCategoryResult = await app.db
           .select({
             category: schema.userSomaticPrompts.category,
-            promptDate: schema.userSomaticPrompts.promptDate,
           })
           .from(schema.userSomaticPrompts)
           .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.promptDate))
-          .limit(3);
+          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
+          .limit(1);
 
-        // Determine category to use
-        let categoryToUse: string | null = null;
-
-        // Check if last 2 prompts are the same category (block the same category appearing 3x in a row)
-        if (lastPrompts.length >= 2) {
-          if (
-            lastPrompts[lastPrompts.length - 1].category ===
-            lastPrompts[lastPrompts.length - 2].category
-          ) {
-            // Last 2 are the same, so block this category
-            const blockedCategory = lastPrompts[lastPrompts.length - 1].category;
-            app.logger.info(
-              { userId, blockedCategory },
-              'Blocking repeated category from 3-in-a-row rule'
-            );
-
-            // Override based on mood if established user
-            if (personalization.engagementDepth === 'established' && personalization.dominantMoods.length > 0) {
-              // Use mood-based override
-              const moodLower = personalization.dominantMoods[0].toLowerCase();
-              if (['anxious', 'tense', 'stressed', 'overwhelmed'].some((m) => moodLower.includes(m))) {
-                categoryToUse = 'breath';
-              } else if (['sad', 'heavy', 'down', 'withdrawn'].some((m) => moodLower.includes(m))) {
-                categoryToUse = 'movement';
-              } else if (['restless', 'agitated', 'irritable'].some((m) => moodLower.includes(m))) {
-                categoryToUse = 'release';
-              } else {
-                categoryToUse = 'grounding';
-              }
-              app.logger.info(
-                { userId, mood: personalization.dominantMoods[0], selectedCategory: categoryToUse },
-                'Using mood-based category override'
-              );
-            } else {
-              // Random category excluding the blocked one
-              const availableCategories = CATEGORIES.filter((c) => c !== blockedCategory);
-              categoryToUse = availableCategories[Math.floor(Math.random() * availableCategories.length)];
-            }
-          }
+        let nextCategory: string;
+        if (lastCategoryResult.length === 0) {
+          nextCategory = CATEGORIES[0];
+        } else {
+          const lastCategory = lastCategoryResult[0].category;
+          const currentIndex = CATEGORIES.indexOf(lastCategory);
+          const nextIndex = (currentIndex + 1) % CATEGORIES.length;
+          nextCategory = CATEGORIES[nextIndex];
         }
 
-        // If no category selected yet, use engagement-based or random
-        if (!categoryToUse) {
-          if (personalization.engagementDepth === 'established' && personalization.dominantMoods.length > 0) {
-            // Use mood-based override for established users
-            const moodLower = personalization.dominantMoods[0].toLowerCase();
-            if (['anxious', 'tense', 'stressed', 'overwhelmed'].some((m) => moodLower.includes(m))) {
-              categoryToUse = 'breath';
-            } else if (['sad', 'heavy', 'down', 'withdrawn'].some((m) => moodLower.includes(m))) {
-              categoryToUse = 'movement';
-            } else if (['restless', 'agitated', 'irritable'].some((m) => moodLower.includes(m))) {
-              categoryToUse = 'release';
-            } else {
-              categoryToUse = 'grounding';
-            }
-          } else {
-            // Random category
-            categoryToUse = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-          }
-        }
+        console.log('[Somatic] Next category selected:', nextCategory);
 
-        // Get exercises in the selected category
-        let categoryExercises = await app.db
-          .select()
-          .from(schema.somaticExercises)
-          .where(eq(schema.somaticExercises.category, categoryToUse as any));
-
-        // Fallback to grounding if no exercises found for selected category
-        if (categoryExercises.length === 0) {
-          app.logger.warn({ userId, category: categoryToUse }, 'No exercises found for category, falling back to grounding');
-          categoryToUse = 'grounding';
-          categoryExercises = await app.db
-            .select()
-            .from(schema.somaticExercises)
-            .where(eq(schema.somaticExercises.category, 'grounding'));
-        }
-
-        const selectedExercise = categoryExercises[Math.floor(Math.random() * categoryExercises.length)];
-
-        console.log('[Somatic] Next category selected:', categoryToUse);
+        // Step 3b: Personalization context
+        const personalization = await getUserPersonalizationContext(app, userId);
         console.log('[Somatic] Personalization applied:', { engagementDepth: personalization.engagementDepth, dominantMoods: personalization.dominantMoods });
 
-        // Fetch recent prompts to avoid duplication
+        // Step 3c: Theme context
+        const { themeTitle, themeDescription, liturgicalSeason, reflectionPrompt } = request.query;
+        if (themeTitle || liturgicalSeason) {
+          console.log('[Somatic] Daily gift theme context received:', { themeTitle, liturgicalSeason });
+        }
+
+        // Step 3d: Recent prompts to avoid repetition
         const recentPromptsData = await app.db
           .select({
-            prompt: schema.userSomaticPrompts.generatedPrompt,
+            promptText: schema.userSomaticPrompts.promptText,
           })
           .from(schema.userSomaticPrompts)
           .where(eq(schema.userSomaticPrompts.userId, userId))
-          .orderBy(desc(schema.userSomaticPrompts.promptDate))
-          .limit(10);
+          .orderBy(desc(schema.userSomaticPrompts.generatedAt))
+          .limit(5);
 
-        const recentPromptTexts = recentPromptsData.map((p) => p.prompt);
+        const recentPromptTexts = recentPromptsData.map((p) => p.promptText);
         console.log('[Somatic] Recent prompts to avoid:', recentPromptTexts.length);
 
-        // Build AI system prompt
-        const nextCategory = categoryToUse;
-        const systemPrompt = `You are a somatic wellness guide for a Christian women's app. Generate a single, short somatic awareness prompt (1–3 sentences max) for today.
+        // Step 3e: Build AI system prompt
+        let systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic invitation — a brief, embodied practice (2-4 sentences) that invites the user to notice or gently move their body in a spiritually grounded way.
 
-USER CONTEXT:
-Dominant moods: ${personalization.dominantMoods.join(', ') || 'none'}
-Recurring topics: ${personalization.recurringTopics.join(', ') || 'none'}
-Engagement depth: ${personalization.engagementDepth}
+Category for today: ${nextCategory}
+- grounding: feet, floor contact, weight, roots, stability
+- awareness: body scan, noticing sensation, breath awareness
+- release: exhale, unclenching, softening, letting go
+- playful: gentle movement, curiosity, lightness, joy
+- spiritual: posture of prayer, open hands, bowing, stillness before God
 
-STYLE GUIDE — learn the tone and structure from these examples. Do NOT copy, reword, or closely resemble any of them:
-1. "Place one hand on your chest and one on your belly. Take 3 slow breaths and notice which moves first."
-2. "Press your feet firmly into the ground for 10 seconds, then release. Notice the shift."
-3. "Inhale for 4, exhale for 6 — repeat 3 times slowly."
-4. "Look around and name 3 things you can see. Let your gaze move gently."
-5. "Sit back slightly and feel the support beneath you. Let your body rest into it."
-6. "Gently sway side to side. Find a rhythm that feels natural."
-7. "Take one slow breath and extend your exhale just a little longer than usual."
-8. "Place your hand on your heart and pause for a moment of stillness."
-9. "Where in your body do you feel the most sensation right now? Stay there for one breath."
-10. "Notice if your body feels more heavy or light today. No need to change it."
-11. "Scan from head to toe and notice one place holding tension."
-12. "Ask quietly: 'What am I carrying right now?' Notice what arises in your body."
-13. "Pay attention to your shoulders — are they lifted or relaxed? Let them drop slightly."
-14. "Notice your breathing without changing it. Just observe."
-15. "Gently unclench your jaw and soften your tongue."
-16. "Take a deeper inhale and sigh it out through your mouth."
-17. "Roll your shoulders back slowly 5 times."
-18. "Open and close your hands slowly, releasing any tightness."
-19. "Stretch your arms overhead and take a full breath in."
-20. "Let your face soften — especially around your eyes."
-21. "Gently shake out your hands for a few seconds."
-22. "Tap your chest lightly with your fingertips for a few seconds."
-23. "Wiggle your fingers and toes for a few seconds — just for fun."
-24. "Make a tiny circle with your nose in the air. Slow and easy."
-25. "Take an exaggerated stretch like you just woke up."
-26. "Smile gently (even if it feels silly) and notice what shifts."
-27. "Place your hand on your heart and take a breath. 'Be still, and know that I am God.' (Psalm 46:10)"
-28. "As you breathe in, think 'peace'… as you breathe out, release tension. 'Peace I leave with you.' (John 14:27)"
-29. "Rest your hands open on your lap. 'Come to me, all who are weary…' (Matthew 11:28) Take a slow breath."
-30. "Take a slow breath and notice your body. 'The Lord is near.' (Psalm 34:18)"
+User context:
+- Dominant moods: ${personalization.dominantMoods.join(', ') || 'none'}
+- Dominant sensations: ${personalization.dominantSensations.join(', ') || 'none'}
+- Recurring topics: ${personalization.recurringTopics.join(', ') || 'none'}
+- Engagement depth: ${personalization.engagementDepth}
 
-${recentPromptTexts.length > 0 ? `RECENT PROMPTS TO AVOID (do not repeat or closely resemble any of these):\n${recentPromptTexts.map((t) => `- "${t}"`).join('\n')}\n` : ''}
-OUTPUT: Return only the prompt text. No labels, no quotes, no explanation. Category: ${nextCategory}.`;
+Recent prompts to avoid repeating (do not reuse these):
+${recentPromptTexts.map((t) => `- "${t}"`).join('\n')}
 
-        app.logger.info(
-          { userId, selectedCategory: categoryToUse, exerciseTitle: selectedExercise.title },
-          'Generating AI personalized somatic prompt'
-        );
+Style examples (match this tone and length):
+1. "Place both feet flat on the floor. Feel the ground holding you. Take one slow breath and let your shoulders drop."
+2. "Bring one hand to your chest. Notice what you feel there — warmth, tightness, movement. Stay for three breaths."
+3. "Let your jaw unclench. Let your hands open. Exhale slowly and feel what releases."
+4. "Stand if you're able. Feel your feet. Imagine roots growing down. You are held."
+5. "Gently roll your shoulders back. Open your chest. Breathe in as if receiving something good."`;
 
-        // Generate prompt with AI with retry logic
-        let generatedPrompt: string | null = null;
-        let retries = 0;
-        const maxRetries = 3;
+        // Add theme context if provided
+        if (themeTitle || themeDescription || liturgicalSeason || reflectionPrompt) {
+          systemPrompt += `
 
-        while (retries < maxRetries && !generatedPrompt) {
-          try {
-            const result = await generateText({
-              model: gateway('openai/gpt-4o-mini'),
-              system: systemPrompt,
-              prompt: 'Generate the personalized somatic prompt.',
-            });
+DAILY GIFT THEME (use this to create gentle cohesion — the somatic invitation should feel connected to this theme):
+Season: ${liturgicalSeason || 'none'}
+Theme: ${themeTitle || 'none'} — ${themeDescription || ''}
+Today's reflection: ${reflectionPrompt || ''}
 
-            const rawPrompt = result.text.trim();
-
-            // Validate: must be under 150 words and not duplicated with recent prompts
-            const wordCount = rawPrompt.split(/\s+/).length;
-            if (wordCount > 150) {
-              app.logger.warn(
-                { userId, wordCount },
-                'Generated prompt too long, retrying'
-              );
-              retries++;
-              continue;
-            }
-
-            const isDuplicate = recentPromptTexts.some(
-              (p) => p.toLowerCase().includes(rawPrompt.substring(0, 30).toLowerCase())
-            );
-
-            if (isDuplicate) {
-              app.logger.warn({ userId }, 'Generated prompt is duplicate, retrying');
-              retries++;
-              continue;
-            }
-
-            generatedPrompt = rawPrompt;
-            console.log('[Somatic] Generated prompt:', generatedPrompt);
-            app.logger.info(
-              { userId, wordCount, retries },
-              'AI prompt generated successfully'
-            );
-          } catch (error) {
-            app.logger.error(
-              { err: error, userId, retries },
-              'Failed to generate AI prompt'
-            );
-            retries++;
-          }
+Cohesion guidance:
+- If the theme is about peace/rest → prefer breath, softening, grounding
+- If the theme is about courage/strength → prefer posture, feet, chest-opening
+- If the theme is about release/surrender → prefer exhale, hands, shoulders, unclenching
+- If the theme is about presence/awareness → prefer body scan, sensation noticing
+- Keep the connection subtle — do not reference the theme explicitly in the prompt text`;
         }
 
-        // Fallback: if AI generation failed, use a template
-        if (!generatedPrompt) {
-          generatedPrompt = `Begin ${selectedExercise.title}. ${selectedExercise.description}. Follow the instructions at your own pace. Notice what arises without judgment. Take your time.`;
-          app.logger.warn(
-            { userId, exerciseTitle: selectedExercise.title },
-            'Using fallback prompt after AI failures'
-          );
-        }
+        systemPrompt += `
 
-        // Cache the prompt
-        const [cachedRecord] = await app.db
-          .insert(schema.userSomaticPrompts)
-          .values({
-            userId,
-            promptDate: today,
-            category: categoryToUse as any,
-            generatedPrompt,
-            selectedExerciseId: selectedExercise.id as any,
-          })
-          .returning();
+Return ONLY the somatic invitation text. No title, no label, no explanation. Just the 2-4 sentence invitation.`;
+
+        // Step 3f: Call AI
+        const result = await generateText({
+          model: gateway('openai/gpt-4o-mini'),
+          system: systemPrompt,
+          prompt: 'Generate the somatic invitation now.',
+        });
+
+        const generatedPrompt = result.text.trim();
+        console.log('[Somatic] Generated prompt:', generatedPrompt);
+
+        // Step 4: Save to user_somatic_prompts
+        await app.db.insert(schema.userSomaticPrompts).values({
+          userId,
+          promptText: generatedPrompt,
+          category: nextCategory as any,
+        });
 
         console.log('[Somatic] Saved new prompt for user:', userId);
 
-        app.logger.info(
-          { userId, promptId: cachedRecord.id },
-          'Daily somatic prompt cached and returned'
-        );
-
-        // Update daily_content with the generated prompt
-        const currentDate = new Date();
-        const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
+        // Step 5: Write back to daily_content.somatic_prompt
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now.getTime() - start.getTime();
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
 
         await app.db
           .update(schema.dailyContent)
           .set({ somaticPrompt: generatedPrompt })
           .where(eq(schema.dailyContent.dayOfYear, dayOfYear));
 
-        app.logger.info(
-          { userId, dayOfYear },
-          '[Somatic] Updated daily_content.somatic_prompt for day_of_year'
-        );
+        console.log('[Somatic] Updated daily_content.somatic_prompt for day_of_year:', dayOfYear);
 
+        // Step 6: Return
         return reply.send({
-          promptDate: today,
-          category: categoryToUse,
-          prompt: generatedPrompt,
-          exercise: {
-            id: selectedExercise.id,
-            title: selectedExercise.title,
-            description: selectedExercise.description,
-            category: selectedExercise.category,
-            duration: selectedExercise.duration,
-            instructions: selectedExercise.instructions,
-          },
+          somatic_prompt: generatedPrompt,
+          category: nextCategory,
+          cached: false,
         });
       } catch (error) {
         app.logger.error(
-          { err: error, userId: session.user.id },
-          'Failed to fetch daily somatic prompt'
+          { err: error, userId },
+          'Failed to generate somatic prompt'
         );
-        throw error;
+        return reply.status(500).send({ error: 'Failed to generate somatic prompt' });
       }
     }
   );
