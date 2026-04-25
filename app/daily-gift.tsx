@@ -99,6 +99,9 @@ export default function DailyGiftScreen() {
   const { isSubscribed, loading: subLoading } = useSubscription();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
+  const [aiSomaticPrompt, setAiSomaticPrompt] = useState<string | null>(null);
+  const [aiSomaticCategory, setAiSomaticCategory] = useState<string | null>(null);
+  const [isSomaticLoading, setIsSomaticLoading] = useState(false);
   const [hasReflected, setHasReflected] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -424,6 +427,16 @@ export default function DailyGiftScreen() {
         if (response.weeklyTheme.somaticExercise) {
           await checkWeeklyPracticeStatus();
         }
+
+        // Load AI-personalized somatic prompt, passing theme context for cohesion
+        if (response.weeklyTheme && response.dailyContent) {
+          loadSomaticPrompt(
+            response.weeklyTheme.themeTitle,
+            response.weeklyTheme.themeDescription,
+            response.weeklyTheme.liturgicalSeason,
+            response.dailyContent.reflectionQuestion
+          );
+        }
       }
     } catch (error) {
       const errorTimestamp = new Date().toISOString();
@@ -485,6 +498,41 @@ export default function DailyGiftScreen() {
       console.log('[DailyGift] Failed to check weekly practice status (non-critical):', error);
     }
   };
+
+  const loadSomaticPrompt = useCallback(async (
+    themeTitle: string,
+    themeDescription: string,
+    liturgicalSeason: string,
+    reflectionPrompt: string
+  ) => {
+    try {
+      setIsSomaticLoading(true);
+      const params = new URLSearchParams({
+        themeTitle,
+        themeDescription,
+        liturgicalSeason,
+        reflectionPrompt,
+      });
+      console.log('[DailyGift] Loading somatic prompt from /api/somatic/daily-prompt');
+      const result = await authenticatedGet<{ somatic_prompt: string; category: string; cached: boolean }>(
+        `/api/somatic/daily-prompt?${params.toString()}`
+      );
+      if (result?.somatic_prompt) {
+        setAiSomaticPrompt(result.somatic_prompt);
+        setAiSomaticCategory(result.category);
+        console.log('[DailyGift] Somatic prompt loaded:', {
+          cached: result.cached,
+          category: result.category,
+          prompt: result.somatic_prompt,
+        });
+      }
+    } catch (error) {
+      console.log('[DailyGift] Failed to load somatic prompt (non-critical):', error);
+      // Silently fall back to dailyContent.somaticPrompt
+    } finally {
+      setIsSomaticLoading(false);
+    }
+  }, []);
 
   const { isDark } = useTheme();
   const bgColor = isDark ? colors.backgroundDark : colors.background;
@@ -1054,8 +1102,9 @@ export default function DailyGiftScreen() {
   const invitationLabel = 'SOMATIC INVITATION';
   const invitationText = 'A gentle invitation';
 
-  const somaticPromptDisplay = dailyContent.somaticPrompt || '';
-  const hasSomaticPrompt = !!dailyContent.somaticPrompt;
+  // Prefer AI-generated prompt; fall back to static daily_content.somaticPrompt
+  const somaticPromptDisplay = aiSomaticPrompt || dailyContent.somaticPrompt || '';
+  const hasSomaticPrompt = !!(aiSomaticPrompt || dailyContent.somaticPrompt);
   const tryButtonText = 'Begin';
 
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
@@ -1224,9 +1273,13 @@ export default function DailyGiftScreen() {
                 {invitationText}
               </Text>
 
-              <Text style={[styles.practiceTitle, { color: textColor }]}>
-                {somaticPromptDisplay}
-              </Text>
+              {isSomaticLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+              ) : (
+                <Text style={[styles.practiceTitle, { color: textColor }]}>
+                  {somaticPromptDisplay}
+                </Text>
+              )}
 
               <View style={styles.dailyIndicator}>
                 <IconSymbol 
