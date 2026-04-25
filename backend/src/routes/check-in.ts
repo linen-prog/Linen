@@ -205,7 +205,7 @@ export function registerCheckInRoutes(app: App) {
             const { text: initialMessage } = await generateText({
               model: gateway('openai/gpt-4o-mini'),
               system: systemPrompt,
-              messages: [],
+              prompt: 'Generate a warm, personalized opening greeting for today\'s check-in.',
             });
 
             await app.db.insert(schema.checkInMessages).values({
