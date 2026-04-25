@@ -1,12 +1,15 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
+import { getUserPersonalizationContext } from '../utils/personalization.js';
+import { gateway } from '@specific-dev/framework';
+import { generateText } from 'ai';
 
-// Seed exercises data
+// Seed exercises data (30 total exercises)
 const SEED_EXERCISES = [
-  // Grounding category
+  // Grounding category (8)
   {
     title: 'Body Scan',
     description: 'A gentle practice of noticing sensations throughout your body',
@@ -23,7 +26,55 @@ const SEED_EXERCISES = [
     instructions:
       'Notice 5 things you can see, 4 things you can touch, 3 things you can hear, 2 things you can smell, and 1 thing you can taste. Take your time with each sense.',
   },
-  // Breath category
+  {
+    title: 'Grounding to Earth',
+    description: 'Connecting your body to the ground beneath you',
+    category: 'grounding' as const,
+    duration: '5 minutes',
+    instructions:
+      'Stand barefoot if possible or sit with feet on the ground. Feel the weight of your body being held by the earth. Imagine roots growing from the soles of your feet into the ground. Feel stable and supported.',
+  },
+  {
+    title: 'Name Five Things',
+    description: 'A simple grounding practice using observation',
+    category: 'grounding' as const,
+    duration: '3 minutes',
+    instructions:
+      'Name 5 things you can see in your space right now. Really notice them. Their colors, shapes, textures. Let this simple observation anchor you to the present moment.',
+  },
+  {
+    title: 'Hand Awareness',
+    description: 'Bringing attention to your hands to center yourself',
+    category: 'grounding' as const,
+    duration: '2-3 minutes',
+    instructions:
+      'Hold your hands in front of you. Notice their temperature, texture, any sensations. Gently touch your fingers together. Become aware of the sensations of touch. This simple awareness brings you fully present.',
+  },
+  {
+    title: 'Temperature Play',
+    description: 'Using temperature contrast to ground yourself',
+    category: 'grounding' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Hold something cool in one hand and something warm in the other. Feel the contrast. This activates your nervous system in a grounding way. You can use cold water and warm water, or ice and a cup of tea.',
+  },
+  {
+    title: 'Weighted Body Awareness',
+    description: 'Noticing the weight and pressure of your body',
+    category: 'grounding' as const,
+    duration: '5 minutes',
+    instructions:
+      'Lie down or sit comfortably. Feel where your body touches the ground or chair. Notice the weight. Feel how you are held and supported. There is nothing to do, just notice the sensation of being held.',
+  },
+  {
+    title: 'Eye Gazing',
+    description: 'Gentle visual focus to calm the nervous system',
+    category: 'grounding' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Find a point to gaze at: a candle flame, a plant, a stone. Softly gaze at it without strain. Let your eyes rest on this one thing. This simple focus settles your mind and body.',
+  },
+  // Breath category (8)
   {
     title: 'Gentle Breathing',
     description: 'Soft, natural breathing to calm the nervous system',
@@ -40,7 +91,55 @@ const SEED_EXERCISES = [
     instructions:
       'Breathe in for a count of 4. Breathe out for a count of 6. Continue this rhythm. If it feels strained, adjust the counts. The exhale should be longer than the inhale.',
   },
-  // Movement category
+  {
+    title: 'Square Breathing',
+    description: 'A balanced breath practice to center yourself',
+    category: 'breath' as const,
+    duration: '5 minutes',
+    instructions:
+      'Breathe in for a count of 4, hold for 4, breathe out for 4, hold for 4. Continue this square pattern. This creates balance and calm in your nervous system.',
+  },
+  {
+    title: 'Humming Breath',
+    description: 'Adding vibration to your breath for soothing',
+    category: 'breath' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Breathe in through your nose. As you exhale, hum gently. Feel the vibration in your body. This simple hum activates the vagus nerve and brings calm.',
+  },
+  {
+    title: 'Alternate Nostril Breathing',
+    description: 'Balancing energy through nostril breathing',
+    category: 'breath' as const,
+    duration: '5 minutes',
+    instructions:
+      'Close your right nostril and breathe in through your left. Close your left and breathe out through your right. Continue alternating. This ancient practice brings balance to your nervous system.',
+  },
+  {
+    title: 'Sigh Breath',
+    description: 'Using audible sighs to release tension',
+    category: 'breath' as const,
+    duration: '2-3 minutes',
+    instructions:
+      'Take a deep breath in, then sigh it out with an audible "ahhh" sound. Feel the release. Repeat several times. This simple practice is deeply calming.',
+  },
+  {
+    title: 'Counting Breaths',
+    description: 'Using breath counting for focus and calm',
+    category: 'breath' as const,
+    duration: '5 minutes',
+    instructions:
+      'Breathe naturally and count each exhale: 1, 2, 3, up to 10, then start again. If you lose count, simply begin again. This gives your mind something to do while your nervous system settles.',
+  },
+  {
+    title: 'Ocean Breath',
+    description: 'Breathing like the sound of ocean waves',
+    category: 'breath' as const,
+    duration: '5-10 minutes',
+    instructions:
+      'Partially constrict the back of your throat to create a gentle ocean sound as you breathe. Breathe in and out through your nose. This soothing sound anchors your attention and calms your whole system.',
+  },
+  // Movement category (8)
   {
     title: 'Gentle Stretching',
     description: 'Slow, mindful movements to release tension',
@@ -57,7 +156,55 @@ const SEED_EXERCISES = [
     instructions:
       'Walk slowly. Notice the sensation of your feet touching the ground. Feel the movement of your legs. Notice your breath. If your mind wanders, gently return to the sensations of walking.',
   },
-  // Release category
+  {
+    title: 'Neck Rolls',
+    description: 'Releasing tension from your neck and shoulders',
+    category: 'movement' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Slowly drop your chin to your chest. Roll your head in a circle to the right. Feel the stretch. Return to center and roll to the left. Move slowly and gently. Never force your neck back.',
+  },
+  {
+    title: 'Shoulder Rolls',
+    description: 'Releasing upper body tension',
+    category: 'movement' as const,
+    duration: '3 minutes',
+    instructions:
+      'Roll your shoulders forward in slow circles, 5-10 times. Then roll backward the same number of times. Feel the muscles releasing. You can do this sitting or standing.',
+  },
+  {
+    title: 'Cat Cow Stretch',
+    description: 'A flowing movement to awaken the spine',
+    category: 'movement' as const,
+    duration: '5-10 minutes',
+    instructions:
+      'On hands and knees, arch your back (cow), then round your back (cat). Flow between these slowly with your breath. Each movement awakens and releases your spine.',
+  },
+  {
+    title: 'Gentle Dancing',
+    description: 'Moving your body in free, joyful motion',
+    category: 'movement' as const,
+    duration: '5-10 minutes',
+    instructions:
+      'Put on music you love. Move your body however feels good. There is no right way. Let your body express itself. Feel the aliveness in your limbs and heartbeat.',
+  },
+  {
+    title: 'Hip Circles',
+    description: 'Releasing tension stored in the hips',
+    category: 'movement' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Stand with hands on hips. Make slow circles with your hips. Feel the full range of motion. Hips often hold tension — this gentle movement releases it.',
+  },
+  {
+    title: 'Spinal Twist',
+    description: 'A seated twist to release the spine and sides',
+    category: 'movement' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Sit cross-legged or on a chair. Gently twist your torso to the right, keeping your hips still. Feel the stretch along your spine. Return to center and twist left. Move slowly and breathe.',
+  },
+  // Release category (6)
   {
     title: 'Progressive Relaxation',
     description: 'Tensing and releasing muscle groups to release stored tension',
@@ -73,6 +220,38 @@ const SEED_EXERCISES = [
     duration: '2-5 minutes',
     instructions:
       'Stand with knees slightly bent. Begin to gently shake your body, starting with your hands and arms. Let the shaking spread naturally. This is how animals release stress. Let your body move as it wants to.',
+  },
+  {
+    title: 'Sigh Release',
+    description: 'Using audible sighs and sounds to release emotion',
+    category: 'release' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'Take a deep breath in. As you exhale, make a sound — sigh, moan, or tone. Feel the vibration and release. Let your body express what it needs to express. Repeat as many times as feels right.',
+  },
+  {
+    title: 'Cold Water Release',
+    description: 'Using cool water to reset your nervous system',
+    category: 'release' as const,
+    duration: '2-3 minutes',
+    instructions:
+      'Splash your face with cold water or hold your wrists under cool running water. This activates a reset response in your nervous system, helping you release stress and feel refreshed.',
+  },
+  {
+    title: 'Sound Release',
+    description: 'Using your voice to release stored emotions',
+    category: 'release' as const,
+    duration: '3-5 minutes',
+    instructions:
+      'In a private space, open your mouth and let any sounds come out. Screams, roars, cries — whatever wants to emerge. Your body knows what it needs to release. This is simple and powerful.',
+  },
+  {
+    title: 'Tension and Release',
+    description: 'Making a fist and releasing for immediate relief',
+    category: 'release' as const,
+    duration: '2-3 minutes',
+    instructions:
+      'Make tight fists and hold for 3 seconds. Release and notice the difference. Repeat with different parts of your body. This simple practice helps you notice and release held tension.',
   },
 ];
 
@@ -218,6 +397,313 @@ export function registerSomaticRoutes(app: App) {
         app.logger.error(
           { err: error, userId: session.user.id, exerciseId },
           'Failed to record completion'
+        );
+        throw error;
+      }
+    }
+  );
+
+  // Get daily somatic prompt with AI-generated personalization
+  app.fastify.get(
+    '/api/somatic/daily-prompt',
+    {
+      schema: {
+        description: 'Get personalized daily somatic prompt with AI-generated guidance',
+        tags: ['somatic'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              promptDate: { type: 'string', format: 'date' },
+              category: { type: 'string', enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'] },
+              prompt: { type: 'string' },
+              exercise: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  title: { type: 'string' },
+                  description: { type: 'string' },
+                  category: { type: 'string' },
+                  duration: { type: 'string' },
+                  instructions: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      app.logger.info({ userId: session.user.id }, 'Fetching daily somatic prompt');
+
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const userId = session.user.id;
+
+        // Check for cached prompt for today
+        const cachedPrompt = await app.db
+          .select({
+            id: schema.userSomaticPrompts.id,
+            userId: schema.userSomaticPrompts.userId,
+            promptDate: schema.userSomaticPrompts.promptDate,
+            category: schema.userSomaticPrompts.category,
+            generatedPrompt: schema.userSomaticPrompts.generatedPrompt,
+            selectedExerciseId: schema.userSomaticPrompts.selectedExerciseId,
+            createdAt: schema.userSomaticPrompts.createdAt,
+          })
+          .from(schema.userSomaticPrompts)
+          .where(
+            and(
+              eq(schema.userSomaticPrompts.userId, userId),
+              eq(schema.userSomaticPrompts.promptDate, today)
+            )
+          )
+          .limit(1);
+
+        if (cachedPrompt.length > 0) {
+          app.logger.info({ userId }, 'Using cached daily somatic prompt');
+          const exercise = await app.db
+            .select()
+            .from(schema.somaticExercises)
+            .where(eq(schema.somaticExercises.id, cachedPrompt[0].selectedExerciseId as any))
+            .limit(1);
+
+          return reply.send({
+            promptDate: cachedPrompt[0].promptDate,
+            category: cachedPrompt[0].category,
+            prompt: cachedPrompt[0].generatedPrompt,
+            exercise: exercise.length > 0 ? exercise[0] : null,
+          });
+        }
+
+        // Get user personalization context
+        const personalization = await getUserPersonalizationContext(app, userId);
+        app.logger.info(
+          {
+            userId,
+            engagementDepth: personalization.engagementDepth,
+            dominantMoods: personalization.dominantMoods,
+          },
+          'User personalization context loaded'
+        );
+
+        // Get last 3 somatic prompts to implement category rotation
+        const lastPrompts = await app.db
+          .select({
+            category: schema.userSomaticPrompts.category,
+            promptDate: schema.userSomaticPrompts.promptDate,
+          })
+          .from(schema.userSomaticPrompts)
+          .where(eq(schema.userSomaticPrompts.userId, userId))
+          .orderBy(desc(schema.userSomaticPrompts.promptDate))
+          .limit(3);
+
+        // Determine category to use
+        let categoryToUse: string | null = null;
+
+        // Check if last 2 prompts are the same category (block the same category appearing 3x in a row)
+        if (lastPrompts.length >= 2) {
+          if (
+            lastPrompts[lastPrompts.length - 1].category ===
+            lastPrompts[lastPrompts.length - 2].category
+          ) {
+            // Last 2 are the same, so block this category
+            const blockedCategory = lastPrompts[lastPrompts.length - 1].category;
+            app.logger.info(
+              { userId, blockedCategory },
+              'Blocking repeated category from 3-in-a-row rule'
+            );
+
+            // Override based on mood if established user
+            if (personalization.engagementDepth === 'established' && personalization.dominantMoods.length > 0) {
+              // Use mood-based override
+              const moodLower = personalization.dominantMoods[0].toLowerCase();
+              if (['anxious', 'tense', 'stressed', 'overwhelmed'].some((m) => moodLower.includes(m))) {
+                categoryToUse = 'breath';
+              } else if (['sad', 'heavy', 'down', 'withdrawn'].some((m) => moodLower.includes(m))) {
+                categoryToUse = 'movement';
+              } else if (['restless', 'agitated', 'irritable'].some((m) => moodLower.includes(m))) {
+                categoryToUse = 'release';
+              } else {
+                categoryToUse = 'grounding';
+              }
+              app.logger.info(
+                { userId, mood: personalization.dominantMoods[0], selectedCategory: categoryToUse },
+                'Using mood-based category override'
+              );
+            } else {
+              // Random category excluding the blocked one
+              const categories = ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'];
+              const availableCategories = categories.filter((c) => c !== blockedCategory);
+              categoryToUse = availableCategories[Math.floor(Math.random() * availableCategories.length)];
+            }
+          }
+        }
+
+        // If no category selected yet, use engagement-based or random
+        if (!categoryToUse) {
+          if (personalization.engagementDepth === 'established' && personalization.dominantMoods.length > 0) {
+            // Use mood-based override for established users
+            const moodLower = personalization.dominantMoods[0].toLowerCase();
+            if (['anxious', 'tense', 'stressed', 'overwhelmed'].some((m) => moodLower.includes(m))) {
+              categoryToUse = 'breath';
+            } else if (['sad', 'heavy', 'down', 'withdrawn'].some((m) => moodLower.includes(m))) {
+              categoryToUse = 'movement';
+            } else if (['restless', 'agitated', 'irritable'].some((m) => moodLower.includes(m))) {
+              categoryToUse = 'release';
+            } else {
+              categoryToUse = 'grounding';
+            }
+          } else {
+            // Random category
+            const categories = ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'];
+            categoryToUse = categories[Math.floor(Math.random() * categories.length)];
+          }
+        }
+
+        // Get exercises in the selected category
+        const categoryExercises = await app.db
+          .select()
+          .from(schema.somaticExercises)
+          .where(eq(schema.somaticExercises.category, categoryToUse as any));
+
+        if (categoryExercises.length === 0) {
+          app.logger.warn({ userId, category: categoryToUse }, 'No exercises found for category');
+          return reply.status(500).send({ error: 'No exercises available' });
+        }
+
+        const selectedExercise = categoryExercises[Math.floor(Math.random() * categoryExercises.length)];
+
+        // Build AI system prompt
+        const systemPrompt = `You are a warm, somatic guide helping someone explore their body and breath with gentle awareness. Generate a personalized somatic prompt for the "${categoryToUse}" practice.
+
+STYLE GUIDE:
+- Write in second person (you, your)
+- Be warm, gentle, and non-judgmental
+- Include sensory language (notice, feel, sense)
+- Keep it under 100 words
+- Be specific to the "${selectedExercise.title}" exercise
+- For "new" engagement: keep it simple and grounded
+- For "growing" engagement: add gentle emotional language
+- For "established" engagement: weave in their patterns subtly (if available: moods: ${personalization.dominantMoods.join(', ') || 'none'})
+
+EXAMPLE FORMAT:
+"Begin by finding a comfortable position. Notice [specific body sensation]. As you [exercise-specific action], feel [what they might experience]. There's nothing to fix or achieve — just bring gentle awareness to [focus area]. Take your time."
+
+Generate a prompt for "${selectedExercise.title}" (${selectedExercise.duration}). Engagement level: ${personalization.engagementDepth}.`;
+
+        app.logger.info(
+          { userId, selectedCategory: categoryToUse, exerciseTitle: selectedExercise.title },
+          'Generating AI personalized somatic prompt'
+        );
+
+        // Generate prompt with AI with retry logic
+        let generatedPrompt: string | null = null;
+        let retries = 0;
+        const maxRetries = 3;
+
+        while (retries < maxRetries && !generatedPrompt) {
+          try {
+            const result = await generateText({
+              model: gateway('openai/gpt-4o-mini'),
+              system: systemPrompt,
+              prompt: 'Generate the personalized somatic prompt.',
+            });
+
+            const rawPrompt = result.text.trim();
+
+            // Validate: must be under 150 words and not duplicated with recent prompts
+            const wordCount = rawPrompt.split(/\s+/).length;
+            if (wordCount > 150) {
+              app.logger.warn(
+                { userId, wordCount },
+                'Generated prompt too long, retrying'
+              );
+              retries++;
+              continue;
+            }
+
+            // Check for duplication with last 5 prompts
+            const recentPrompts = await app.db
+              .select({
+                prompt: schema.userSomaticPrompts.generatedPrompt,
+                promptDate: schema.userSomaticPrompts.promptDate,
+              })
+              .from(schema.userSomaticPrompts)
+              .where(eq(schema.userSomaticPrompts.userId, userId))
+              .orderBy(desc(schema.userSomaticPrompts.promptDate))
+              .limit(5);
+
+            const isDuplicate = recentPrompts.some(
+              (p) => p.prompt.toLowerCase().includes(rawPrompt.substring(0, 30).toLowerCase())
+            );
+
+            if (isDuplicate) {
+              app.logger.warn({ userId }, 'Generated prompt is duplicate, retrying');
+              retries++;
+              continue;
+            }
+
+            generatedPrompt = rawPrompt;
+            app.logger.info(
+              { userId, wordCount, retries },
+              'AI prompt generated successfully'
+            );
+          } catch (error) {
+            app.logger.error(
+              { err: error, userId, retries },
+              'Failed to generate AI prompt'
+            );
+            retries++;
+          }
+        }
+
+        // Fallback: if AI generation failed, use a template
+        if (!generatedPrompt) {
+          generatedPrompt = `Begin ${selectedExercise.title}. ${selectedExercise.description}. Follow the instructions at your own pace. Notice what arises without judgment. Take your time.`;
+          app.logger.warn(
+            { userId, exerciseTitle: selectedExercise.title },
+            'Using fallback prompt after AI failures'
+          );
+        }
+
+        // Cache the prompt
+        const [cachedRecord] = await app.db
+          .insert(schema.userSomaticPrompts)
+          .values({
+            userId,
+            promptDate: today,
+            category: categoryToUse as any,
+            generatedPrompt,
+            selectedExerciseId: selectedExercise.id as any,
+          })
+          .returning();
+
+        app.logger.info(
+          { userId, promptId: cachedRecord.id },
+          'Daily somatic prompt cached and returned'
+        );
+
+        return reply.send({
+          promptDate: today,
+          category: categoryToUse,
+          prompt: generatedPrompt,
+          exercise: {
+            id: selectedExercise.id,
+            title: selectedExercise.title,
+            description: selectedExercise.description,
+            category: selectedExercise.category,
+            duration: selectedExercise.duration,
+            instructions: selectedExercise.instructions,
+          },
+        });
+      } catch (error) {
+        app.logger.error(
+          { err: error, userId: session.user.id },
+          'Failed to fetch daily somatic prompt'
         );
         throw error;
       }
