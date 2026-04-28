@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
@@ -343,71 +344,89 @@ export default function SomaticPracticeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.celebrationContent, { backgroundColor: cardBg }]}>
-            <View style={styles.celebrationHeader}>
-              <IconSymbol 
-                ios_icon_name="star.fill"
-                android_material_icon_name="star"
-                size={64}
-                color={colors.accent}
-              />
-              <Text style={[styles.celebrationTitle, { color: textColor }]}>
-                {celebrationTitle}
-              </Text>
-              <Text style={[styles.celebrationSubtitle, { color: colors.primary }]}>
-                {celebrationSubtitle}
-              </Text>
-              <Text style={[styles.celebrationMessage, { color: textSecondaryColor }]}>
-                {celebrationMessage}
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => {
+                console.log('[SomaticPractice] User dismissed celebration modal');
+                setShowCelebration(false);
+              }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close" size={20} color={textSecondaryColor} />
+            </TouchableOpacity>
 
-            <View style={styles.reflectionSection}>
-              <Text style={[styles.reflectionPrompt, { color: textColor }]}>
-                {reflectionPrompt}
-              </Text>
-              <TextInput
-                style={[styles.reflectionInput, { 
-                  backgroundColor: bgColor,
-                  borderColor: colors.border,
-                  color: textColor 
-                }]}
-                placeholder={reflectionPlaceholder}
-                placeholderTextColor={textSecondaryColor}
-                value={reflection}
-                onChangeText={setReflection}
-                multiline
-                numberOfLines={6}
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View style={styles.celebrationButtons}>
-              <TouchableOpacity 
-                style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-                onPress={handleComplete}
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.saveButtonText}>
-                    {saveReflectionText}
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.skipButton}
-                onPress={handleSkipReflection}
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.skipButtonText, { color: textSecondaryColor }]}>
-                  {skipReflectionText}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.celebrationScrollContent}
+            >
+              <View style={styles.celebrationHeader}>
+                <IconSymbol 
+                  ios_icon_name="star.fill"
+                  android_material_icon_name="star"
+                  size={64}
+                  color={colors.accent}
+                />
+                <Text style={[styles.celebrationTitle, { color: textColor }]}>
+                  {celebrationTitle}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={[styles.celebrationSubtitle, { color: colors.primary }]}>
+                  {celebrationSubtitle}
+                </Text>
+                <Text style={[styles.celebrationMessage, { color: textSecondaryColor }]}>
+                  {celebrationMessage}
+                </Text>
+              </View>
+
+              <View style={styles.reflectionSection}>
+                <Text style={[styles.reflectionPrompt, { color: textColor }]}>
+                  {reflectionPrompt}
+                </Text>
+                <TextInput
+                  style={[styles.reflectionInput, { 
+                    backgroundColor: bgColor,
+                    borderColor: colors.border,
+                    color: textColor 
+                  }]}
+                  placeholder={reflectionPlaceholder}
+                  placeholderTextColor={textSecondaryColor}
+                  value={reflection}
+                  onChangeText={setReflection}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.celebrationButtons}>
+                <TouchableOpacity 
+                  style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+                  onPress={handleComplete}
+                  disabled={isLoading}
+                  activeOpacity={0.8}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>
+                      {saveReflectionText}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.skipButton}
+                  onPress={handleSkipReflection}
+                  disabled={isLoading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.skipButtonText, { color: textSecondaryColor }]}>
+                    {skipReflectionText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -792,11 +811,25 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '88%',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 16,
     elevation: 8,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  celebrationScrollContent: {
+    flexGrow: 1,
   },
   celebrationHeader: {
     alignItems: 'center',
@@ -836,7 +869,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     fontSize: typography.body,
     lineHeight: 22,
-    minHeight: 120,
+    minHeight: 100,
     borderWidth: 1,
   },
   celebrationButtons: {
