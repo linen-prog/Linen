@@ -451,9 +451,11 @@ export default function PaywallScreen() {
               {anyPurchasing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.ctaButtonText}>Try Free for 7 Days</Text>
+                <Text style={styles.ctaButtonText}>Continue</Text>
               )}
             </AnimatedPressable>
+
+            <Text style={styles.ctaSubtext}>{`7-day free trial, then ${priceString}/month`}</Text>
 
             {/* ── 6. Restore ── */}
             <TouchableOpacity
@@ -732,6 +734,14 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+
+  ctaSubtext: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: 'center',
+    marginTop: -4,
+    marginBottom: 16,
   },
 
   // ── Restore ──
