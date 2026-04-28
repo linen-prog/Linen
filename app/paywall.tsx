@@ -17,7 +17,7 @@ import {
   Animated,
   Pressable,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { PurchasesPackage } from "react-native-purchases";
@@ -115,6 +115,20 @@ function FadeInView({ children }: { children: React.ReactNode }) {
   return <Animated.View style={{ opacity }}>{children}</Animated.View>;
 }
 
+// ─── CloseButton ─────────────────────────────────────────────────────────────
+function CloseButton({ onPress, topInset }: { onPress: () => void; topInset: number }) {
+  return (
+    <TouchableOpacity
+      style={[styles.closeButton, { top: Math.max(topInset + 8, 52) }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+    >
+      <Text style={styles.closeButtonText}>✕</Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Value list items ─────────────────────────────────────────────────────────
 const VALUE_ITEMS = [
   {
@@ -158,6 +172,8 @@ export default function PaywallScreen() {
     restorePurchases,
     mockWebPurchase,
   } = useSubscription();
+
+  const insets = useSafeAreaInsets();
 
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -310,14 +326,7 @@ export default function PaywallScreen() {
               <Text style={styles.ctaButtonText}>Continue</Text>
             </AnimatedPressable>
           </View>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={0.85}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
+          <CloseButton onPress={handleClose} topInset={insets.top} />
         </SafeAreaView>
       </LinearGradient>
     );
@@ -337,6 +346,7 @@ export default function PaywallScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={C.sage} />
           </View>
+          <CloseButton onPress={handleClose} topInset={insets.top} />
         </SafeAreaView>
       </LinearGradient>
     );
@@ -495,14 +505,7 @@ export default function PaywallScreen() {
         </ScrollView>
 
         {/* Close button rendered AFTER ScrollView so it sits on top */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={handleClose}
-          activeOpacity={0.85}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
+        <CloseButton onPress={handleClose} topInset={insets.top} />
       </SafeAreaView>
 
       {/* ── Web mock dialog ── */}
@@ -601,10 +604,9 @@ const styles = StyleSheet.create({
   // ── Close button ──
   closeButton: {
     position: "absolute",
-    top: 52,
     right: 18,
-    zIndex: 20,
-    elevation: 20,
+    zIndex: 200,
+    elevation: 200,
     width: 44,
     height: 44,
     borderRadius: 22,
