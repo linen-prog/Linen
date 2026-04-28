@@ -295,20 +295,7 @@ export default function PaywallScreen() {
   const handleClose = () => {
     console.log("[Paywall] Close tapped");
     setPaywallDismissed(true);
-    try {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/(tabs)/(home)");
-      }
-    } catch (e) {
-      console.log("[Paywall] Close fallback triggered", e);
-      try {
-        router.replace("/(tabs)/(home)");
-      } catch (_) {
-        // nothing more we can do
-      }
-    }
+    router.replace("/auth");
   };
 
   // ── Already subscribed ────────────────────────────────────────────────────
