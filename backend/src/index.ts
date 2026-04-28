@@ -17,6 +17,7 @@ import { registerCompanionPreferencesRoutes } from './routes/companion-preferenc
 import { registerMonthlySummaryRoutes } from './routes/monthly-summary.js';
 import { registerNotificationsRoutes } from './routes/notifications.js';
 import { registerPushSubscriptionRoutes } from './routes/push-subscriptions.js';
+import { registerUserRoutes } from './routes/user.js';
 import { initializeDatabase } from './db/initDatabase.js';
 import { runModerationMigration } from './db/moderationMigration.js';
 
@@ -61,6 +62,7 @@ registerCompanionPreferencesRoutes(app);
 registerMonthlySummaryRoutes(app);
 registerNotificationsRoutes(app);
 registerPushSubscriptionRoutes(app);
+registerUserRoutes(app);
 
 await app.run();
 app.logger.info('Application running');
