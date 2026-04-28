@@ -123,6 +123,7 @@ export default function ProfileScreen() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   
   // Reminder settings
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(REMINDER_DEFAULTS);
@@ -638,10 +639,22 @@ export default function ProfileScreen() {
     setShowDeleteAccountModal(true);
   };
 
-  const confirmDeleteAccount = () => {
-    console.log('ProfileScreen: Confirming delete account');
-    setShowDeleteAccountModal(false);
-    Alert.alert('Coming Soon', 'Account deletion will be available soon.');
+  const confirmDeleteAccount = async () => {
+    console.log('ProfileScreen: Confirming delete account — calling DELETE /api/user/delete-account');
+    setDeletingAccount(true);
+    try {
+      const { authenticatedDelete } = await import('@/utils/api');
+      await authenticatedDelete('/api/user/delete-account');
+      console.log('ProfileScreen: Account deleted successfully, signing out');
+      setShowDeleteAccountModal(false);
+      await signOut();
+      router.replace('/auth');
+    } catch (error) {
+      console.error('ProfileScreen: Delete account failed —', error);
+      Alert.alert('Error', 'Could not delete account. Please try again.');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const handleOpenPrivacyPolicy = async () => {
@@ -1438,10 +1451,15 @@ export default function ProfileScreen() {
               <TouchableOpacity 
                 style={[styles.confirmModalButton, { backgroundColor: colors.error }]}
                 onPress={confirmDeleteAccount}
+                disabled={deletingAccount}
               >
-                <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
-                  Delete
-                </Text>
+                {deletingAccount ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.confirmModalButtonText, { color: '#FFFFFF' }]}>
+                    Delete
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
