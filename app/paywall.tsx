@@ -277,7 +277,16 @@ export default function PaywallScreen() {
 
   const handleClose = () => {
     console.log("[Paywall] Close tapped");
-    router.replace("/(tabs)/(home)");
+    try {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)/(home)");
+      }
+    } catch (e) {
+      console.log("[Paywall] Close fallback triggered", e);
+      router.replace("/(tabs)/(home)");
+    }
   };
 
   // ── Already subscribed ────────────────────────────────────────────────────
@@ -291,13 +300,6 @@ export default function PaywallScreen() {
         style={styles.container}
       >
         <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
           <View style={styles.subscribedContent}>
             <Text style={styles.subscribedEmoji}>✦</Text>
             <Text style={styles.subscribedTitle}>You're all set</Text>
@@ -308,6 +310,14 @@ export default function PaywallScreen() {
               <Text style={styles.ctaButtonText}>Continue</Text>
             </AnimatedPressable>
           </View>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            activeOpacity={0.85}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -342,15 +352,6 @@ export default function PaywallScreen() {
       style={styles.container}
     >
       <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-        {/* Close button */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={handleClose}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
-
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -492,6 +493,16 @@ export default function PaywallScreen() {
             </Text>
           </FadeInView>
         </ScrollView>
+
+        {/* Close button rendered AFTER ScrollView so it sits on top */}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={handleClose}
+          activeOpacity={0.85}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
       </SafeAreaView>
 
       {/* ── Web mock dialog ── */}
@@ -592,10 +603,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 52,
     right: 18,
-    zIndex: 10,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    zIndex: 20,
+    elevation: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: C.closeBg,
     justifyContent: "center",
     alignItems: "center",
