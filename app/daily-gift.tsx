@@ -517,6 +517,10 @@ export default function DailyGiftScreen() {
       const result = await authenticatedGet<{ somatic_prompt: string; category: string; cached: boolean }>(
         `/api/somatic/daily-prompt?${params.toString()}`
       );
+      console.log('[Somatic] API response body:', JSON.stringify(result));
+      console.log('[Somatic] cached:', result?.cached);
+      console.log('[Somatic] somatic_prompt:', result?.somatic_prompt);
+      console.log('[Somatic] category:', result?.category);
       if (result?.somatic_prompt) {
         setAiSomaticPrompt(result.somatic_prompt);
         setAiSomaticCategory(result.category);
@@ -526,7 +530,8 @@ export default function DailyGiftScreen() {
           prompt: result.somatic_prompt,
         });
       }
-    } catch {
+    } catch (error) {
+      console.log('[Somatic] fetch error:', error instanceof Error ? error.message : String(error));
       // Silently ignore — static somaticPrompt from dailyContent is already shown
     } finally {
       setIsSomaticLoading(false);
