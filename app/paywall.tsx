@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
 import { PurchasesPackage } from "react-native-purchases";
 import { LinearGradient } from "expo-linear-gradient";
 import Constants from "expo-constants";
@@ -422,22 +423,23 @@ export default function PaywallScreen() {
               Try it for yourself and see how it feels
             </Text>
 
-            {/* ── 4. Trial Card ── */}
+            {/* ── 4. Pricing Card ── */}
             <View style={styles.trialCard}>
-              <View style={styles.trialTopRow}>
-                <View style={styles.sageDot} />
-                <Text style={styles.trialLabel}>FREE 7-DAY TRIAL</Text>
-              </View>
-              <Text style={styles.trialMain}>Start with 7 days of full access</Text>
-              <Text style={styles.trialSub}>Experience everything — including personalized AI</Text>
-              <View style={styles.trialPriceRow}>
-                <Text style={styles.trialPriceThen}>Then </Text>
-                <Text style={styles.trialPriceAmount}>{priceString}</Text>
-                <Text style={styles.trialPriceUnit}>/month</Text>
-              </View>
-              <Text style={styles.trialSubtext}>
-                Cancel anytime. You won't be charged today.
-              </Text>
+              {/* Subscription title */}
+              <Text style={styles.planTitle}>Linen Premium</Text>
+
+              {/* Price — largest, most prominent element */}
+              <Text style={styles.planPrice}>{priceString}<Text style={styles.planPricePer}>/month</Text></Text>
+
+              {/* Billing period */}
+              <Text style={styles.planBilling}>Billed monthly · Cancel anytime</Text>
+
+              {/* Divider */}
+              <View style={styles.planDivider} />
+
+              {/* Free trial — secondary, smaller */}
+              <Text style={styles.planTrial}>7-day free trial, then {priceString}/month</Text>
+              <Text style={styles.planTrialNote}>You won't be charged until your trial ends.</Text>
             </View>
 
             {/* ── 5. CTA ── */}
@@ -449,7 +451,7 @@ export default function PaywallScreen() {
               {anyPurchasing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.ctaButtonText}>Start Free Trial</Text>
+                <Text style={styles.ctaButtonText}>Try Free for 7 Days</Text>
               )}
             </AnimatedPressable>
 
@@ -467,9 +469,24 @@ export default function PaywallScreen() {
               )}
             </TouchableOpacity>
 
-            {/* ── 7. Legal ── */}
+            {/* ── 7. Legal footer ── */}
+            <View style={styles.legalRow}>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.legalLink}>Terms of Use</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalSep}>·</Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://linenwellness.com/privacy')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.legalLink}>Privacy Policy</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.legalText}>
-              Cancel anytime. No charge during trial.
+              Linen Premium · {priceString}/month · Subscription auto-renews monthly unless cancelled at least 24 hours before the end of the current period. Manage or cancel in your App Store settings.
             </Text>
           </FadeInView>
         </ScrollView>
@@ -687,48 +704,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  trialTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sageDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.sage,
-  },
-  trialLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: C.sage,
-    textTransform: "uppercase",
-  },
-  trialMain: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: C.text,
-    marginTop: 10,
-  },
-  trialPriceRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginTop: 4,
-  },
-  trialPriceThen: {
-    fontSize: 15,
-    color: C.textSecondary,
-  },
-  trialPriceAmount: {
-    fontSize: 15,
-    color: C.textSecondary,
-    fontWeight: "600",
-  },
-  trialPriceUnit: {
-    fontSize: 15,
-    color: C.textSecondary,
-  },
   transitionLine: {
     fontSize: 15,
     color: C.textSecondary,
@@ -738,18 +713,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     lineHeight: 22,
   },
-  trialSub: {
-    fontSize: 14,
-    color: C.textSecondary,
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  trialSubtext: {
-    fontSize: 13,
-    color: C.textTertiary,
-    marginTop: 8,
-  },
-
   // ── CTA ──
   ctaButton: {
     backgroundColor: C.sage,
@@ -790,6 +753,69 @@ const styles = StyleSheet.create({
     color: C.textTertiary,
     textAlign: "center",
     marginBottom: 16,
+    lineHeight: 18,
+    paddingHorizontal: 4,
+  },
+
+  // ── Plan card ──
+  planTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  planPrice: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: C.text,
+    letterSpacing: -1,
+    marginBottom: 4,
+  },
+  planPricePer: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: C.textSecondary,
+    letterSpacing: 0,
+  },
+  planBilling: {
+    fontSize: 13,
+    color: C.textSecondary,
+    marginBottom: 16,
+  },
+  planDivider: {
+    height: 1,
+    backgroundColor: C.border,
+    marginBottom: 14,
+  },
+  planTrial: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.textSecondary,
+    marginBottom: 4,
+  },
+  planTrialNote: {
+    fontSize: 12,
+    color: C.textTertiary,
+  },
+
+  // ── Legal row ──
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: C.textSecondary,
+    textDecorationLine: 'underline',
+  },
+  legalSep: {
+    fontSize: 12,
+    color: C.textTertiary,
   },
 
   // ── No offerings ──
