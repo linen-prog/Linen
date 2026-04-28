@@ -482,7 +482,7 @@ export default function PaywallScreen() {
               </TouchableOpacity>
               <Text style={styles.legalSep}>·</Text>
               <TouchableOpacity
-                onPress={() => Linking.openURL('https://linenwellness.com/privacy')}
+                onPress={() => Linking.openURL('https://linen-app.com/privacy')}
                 activeOpacity={0.7}
               >
                 <Text style={styles.legalLink}>Privacy Policy</Text>
