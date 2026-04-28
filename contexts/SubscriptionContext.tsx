@@ -163,10 +163,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
     const proPackage = {
-      identifier: '$rc_monthly',
+      identifier: 'linen.monthly',
       packageType: 'MONTHLY',
       product: {
-        identifier: 'pro_monthly_15_a7bbde',
+        identifier: 'linen.monthly',
         priceString: '$8.99',
         price: 8.99,
         currencyCode: 'USD',
@@ -184,7 +184,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     setPackages([proPackage] as PurchasesPackage[]);
     console.log("[RevenueCat] Web preview: mock package set", {
-      identifier: '$rc_monthly',
+      identifier: 'linen.monthly',
       priceString: '$8.99',
     });
   };
