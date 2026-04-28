@@ -196,6 +196,7 @@ export default function PaywallScreen() {
     }
 
     if (offeringsLoading) {
+      console.log("[Paywall] Offerings still loading, showing wait message");
       Alert.alert(
         "Loading",
         "Subscription plans are still loading. Please wait a moment and try again."
@@ -204,9 +205,10 @@ export default function PaywallScreen() {
     }
 
     if (packages.length === 0) {
+      console.log("[Paywall] No packages available — offerings may not be configured in RevenueCat dashboard");
       Alert.alert(
-        "Not available",
-        "Please wait for subscriptions to load, or try restarting the app."
+        "Unavailable",
+        "Subscription plans could not be loaded. Please check your internet connection and try again, or contact support if the issue persists."
       );
       return;
     }

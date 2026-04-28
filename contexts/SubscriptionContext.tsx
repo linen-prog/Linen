@@ -334,17 +334,30 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         price: p.product.priceString,
       })));
 
-      if (!fetchedOfferings.current) {
-        console.error('[RevenueCat] ERROR: offerings.current is null');
+      // Use current offering if available, otherwise fall back to the first offering with packages
+      const activeOffering =
+        fetchedOfferings.current ??
+        Object.values(fetchedOfferings.all ?? {}).find(
+          (o) => o.availablePackages.length > 0
+        ) ??
+        null;
+
+      if (!activeOffering) {
+        console.error('[RevenueCat] ERROR: no offering with packages found. offerings.current is null and no fallback available.');
+        console.log('[RevenueCat] All offering keys:', Object.keys(fetchedOfferings.all ?? {}));
       } else {
-        setCurrentOffering(fetchedOfferings.current);
-        const pkgs = fetchedOfferings.current.availablePackages;
-        const baseFound = pkgs.find(p => p.identifier === 'base');
-        const monthlyFound = pkgs.find(p => p.identifier === 'monthly');
-        if (!baseFound) console.warn('[RevenueCat] WARNING: "base" package not found');
-        if (!monthlyFound) console.warn('[RevenueCat] WARNING: "monthly" package not found');
+        if (!fetchedOfferings.current) {
+          console.warn('[RevenueCat] offerings.current is null — using fallback offering:', activeOffering.identifier);
+        }
+        setCurrentOffering(activeOffering);
+        const pkgs = activeOffering.availablePackages;
+        console.log('[RevenueCat] Packages in active offering:', pkgs.map(p => ({
+          packageId: p.identifier,
+          productId: p.product.identifier,
+          price: p.product.priceString,
+        })));
         setPackages(pkgs);
-        console.log("[RevenueCat] offerings result:", pkgs.length, "packages loaded");
+        console.log("[RevenueCat] offerings result:", pkgs.length, "packages loaded from offering:", activeOffering.identifier);
       }
     } catch (error) {
       console.error("[RevenueCat] Failed to fetch offerings:", error);
