@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { setPaywallDismissed } from "@/utils/paywallSkipFlag";
 import {
   View,
   Text,
@@ -293,6 +294,7 @@ export default function PaywallScreen() {
 
   const handleClose = () => {
     console.log("[Paywall] Close tapped");
+    setPaywallDismissed(true);
     try {
       if (router.canGoBack()) {
         router.back();
@@ -301,7 +303,11 @@ export default function PaywallScreen() {
       }
     } catch (e) {
       console.log("[Paywall] Close fallback triggered", e);
-      router.replace("/(tabs)/(home)");
+      try {
+        router.replace("/(tabs)/(home)");
+      } catch (_) {
+        // nothing more we can do
+      }
     }
   };
 

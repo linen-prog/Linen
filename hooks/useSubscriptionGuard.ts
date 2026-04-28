@@ -3,6 +3,7 @@ import { useRouter, usePathname } from "expo-router";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
+import { isPaywallDismissed } from "@/utils/paywallSkipFlag";
 
 export function useSubscriptionGuard() {
   const { isSubscribed, loading } = useSubscription();
@@ -20,6 +21,8 @@ export function useSubscriptionGuard() {
   useEffect(() => {
     if (loading || onboardingDone === null || !onboardingDone) return;
     if (!user) return;
+    // If the user already dismissed the paywall this session, do not re-open it.
+    if (isPaywallDismissed()) return;
     if (!isSubscribed) {
       router.replace("/paywall");
     }
