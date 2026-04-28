@@ -246,7 +246,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         }
 
         if (__DEV__) {
-          console.log("[RevenueCat] Initializing in DEV mode with key:", apiKey.substring(0, 10) + "...");
+          console.log("[RevenueCat] Initializing in DEV mode with key:", apiKey.substring(0, 15) + "...", "| platform:", Platform.OS, "| IOS_KEY prefix:", IOS_API_KEY.substring(0, 10), "| ANDROID_KEY prefix:", ANDROID_API_KEY.substring(0, 10));
           // Always clear the cached subscription value in dev mode so the real
           // RevenueCat entitlement check is the authoritative source of truth.
           await SecureStore.deleteItemAsync(NATIVE_PURCHASE_KEY).catch(() => {});
@@ -327,6 +327,26 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const fetchedOfferings = await Purchases.getOfferings();
       setOfferings(fetchedOfferings);
 
+      // ── DIAGNOSTIC: full raw offerings response ──────────────────────────
+      console.log('[RevenueCat] RAW getOfferings() result:', JSON.stringify({
+        currentIdentifier: fetchedOfferings.current?.identifier ?? null,
+        currentPackageCount: fetchedOfferings.current?.availablePackages?.length ?? 0,
+        allOfferingKeys: Object.keys(fetchedOfferings.all ?? {}),
+        allOfferingsDetail: Object.entries(fetchedOfferings.all ?? {}).map(([key, offering]) => ({
+          key,
+          identifier: offering.identifier,
+          packageCount: offering.availablePackages?.length ?? 0,
+          packages: offering.availablePackages?.map(p => ({
+            id: p.identifier,
+            type: p.packageType,
+            productId: p.product?.identifier,
+            price: p.product?.priceString,
+            introPrice: p.product?.introPrice ?? null,
+          })),
+        })),
+      }, null, 2));
+      // ────────────────────────────────────────────────────────────────────
+
       console.log('[RevenueCat] Offering identifier:', fetchedOfferings.current?.identifier);
       console.log('[RevenueCat] Available packages:', fetchedOfferings.current?.availablePackages.map(p => ({
         packageId: p.identifier,
@@ -357,6 +377,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           price: p.product.priceString,
         })));
         setPackages(pkgs);
+        // ── DIAGNOSTIC: final packages array after processing ────────────
+        console.log('[RevenueCat] FINAL packages array set:', JSON.stringify(pkgs.map(p => ({
+          id: p.identifier,
+          type: p.packageType,
+          productId: p.product?.identifier,
+          price: p.product?.priceString,
+          offeringId: p.offeringIdentifier,
+        })), null, 2));
+        // ────────────────────────────────────────────────────────────────
         console.log("[RevenueCat] offerings result:", pkgs.length, "packages loaded from offering:", activeOffering.identifier);
       }
     } catch (error) {
