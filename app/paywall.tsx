@@ -295,7 +295,7 @@ export default function PaywallScreen() {
   const handleClose = () => {
     console.log("[Paywall] Close tapped");
     setPaywallDismissed(true);
-    router.replace("/auth");
+    router.replace("/onboarding");
   };
 
   // ── Already subscribed ────────────────────────────────────────────────────
