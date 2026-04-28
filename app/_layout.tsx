@@ -246,17 +246,14 @@ function SubscriptionRedirect() {
   useEffect(() => {
     if (loading || authLoading) return;
 
-    const onAuthScreen = pathname === '/auth';
-    if (onAuthScreen) return;
+    const isPublicScreen = pathname === '/auth' || pathname.startsWith('/onboarding') || pathname === '/' || pathname === '/index';
+    if (isPublicScreen) return;
 
     if (!user) {
       console.log('[RootLayout] No user — redirecting to /auth');
       router.replace('/auth');
       return;
     }
-
-    const onOnboarding = pathname.startsWith('/onboarding');
-    if (onOnboarding) return;
 
     let cancelled = false;
 
