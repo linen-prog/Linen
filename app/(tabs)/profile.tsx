@@ -646,7 +646,7 @@ export default function ProfileScreen() {
 
   const handleOpenPrivacyPolicy = async () => {
     console.log('ProfileScreen: Opening privacy policy');
-    const privacyUrl = 'https://ts4lxkyubgrt4.mocha.app/privacy';
+    const privacyUrl = 'https://linen-app.com/privacy';
     try {
       const supported = await Linking.canOpenURL(privacyUrl);
       if (supported) {
@@ -1178,6 +1178,34 @@ export default function ProfileScreen() {
               android_material_icon_name="chevron-right" 
               size={20} 
               color={colors.textLight} 
+            />
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              console.log('ProfileScreen: Opening Terms of Use');
+              Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol
+                  ios_icon_name="doc.text"
+                  android_material_icon_name="description"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                Terms of Use
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
             />
           </TouchableOpacity>
         </View>
