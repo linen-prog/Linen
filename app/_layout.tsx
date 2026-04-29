@@ -259,12 +259,14 @@ function SubscriptionRedirect() {
 
     const runPaywallCheck = async () => {
       // Always do a fresh live check before deciding to suppress the paywall.
-      // This prevents stale SecureStore cache from bypassing the paywall.
-      console.log('[RootLayout] Running live subscription check before paywall decision...');
-      try {
-        await checkSubscription();
-      } catch (e) {
-        console.warn('[RootLayout] Live subscription check failed, will use current isSubscribed state:', e);
+      // Skip in __DEV__ so mockNativePurchase() is not overwritten by a live RC check.
+      if (!__DEV__) {
+        console.log('[RootLayout] Running live subscription check before paywall decision...');
+        try {
+          await checkSubscription();
+        } catch (e) {
+          console.warn('[RootLayout] Live subscription check failed, will use current isSubscribed state:', e);
+        }
       }
       if (cancelled) return;
     };
@@ -278,7 +280,7 @@ function SubscriptionRedirect() {
   useEffect(() => {
     if (loading || authLoading) return;
     if (!user) return;
-    if (pathname === '/auth' || pathname === '/paywall') return;
+    if (pathname === '/auth' || pathname === '/paywall' || pathname === '/') return;
 
     isOnboardingComplete().then((_done) => {
       if (!isSubscribed) {
