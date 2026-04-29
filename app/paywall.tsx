@@ -168,6 +168,7 @@ export default function PaywallScreen() {
     purchasePackage,
     restorePurchases,
     mockWebPurchase,
+    mockNativePurchase,
   } = useSubscription();
 
   const insets = useSafeAreaInsets();
@@ -494,6 +495,19 @@ export default function PaywallScreen() {
 
         {/* Back button rendered AFTER ScrollView so it sits on top */}
         <BackButton onPress={handleClose} topInset={insets.top} />
+
+        {/* Dev-only skip button */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={[styles.devSkipButton, { top: insets.top + 12 }]}
+            onPress={async () => {
+              console.log("[Paywall] Skip (Dev) tapped — calling mockNativePurchase");
+              await mockNativePurchase();
+            }}
+          >
+            <Text style={styles.devSkipText}>Skip (Dev)</Text>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
 
       {/* ── Web mock dialog ── */}
@@ -888,6 +902,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
+  },
+
+  // ── Dev skip button ──
+  devSkipButton: {
+    position: "absolute",
+    right: 16,
+    zIndex: 50,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  devSkipText: {
+    fontSize: 12,
+    color: "#1C1917",
+    fontWeight: "600",
   },
 
   // ── Web mock dialog ──
