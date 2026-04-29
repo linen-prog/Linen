@@ -22,7 +22,8 @@
         "NSCameraUsageDescription": "Linen needs access to your camera to let you take a profile picture.",
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "Linen may use your approximate location only if needed to support app features that depend on your device settings. Your location is not used for tracking."
       },
       "entitlements": {
         "aps-environment": "production",
