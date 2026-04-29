@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { setPaywallDismissed } from "@/utils/paywallSkipFlag";
 import {
   View,
   Text,
@@ -45,9 +44,6 @@ const C = {
   sage: "#7C9E87",
   sageMuted: "#EBF2ED",
   border: "rgba(28,25,23,0.07)",
-  // kept for subscribed/loading screens
-  closeBg: "#E8E4DC",
-  closeText: "#555555",
 };
 
 // ─── AnimatedPressable ────────────────────────────────────────────────────────
@@ -116,16 +112,16 @@ function FadeInView({ children }: { children: React.ReactNode }) {
   return <Animated.View style={{ opacity }}>{children}</Animated.View>;
 }
 
-// ─── CloseButton ─────────────────────────────────────────────────────────────
-function CloseButton({ onPress, topInset }: { onPress: () => void; topInset: number }) {
+// ─── BackButton ───────────────────────────────────────────────────────────────
+function BackButton({ onPress, topInset }: { onPress: () => void; topInset: number }) {
   return (
     <TouchableOpacity
-      style={[styles.closeButton, { top: Math.max(topInset + 8, 52) }]}
+      style={[styles.backButton, { top: Math.max(topInset + 8, 52) }]}
       onPress={onPress}
       activeOpacity={0.85}
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
     >
-      <Text style={styles.closeButtonText}>✕</Text>
+      <Text style={styles.backButtonText}>←</Text>
     </TouchableOpacity>
   );
 }
@@ -293,9 +289,8 @@ export default function PaywallScreen() {
   };
 
   const handleClose = () => {
-    console.log("[Paywall] Close tapped");
-    setPaywallDismissed(true);
-    router.replace("/");
+    console.log("[Paywall] Back tapped");
+    router.replace("/auth");
   };
 
   // ── Already subscribed ────────────────────────────────────────────────────
@@ -319,7 +314,7 @@ export default function PaywallScreen() {
               <Text style={styles.ctaButtonText}>Continue</Text>
             </AnimatedPressable>
           </View>
-          <CloseButton onPress={handleClose} topInset={insets.top} />
+          <BackButton onPress={handleClose} topInset={insets.top} />
         </SafeAreaView>
       </LinearGradient>
     );
@@ -339,7 +334,7 @@ export default function PaywallScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={C.sage} />
           </View>
-          <CloseButton onPress={handleClose} topInset={insets.top} />
+          <BackButton onPress={handleClose} topInset={insets.top} />
         </SafeAreaView>
       </LinearGradient>
     );
@@ -497,8 +492,8 @@ export default function PaywallScreen() {
           </FadeInView>
         </ScrollView>
 
-        {/* Close button rendered AFTER ScrollView so it sits on top */}
-        <CloseButton onPress={handleClose} topInset={insets.top} />
+        {/* Back button rendered AFTER ScrollView so it sits on top */}
+        <BackButton onPress={handleClose} topInset={insets.top} />
       </SafeAreaView>
 
       {/* ── Web mock dialog ── */}
@@ -594,22 +589,22 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // ── Close button ──
-  closeButton: {
+  // ── Back button ──
+  backButton: {
     position: "absolute",
-    right: 18,
+    left: 20,
     zIndex: 200,
     elevation: 200,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: C.closeBg,
+    backgroundColor: C.sageMuted,
     justifyContent: "center",
     alignItems: "center",
   },
-  closeButtonText: {
-    fontSize: 14,
-    color: C.closeText,
+  backButtonText: {
+    fontSize: 20,
+    color: C.textSecondary,
     fontWeight: "600",
   },
 
