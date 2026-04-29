@@ -46,8 +46,8 @@ export default function LandingScreen() {
   console.log('User viewing Landing/Orientation screen');
 
   const handleContinue = () => {
-    console.log('User tapped Begin Your Journey button - entering app as guest');
-    router.replace('/(tabs)');
+    console.log('User tapped Begin Your Journey button - navigating to sign in');
+    router.replace('/auth');
   };
 
   const titleText = 'Linen';

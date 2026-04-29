@@ -246,7 +246,7 @@ function SubscriptionRedirect() {
   useEffect(() => {
     if (loading || authLoading) return;
 
-    const isPublicScreen = pathname === '/auth' || pathname.startsWith('/onboarding') || pathname === '/' || pathname === '/index';
+    const isPublicScreen = pathname === '/auth' || pathname === '/' || pathname === '/index';
     if (isPublicScreen) return;
 
     if (!user) {
@@ -278,23 +278,18 @@ function SubscriptionRedirect() {
   useEffect(() => {
     if (loading || authLoading) return;
     if (!user) return;
-    if (pathname === '/auth' || pathname.startsWith('/onboarding') || pathname === '/paywall') return;
+    if (pathname === '/auth' || pathname === '/paywall') return;
 
-    isOnboardingComplete().then((done) => {
-      if (!done) {
-        console.log('[RootLayout] Onboarding incomplete — redirecting to /onboarding');
-        router.replace('/onboarding');
-        return;
-      }
+    isOnboardingComplete().then((_done) => {
       if (!isSubscribed) {
-        console.log('[RootLayout] Automatic paywall trigger — isSubscribed=false, source=SubscriptionContext, redirecting to /paywall');
+        console.log('[RootLayout] Automatic paywall trigger — isSubscribed=false, redirecting to /paywall');
         router.replace('/paywall');
       } else {
-        console.log('[RootLayout] Paywall suppressed — isSubscribed=true (live RevenueCat check passed)');
+        console.log('[RootLayout] Paywall suppressed — isSubscribed=true');
       }
     }).catch(() => {
       if (!isSubscribed) {
-        console.log('[RootLayout] Automatic paywall trigger (onboarding check failed) — isSubscribed=false, redirecting to /paywall');
+        console.log('[RootLayout] Automatic paywall trigger (onboarding check failed) — redirecting to /paywall');
         router.replace('/paywall');
       }
     });
