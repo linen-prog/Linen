@@ -503,6 +503,7 @@ export default function PaywallScreen() {
             onPress={async () => {
               console.log("[Paywall] Skip (Dev) tapped — calling mockNativePurchase");
               await mockNativePurchase();
+              router.replace('/(tabs)');
             }}
           >
             <Text style={styles.devSkipText}>Skip (Dev)</Text>
