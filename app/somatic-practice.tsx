@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -281,6 +281,7 @@ export default function SomaticPracticeScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
   const bgColor = isDark ? colors.backgroundDark : colors.background;
   const textColor = isDark ? colors.textDark : colors.text;
@@ -317,7 +318,7 @@ export default function SomaticPracticeScreen() {
 
   return (
     <GradientBackground>
-    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={[]}>
       <Stack.Screen 
         options={{
           headerShown: true,
@@ -432,7 +433,7 @@ export default function SomaticPracticeScreen() {
       </Modal>
       
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 56 + 16, paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -615,9 +616,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingTop: 16,
+    paddingBottom: 60,
     gap: spacing.lg,
-    paddingBottom: spacing.xxl,
   },
   header: {
     alignItems: 'center',
@@ -695,8 +696,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   stepText: {
-    fontSize: typography.h3,
-    lineHeight: 32,
+    fontSize: 17,
+    lineHeight: 26,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
