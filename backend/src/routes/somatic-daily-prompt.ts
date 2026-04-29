@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
@@ -41,7 +41,21 @@ export function registerSomaticDailyPromptRoutes(app: App) {
         },
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          themeTitle?: string;
+          themeDescription?: string;
+          liturgicalSeason?: string;
+          reflectionPrompt?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      // 1. Extract optional query params
+      const { themeTitle } = request.query;
+
+      // 2. Get authenticated user
       const session = await requireAuth(request, reply);
       if (!session) return;
 
@@ -49,27 +63,21 @@ export function registerSomaticDailyPromptRoutes(app: App) {
       app.logger.info({ userId }, 'Fetching daily somatic prompt');
 
       try {
-        // Step 1: Check cache for today's prompt
-        app.logger.debug({ userId }, 'Checking cache for todays somatic prompt');
+        // 3. Check cache by user_id and prompt_date = today
+        const today = new Date().toISOString().split('T')[0];
         const cachedPrompts = await app.db
-          .select({
-            id: schema.userSomaticPrompts.id,
-            userId: schema.userSomaticPrompts.userId,
-            promptText: schema.userSomaticPrompts.promptText,
-            category: schema.userSomaticPrompts.category,
-            generatedAt: schema.userSomaticPrompts.generatedAt,
-            promptDate: schema.userSomaticPrompts.promptDate,
-          })
+          .select()
           .from(schema.userSomaticPrompts)
-          .where(eq(schema.userSomaticPrompts.userId, userId))
+          .where(
+            and(
+              eq(schema.userSomaticPrompts.userId, userId),
+              eq(schema.userSomaticPrompts.promptDate, today)
+            )
+          )
           .limit(1);
 
         if (cachedPrompts.length > 0) {
           const cached = cachedPrompts[0];
-          app.logger.info(
-            { userId, category: cached.category },
-            'Returning cached somatic prompt'
-          );
           return reply.send({
             somatic_prompt: cached.promptText,
             category: cached.category,
@@ -77,91 +85,64 @@ export function registerSomaticDailyPromptRoutes(app: App) {
           });
         }
 
-        // Step 2: Look up user profile for personalization context
-        app.logger.debug({ userId }, 'Fetching user profile for personalization');
-        let companionTone = 'warm';
-        let companionSpiritualIntegration = 'moderate';
+        // 4. Build AI prompt string
+        let aiPrompt =
+          'Create a gentle, short somatic invitation for the user before they open today\'s gift. Keep it calm, warm, embodied, and supportive. Do not make it overly intense or clinical. Keep it to 1–3 short sentences.';
 
-        const profiles = await app.db
-          .select({
-            companionTone: schema.userProfiles.companionTone,
-            companionSpiritualIntegration: schema.userProfiles.companionSpiritualIntegration,
-          })
-          .from(schema.userProfiles)
-          .where(eq(schema.userProfiles.userId, userId))
-          .limit(1);
-
-        if (profiles.length > 0) {
-          companionTone = profiles[0].companionTone || 'warm';
-          companionSpiritualIntegration = profiles[0].companionSpiritualIntegration || 'moderate';
+        if (themeTitle) {
+          aiPrompt += `\nToday's theme is: ${themeTitle}.`;
         }
 
-        app.logger.debug(
-          { userId, companionTone, companionSpiritualIntegration },
-          'User personalization context retrieved'
-        );
+        // 5. Log before AI call
+        app.logger.debug({}, '[Somatic] Calling AI gateway...');
 
-        // Step 3: Build AI system prompt
-        const systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic body-awareness invitation — a brief, embodied practice (2-3 sentences) that invites the user to ground themselves in their body.
-
-Tone: ${companionTone}
-Spiritual integration level: ${companionSpiritualIntegration}
-
-Generate a short somatic grounding practice that feels authentic and grounded. Examples:
-- "Place both feet flat on the floor. Feel the ground holding you. Take one slow breath."
-- "Bring one hand to your chest. Notice what you feel there — warmth, movement, stillness. Stay for three breaths."
-- "Let your jaw unclench. Let your hands open. Feel what releases."
-
-Return ONLY the somatic invitation text. No title, no label, no explanation. Just the 2-3 sentence invitation.`;
-
-        // Step 4: Call AI to generate prompt
-        app.logger.debug({ userId }, 'Calling AI to generate somatic prompt');
+        // 6. Call AI to generate text
         const result = await generateText({
           model: gateway('google/gemini-3-pro'),
-          system: systemPrompt,
-          prompt: 'Generate the somatic invitation now.',
+          prompt: aiPrompt,
         });
 
-        const generatedPrompt = result.text.trim();
-        const category = 'grounding';
+        const generatedText = result.text.trim();
 
-        app.logger.debug({ userId, promptLength: generatedPrompt.length }, 'AI generated somatic prompt');
+        // 7. Log after AI call
+        app.logger.info({ aiResult: generatedText }, '[Somatic] AI result');
+        app.logger.info({ fallbackUsed: false }, '[Somatic] Fallback used: false');
 
-        // Step 5: Insert result into user_somatic_prompts table
-        app.logger.debug({ userId }, 'Inserting generated prompt into cache');
-        const today = new Date().toISOString().split('T')[0];
+        // 8. Save to cache
+        const promptDate = new Date().toISOString().split('T')[0];
         await app.db
           .insert(schema.userSomaticPrompts)
           .values({
             id: crypto.randomUUID(),
             userId,
-            promptText: generatedPrompt,
-            category,
+            promptText: generatedText,
+            category: 'grounding',
             generatedAt: new Date(),
-            promptDate: today,
+            promptDate,
           })
           .catch((error) => {
             app.logger.debug(
-              { userId, err: error },
-              'Prompt already cached for today (race condition), continuing'
+              { err: error },
+              'Race condition: prompt already cached for today'
             );
           });
 
-        app.logger.info({ userId, category }, 'Somatic prompt generated and cached');
-
-        // Step 6: Return success response
+        // 9. Return success response
         return reply.send({
-          somatic_prompt: generatedPrompt,
-          category,
+          somatic_prompt: generatedText,
+          category: 'grounding',
           cached: false,
         });
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        app.logger.error({ err: error, userId: session.user.id }, 'Failed to generate somatic prompt');
+        // 10. Catch error and log
+        const err = error instanceof Error ? error : new Error(String(error));
+        app.logger.error({ error: err.message }, '[Somatic] Error');
+        app.logger.info({ fallbackUsed: true }, '[Somatic] Fallback used: true');
 
-        // Step 4 (fallback): Return debug fallback on error
+        // Return fallback prompt
         return reply.send({
-          somatic_prompt: '[DEBUG] AI failed — fallback triggered',
+          somatic_prompt:
+            'Take a slow breath. Place one hand on your heart. Notice what you\'re carrying today, and let yourself be here.',
           category: 'grounding',
           cached: false,
         });
