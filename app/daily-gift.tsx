@@ -1770,42 +1770,44 @@ export default function DailyGiftScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.modalTitle, { color: textColor }]}>
-              {somaticPromptDisplay}
-            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {somaticPromptDisplay}
+              </Text>
 
-            {/* Timer Display */}
-            <View style={styles.modalTimerContainer}>
-              <Text style={[styles.modalTimerLabel, { color: textSecondaryColor }]}>
-                Time Remaining
-              </Text>
-              <Text style={[styles.modalTimerDisplay, { color: colors.primary }]}>
-                {timerDisplay}
-              </Text>
-            </View>
+              {/* Timer Display */}
+              <View style={styles.modalTimerContainer}>
+                <Text style={[styles.modalTimerLabel, { color: textSecondaryColor }]}>
+                  Time Remaining
+                </Text>
+                <Text style={[styles.modalTimerDisplay, { color: colors.primary }]}>
+                  {timerDisplay}
+                </Text>
+              </View>
 
-            <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
-              {"Take a moment to notice your body. There's no right or wrong way to do this."}
-            </Text>
+              <Text style={[styles.modalInstructions, { color: textSecondaryColor }]}>
+                {"Take a moment to notice your body. There's no right or wrong way to do this."}
+              </Text>
 
-            <View style={[styles.modalSteps, { backgroundColor: colors.background }]}>
-              <Text style={[styles.modalStepText, { color: textColor }]}>
-                • Find a comfortable position
-              </Text>
-              <Text style={[styles.modalStepText, { color: textColor }]}>
-                • Take a few gentle breaths
-              </Text>
-              <Text style={[styles.modalStepText, { color: textColor }]}>
-                • Notice what you notice
-              </Text>
-              <Text style={[styles.modalStepText, { color: textColor }]}>
-                • No need to change anything
-              </Text>
-            </View>
+              <View style={[styles.modalSteps, { backgroundColor: colors.background }]}>
+                <Text style={[styles.modalStepText, { color: textColor }]}>
+                  • Find a comfortable position
+                </Text>
+                <Text style={[styles.modalStepText, { color: textColor }]}>
+                  • Take a few gentle breaths
+                </Text>
+                <Text style={[styles.modalStepText, { color: textColor }]}>
+                  • Notice what you notice
+                </Text>
+                <Text style={[styles.modalStepText, { color: textColor }]}>
+                  • No need to change anything
+                </Text>
+              </View>
 
-            <Text style={[styles.modalNote, { color: textSecondaryColor }]}>
-              {"When you're ready, you can return to your reflection."}
-            </Text>
+              <Text style={[styles.modalNote, { color: textSecondaryColor }]}>
+                {"When you're ready, you can return to your reflection."}
+              </Text>
+            </ScrollView>
 
             <TouchableOpacity
               style={styles.modalButton}
@@ -2713,16 +2715,18 @@ const styles = StyleSheet.create({
   // Somatic Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   modalContent: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
+    borderRadius: 20,
+    padding: 24,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '80%',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -2739,11 +2743,11 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   modalTitle: {
-    fontSize: typography.h3,
-    fontWeight: typography.semibold,
+    fontSize: 17,
+    fontWeight: '500',
     textAlign: 'center',
-    marginBottom: spacing.lg,
-    lineHeight: 28,
+    marginBottom: 16,
+    lineHeight: 26,
   },
   modalTimerContainer: {
     alignItems: 'center',
