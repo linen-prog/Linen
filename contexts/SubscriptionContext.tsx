@@ -119,6 +119,8 @@ interface SubscriptionContextType {
   packages: PurchasesPackage[];
   /** Loading state during initialization */
   loading: boolean;
+  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+  testerBypassLoading: boolean;
   /** Whether offerings are currently being fetched */
   offeringsLoading: boolean;
   /** Whether running on web (purchases not available) */
@@ -159,6 +161,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
   const [testerBypass, setTesterBypassState] = useState(false);
+  const [testerBypassLoading, setTesterBypassLoading] = useState(true);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
     useState<PurchasesOffering | null>(null);
@@ -201,6 +204,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     let customerInfoListener: { remove: () => void } | null = null;
 
     const initRevenueCat = async () => {
+      // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+      const bypass = await getTesterBypass();
+      if (bypass) {
+        setTesterBypassState(true);
+        console.log('[Access] testerAccessGranted: true');
+        console.log('[Access] final hasAccess: true');
+      }
+      setTesterBypassLoading(false);
+
       try {
         // Web platform: SDK doesn't work, use REST API for basic info
         if (isWeb) {
@@ -278,13 +290,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
         // Check initial subscription status
         await checkSubscription();
-
-        // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-        const bypass = await getTesterBypass();
-        if (bypass) {
-          setTesterBypassState(true);
-          console.log('[SubscriptionContext] Tester bypass restored from storage');
-        }
       } catch (error) {
         console.error("[RevenueCat] Failed to initialize:", error);
       } finally {
@@ -509,9 +514,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
   const activateTesterBypass = async (): Promise<void> => {
+    console.log('[Paywall] Continue as Tester tapped');
     await setTesterBypassFlag();
     setTesterBypassState(true);
-    console.log('[SubscriptionContext] Tester bypass activated');
+    console.log('[Paywall] testerAccessGranted saved: true');
+    console.log('[Access] testerAccessGranted: true');
+    console.log('[Access] final hasAccess: true');
   };
 
   // Dev-only: simulate a purchase in standard Expo Go for testing subscription-gated features.
@@ -541,6 +549,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         mockNativePurchase,
         // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
         testerBypass,
+        testerBypassLoading,
         activateTesterBypass,
       }}
     >
