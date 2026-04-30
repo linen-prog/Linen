@@ -636,7 +636,7 @@ export default function ProfileScreen() {
 
   const handleDeleteAccount = () => {
     console.log('ProfileScreen: Delete account button pressed');
-    Linking.openURL('http://linen-app.com/delete-account');
+    Linking.openURL('https://linen-app.com/delete-account');
   };
 
   const confirmDeleteAccount = async () => {
