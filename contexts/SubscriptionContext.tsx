@@ -33,6 +33,8 @@ import * as SecureStore from "expo-secure-store";
 
 // Import auth hook for user syncing (validated at setup time)
 import { useAuth } from "./AuthContext";
+// TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+import { getTesterBypass, setTesterBypass as setTesterBypassFlag } from "@/utils/testerBypass";
 
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -133,6 +135,9 @@ interface SubscriptionContextType {
   mockWebPurchase: () => void;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
   mockNativePurchase: () => Promise<void>;
+  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+  testerBypass: boolean;
+  activateTesterBypass: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(
@@ -152,6 +157,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const authLoading = (auth?.loading ?? false) as boolean;
 
   const [isSubscribed, setIsSubscribed] = useState(false);
+  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+  const [testerBypass, setTesterBypassState] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
     useState<PurchasesOffering | null>(null);
@@ -271,6 +278,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
         // Check initial subscription status
         await checkSubscription();
+
+        // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+        const bypass = await getTesterBypass();
+        if (bypass) {
+          setTesterBypassState(true);
+          console.log('[SubscriptionContext] Tester bypass restored from storage');
+        }
       } catch (error) {
         console.error("[RevenueCat] Failed to initialize:", error);
       } finally {
@@ -493,6 +507,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setIsSubscribed(true);
   };
 
+  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+  const activateTesterBypass = async (): Promise<void> => {
+    await setTesterBypassFlag();
+    setTesterBypassState(true);
+    console.log('[SubscriptionContext] Tester bypass activated');
+  };
+
   // Dev-only: simulate a purchase in standard Expo Go for testing subscription-gated features.
   // NOTE: mockNativePurchase is NEVER called automatically — only when explicitly invoked by the user.
   const mockNativePurchase = async (): Promise<void> => {
@@ -518,6 +539,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         refreshSubscription,
         mockWebPurchase,
         mockNativePurchase,
+        // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+        testerBypass,
+        activateTesterBypass,
       }}
     >
       {children}

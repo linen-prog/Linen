@@ -6,7 +6,7 @@ import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { isPaywallDismissed } from "@/utils/paywallSkipFlag";
 
 export function useSubscriptionGuard() {
-  const { isSubscribed, loading } = useSubscription();
+  const { isSubscribed, loading, testerBypass } = useSubscription();
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -23,8 +23,10 @@ export function useSubscriptionGuard() {
     if (!user) return;
     // If the user already dismissed the paywall this session, do not re-open it.
     if (isPaywallDismissed()) return;
+    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+    if (testerBypass) return;
     if (!isSubscribed) {
       router.replace("/paywall");
     }
-  }, [isSubscribed, loading, onboardingDone, user, router]);
+  }, [isSubscribed, loading, onboardingDone, user, router, testerBypass]);
 }
