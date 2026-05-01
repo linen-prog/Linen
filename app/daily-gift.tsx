@@ -1686,7 +1686,7 @@ export default function DailyGiftScreen() {
             </View>
           )}
 
-          {/* Breathing Library — first 3 free, rest locked for non-premium */}
+          {/* Breathing Library */}
           <View style={styles.librarySection}>
             <Text style={[styles.librarySectionTitle, { color: textColor }]}>
               Breathing Library
@@ -1694,8 +1694,7 @@ export default function DailyGiftScreen() {
             <Text style={[styles.librarySectionSubtitle, { color: textSecondaryColor }]}>
               Guided breath practices for any moment
             </Text>
-            {BREATHING_TECHNIQUES.map((technique, index) => {
-              const isLocked = !isSubscribed && index >= 3;
+            {BREATHING_TECHNIQUES.map((technique) => {
               const techniqueTitle = technique.title;
               const techniqueDuration = technique.duration;
               return (
@@ -1704,61 +1703,46 @@ export default function DailyGiftScreen() {
                   style={[
                     styles.libraryItem,
                     { backgroundColor: cardBg },
-                    isLocked && styles.libraryItemLocked,
                   ]}
-                  activeOpacity={isLocked ? 0.6 : 0.8}
+                  activeOpacity={0.8}
                   onPress={() => {
-                    if (isLocked) {
-                      console.log('[DailyGift] User tapped locked practice:', technique.id);
-                      setShowLibraryUpgradePrompt(true);
-                    } else {
-                      console.log('[DailyGift] User tapped practice:', technique.id);
-                      router.push({
-                        pathname: '/somatic-practice',
-                        params: {
-                          exerciseId: technique.id,
-                          title: technique.title,
-                          description: technique.description,
-                          duration: technique.duration,
-                          instructions: JSON.stringify(technique.instructions),
-                        },
-                      });
-                    }
+                    console.log('[DailyGift] User tapped practice:', technique.id);
+                    router.push({
+                      pathname: '/somatic-practice',
+                      params: {
+                        exerciseId: technique.id,
+                        title: technique.title,
+                        description: technique.description,
+                        duration: technique.duration,
+                        instructions: JSON.stringify(technique.instructions),
+                      },
+                    });
                   }}
                 >
                   <View style={styles.libraryItemLeft}>
-                    <View style={[styles.libraryItemIcon, { backgroundColor: isLocked ? colors.border : colors.primaryLight }]}>
+                    <View style={[styles.libraryItemIcon, { backgroundColor: colors.primaryLight }]}>
                       <IconSymbol
-                        ios_icon_name={isLocked ? 'lock.fill' : 'wind'}
-                        android_material_icon_name={isLocked ? 'lock' : 'air'}
+                        ios_icon_name="wind"
+                        android_material_icon_name="air"
                         size={18}
-                        color={isLocked ? textSecondaryColor : colors.primary}
+                        color={colors.primary}
                       />
                     </View>
                     <View style={styles.libraryItemText}>
-                      <Text style={[styles.libraryItemTitle, { color: isLocked ? textSecondaryColor : textColor }]}>
+                      <Text style={[styles.libraryItemTitle, { color: textColor }]}>
                         {techniqueTitle}
                       </Text>
                       <Text style={[styles.libraryItemDuration, { color: textSecondaryColor }]}>
                         {techniqueDuration}
                       </Text>
-                      {isLocked && (
-                        <Text style={styles.premiumLabel}>
-                          Premium
-                        </Text>
-                      )}
                     </View>
                   </View>
-                  {isLocked ? (
-                    <Text style={styles.lockEmoji}>🔒</Text>
-                  ) : (
-                    <IconSymbol
-                      ios_icon_name="chevron.right"
-                      android_material_icon_name="chevron-right"
-                      size={16}
-                      color={textSecondaryColor}
-                    />
-                  )}
+                  <IconSymbol
+                    ios_icon_name="chevron.right"
+                    android_material_icon_name="chevron-right"
+                    size={16}
+                    color={textSecondaryColor}
+                  />
                 </TouchableOpacity>
               );
             })}
