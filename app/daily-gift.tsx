@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert, ActionSheetIOS, Platform, Image, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -507,32 +508,52 @@ export default function DailyGiftScreen() {
   ) => {
     try {
       setIsSomaticLoading(true);
+
+      // Build today's date-scoped cache key
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const cacheKey = `somatic_prompt_cache_${year}-${month}-${day}`;
+
+      // 1. Try local cache first
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { somatic_prompt: string; category: string };
+        if (parsed?.somatic_prompt) {
+          console.log('[Somatic] loaded saved somatic invitation from cache');
+          setAiSomaticPrompt(parsed.somatic_prompt);
+          setAiSomaticCategory(parsed.category);
+          setIsSomaticLoading(false);
+          return;
+        }
+      }
+
+      // 2. No cache — call the API
+      console.log('[Somatic] no cache found — generating new somatic invitation');
       const params = new URLSearchParams({
         themeTitle,
         themeDescription,
         liturgicalSeason,
         reflectionPrompt,
       });
-      console.log('[DailyGift] Loading somatic prompt from /api/somatic/daily-prompt');
       const result = await authenticatedGet<{ somatic_prompt: string; category: string; cached: boolean }>(
         `/api/somatic/daily-prompt?${params.toString()}`
       );
       console.log('[Somatic] API response body:', JSON.stringify(result));
-      console.log('[Somatic] cached:', result?.cached);
-      console.log('[Somatic] somatic_prompt:', result?.somatic_prompt);
-      console.log('[Somatic] category:', result?.category);
       if (result?.somatic_prompt) {
+        console.log('[Somatic] generated new somatic invitation');
+        await AsyncStorage.setItem(cacheKey, JSON.stringify({
+          somatic_prompt: result.somatic_prompt,
+          category: result.category,
+        }));
         setAiSomaticPrompt(result.somatic_prompt);
         setAiSomaticCategory(result.category);
-        console.log('[DailyGift] Somatic prompt loaded:', {
-          cached: result.cached,
-          category: result.category,
-          prompt: result.somatic_prompt,
-        });
       }
     } catch (error) {
+      console.log('[Somatic] backend/database error — keeping existing invitation if available');
       console.log('[Somatic] fetch error:', error instanceof Error ? error.message : String(error));
-      // Silently ignore — static somaticPrompt from dailyContent is already shown
+      // Do NOT reset aiSomaticPrompt — leave whatever was already in state
     } finally {
       setIsSomaticLoading(false);
     }
@@ -1118,6 +1139,13 @@ export default function DailyGiftScreen() {
   // Prefer AI-generated prompt; fall back to static daily_content.somaticPrompt
   const somaticPromptDisplay = aiSomaticPrompt || dailyContent.somaticPrompt || '';
   const hasSomaticPrompt = !!(aiSomaticPrompt || dailyContent.somaticPrompt);
+
+  // Log when falling back to daily_content somatic prompt (no AI-generated one available)
+  useMemo(() => {
+    if (!aiSomaticPrompt && dailyContent.somaticPrompt) {
+      console.log('[Somatic] using daily_content fallback (no saved or generated invitation)');
+    }
+  }, [aiSomaticPrompt, dailyContent.somaticPrompt]);
   const tryButtonText = 'Begin';
 
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
