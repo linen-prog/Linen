@@ -166,13 +166,22 @@ export default function WeeklyRecapDetailScreen() {
   const { weekStartDate } = useLocalSearchParams<{ weekStartDate: string }>();
   const router = useRouter();
   const { isDark } = useTheme();
-  const { isSubscribed, loading: subLoading } = useSubscription();
+  const { isSubscribed, loading: subLoading, testerBypass } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState<WeeklyRecap | null>(null);
 
   useEffect(() => {
     if (subLoading) return;
-    if (!isSubscribed) {
+    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+    const hasAppAccess = isSubscribed || testerBypass;
+    console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
+      screenName: 'WeeklyRecapDetail',
+      isSubscribed,
+      testerBypass,
+      hasAppAccess,
+      redirectingToPaywall: !hasAppAccess,
+    });
+    if (!hasAppAccess) {
       console.log('[WeeklyRecapDetail] User not subscribed — redirecting to paywall');
       router.replace('/paywall');
       return;
@@ -180,7 +189,7 @@ export default function WeeklyRecapDetailScreen() {
     if (weekStartDate) {
       loadRecap();
     }
-  }, [weekStartDate, isSubscribed, subLoading, router]);
+  }, [weekStartDate, isSubscribed, subLoading, testerBypass, router]);
 
   const loadRecap = async () => {
     console.log('Loading recap for week:', weekStartDate);

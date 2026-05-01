@@ -238,7 +238,7 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
  */
 
 function SubscriptionRedirect() {
-  const { isSubscribed, loading, checkSubscription } = useSubscription();
+  const { isSubscribed, loading, checkSubscription, testerBypass, testerBypassLoading } = useSubscription();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -282,21 +282,31 @@ function SubscriptionRedirect() {
     if (!user) return;
     if (pathname === '/auth' || pathname === '/paywall' || pathname === '/') return;
 
+    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+    if (testerBypassLoading) return;
+    const hasAppAccess = isSubscribed || testerBypass;
+    console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
+      screenName: 'RootLayout/SubscriptionRedirect',
+      isSubscribed,
+      testerBypass,
+      hasAppAccess,
+      redirectingToPaywall: !hasAppAccess,
+    });
     isOnboardingComplete().then((_done) => {
-      if (!isSubscribed) {
-        console.log('[RootLayout] Automatic paywall trigger — isSubscribed=false, redirecting to /paywall');
+      if (!hasAppAccess) {
+        console.log('[RootLayout] Automatic paywall trigger — hasAppAccess=false, redirecting to /paywall');
         router.replace('/paywall');
       } else {
-        console.log('[RootLayout] Paywall suppressed — isSubscribed=true');
+        console.log('[RootLayout] Paywall suppressed — hasAppAccess=true');
       }
     }).catch(() => {
-      if (!isSubscribed) {
+      if (!hasAppAccess) {
         console.log('[RootLayout] Automatic paywall trigger (onboarding check failed) — redirecting to /paywall');
         router.replace('/paywall');
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSubscribed, loading, authLoading, user, pathname]);
+  }, [isSubscribed, loading, authLoading, user, pathname, testerBypass, testerBypassLoading]);
 
   return null;
 }

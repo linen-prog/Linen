@@ -75,16 +75,25 @@ export default function CommunityScreen() {
 
   const router = useRouter();
   const { user } = useAuth();
-  const { isSubscribed, loading: subLoading } = useSubscription();
+  const { isSubscribed, loading: subLoading, testerBypass } = useSubscription();
   const [selectedTab, setSelectedTab] = useState('feed');
 
   useEffect(() => {
     if (subLoading) return;
-    if (!isSubscribed) {
+    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+    const hasAppAccess = isSubscribed || testerBypass;
+    console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
+      screenName: 'Community',
+      isSubscribed,
+      testerBypass,
+      hasAppAccess,
+      redirectingToPaywall: !hasAppAccess,
+    });
+    if (!hasAppAccess) {
       console.log('[Community] User not subscribed — redirecting to paywall');
       router.replace('/paywall');
     }
-  }, [isSubscribed, subLoading, router]);
+  }, [isSubscribed, subLoading, testerBypass, router]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<CommunityStats>({ sharedToday: 0, liftedInPrayer: 0 });
