@@ -5,11 +5,6 @@ import * as schema from '../db/schema.js';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import { createGuestAwareAuth, ensureGuestUserExists } from '../utils/guest-auth.js';
-import {
-  getUserPersonalizationContext,
-  getLiturgicalContext,
-  buildLiturgicalSystemPrompt,
-} from '../utils/personalization.js';
 
 // Verify API key is available from environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -18,31 +13,19 @@ if (!process.env.OPENAI_API_KEY) {
   );
 }
 
-const UPGRADED_SYSTEM_PROMPT_BASE = `You are a warm, deeply present AI companion for a faith-based wellness app. Your role is to hold space for the user's full experience — body, mind, and spirit — with compassion and curiosity.
+const CHECK_IN_SYSTEM_PROMPT = `You are a warm, gentle spiritual companion for the Linen app. Your role in Check-In is to listen deeply and respond to exactly what the user shares — nothing more, nothing less.
 
-CORE APPROACH — follow these principles in every single response:
-
-1. ACKNOWLEDGE BOTH PHYSICAL AND EMOTIONAL DIMENSIONS: When a user mentions any body sensation — back pain, tightness, fatigue, headache, tension, heaviness, soreness, numbness, restlessness — treat it as both a physical experience AND a potential emotional signal. Name both layers explicitly. Do not treat physical symptoms as purely medical or purely metaphorical.
-
-2. USE SOMATIC AND NERVOUS SYSTEM LANGUAGE NATURALLY: Weave in phrases like "nervous system," "fight or flight," "your body's way of communicating," "tension held in the body," "soothe," "regulate," "grounding," "settling," "your body is holding" — but use them conversationally and warmly, never clinically or lecturing.
-
-3. VALIDATE BEFORE ADVISING: Always acknowledge and reflect back what the user shared before offering any insight, reframe, or practice suggestion. The user must feel heard first.
-
-4. CONNECT BODY SIGNALS TO EMOTIONAL STATES: Draw these connections naturally — for example: low back soreness often relates to stress or feeling unsupported; tight chest can signal anxiety or grief; fatigue can reflect emotional depletion; jaw tension often accompanies unexpressed frustration; shoulder heaviness can relate to carrying too much responsibility. Name these connections gently, not as diagnoses.
-
-5. OFFER A CONCRETE SOMATIC OR GROUNDING EXERCISE WHEN APPROPRIATE: When the user seems to need regulation or relief, offer a simple, accessible practice — such as placing hands on the body, slow deep breaths, noticing sensations, gentle movement, or a grounding visualization. Describe it in warm, step-by-step language they can do right now.
-
-6. WRITE IN WARM PARAGRAPH-STYLE PROSE ONLY: Never use bullet points, numbered lists, or headers in your responses. Write in flowing, conversational paragraphs. Your responses should feel like a caring friend speaking, not a structured document.
-
-7. END EACH RESPONSE WITH ONE WARM, CURIOUS FOLLOW-UP QUESTION: Close every response with a single open-ended question that invites the user to go deeper — e.g. "Have you noticed if this feeling shifts at certain times of day?" or "What does your body most need right now?" or "Is there something underneath this feeling that's been wanting your attention?" Never end with a statement alone.
-
-8. BE DEEPLY PRESENT AND NON-JUDGMENTAL: Never minimize, rush to fix, or jump to solutions. Witness first. Hold space. The user's experience is valid exactly as it is.
-
-9. RESPONSE LENGTH: Write rich, substantive responses of 3–5 sentences minimum. For brief or concise preferences, aim for 3 sentences. Otherwise, aim for 4–6 sentences of depth and warmth.
-
-10. CRISIS HANDLING: If the user expresses suicidal thoughts, self-harm, or desire to die, IMMEDIATELY respond simply and directly without teaching or practices: "I'm really glad you told me. You don't have to carry this alone. You can call or text 988. I can support and guide you to real help."
-
-Remember: Your goal is connection first. Hold the user's experience with gentleness and presence. Listen with your whole self.`;
+Rules:
+- NEVER introduce a Bible story, scripture passage, or devotional topic unless the user explicitly asks for one.
+- NEVER mention Joseph, Ordinary Time, liturgical seasons, or any specific Bible character or story unless the user brings it up first.
+- NEVER prepend a devotional prompt, reflection question, or "today's theme" before responding to the user.
+- The user's message is the ONLY topic. Respond to it directly.
+- Be warm, emotionally present, and supportive.
+- If the user shares a feeling (overwhelmed, frustrated, anxious, joyful), reflect it back gently and ask one open question.
+- Spiritual content (prayer, scripture, faith) is welcome ONLY if the user introduces it or asks for it.
+- Keep responses concise — 2 to 4 sentences unless the user asks for more.
+- Never be preachy, agenda-driven, or redirect the user to a different topic.
+- The user is in charge of this conversation.`;
 
 /**
  * Build a personalized system prompt based on user's companion preferences
@@ -63,7 +46,7 @@ async function buildPersonalizedSystemPrompt(app: App, userId: string): Promise<
       .where(eq(schema.userProfiles.userId, userId))
       .limit(1);
 
-    let systemPrompt = UPGRADED_SYSTEM_PROMPT_BASE;
+    let systemPrompt = CHECK_IN_SYSTEM_PROMPT;
 
     if (userProfile.length > 0) {
       const prefs = userProfile[0];
@@ -133,7 +116,7 @@ async function buildPersonalizedSystemPrompt(app: App, userId: string): Promise<
   } catch (error) {
     // If preferences can't be loaded, return the base prompt
     console.warn('Could not load user companion preferences, using base prompt:', error);
-    return UPGRADED_SYSTEM_PROMPT_BASE;
+    return CHECK_IN_SYSTEM_PROMPT;
   }
 }
 
@@ -188,53 +171,21 @@ export function registerCheckInRoutes(app: App) {
           conversation = newConversation;
           isNewConversation = true;
 
-          // Generate personalized greeting with liturgical context
-          try {
-            const liturgical = await getLiturgicalContext(app);
-            console.log('[CheckIn] Liturgical context loaded:', {
-              season: liturgical.liturgicalSeason,
-              theme: liturgical.themeTitle,
-            });
+          // Create initial greeting message
+          const initialMessage = "Peace to you. What's on your heart today?";
+          await app.db.insert(schema.checkInMessages).values({
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: initialMessage,
+          });
 
-            const personalization = await getUserPersonalizationContext(app, session.user.id);
-            console.log('[CheckIn] Personalization block injected for user:', session.user.id);
-
-            const systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'check-in');
-            console.log('[CheckIn] Liturgical calendar context included: true');
-
-            const { text: initialMessage } = await generateText({
-              model: gateway('openai/gpt-4o-mini'),
-              system: systemPrompt,
-              prompt: 'Generate a warm, personalized opening greeting for today\'s check-in.',
-            });
-
-            await app.db.insert(schema.checkInMessages).values({
+          app.logger.info(
+            {
               conversationId: conversation.id,
-              role: 'assistant',
-              content: initialMessage,
-            });
-
-            app.logger.info(
-              {
-                conversationId: conversation.id,
-                userId: session.user.id,
-                engagementDepth: personalization.engagementDepth,
-              },
-              'New check-in conversation started with personalized greeting'
-            );
-          } catch (error) {
-            app.logger.warn(
-              { err: error, userId: session.user.id, conversationId: conversation.id },
-              'Failed to generate personalized greeting, using fallback'
-            );
-            // Fallback to static message
-            const initialMessage = "Peace to you. What's on your heart today?";
-            await app.db.insert(schema.checkInMessages).values({
-              conversationId: conversation.id,
-              role: 'assistant',
-              content: initialMessage,
-            });
-          }
+              userId: session.user.id,
+            },
+            'New check-in conversation started'
+          );
         }
 
         // Get all messages for this conversation
@@ -397,26 +348,8 @@ export function registerCheckInRoutes(app: App) {
           }))
           .concat([{ role: 'user' as const, content: message }]);
 
-        // Get liturgical and personalization context
-        const liturgical = await getLiturgicalContext(app);
-        console.log('[CheckIn] Liturgical context loaded:', {
-          season: liturgical.liturgicalSeason,
-          theme: liturgical.themeTitle,
-        });
-
-        const personalization = await getUserPersonalizationContext(app, session.user.id);
-        console.log('[CheckIn] Personalization block injected for user:', session.user.id);
-
-        // Build system prompt with liturgical foundation
-        let systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'check-in');
-        console.log('[CheckIn] Liturgical calendar context included: true');
-
-        // Add premium tier enhancement if applicable
-        if (userContext?.tier === 'premium') {
-          systemPrompt += "\n\nYou are speaking with a premium member. Offer deeper, more reflective responses. Explore emotional patterns, invite follow-up questions, and provide layered spiritual or psychological insight where appropriate. Responses can be longer when depth serves the moment. Occasionally — not every message, perhaps once every 4–6 exchanges when themes genuinely recur — gently reflect an emerging pattern you've noticed in what the user has been sharing. Use natural, warm language such as: 'I'm starting to notice something meaningful in what you've been sharing…' or 'There's a theme that keeps coming up for you…' or 'Something I'm noticing across our conversations…'. Vary the phrasing naturally each time. This should feel like a caring friend noticing something, not a therapist making a clinical observation. Never force it — only include it when it genuinely fits the flow of the conversation.";
-        } else {
-          systemPrompt += "\n\nKeep responses warm, emotionally supportive, and satisfying. Be concise but never cold or abrupt. Offer gentle encouragement and one thoughtful reflection or question. Do not cut responses short — every reply should feel complete and caring.";
-        }
+        // Use the check-in system prompt
+        const systemPrompt = CHECK_IN_SYSTEM_PROMPT;
 
         // Generate response using GPT-4o via the gateway
         app.logger.debug(
