@@ -1168,12 +1168,6 @@ export default function DailyGiftScreen() {
   const somaticPromptDisplay = aiSomaticPrompt || dailyContent.somaticPrompt || '';
   const hasSomaticPrompt = !!(aiSomaticPrompt || dailyContent.somaticPrompt);
 
-  // Log when falling back to daily_content somatic prompt (no AI-generated one available)
-  useMemo(() => {
-    if (!aiSomaticPrompt && dailyContent.somaticPrompt) {
-      console.log('[Somatic] using daily_content fallback (no saved or generated invitation)');
-    }
-  }, [aiSomaticPrompt, dailyContent.somaticPrompt]);
   const tryButtonText = 'Begin';
 
   const dayTitles = ['Rest', 'Beginnings', 'Presence', 'Gratitude', 'Compassion', 'Joy', 'Sabbath'];
