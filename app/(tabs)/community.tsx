@@ -892,7 +892,7 @@ export default function CommunityScreen() {
                   Loading messages...
                 </Text>
               </View>
-            ) : careMessages.length === 0 ? (
+            ) : careMessages.length === 0 && posts.length === 0 ? (
               <View style={styles.emptyState}>
                 <IconSymbol
                   ios_icon_name="heart"
