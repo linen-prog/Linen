@@ -1762,20 +1762,7 @@ export default function DailyGiftScreen() {
                 </TouchableOpacity>
               );
             })}
-            {!isSubscribed && (
-              <TouchableOpacity
-                style={styles.libraryUpgradeBanner}
-                onPress={() => {
-                  console.log('[DailyGift] User tapped library upgrade banner');
-                  setShowLibraryUpgradePrompt(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.libraryUpgradeBannerText}>
-                  Unlock all practices with Premium
-                </Text>
-              </TouchableOpacity>
-            )}
+
           </View>
         </ScrollView>
       )}
