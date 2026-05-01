@@ -11,6 +11,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
@@ -1103,13 +1104,22 @@ export default function DailyGiftScreen() {
     );
   }
 
-  const dailyContent = dailyGiftResponse.dailyContent;
+  const dailyContent = dailyGiftResponse.dailyContent ?? {
+    id: 'fallback',
+    dayOfWeek: 0,
+    dayTitle: 'Reflection',
+    scriptureReference: 'Psalm 46:10',
+    scriptureText: 'Be still, and know that I am God.',
+    reflectionQuestion: 'What is one thing you can release to God today?',
+    somaticPrompt: 'Take three slow breaths. Notice where your body holds tension.',
+    dayOfYear: 1,
+  };
 
   console.log('[DailyGift] Render start — dailyContent fields:', {
-    hasScriptureText: !!dailyContent.scriptureText,
-    hasScriptureReference: !!dailyContent.scriptureReference,
-    hasReflectionQuestion: !!dailyContent.reflectionQuestion,
-    hasSomaticPrompt: !!dailyContent.somaticPrompt,
+    hasScriptureText: !!dailyContent?.scriptureText,
+    hasScriptureReference: !!dailyContent?.scriptureReference,
+    hasReflectionQuestion: !!dailyContent?.reflectionQuestion,
+    hasSomaticPrompt: !!dailyContent?.somaticPrompt,
   });
 
   const scriptureDisplay = dailyContent.scriptureText ?? '';
@@ -1117,11 +1127,21 @@ export default function DailyGiftScreen() {
   const reflectionPromptDisplay = dailyContent.reflectionQuestion ?? '';
   const saveButtonText = isLoading ? 'Holding...' : 'Hold this';
 
-  const liturgicalSeasonDisplay = (dailyGiftResponse.weeklyTheme?.liturgicalSeason ?? '').toUpperCase();
-  const themeTitleDisplay = dailyGiftResponse.weeklyTheme.themeTitle;
-  const themeDescriptionDisplay = dailyGiftResponse.weeklyTheme.themeDescription;
-  
-  const somaticExercise = dailyGiftResponse.weeklyTheme.somaticExercise;
+  const weeklyTheme = dailyGiftResponse.weeklyTheme ?? {
+    id: 'fallback',
+    weekStartDate: new Date().toISOString(),
+    liturgicalSeason: 'Ordinary Time',
+    themeTitle: 'Rest',
+    themeDescription: 'A space to breathe and be present.',
+    featuredExerciseId: null,
+    reflectionPrompt: null,
+    somaticExercise: null,
+  };
+  const liturgicalSeasonDisplay = (weeklyTheme.liturgicalSeason ?? '').toUpperCase();
+  const themeTitleDisplay = weeklyTheme.themeTitle ?? '';
+  const themeDescriptionDisplay = weeklyTheme.themeDescription ?? '';
+
+  const somaticExercise = weeklyTheme.somaticExercise;
   const hasSomaticExercise = somaticExercise !== null && somaticExercise !== undefined;
   const exerciseTitleDisplay = somaticExercise?.title || '';
   const exerciseDescriptionDisplay = somaticExercise?.description || '';
@@ -1168,6 +1188,7 @@ export default function DailyGiftScreen() {
   const timerSeconds = somaticTimeRemaining % 60;
   const timerDisplay = `${timerMinutes}:${timerSeconds.toString().padStart(2, '0')}`;
 
+  const scripturePreview = (scriptureDisplay || '').substring(0, 50) + '...';
   console.log('[DailyGift] Displaying content:', {
     date: todayDateDisplay,
     clientDayOfYear: dayOfYear,
@@ -1175,11 +1196,12 @@ export default function DailyGiftScreen() {
     displayedDayOfYear: dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear,
     dayTitle: dayTitleDisplay,
     scriptureRef: referenceDisplay,
-    scripturePreview: (scriptureDisplay || '').substring(0, 50) + '...',
+    scripturePreview,
     somaticExercise: exerciseTitleDisplay,
   });
 
   return (
+    <ErrorBoundary>
     <GradientBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
         <Stack.Screen 
@@ -1995,6 +2017,7 @@ export default function DailyGiftScreen() {
       />
     </SafeAreaView>
     </GradientBackground>
+    </ErrorBoundary>
   );
 }
 
