@@ -982,15 +982,24 @@ export default function WeeklyRecapScreen() {
   const [generating, setGenerating] = useState(false);
   const router = useRouter();
   const { isDark } = useTheme();
-  const { isSubscribed, loading: subLoading } = useSubscription();
+  const { isSubscribed, loading: subLoading, testerBypass, testerBypassLoading } = useSubscription();
 
   useEffect(() => {
-    if (subLoading) return;
-    if (!isSubscribed) {
-      console.log('[WeeklyRecap] User not subscribed — redirecting to paywall');
+    if (subLoading || testerBypassLoading) return;
+    const hasAppAccess = isSubscribed || testerBypass;
+    console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
+      screenName: 'WeeklyRecap',
+      isSubscribed,
+      testerBypass,
+      testerBypassLoading,
+      subLoading,
+      hasAppAccess,
+      redirectingToPaywall: !hasAppAccess,
+    });
+    if (!hasAppAccess) {
       router.replace('/paywall');
     }
-  }, [isSubscribed, subLoading, router]);
+  }, [isSubscribed, subLoading, testerBypass, testerBypassLoading, router]);
 
   const cardBg = isDark ? colors.cardDark : 'rgba(255, 255, 255, 0.55)';
   const textColor = isDark ? colors.textDark : colors.text;
