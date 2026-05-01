@@ -1104,9 +1104,17 @@ export default function DailyGiftScreen() {
   }
 
   const dailyContent = dailyGiftResponse.dailyContent;
-  const scriptureDisplay = dailyContent.scriptureText;
-  const referenceDisplay = dailyContent.scriptureReference;
-  const reflectionPromptDisplay = dailyContent.reflectionQuestion;
+
+  console.log('[DailyGift] Render start — dailyContent fields:', {
+    hasScriptureText: !!dailyContent.scriptureText,
+    hasScriptureReference: !!dailyContent.scriptureReference,
+    hasReflectionQuestion: !!dailyContent.reflectionQuestion,
+    hasSomaticPrompt: !!dailyContent.somaticPrompt,
+  });
+
+  const scriptureDisplay = dailyContent.scriptureText ?? '';
+  const referenceDisplay = dailyContent.scriptureReference ?? '';
+  const reflectionPromptDisplay = dailyContent.reflectionQuestion ?? '';
   const saveButtonText = isLoading ? 'Holding...' : 'Hold this';
 
   const liturgicalSeasonDisplay = (dailyGiftResponse.weeklyTheme?.liturgicalSeason ?? '').toUpperCase();
@@ -1167,7 +1175,7 @@ export default function DailyGiftScreen() {
     displayedDayOfYear: dailyContent.dayOfYear !== undefined ? dailyContent.dayOfYear : dayOfYear,
     dayTitle: dayTitleDisplay,
     scriptureRef: referenceDisplay,
-    scripturePreview: scriptureDisplay.substring(0, 50) + '...',
+    scripturePreview: (scriptureDisplay || '').substring(0, 50) + '...',
     somaticExercise: exerciseTitleDisplay,
   });
 
