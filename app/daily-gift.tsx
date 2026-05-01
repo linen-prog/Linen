@@ -14,7 +14,7 @@ import { authenticatedGet, getAuthToken, BACKEND_URL } from '@/utils/api';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
-import { BREATHING_TECHNIQUES } from './somatic-practice';
+import { BREATHING_TECHNIQUES } from '@/constants/breathingTechniques';
 
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
