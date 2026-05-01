@@ -17,7 +17,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: isDark ? colors.textSecondaryDark : colors.textSecondary,
-        tabBarStyle: {
+        tabBarStyle: Platform.OS === 'android' ? { display: 'none' } : {
           backgroundColor: isDark ? colors.cardDark : colors.card,
           borderTopColor: isDark ? colors.borderDark : colors.border,
           borderTopWidth: 1,
