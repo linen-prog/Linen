@@ -1,6 +1,6 @@
 import type { App } from '../index.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, and, or, sql, gte, lte, desc } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 
 // Utility function to get current Monday (week start) in Pacific Time
@@ -1253,9 +1253,9 @@ export function registerWeeklyThemeRoutes(app: App) {
       app.logger.info({ providedDate }, 'Fetching current weekly theme');
 
       try {
-        // Validate and parse the date parameter if provided
-        let currentDayOfWeek: number;
-        let dayOfYear: number;
+        // Determine the date to use
+        let targetDate: Date;
+        let todayISODate: string;
 
         if (providedDate) {
           // Validate date format (YYYY-MM-DD)
@@ -1264,256 +1264,141 @@ export function registerWeeklyThemeRoutes(app: App) {
             app.logger.warn({ providedDate }, 'Invalid date format provided');
             return reply.status(400).send({ error: 'Invalid date format. Use YYYY-MM-DD' });
           }
-
-          // Parse the provided date
-          currentDayOfWeek = getDayOfWeekFromDate(providedDate);
-          dayOfYear = getDayOfYearFromDate(providedDate);
-
-          app.logger.info(
-            { providedDate, dayOfWeek: currentDayOfWeek, dayOfYear },
-            'Using provided date for daily content'
-          );
+          const [year, month, day] = providedDate.split('-').map(Number);
+          targetDate = new Date(year, month - 1, day);
+          todayISODate = providedDate;
+          app.logger.info({ providedDate }, 'Using provided date');
         } else {
-          // Use current Pacific Time (existing behavior)
-          const now = new Date();
-          const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-          currentDayOfWeek = pacificTime.getDay();
-          dayOfYear = getDayOfYear();
-
-          app.logger.info(
-            { dayOfWeek: currentDayOfWeek, dayOfYear },
-            'Using current Pacific Time for daily content'
-          );
+          targetDate = new Date();
+          todayISODate = targetDate.toISOString().split('T')[0];
+          app.logger.info({ todayISODate }, 'Using current date');
         }
 
-        // Get all themes ordered by weekStartDate
-        const allThemes = await app.db
+        // Calculate day of week (0=Sunday, 6=Saturday) and day of year
+        const dayOfWeek = targetDate.getDay();
+        const startOfYear = new Date(targetDate.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((targetDate.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+
+        app.logger.info({ todayISODate, dayOfWeek, dayOfYear }, 'Calculated date components');
+
+        // ===== WEEKLY THEME FALLBACK LOGIC =====
+
+        // Step 1: Try to get theme for current week (within 7 days)
+        const sevenDaysAgo = new Date(targetDate);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgoISO = sevenDaysAgo.toISOString().split('T')[0];
+
+        let weeklyTheme = await app.db
           .select()
           .from(schema.weeklyThemes)
-          .orderBy(schema.weeklyThemes.weekStartDate);
-
-        if (!allThemes.length) {
-          app.logger.error({}, 'No themes exist in database');
-          return reply.status(404).send({ error: 'No theme available' });
-        }
-
-        // Calculate which week (0-51) we're in
-        const currentWeekIndex = getCurrentWeekIndex();
-        app.logger.info({ currentWeekIndex, totalThemes: allThemes.length }, 'Calculated current week index');
-
-        // Get the theme at the current week index (with wraparound for 52-week cycle)
-        const themeIndex = currentWeekIndex % allThemes.length;
-        let theme = allThemes[themeIndex];
-
-        // Ensure the theme has a featuredExerciseId; if not, assign one randomly
-        if (!theme.featuredExerciseId) {
-          app.logger.warn({ themeId: theme.id, themeTitle: theme.themeTitle }, 'Theme missing featured exercise, assigning one');
-
-          const allExercises = await app.db
-            .select()
-            .from(schema.somaticExercises);
-
-          if (allExercises.length > 0) {
-            const randomExercise = allExercises[Math.floor(Math.random() * allExercises.length)];
-            theme = {
-              ...theme,
-              featuredExerciseId: randomExercise.id,
-            };
-
-            // Update the database with the assigned exercise
-            await app.db
-              .update(schema.weeklyThemes)
-              .set({ featuredExerciseId: randomExercise.id })
-              .where(eq(schema.weeklyThemes.id, theme.id));
-
-            app.logger.info({ themeId: theme.id, exerciseId: randomExercise.id }, 'Assigned random exercise to theme');
-          }
-        }
-
-        app.logger.info(
-          {
-            dateSource: providedDate ? 'provided' : 'current',
-            providedDate,
-            dayOfWeek: currentDayOfWeek,
-            dayOfYear,
-          },
-          'Date details for daily scripture calculation'
-        );
-
-        // ALWAYS generate daily content from the 365-day scripture cycle
-        // Do NOT use database content - the DAILY_SCRIPTURES_365 array is the source of truth
-        app.logger.info(
-          {
-            themeId: theme.id,
-            weekIndex: currentWeekIndex,
-            dayOfWeek: currentDayOfWeek,
-            dayOfYear,
-          },
-          'Generating daily content from 365-day scripture cycle'
-        );
-
-        const dayTitles = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const dayName = dayTitles[currentDayOfWeek];
-
-        // Get the unique scripture for this day of the year (0-364)
-        const dailyScripture = DAILY_SCRIPTURES_365[dayOfYear];
-
-        if (!dailyScripture) {
-          app.logger.error(
-            { dayOfYear, arrayLength: DAILY_SCRIPTURES_365.length },
-            'ERROR: Daily scripture not found for dayOfYear'
-          );
-          throw new Error(`Daily scripture not found for day ${dayOfYear}`);
-        }
-
-        // Get the somatic prompt for this day of year
-        const dailySomaticPrompt = DAILY_SOMATIC_PROMPTS_365[dayOfYear];
-
-        if (!dailySomaticPrompt) {
-          app.logger.error(
-            { dayOfYear, arrayLength: DAILY_SOMATIC_PROMPTS_365.length },
-            'ERROR: Daily somatic prompt not found for dayOfYear'
-          );
-          throw new Error(`Daily somatic prompt not found for day ${dayOfYear}`);
-        }
-
-        app.logger.info(
-          {
-            dayOfYear,
-            scriptureRef: dailyScripture.ref,
-            scriptureText: dailyScripture.text.substring(0, 100),
-            somaticPrompt: dailySomaticPrompt.substring(0, 50),
-          },
-          'Generated daily content from 365-day scripture cycle'
-        );
-
-        // Check if daily content already exists for this dayOfYear
-        app.logger.debug(
-          { dayOfYear },
-          'Checking for existing daily content with dayOfYear'
-        );
-
-        let dailyContent: any = null;
-        const existingContent = await app.db
-          .select()
-          .from(schema.dailyContent)
-          .where(eq(schema.dailyContent.dayOfYear, dayOfYear))
+          .where(
+            and(
+              gte(schema.weeklyThemes.weekStartDate, sevenDaysAgoISO),
+              lte(schema.weeklyThemes.weekStartDate, todayISODate)
+            )
+          )
+          .orderBy(desc(schema.weeklyThemes.weekStartDate))
           .limit(1);
 
-        if (existingContent.length > 0) {
-          // Use existing record
-          dailyContent = existingContent[0];
-          app.logger.info(
-            {
-              dayOfYear,
-              contentId: dailyContent.id,
-              weeklyThemeId: dailyContent.weeklyThemeId,
-            },
-            'Using existing daily content from database'
-          );
+        if (!weeklyTheme.length) {
+          // Step 2: Fall back to most recently created theme
+          app.logger.info({}, 'No theme in current week - trying most recent');
+          weeklyTheme = await app.db
+            .select()
+            .from(schema.weeklyThemes)
+            .orderBy(desc(schema.weeklyThemes.createdAt))
+            .limit(1);
+        }
+
+        let theme: any;
+        if (weeklyTheme.length > 0) {
+          theme = weeklyTheme[0];
+          app.logger.info({ themeId: theme.id, themeTitle: theme.themeTitle }, 'Using theme from database');
         } else {
-          // Create new daily content record in database
-          app.logger.info(
-            {
-              dayOfYear,
-              weeklyThemeId: theme.id,
-              scriptureRef: dailyScripture.ref,
-            },
-            'No existing daily content found - inserting new record'
-          );
+          // Step 3: Use hardcoded fallback
+          app.logger.warn({}, 'No themes in database - using hardcoded fallback');
+          theme = {
+            id: 'fallback',
+            weekStartDate: todayISODate,
+            liturgicalSeason: 'Ordinary Time',
+            themeTitle: 'Rest',
+            themeDescription: 'A space to breathe and be present.',
+            featuredExerciseId: null,
+            reflectionPrompt: null,
+            somaticExerciseId: null,
+          };
+        }
 
-          try {
-            // Insert with RETURNING and capture the result directly
-            const insertResult = await app.db
-              .insert(schema.dailyContent)
-              .values({
-                dayOfYear,
-                weeklyThemeId: theme.id,
-                dayOfWeek: currentDayOfWeek,
-                dayTitle: dayName,
-                scriptureReference: dailyScripture.ref,
-                scriptureText: dailyScripture.text,
-                reflectionPrompt: dailyScripture.prompt,
-                somaticPrompt: dailySomaticPrompt,
-              })
-              .returning();
+        // ===== DAILY CONTENT FALLBACK LOGIC =====
 
-            // Use the inserted row directly from RETURNING result
-            if (insertResult && insertResult.length > 0) {
-              dailyContent = insertResult[0];
-              app.logger.info(
-                {
-                  dayOfYear,
-                  contentId: dailyContent.id,
-                  weeklyThemeId: dailyContent.weeklyThemeId,
-                  scriptureRef: dailyScripture.ref,
-                  source: 'insert_returning',
-                },
-                'Daily content successfully persisted to database using INSERT...RETURNING'
-              );
-            } else {
-              throw new Error('INSERT...RETURNING returned empty result');
-            }
-          } catch (insertError) {
-            app.logger.error(
-              {
-                err: insertError,
-                dayOfYear,
-                themeId: theme.id,
-                errorMessage: insertError instanceof Error ? insertError.message : String(insertError),
-              },
-              'Failed to insert daily content - attempting fallback query'
-            );
+        let dailyContent: any = null;
 
-            // Fallback: try to fetch in case another process inserted it or recovery from race condition
-            const fallbackContent = await app.db
-              .select()
-              .from(schema.dailyContent)
-              .where(eq(schema.dailyContent.dayOfYear, dayOfYear))
-              .limit(1);
+        // Step 1: Try to get daily content for this theme and today's day of week
+        if (theme.id !== 'fallback') {
+          const step1 = await app.db
+            .select()
+            .from(schema.dailyContent)
+            .where(
+              and(
+                eq(schema.dailyContent.weeklyThemeId, theme.id),
+                eq(schema.dailyContent.dayOfWeek, dayOfWeek)
+              )
+            )
+            .limit(1);
 
-            if (fallbackContent.length > 0) {
-              dailyContent = fallbackContent[0];
-              app.logger.info(
-                {
-                  dayOfYear,
-                  contentId: dailyContent.id,
-                  source: 'fallback_query',
-                },
-                'Daily content found via fallback query after INSERT failed'
-              );
-            } else {
-              app.logger.error(
-                { dayOfYear },
-                'Critical: Daily content not found even after fallback query'
-              );
-              throw new Error(`Failed to get or create daily content for dayOfYear ${dayOfYear}`);
-            }
+          if (step1.length > 0) {
+            dailyContent = step1[0];
+            app.logger.info({ contentId: dailyContent.id }, 'Found daily content for theme and day of week');
           }
         }
 
-        // Verify dailyContent has a valid ID before proceeding
-        if (!dailyContent || !dailyContent.id) {
-          app.logger.error(
-            { dailyContent, dayOfYear },
-            'Critical: Daily content exists but has no valid ID'
-          );
-          throw new Error(`Daily content record missing ID for dayOfYear ${dayOfYear}`);
+        // Step 2: Try to get any daily content for this theme
+        if (!dailyContent && theme.id !== 'fallback') {
+          const step2 = await app.db
+            .select()
+            .from(schema.dailyContent)
+            .where(eq(schema.dailyContent.weeklyThemeId, theme.id))
+            .orderBy(schema.dailyContent.dayOfWeek)
+            .limit(1);
+
+          if (step2.length > 0) {
+            dailyContent = step2[0];
+            app.logger.info({ contentId: dailyContent.id }, 'Found daily content for theme (any day)');
+          }
         }
 
-        app.logger.debug(
-          {
-            dayOfYear: dailyContent.dayOfYear,
-            contentId: dailyContent.id,
-            weeklyThemeId: dailyContent.weeklyThemeId,
-            scriptureRef: dailyContent.scriptureReference,
-          },
-          'Daily content validation passed - ready to return'
-        );
+        // Step 3: Try to get any daily content from database
+        if (!dailyContent) {
+          const step3 = await app.db
+            .select()
+            .from(schema.dailyContent)
+            .orderBy(desc(schema.dailyContent.createdAt))
+            .limit(1);
+
+          if (step3.length > 0) {
+            dailyContent = step3[0];
+            app.logger.info({ contentId: dailyContent.id }, 'Found any daily content from database');
+          }
+        }
+
+        // Step 4: Use hardcoded fallback
+        if (!dailyContent) {
+          app.logger.warn({}, 'No daily content found - using hardcoded fallback');
+          dailyContent = {
+            id: 'fallback',
+            dayOfWeek: 0,
+            dayTitle: 'Reflection',
+            scriptureReference: 'Psalm 46:10',
+            scriptureText: 'Be still, and know that I am God.',
+            reflectionPrompt: 'What is one thing you can release to God today?',
+            somaticPrompt: 'Take three slow breaths. Notice where your body holds tension.',
+            dayOfYear: 1,
+          };
+        }
 
         // Get featured somatic exercise if exists
         let featuredExercise = null;
-        if (theme.featuredExerciseId) {
+        if (theme.featuredExerciseId && theme.id !== 'fallback') {
           const exerciseData = await app.db
             .select()
             .from(schema.somaticExercises)
@@ -1525,11 +1410,11 @@ export function registerWeeklyThemeRoutes(app: App) {
         }
 
         app.logger.info(
-          { themeId: theme.id, weekIndex: currentWeekIndex, dayOfWeek: currentDayOfWeek, weekStartDate: theme.weekStartDate },
-          'Current weekly theme retrieved'
+          { themeId: theme.id, contentId: dailyContent.id, dayOfWeek },
+          'Current weekly theme and daily content retrieved'
         );
 
-        // Format the response with all daily content fields
+        // Format the response
         const responseContent = {
           id: dailyContent.id,
           dayOfWeek: dailyContent.dayOfWeek,
@@ -1538,18 +1423,8 @@ export function registerWeeklyThemeRoutes(app: App) {
           scriptureText: dailyContent.scriptureText,
           reflectionQuestion: dailyContent.reflectionPrompt,
           somaticPrompt: dailyContent.somaticPrompt || null,
-          dayOfYear: dailyContent.dayOfYear, // Always include dayOfYear
+          dayOfYear: dailyContent.dayOfYear,
         };
-
-        app.logger.info(
-          {
-            dayOfYear: responseContent.dayOfYear,
-            contentId: responseContent.id,
-            scriptureRef: responseContent.scriptureReference,
-            themeId: theme.id,
-          },
-          'Returning weekly theme with persisted daily content'
-        );
 
         return reply.send({
           weeklyTheme: {
@@ -1574,8 +1449,28 @@ export function registerWeeklyThemeRoutes(app: App) {
           },
           'Failed to fetch current weekly theme'
         );
-        return reply.status(500).send({
-          error: 'Failed to fetch current weekly theme. Please try again later.',
+        // Return fallback instead of error
+        return reply.send({
+          weeklyTheme: {
+            id: 'fallback',
+            weekStartDate: new Date().toISOString().split('T')[0],
+            liturgicalSeason: 'Ordinary Time',
+            themeTitle: 'Rest',
+            themeDescription: 'A space to breathe and be present.',
+            featuredExerciseId: null,
+            reflectionPrompt: null,
+            somaticExercise: null,
+          },
+          dailyContent: {
+            id: 'fallback',
+            dayOfWeek: 0,
+            dayTitle: 'Reflection',
+            scriptureReference: 'Psalm 46:10',
+            scriptureText: 'Be still, and know that I am God.',
+            reflectionQuestion: 'What is one thing you can release to God today?',
+            somaticPrompt: 'Take three slow breaths. Notice where your body holds tension.',
+            dayOfYear: 1,
+          },
         });
       }
     }
