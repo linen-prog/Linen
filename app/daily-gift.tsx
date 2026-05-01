@@ -96,7 +96,7 @@ export default function DailyGiftScreen() {
   const timestamp = new Date().toISOString();
   console.log(`[DailyGift] ${timestamp} - Component rendered`);
   const router = useRouter();
-  const { isSubscribed, loading: subLoading } = useSubscription();
+  const { isSubscribed, loading: subLoading, testerBypass } = useSubscription();
 
   const [dailyGiftResponse, setDailyGiftResponse] = useState<DailyGiftResponse | null>(null);
   const [aiSomaticPrompt, setAiSomaticPrompt] = useState<string | null>(null);
@@ -552,7 +552,16 @@ export default function DailyGiftScreen() {
       return;
     }
 
-    if (!isSubscribed) {
+    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
+    const hasAppAccess = isSubscribed || testerBypass;
+    console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
+      screenName: 'DailyGift/handleOpenGift',
+      isSubscribed,
+      testerBypass,
+      hasAppAccess,
+      redirectingToPaywall: !hasAppAccess,
+    });
+    if (!hasAppAccess) {
       console.log('[DailyGift] User not subscribed — redirecting to paywall on gift open');
       router.replace('/paywall');
       return;
