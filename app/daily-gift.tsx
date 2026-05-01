@@ -2058,11 +2058,6 @@ function GlitterParticle({
 
   const animatedStyle = { transform: [{ translateX }, { translateY }, { scale }], opacity };
 
-
-    transform: [
-
-    ];
-
   return (
     <Animated.View
       style={[
