@@ -155,17 +155,38 @@ async function buildPersonalizedSystemPrompt(app: App, userId: string): Promise<
 
       // Add spiritual integration guidance
       if (prefs.companionSpiritualIntegration) {
-        if (prefs.companionSpiritualIntegration === 'none') {
+        const spiritualValue = prefs.companionSpiritualIntegration;
+
+        if (spiritualValue === 'none') {
           addendumLines.push(
-            'Spiritual integration: NONE — suppress ALL faith, prayer, and Scripture references entirely. No exceptions. This overrides everything.'
+            'Spiritual integration preference: companion_spiritual_integration = "none"\n\n- none: Suppress ALL faith and Scripture references entirely, with no exceptions. Do not mention God, prayer, Scripture, liturgy, or any faith language under any circumstances.'
           );
-        } else if (prefs.companionSpiritualIntegration === 'low') {
+        } else if (spiritualValue === 'low') {
           addendumLines.push(
-            'Spiritual integration: LOW — include faith only if the user explicitly brings it up first.'
+            'Spiritual integration preference: companion_spiritual_integration = "low"\n\n- low: Include faith only if the user explicitly brings it up first. If the user has not mentioned faith, God, prayer, or Scripture in this conversation, do not introduce it.'
           );
-        } else if (prefs.companionSpiritualIntegration === 'high') {
+        } else if (spiritualValue === 'high') {
           addendumLines.push(
-            'Spiritual integration: HIGH — faith and Scripture may be present more naturally, but must never lead the response.'
+            'Spiritual integration preference: companion_spiritual_integration = "high"\n\n- high: Faith and Scripture may be present more naturally, but still never lead with it. Let the emotional or somatic content come first; faith can follow organically.'
+          );
+        } else if (spiritualValue === 'integrated_when_appropriate') {
+          addendumLines.push(
+            `Spiritual integration preference: companion_spiritual_integration = "integrated_when_appropriate"
+
+- integrated_when_appropriate: Faith and Scripture should be gently incorporated when it genuinely supports the user's emotional or somatic experience. Scripture should never feel randomly inserted, preachy, forced, or disconnected from what the user shared.
+
+  The AI may include Scripture when:
+  - the user mentions God, faith, prayer, Scripture, feeling distant from God, needing peace, shame, fear, grief, overwhelm, or spiritual struggle
+  - the emotional moment would be genuinely supported by a short grounding verse
+  - the response can connect Scripture to the user's embodied experience in a gentle, relevant way
+
+  The AI must:
+  - include only one short verse or partial verse at a time
+  - introduce it softly, e.g. "A verse that comes to mind is…" or "This reminds me of…"
+  - briefly connect it to the body or emotional state
+  - never sermonize, teach, correct, or give long devotional explanations
+
+  Devotional themes (Joseph, Ordinary Time, liturgical seasons, Daily Gift, weekly themes) remain blocked unless the user explicitly asks for them.`
           );
         }
       }
