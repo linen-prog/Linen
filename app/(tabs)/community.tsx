@@ -26,17 +26,17 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { useRouter, Href } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import FloatingTabBar from '@/components/FloatingTabBar';
+import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 const TABS = [
   { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
   { name: 'community', route: '/(tabs)/community' as Href, icon: 'group' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
   { name: 'profile', route: '/(tabs)/profile' as Href, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
 ];
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface Post {
   id: string;
@@ -148,6 +148,7 @@ export default function CommunityScreen() {
     loadPosts(selectedTab);
     loadStats();
     loadBlockedUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTab, user]);
 
   // Reload posts every time the screen comes into focus (e.g. after sharing artwork)
@@ -156,6 +157,7 @@ export default function CommunityScreen() {
       console.log('[Community] Screen focused — refreshing posts for tab:', selectedTab);
       loadPosts(selectedTab);
       loadStats();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTab])
   );
 

@@ -1,5 +1,6 @@
 
 import React from 'react';
+// eslint-disable-next-line import/no-unresolved
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 
 export default function TabLayout() {

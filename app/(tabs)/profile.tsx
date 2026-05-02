@@ -6,12 +6,6 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter, Href } from 'expo-router';
 import FloatingTabBar from '@/components/FloatingTabBar';
-
-const TABS = [
-  { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
-  { name: 'community', route: '/(tabs)/community' as Href, icon: 'group' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
-  { name: 'profile', route: '/(tabs)/profile' as Href, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
-];
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -24,6 +18,12 @@ import {
   cancelDailyGiftReminderAsync,
 } from '@/lib/dailyGiftReminder';
 import { Calendar, ChevronRight } from 'lucide-react-native';
+
+const TABS = [
+  { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
+  { name: 'community', route: '/(tabs)/community' as Href, icon: 'group' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
+  { name: 'profile', route: '/(tabs)/profile' as Href, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
+];
 
 const STORAGE_KEY = 'daily_gift_reminder_settings';
 
