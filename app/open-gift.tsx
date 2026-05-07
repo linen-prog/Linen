@@ -10,6 +10,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import ChimePlayer from '@/components/ChimePlayer';
+import { trackGiftOpen, shouldShowReviewPrompt, markReviewPromptShown } from '@/utils/reviewPrompt';
+import ReviewPromptModal from '@/components/ReviewPromptModal';
 import ReanimatedAnimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -37,9 +39,20 @@ export default function OpenGiftScreen() {
   const router = useRouter();
   const [isOpening, setIsOpening] = useState(false);
   const [ritualPausing, setRitualPausing] = useState(false);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ritualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioPlayerRef = useRef<{ play: () => void } | null>(null);
+
+  const navigateToDailyGift = () => {
+    console.log('🎁 [OpenGift] Navigating to /daily-gift');
+    try {
+      router.replace('/daily-gift');
+    } catch (error) {
+      console.error('🎁 [OpenGift] Navigation error:', error);
+      router.push('/daily-gift');
+    }
+  };
 
   // Animated values — nativeDriver compatible (opacity + transform only)
   const glowOpacity = useRef(new Animated.Value(0)).current;
@@ -123,13 +136,18 @@ export default function OpenGiftScreen() {
       fadeOutGlow();
       setIsOpening(true);
 
-      navigationTimerRef.current = setTimeout(() => {
-        console.log('🎁 [OpenGift] Animation complete - navigating to /daily-gift');
-        try {
-          router.replace('/daily-gift');
-        } catch (error) {
-          console.error('🎁 [OpenGift] Navigation error:', error);
-          router.push('/daily-gift');
+      navigationTimerRef.current = setTimeout(async () => {
+        console.log('🎁 [OpenGift] Animation complete - tracking gift open');
+        await trackGiftOpen();
+        const shouldShow = await shouldShowReviewPrompt();
+        console.log('🎁 [OpenGift] shouldShowReviewPrompt:', shouldShow);
+        if (shouldShow) {
+          console.log('🎁 [OpenGift] Showing review prompt before navigating');
+          await markReviewPromptShown();
+          setShowReviewPrompt(true);
+          // Navigation happens via ReviewPromptModal onClose
+        } else {
+          navigateToDailyGift();
         }
       }, 1200);
     }, 1500);
@@ -259,6 +277,16 @@ export default function OpenGiftScreen() {
 
         <FloatingTabBar tabs={tabs} />
       </SafeAreaView>
+
+      {/* App Store review prompt — shown after gift animation completes */}
+      <ReviewPromptModal
+        visible={showReviewPrompt}
+        onClose={() => {
+          console.log('🎁 [OpenGift] ReviewPromptModal closed — navigating to /daily-gift');
+          setShowReviewPrompt(false);
+          navigateToDailyGift();
+        }}
+      />
     </GradientBackground>
   );
 }

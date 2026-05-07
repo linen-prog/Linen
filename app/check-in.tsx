@@ -11,6 +11,8 @@ import { GradientBackground } from '@/components/GradientBackground';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { recordAIMessage, recordPromptShown, getLastPromptSession } from '@/utils/chatSessionTracker';
+import { trackMeaningfulCheckIn, shouldShowReviewPrompt, markReviewPromptShown } from '@/utils/reviewPrompt';
+import ReviewPromptModal from '@/components/ReviewPromptModal';
 
 // Module-level flag: once dismissed, don't show again this session
 let upgradePromptDismissedThisSession = false;
@@ -81,6 +83,7 @@ export default function CheckInScreen() {
   const [isSharingMessage, setIsSharingMessage] = useState(false);
   const [prayerShared, setPrayerShared] = useState(false);
   const [prayerSharedConfirm, setPrayerSharedConfirm] = useState(false);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
 
   // Rotating placeholder state
   const placeholderTexts = [
@@ -313,6 +316,25 @@ export default function CheckInScreen() {
           flatListRef.current.scrollToEnd({ animated: true });
         }
       }, 100);
+
+      // Count assistant messages to detect meaningful check-in (2+ AI exchanges)
+      setMessages(currentMessages => {
+        const assistantCount = currentMessages.filter(m => m.role === 'assistant').length + 1; // +1 for the message just added
+        console.log('[CheckIn] Assistant message count after this response:', assistantCount);
+        if (assistantCount === 2) {
+          console.log('[CheckIn] Reached 2 AI exchanges — tracking meaningful check-in');
+          trackMeaningfulCheckIn().then(() => {
+            shouldShowReviewPrompt().then(show => {
+              if (show) {
+                console.log('[CheckIn] Review prompt eligible — will show after response');
+                markReviewPromptShown();
+                setShowReviewPrompt(true);
+              }
+            });
+          });
+        }
+        return currentMessages;
+      });
 
       // Track session, then maybe show upgrade prompt.
       // Only for base_access subscribers (isSubscribed = base tier in this app).
@@ -1618,6 +1640,15 @@ export default function CheckInScreen() {
         <UpgradePrompt
           visible={showUpgradePrompt}
           onDismiss={handleUpgradePromptDismiss}
+        />
+
+        {/* App Store review prompt — shown after 2 meaningful AI exchanges */}
+        <ReviewPromptModal
+          visible={showReviewPrompt}
+          onClose={() => {
+            console.log('[CheckIn] ReviewPromptModal closed');
+            setShowReviewPrompt(false);
+          }}
         />
 
     </GradientBackground>

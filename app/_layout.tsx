@@ -24,6 +24,7 @@ import { BACKEND_URL } from "@/utils/api";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
+import { trackAppOpen } from "@/utils/reviewPrompt";
 // Note: Error logging is auto-initialized via index.ts import
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -63,6 +64,8 @@ function RootLayoutProviders() {
       }
     };
     initNotifications();
+    // Fire-and-forget: track this app open for review prompt eligibility
+    trackAppOpen();
     return () => { isMounted = false; };
   }, []);
 
