@@ -197,7 +197,7 @@ export default function PaywallScreen() {
   const activePackage =
     packages.find((p) => p.packageType === "MONTHLY") ?? packages[0] ?? null;
 
-  const priceString = activePackage?.product?.priceString ?? "$8.99";
+  const priceString = activePackage?.product?.priceString ?? "$3.99";
 
   const handleContinue = () => {
     console.log("[Paywall] Start Free Trial tapped", {
