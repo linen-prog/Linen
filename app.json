@@ -4,11 +4,11 @@
     "slug": "linen",
     "version": "1.0.10",
     "orientation": "portrait",
-    "icon": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
+    "icon": "./assets/images/ChatGPT Image May 13, 2026, 05_56_52 PM.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
+      "image": "./assets/images/ChatGPT Image May 13, 2026, 05_56_52 PM.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5F1E8"
     },
@@ -34,7 +34,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/a1791277-3ecd-4c0e-aa98-7a3b38b58ddb.png",
+        "foregroundImage": "./assets/images/ChatGPT Image May 13, 2026, 05_56_52 PM.png",
         "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
