@@ -2,6 +2,14 @@ import { sql } from 'drizzle-orm';
 import { autoSeedThemesIfEmpty } from '../utils/seed-themes.js';
 import { autoSeedPostReactionsIfEmpty } from '../utils/seed-reactions.js';
 import type { App } from '../index.js';
+import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+
+const REVIEWER_EMAIL = 'review@linen-app.com';
+
+function generateId(): string {
+  return randomBytes(16).toString('hex');
+}
 
 /**
  * Initialize database tables by running raw SQL
@@ -751,6 +759,64 @@ export async function initializeDatabase(db: any, app?: App) {
     } catch (error) {
       app?.logger.warn({ err: error }, 'Failed to seed notifications');
       // Don't throw - this is optional seed data
+    }
+
+    // Seed Google Play reviewer account on startup
+    try {
+      app?.logger.info({ email: REVIEWER_EMAIL }, 'Seeding reviewer account');
+
+      // Hash the password with salt rounds 10
+      const hashedPassword = await bcrypt.hash('Linen123!', 10);
+
+      // Generate IDs
+      const userId = generateId();
+      const accountId = generateId();
+
+      // Upsert user: ON CONFLICT (email) DO NOTHING
+      await db.execute(sql`
+        INSERT INTO "user" (id, name, email, email_verified, image, created_at, updated_at)
+        VALUES (${userId}, 'Linen Reviewer', ${REVIEWER_EMAIL}, true, null, now(), now())
+        ON CONFLICT (email) DO NOTHING
+      `);
+
+      // Get the user ID (whether newly created or existing)
+      const userResult = await db.execute(sql`
+        SELECT id FROM "user" WHERE email = ${REVIEWER_EMAIL} LIMIT 1
+      `);
+
+      const actualUserId = (userResult as any).rows?.[0]?.id;
+
+      if (!actualUserId) {
+        app?.logger.error({ email: REVIEWER_EMAIL }, 'Failed to seed reviewer account - could not find or create user');
+      } else {
+        // Insert account: ON CONFLICT DO NOTHING
+        await db.execute(sql`
+          INSERT INTO "account" (
+            id,
+            account_id,
+            provider_id,
+            user_id,
+            password,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ${accountId},
+            ${REVIEWER_EMAIL},
+            'credential',
+            ${actualUserId},
+            ${hashedPassword},
+            now(),
+            now()
+          )
+          ON CONFLICT DO NOTHING
+        `);
+
+        app?.logger.info({ email: REVIEWER_EMAIL, userId: actualUserId }, 'Reviewer account seeded successfully');
+      }
+    } catch (error) {
+      app?.logger.error({ err: error, email: REVIEWER_EMAIL }, 'Failed to seed reviewer account');
+      // Don't throw - continue with startup even if reviewer seeding fails
     }
   } catch (error) {
     console.error('Failed to initialize database tables:', error);
