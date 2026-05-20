@@ -18,6 +18,7 @@ import { registerMonthlySummaryRoutes } from './routes/monthly-summary.js';
 import { registerNotificationsRoutes } from './routes/notifications.js';
 import { registerPushSubscriptionRoutes } from './routes/push-subscriptions.js';
 import { registerUserRoutes } from './routes/user.js';
+import { registerReviewerAccessRoutes } from './routes/reviewer-access.js';
 import { initializeDatabase } from './db/initDatabase.js';
 import { runModerationMigration } from './db/moderationMigration.js';
 
@@ -48,6 +49,7 @@ app.withStorage();
 // Register auth routes first since other routes may depend on authentication
 registerAuthRoutes(app);
 registerAuthHealthRoutes(app);
+registerReviewerAccessRoutes(app);
 registerDailyGiftRoutes(app);
 registerCheckInRoutes(app);
 registerCommunityRoutes(app);
