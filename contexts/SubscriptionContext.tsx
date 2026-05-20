@@ -35,6 +35,7 @@ import * as SecureStore from "expo-secure-store";
 import { useAuth } from "./AuthContext";
 // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
 import { getTesterBypass, setTesterBypass as setTesterBypassFlag } from "@/utils/testerBypass";
+import { authenticatedGet } from "@/utils/api";
 
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -125,6 +126,8 @@ interface SubscriptionContextType {
   offeringsLoading: boolean;
   /** Whether running on web (purchases not available) */
   isWeb: boolean;
+  /** Whether the authenticated user is a Google Play reviewer with automatic premium access */
+  reviewerBypass: boolean;
   /** Purchase a package - returns true if successful */
   purchasePackage: (pkg: PurchasesPackage) => Promise<boolean>;
   /** Restore previous purchases - returns true if subscription found */
@@ -162,6 +165,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
   const [testerBypass, setTesterBypassState] = useState(false);
   const [testerBypassLoading, setTesterBypassLoading] = useState(true);
+  const [reviewerBypass, setReviewerBypass] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
     useState<PurchasesOffering | null>(null);
@@ -169,6 +173,19 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [loading, setLoading] = useState(true);
   const [offeringsLoading, setOfferingsLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(false);
+
+  /** Calls GET /api/reviewer-access and returns { isReviewer }. Never throws. */
+  const checkReviewerAccess = async (): Promise<{ isReviewer: boolean }> => {
+    try {
+      console.log('[ReviewerAccess] Checking reviewer access via GET /api/reviewer-access');
+      const data = await authenticatedGet<{ isReviewer: boolean }>('/api/reviewer-access');
+      console.log('[ReviewerAccess] Response:', data);
+      return { isReviewer: data?.isReviewer === true };
+    } catch (error) {
+      console.log('[ReviewerAccess] Check failed (non-reviewer or network error):', error);
+      return { isReviewer: false };
+    }
+  };
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
@@ -212,6 +229,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         console.log('[Access] final hasAccess: true');
       }
       setTesterBypassLoading(false);
+
+      // Check reviewer access
+      const { isReviewer } = await checkReviewerAccess();
+      if (isReviewer) {
+        setReviewerBypass(true);
+        console.log('[ReviewerAccess] Reviewer account detected — granting full premium access');
+      }
 
       try {
         // Web platform: SDK doesn't work, use REST API for basic info
@@ -336,6 +360,21 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     updateUser();
   }, [user?.id, isConfigured, authLoading]);
+
+  // Re-check reviewer status whenever the authenticated user changes
+  useEffect(() => {
+    if (!user?.id) return;
+    const recheck = async () => {
+      const { isReviewer } = await checkReviewerAccess();
+      if (isReviewer) {
+        setReviewerBypass(true);
+        console.log('[ReviewerAccess] Reviewer account detected — granting full premium access');
+      } else {
+        setReviewerBypass(false);
+      }
+    };
+    recheck();
+  }, [user?.id]);
 
   const fetchOfferings = async (userId?: string) => {
     if (isWeb) return;
@@ -534,7 +573,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   return (
     <SubscriptionContext.Provider
       value={{
-        isSubscribed,
+        isSubscribed: isSubscribed || testerBypass || reviewerBypass,
         offerings,
         currentOffering,
         packages,
@@ -551,6 +590,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         testerBypass,
         testerBypassLoading,
         activateTesterBypass,
+        reviewerBypass,
       }}
     >
       {children}
