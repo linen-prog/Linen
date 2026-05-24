@@ -17,7 +17,7 @@ import {
   scheduleDailyGiftReminderAsync,
   cancelDailyGiftReminderAsync,
 } from '@/lib/dailyGiftReminder';
-import { Calendar, ChevronRight } from 'lucide-react-native';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 const TABS = [
   { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
@@ -758,6 +758,22 @@ export default function ProfileScreen() {
         >
         {/* Header */}
         <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.headerBackButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => {
+                console.log('[Profile] Back button pressed');
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)/');
+                }
+              }}
+            >
+              <ChevronLeft size={24} color="#047857" />
+            </TouchableOpacity>
+          </View>
           <Text style={[styles.headerTitle, { color: isDark ? colors.textDark : colors.text }]}>
             Profile
           </Text>
@@ -2174,6 +2190,17 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTopRow: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  headerBackButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',

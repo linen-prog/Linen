@@ -7,7 +7,14 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import * as StoreReview from 'expo-store-review';
+let StoreReview: typeof import('expo-store-review') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  StoreReview = require('expo-store-review');
+} catch (e) {
+  console.warn('[ReviewPrompt] expo-store-review native module not available — review prompts disabled', e);
+  StoreReview = null;
+}
 import { useTheme } from '@/contexts/ThemeContext';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { markReviewPromptDeclined } from '@/utils/reviewPrompt';
@@ -27,6 +34,11 @@ export default function ReviewPromptModal({ visible, onClose }: ReviewPromptModa
 
   const handleYes = async () => {
     console.log('[ReviewPrompt] User tapped "Yes, I\'d like to" — requesting store review');
+    if (!StoreReview) {
+      console.log('[ReviewPrompt] StoreReview unavailable — skipping');
+      onClose();
+      return;
+    }
     try {
       const available = await StoreReview.isAvailableAsync();
       console.log('[ReviewPrompt] StoreReview.isAvailableAsync:', available);

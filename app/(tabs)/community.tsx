@@ -20,6 +20,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, Image, Alert, Animated, ImageSourcePropType, TextInput } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
@@ -804,6 +805,20 @@ export default function CommunityScreen() {
 
         {/* Title Section */}
         <View style={styles.titleSection}>
+          <TouchableOpacity
+            style={styles.headerBackButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => {
+              console.log('[Community] Back button pressed');
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/');
+              }
+            }}
+          >
+            <ChevronLeft size={24} color="#047857" />
+          </TouchableOpacity>
           <Text style={[styles.title, { color: textColor }]}>
             Community
           </Text>
@@ -2135,6 +2150,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.lg,
+  },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: spacing.xs,
   },
   title: {
     fontSize: 32,
