@@ -24,20 +24,14 @@ import { ChevronLeft } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
-import { useRouter, Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import FloatingTabBar from '@/components/FloatingTabBar';
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
-const TABS = [
-  { name: 'home', route: '/(tabs)' as Href, icon: 'home' as const, ios_icon_name: 'house.fill', label: 'Home' },
-  { name: 'community', route: '/(tabs)/community' as Href, icon: 'group' as const, ios_icon_name: 'person.3.fill', label: 'Community' },
-  { name: 'profile', route: '/(tabs)/profile' as Href, icon: 'account-circle' as const, ios_icon_name: 'person.circle.fill', label: 'Profile' },
-];
 
 interface Post {
   id: string;
@@ -1918,9 +1912,6 @@ export default function CommunityScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-      {Platform.OS === 'android' && (
-        <FloatingTabBar tabs={TABS} />
-      )}
     </SafeAreaView>
     </GradientBackground>
   );
