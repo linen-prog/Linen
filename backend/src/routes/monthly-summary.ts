@@ -500,7 +500,7 @@ Write a warm, insightful monthly journey summary in 150-200 words. Write in seco
 
   try {
     const result = await generateText({
-      model: gateway('openai/gpt-5-mini'),
+      model: gateway('openai/gpt-4o-mini'),
       system: SYSTEM_PROMPT,
       prompt: userPrompt,
     });
@@ -533,7 +533,7 @@ Return ONLY valid JSON array: [{"title": "...", "description": "..."}, ...]`;
 
   try {
     const result = await generateText({
-      model: gateway('openai/gpt-5-mini'),
+      model: gateway('openai/gpt-4o-mini'),
       system: SYSTEM_PROMPT,
       prompt: userPrompt,
     });
@@ -564,7 +564,7 @@ Write it in "From X → To Y" format. Examples:
 
   try {
     const result = await generateText({
-      model: gateway('openai/gpt-5-mini'),
+      model: gateway('openai/gpt-4o-mini'),
       system: SYSTEM_PROMPT,
       prompt: userPrompt,
     });

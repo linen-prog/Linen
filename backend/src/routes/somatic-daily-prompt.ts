@@ -98,7 +98,7 @@ export function registerSomaticDailyPromptRoutes(app: App) {
 
         // 6. Call AI to generate text
         const result = await generateText({
-          model: gateway('google/gemini-3-pro'),
+          model: gateway('openai/gpt-4o-mini'),
           prompt: aiPrompt,
         });
 
