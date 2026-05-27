@@ -7,7 +7,32 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
-import Svg, { Path, Image as SvgImage, Circle, Rect, Defs, LinearGradient, Stop, Pattern } from 'react-native-svg';
+let Svg: any = null;
+let SvgPath: any = null;
+let SvgImage: any = null;
+let SvgCircle: any = null;
+let SvgRect: any = null;
+let SvgDefs: any = null;
+let SvgLinearGradient: any = null;
+let SvgStop: any = null;
+let SvgPattern: any = null;
+let svgAvailable = false;
+try {
+  const RNSvg = require('react-native-svg');
+  Svg = RNSvg.default;
+  SvgPath = RNSvg.Path;
+  SvgImage = RNSvg.Image;
+  SvgCircle = RNSvg.Circle;
+  SvgRect = RNSvg.Rect;
+  SvgDefs = RNSvg.Defs;
+  SvgLinearGradient = RNSvg.LinearGradient;
+  SvgStop = RNSvg.Stop;
+  SvgPattern = RNSvg.Pattern;
+  svgAvailable = !!Svg;
+  console.log('[ArtworkCanvas] react-native-svg loaded successfully, svgAvailable:', svgAvailable);
+} catch (e) {
+  console.warn('[ArtworkCanvas] react-native-svg unavailable:', e);
+}
 import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -1567,46 +1592,46 @@ export default function ArtworkCanvasScreen() {
     switch (backgroundPattern) {
       case 'dots':
         return (
-          <Defs>
-            <Pattern id="dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
-              <Circle cx={patternSize / 2} cy={patternSize / 2} r="2" fill="#E0E0E0" opacity="0.3" />
-            </Pattern>
-          </Defs>
+          <SvgDefs>
+            <SvgPattern id="dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <SvgCircle cx={patternSize / 2} cy={patternSize / 2} r="2" fill="#E0E0E0" opacity="0.3" />
+            </SvgPattern>
+          </SvgDefs>
         );
       case 'lines':
         return (
-          <Defs>
-            <Pattern id="lines" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
-              <Path d={`M 0 ${patternSize / 2} L ${patternSize} ${patternSize / 2}`} stroke="#E0E0E0" strokeWidth="1" opacity="0.3" />
-            </Pattern>
-          </Defs>
+          <SvgDefs>
+            <SvgPattern id="lines" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <SvgPath d={`M 0 ${patternSize / 2} L ${patternSize} ${patternSize / 2}`} stroke="#E0E0E0" strokeWidth="1" opacity="0.3" />
+            </SvgPattern>
+          </SvgDefs>
         );
       case 'grid':
         return (
-          <Defs>
-            <Pattern id="grid" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
-              <Path d={`M ${patternSize} 0 L 0 0 0 ${patternSize}`} fill="none" stroke="#E0E0E0" strokeWidth="1" opacity="0.2" />
-            </Pattern>
-          </Defs>
+          <SvgDefs>
+            <SvgPattern id="grid" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse">
+              <SvgPath d={`M ${patternSize} 0 L 0 0 0 ${patternSize}`} fill="none" stroke="#E0E0E0" strokeWidth="1" opacity="0.2" />
+            </SvgPattern>
+          </SvgDefs>
         );
       case 'watercolor':
         return (
-          <Defs>
-            <LinearGradient id="watercolor" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#E3F2FD" stopOpacity="0.3" />
-              <Stop offset="50%" stopColor="#BBDEFB" stopOpacity="0.2" />
-              <Stop offset="100%" stopColor="#E3F2FD" stopOpacity="0.3" />
-            </LinearGradient>
-          </Defs>
+          <SvgDefs>
+            <SvgLinearGradient id="watercolor" x1="0%" y1="0%" x2="100%" y2="100%">
+              <SvgStop offset="0%" stopColor="#E3F2FD" stopOpacity="0.3" />
+              <SvgStop offset="50%" stopColor="#BBDEFB" stopOpacity="0.2" />
+              <SvgStop offset="100%" stopColor="#E3F2FD" stopOpacity="0.3" />
+            </SvgLinearGradient>
+          </SvgDefs>
         );
       case 'gradient':
         return (
-          <Defs>
-            <LinearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#FFF9E6" stopOpacity="0.5" />
-              <Stop offset="100%" stopColor="#FFE6F0" stopOpacity="0.5" />
-            </LinearGradient>
-          </Defs>
+          <SvgDefs>
+            <SvgLinearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <SvgStop offset="0%" stopColor="#FFF9E6" stopOpacity="0.5" />
+              <SvgStop offset="100%" stopColor="#FFE6F0" stopOpacity="0.5" />
+            </SvgLinearGradient>
+          </SvgDefs>
         );
       default:
         return null;
@@ -1865,62 +1890,79 @@ export default function ArtworkCanvasScreen() {
               {...(isEditingPhoto ? photoPanResponder.panHandlers : panResponder.panHandlers)}
             >
               {canvasLayout.width > 0 && canvasLayout.height > 0 && (
-                <Svg 
-                  width={canvasLayout.width} 
-                  height={canvasLayout.height}
-                  style={styles.svgCanvas}
-                >
-                  {renderBackgroundPattern()}
-                  
-                  {backgroundPattern !== 'none' && (
-                    <Rect
-                      x="0"
-                      y="0"
-                      width={canvasLayout.width}
-                      height={canvasLayout.height}
-                      fill={getPatternFill()}
-                    />
-                  )}
-
-                  {backgroundImage && (
-                    <SvgImage
-                      href={backgroundImage}
-                      x={photoPosition.x}
-                      y={photoPosition.y}
-                      width={canvasLayout.width * photoScale}
-                      height={canvasLayout.height * photoScale}
-                      preserveAspectRatio="xMidYMid slice"
-                    />
-                  )}
-                  
-                  {allStrokes.map((stroke, index) => {
-                    const pathData = strokeToPath(stroke);
-                    if (!pathData) {
-                      return null;
-                    }
-                    const brushProps = getBrushProps(stroke);
-                    return (
-                      <Path
-                        key={`stroke-${index}`}
-                        d={pathData}
-                        {...brushProps}
+                svgAvailable ? (
+                  <Svg 
+                    width={canvasLayout.width} 
+                    height={canvasLayout.height}
+                    style={styles.svgCanvas}
+                  >
+                    {renderBackgroundPattern()}
+                    
+                    {backgroundPattern !== 'none' && (
+                      <SvgRect
+                        x="0"
+                        y="0"
+                        width={canvasLayout.width}
+                        height={canvasLayout.height}
+                        fill={getPatternFill()}
                       />
-                    );
-                  })}
+                    )}
 
-                  {/* Cursor preview */}
-                  {cursorPosition && !isEditingPhoto && selectedStickerId === null && (
-                    <Circle
-                      cx={cursorPosition.x}
-                      cy={cursorPosition.y}
-                      r={brushSize / 2}
-                      fill={selectedColor}
-                      opacity={0.3}
-                      stroke={selectedColor}
-                      strokeWidth={1}
+                    {backgroundImage && (
+                      <SvgImage
+                        href={backgroundImage}
+                        x={photoPosition.x}
+                        y={photoPosition.y}
+                        width={canvasLayout.width * photoScale}
+                        height={canvasLayout.height * photoScale}
+                        preserveAspectRatio="xMidYMid slice"
+                      />
+                    )}
+                    
+                    {allStrokes.map((stroke, index) => {
+                      const pathData = strokeToPath(stroke);
+                      if (!pathData) {
+                        return null;
+                      }
+                      const brushProps = getBrushProps(stroke);
+                      return (
+                        <SvgPath
+                          key={`stroke-${index}`}
+                          d={pathData}
+                          {...brushProps}
+                        />
+                      );
+                    })}
+
+                    {/* Cursor preview */}
+                    {cursorPosition && !isEditingPhoto && selectedStickerId === null && (
+                      <SvgCircle
+                        cx={cursorPosition.x}
+                        cy={cursorPosition.y}
+                        r={brushSize / 2}
+                        fill={selectedColor}
+                        opacity={0.3}
+                        stroke={selectedColor}
+                        strokeWidth={1}
+                      />
+                    )}
+                  </Svg>
+                ) : (
+                  <View style={[styles.svgUnavailable, { width: canvasLayout.width, height: canvasLayout.height }]}>
+                    <IconSymbol
+                      ios_icon_name="exclamationmark.triangle"
+                      android_material_icon_name="warning"
+                      size={40}
+                      color={colors.textSecondary}
                     />
-                  )}
-                </Svg>
+                    <Text style={[styles.svgUnavailableTitle, { color: colors.text }]}>
+                      Drawing canvas unavailable
+                    </Text>
+                    <Text style={[styles.svgUnavailableBody, { color: colors.textSecondary }]}>
+                      Please rebuild the dev client to use the artwork feature.
+                    </Text>
+                  </View>
+                )
               )}
               
               {/* Interactive Stickers overlay */}
@@ -3675,5 +3717,25 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.semibold,
     color: '#FFFFFF',
+  },
+  svgUnavailable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.xl,
+  },
+  svgUnavailableTitle: {
+    fontSize: typography.h4,
+    fontWeight: typography.semibold,
+    textAlign: 'center',
+  },
+  svgUnavailableBody: {
+    fontSize: typography.bodySmall,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
