@@ -469,7 +469,7 @@ export function registerCheckInRoutes(app: App) {
         );
 
         const { text: responseText } = await generateText({
-          model: gateway('openai/gpt-4o'),
+          model: gateway('openai/gpt-4o-mini'),
           system: systemPrompt,
           messages: aiMessages,
         });
