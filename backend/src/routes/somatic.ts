@@ -562,9 +562,9 @@ Cohesion guidance:
 
 Return ONLY the somatic invitation text. No title, no label, no explanation. Just the 2-4 sentence invitation.`;
 
-        // Step 7: Call AI with google/gemini-3-pro
+        // Step 7: Call AI with openai/gpt-4o-mini
         const result = await generateText({
-          model: gateway('google/gemini-3-pro'),
+          model: gateway('openai/gpt-4o-mini'),
           system: systemPrompt,
           prompt: 'Generate the somatic invitation now.',
         });
