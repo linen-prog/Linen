@@ -21,6 +21,11 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 const STORAGE_KEY = 'daily_gift_reminder_settings';
 
+// TODO: Replace with the real App Store URL once the app is published.
+// The "?action=write-review" suffix opens the review composer directly.
+// Format: https://apps.apple.com/app/id<APPLE_APP_ID>?action=write-review
+const APP_STORE_REVIEW_URL = 'https://apps.apple.com/app/idXXXXXXXXXX?action=write-review';
+
 type ReminderSettings = {
   enabled: boolean;
   hour: number;
@@ -658,6 +663,28 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleRateApp = async () => {
+    console.log('[Profile] Rate Linen button pressed');
+    const url = APP_STORE_REVIEW_URL;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          "Can't open App Store",
+          "Please search for Linen on the App Store to leave a review."
+        );
+      }
+    } catch (error) {
+      console.error('[Profile] Failed to open App Store review URL:', error);
+      Alert.alert(
+        'Something went wrong',
+        "We couldn't open the App Store. Please try again later."
+      );
+    }
+  };
+
   const handleOpenPrivacyPolicy = async () => {
     console.log('ProfileScreen: Opening privacy policy');
     const privacyUrl = 'https://linen-app.com/privacy';
@@ -1229,6 +1256,31 @@ export default function ProfileScreen() {
               </View>
               <Text style={[styles.menuItemText, { color: colors.text }]}>
                 Terms of Use
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleRateApp}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol
+                  ios_icon_name="star"
+                  android_material_icon_name="star-outline"
+                  size={20}
+                  color="#7A8A6F"
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                Rate Linen
               </Text>
             </View>
             <IconSymbol
