@@ -1,6 +1,6 @@
 import React from "react";
 import * as Haptics from "expo-haptics";
-import { Pressable, StyleSheet, useColorScheme, View, Text } from "react-native";
+import { Pressable, StyleSheet, View, Text } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
   configureReanimatedLogger,
@@ -15,10 +15,11 @@ import { IconSymbol } from "./IconSymbol";
 
 configureReanimatedLogger({ strict: false });
 
-export default function ListItem({ listId }: { listId: string }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+// Fixed Linen-aesthetic colors — not system-dark-mode-dependent.
+const LINEN_TEXT = "#1c1917";   // Stone 900
+const LINEN_BORDER = "#ffffff"; // white border for nickname circles
 
+export default function ListItem({ listId }: { listId: string }) {
   const RightAction = (
     prog: SharedValue<number>,
     drag: SharedValue<number>
@@ -55,7 +56,7 @@ export default function ListItem({ listId }: { listId: string }) {
         enableContextMenu
       >
         <View style={styles.listItemContainer}>
-          <Text style={[styles.listItemText, { color: isDark ? "#FFFFFF" : "#000000" }]}>{listId}</Text>
+          <Text style={[styles.listItemText, { color: LINEN_TEXT }]}>{listId}</Text>
         </View>
 
       </ReanimatedSwipeable>
@@ -74,9 +75,6 @@ export const NicknameCircle = ({
   index?: number;
   isEllipsis?: boolean;
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   return (
     <Text
       style={[
@@ -84,7 +82,7 @@ export const NicknameCircle = ({
         isEllipsis && styles.ellipsisCircle,
         {
           backgroundColor: color,
-          borderColor: isDark ? "#000000" : "#ffffff",
+          borderColor: LINEN_BORDER,
           marginLeft: index > 0 ? -6 : 0,
         },
       ]}

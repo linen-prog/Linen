@@ -218,6 +218,27 @@ export const backgroundColors = [
   "#881337",
 ];
 
+// Explicit, theme-independent semantic colors for the Linen aesthetic.
+// Use these instead of relying on system dark mode, so text is always readable
+// regardless of the device's system appearance setting.
+export const LinenColors = {
+  background: '#F4EDDF',        // warm cream
+  cardBackground: '#FBF5E8',    // ivory card
+  cardBackgroundAlt: '#FFFFFF',
+  primaryText: '#1c1917',       // soft charcoal (Stone 900)
+  secondaryText: '#57534e',     // muted olive-charcoal (Stone 600)
+  mutedText: '#78716c',         // muted olive (Stone 500)
+  buttonText: '#FFFFFF',
+  buttonTextOnLight: '#1c1917',
+  placeholder: '#78716c',       // Stone 500
+  border: '#e7e5e4',            // Stone 200
+  divider: '#e7e5e4',
+  accent: '#047857',            // Emerald 700 (primary green)
+  accentDeep: '#065f46',        // Emerald 800
+  destructive: '#dc2626',       // Red 600
+  link: '#047857',              // Emerald 700
+} as const;
+
 export const emojies = [
   // Fruits
   "🍏",

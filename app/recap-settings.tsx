@@ -34,11 +34,13 @@ const styles = StyleSheet.create({
     fontSize: typography.h3,
     fontWeight: typography.semibold,
     marginBottom: spacing.md,
+    color: colors.text,
   },
   sectionDescription: {
     fontSize: typography.body,
     marginBottom: spacing.lg,
     lineHeight: 22,
+    color: colors.textSecondary,
   },
   optionCard: {
     borderRadius: borderRadius.lg,
@@ -59,10 +61,12 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: typography.h4,
     fontWeight: typography.semibold,
+    color: colors.text,
   },
   optionDescription: {
     fontSize: typography.body,
     lineHeight: 20,
+    color: colors.textSecondary,
   },
   checkIcon: {
     width: 24,
@@ -85,6 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: spacing.sm,
     lineHeight: 20,
+    color: colors.text,
   },
   saveButton: {
     backgroundColor: colors.primary,

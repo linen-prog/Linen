@@ -1,13 +1,12 @@
-import { useColorScheme } from "react-native";
-
+// Linen-aesthetic onboarding colors — fixed, not system-dark-mode-dependent.
+// Using hardcoded values so onboarding renders identically in both light and
+// dark system modes.
 export function useOnboardingColors() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   return {
-    primary: "#007AFF",
-    background: isDark ? "#000" : "#fff",
-    text: isDark ? "#fff" : "#000",
-    card: isDark ? "#1c1c1e" : "#f2f2f7",
-    border: isDark ? "#38383a" : "#c6c6c8",
+    primary: "#047857",   // Emerald 700
+    background: "#fafaf9", // Stone 50
+    text: "#1c1917",       // Stone 900
+    card: "#f5f5f4",       // Stone 100
+    border: "#e7e5e4",     // Stone 200
   };
 }

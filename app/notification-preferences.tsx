@@ -180,10 +180,19 @@ export default function NotificationPreferencesScreen() {
   );
 }
 
+// Fixed Linen-aesthetic colors — not system-dark-mode-dependent.
+const LINEN_BG = "#fafaf9";
+const LINEN_CARD = "#f5f5f4";
+const LINEN_TEXT = "#1c1917";
+const LINEN_TEXT_SECONDARY = "#57534e";
+const LINEN_TEXT_MUTED = "#78716c";
+const LINEN_BORDER = "#e7e5e4";
+const LINEN_PRIMARY = "#047857";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: LINEN_BG,
   },
   header: {
     flexDirection: "row",
@@ -191,19 +200,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: LINEN_CARD,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+    borderBottomColor: LINEN_BORDER,
   },
   backButton: {
     fontSize: 16,
-    color: "#007AFF",
+    color: LINEN_PRIMARY,
     width: 60,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000",
+    color: LINEN_TEXT,
   },
   content: {
     flex: 1,
@@ -216,7 +225,7 @@ const styles = StyleSheet.create({
   },
   webMessage: {
     fontSize: 16,
-    color: "#8E8E93",
+    color: LINEN_TEXT_MUTED,
     textAlign: "center",
   },
   section: {
@@ -226,14 +235,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#8E8E93",
+    color: LINEN_TEXT_MUTED,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
   permissionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: LINEN_CARD,
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -256,16 +265,16 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000",
+    color: LINEN_TEXT,
   },
   permissionDescription: {
     fontSize: 14,
-    color: "#8E8E93",
+    color: LINEN_TEXT_SECONDARY,
     marginTop: 2,
   },
   enableButton: {
     marginTop: 16,
-    backgroundColor: "#007AFF",
+    backgroundColor: LINEN_PRIMARY,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
@@ -279,11 +288,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: LINEN_CARD,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F2F2F7",
+    borderBottomColor: LINEN_BG,
   },
   categoryText: {
     flex: 1,
@@ -291,11 +300,11 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 16,
-    color: "#000",
+    color: LINEN_TEXT,
   },
   categoryDescription: {
     fontSize: 13,
-    color: "#8E8E93",
+    color: LINEN_TEXT_MUTED,
     marginTop: 2,
   },
 });
