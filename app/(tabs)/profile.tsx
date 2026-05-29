@@ -21,10 +21,8 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 const STORAGE_KEY = 'daily_gift_reminder_settings';
 
-// TODO: Replace with the real App Store URL once the app is published.
-// The "?action=write-review" suffix opens the review composer directly.
-// Format: https://apps.apple.com/app/id<APPLE_APP_ID>?action=write-review
-const APP_STORE_REVIEW_URL = 'https://apps.apple.com/app/idXXXXXXXXXX?action=write-review';
+const IOS_REVIEW_URL = 'https://apps.apple.com/app/id6760556992?action=write-review';
+const ANDROID_REVIEW_URL = 'https://play.google.com/store/apps/details?id=com.linen.app';
 
 type ReminderSettings = {
   enabled: boolean;
@@ -665,7 +663,7 @@ export default function ProfileScreen() {
 
   const handleRateApp = async () => {
     console.log('[Profile] Rate Linen button pressed');
-    const url = APP_STORE_REVIEW_URL;
+    const url = Platform.OS === 'ios' ? IOS_REVIEW_URL : ANDROID_REVIEW_URL;
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
