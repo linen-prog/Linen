@@ -4,10 +4,10 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 // Warm Linen Color Palette - Gentle, faith-rooted aesthetic
 export const colors = {
   // Background Gradient Colors
-  backgroundTop: '#fef3c7',      // Warm cream/amber (top)
-  backgroundMiddle: '#fafaf9',   // Off-white/stone (middle)
-  backgroundBottom: '#fef3c7',   // Warm cream/amber (bottom)
-  backgroundPattern: 'rgba(214, 201, 184, 0.08)', // Subtle pattern overlay at 8% opacity
+  backgroundTop: '#F4ECDC',      // Logo cream (top) — matches Linen logo background
+  backgroundMiddle: '#FAF5E8',   // Slightly lighter cream (middle) — soft depth, no yellow
+  backgroundBottom: '#F4ECDC',   // Logo cream (bottom)
+  backgroundPattern: 'rgba(196, 182, 161, 0.06)', // Subtle warm-neutral pattern overlay at 6% opacity
   
   // Primary - Sage/Green
   primary: '#8FA381',            // Logo sage (primary green)
