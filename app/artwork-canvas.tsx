@@ -7,6 +7,26 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { authenticatedPost } from '@/utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
+import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import Slider from '@react-native-community/slider';
+import { IconSymbol } from '@/components/IconSymbol';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withTiming,
+  withDelay,
+  withRepeat,
+  Easing,
+  interpolate,
+  runOnJS
+} from 'react-native-reanimated';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GradientBackground } from '@/components/GradientBackground';
+
 let Svg: any = null;
 let SvgPath: any = null;
 let SvgImage: any = null;
@@ -18,6 +38,7 @@ let SvgStop: any = null;
 let SvgPattern: any = null;
 let svgAvailable = false;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RNSvg = require('react-native-svg');
   Svg = RNSvg.default;
   SvgPath = RNSvg.Path;
@@ -33,25 +54,6 @@ try {
 } catch (e) {
   console.warn('[ArtworkCanvas] react-native-svg unavailable:', e);
 }
-import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import Slider from '@react-native-community/slider';
-import { IconSymbol } from '@/components/IconSymbol';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring,
-  withSequence,
-  withTiming,
-  withDelay,
-  withRepeat,
-  Easing,
-  interpolate,
-  runOnJS
-} from 'react-native-reanimated';
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { GradientBackground } from '@/components/GradientBackground';
 
 type BrushType = 'pencil' | 'marker' | 'pen' | 'watercolor' | 'spray' | 'chalk' | 'ink' | 'charcoal' | 'oil' | 'pastel' | 'crayon' | 'glitter';
 

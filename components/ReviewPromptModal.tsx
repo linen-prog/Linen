@@ -7,6 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { markReviewPromptDeclined } from '@/utils/reviewPrompt';
+
 let StoreReview: typeof import('expo-store-review') | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -15,9 +19,6 @@ try {
   console.warn('[ReviewPrompt] expo-store-review native module not available — review prompts disabled', e);
   StoreReview = null;
 }
-import { useTheme } from '@/contexts/ThemeContext';
-import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { markReviewPromptDeclined } from '@/utils/reviewPrompt';
 
 export interface ReviewPromptModalProps {
   visible: boolean;
