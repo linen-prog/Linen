@@ -1137,7 +1137,7 @@ export default function DailyGiftScreen() {
     reflectionPrompt: null,
     somaticExercise: null,
   };
-  const liturgicalSeasonDisplay = (weeklyTheme.liturgicalSeason ?? '').toUpperCase();
+
   const themeTitleDisplay = weeklyTheme.themeTitle ?? '';
   const themeDescriptionDisplay = weeklyTheme.themeDescription ?? '';
 
@@ -1288,8 +1288,8 @@ export default function DailyGiftScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.themeSection}>
-            <Text style={[styles.liturgicalSeason, { color: textSecondaryColor }]}>
-              {liturgicalSeasonDisplay}
+            <Text style={[styles.dailyGiftLabel, { color: textSecondaryColor }]}>
+              DAILY GIFT
             </Text>
             
             <View style={styles.themeTitleRow}>
@@ -2200,7 +2200,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
-  liturgicalSeason: {
+  dailyGiftLabel: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 1.5,
