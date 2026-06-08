@@ -88,6 +88,19 @@ export function registerDailyGiftRoutes(app: App) {
         return reply.status(404).send({ error: 'No content available for today' });
       }
 
+      // Sanitize theme fields if not "Ordinary Time"
+      let sanitizedThemeTitle = theme[0].themeTitle;
+      let sanitizedThemeDescription = theme[0].themeDescription;
+
+      if (theme[0].liturgicalSeason !== 'Ordinary Time') {
+        sanitizedThemeTitle = "Today's Reflection";
+        sanitizedThemeDescription = "A space to be with what you're carrying.";
+        app.logger.debug(
+          { themeId: theme[0].id, liturgicalSeason: theme[0].liturgicalSeason },
+          'Theme fields sanitized for non-Ordinary Time season'
+        );
+      }
+
       // Check if current user has reflected today (if authenticated)
       let hasReflected = false;
       let userId: string | null = null;
@@ -166,8 +179,8 @@ export function registerDailyGiftRoutes(app: App) {
         weeklyTheme: {
           id: theme[0].id,
           liturgicalSeason: theme[0].liturgicalSeason,
-          themeTitle: theme[0].themeTitle,
-          themeDescription: theme[0].themeDescription,
+          themeTitle: sanitizedThemeTitle,
+          themeDescription: sanitizedThemeDescription,
         },
       });
     } catch (error) {
