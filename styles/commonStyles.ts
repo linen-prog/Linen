@@ -10,9 +10,9 @@ export const colors = {
   backgroundPattern: 'rgba(196, 182, 161, 0.06)', // Subtle warm-neutral pattern overlay at 6% opacity
   
   // Primary - Sage/Green
-  primary: '#8FA381',            // Logo sage (primary green)
+  primary: '#6B7E5E',            // Logo sage (darker)
   primaryLight: '#EEF2E5',       // Very light sage
-  primaryMedium: '#7A9070',      // Medium sage
+  primaryMedium: '#5F7355',      // Medium sage (darker)
   primaryDark: '#5A6F4F',        // Deep sage
   primaryVeryDark: '#4A5C42',    // Very deep sage
   
@@ -21,7 +21,7 @@ export const colors = {
   backgroundDark: '#1c1917',     // Stone 900 (near black)
   
   // Card - Stone
-  card: '#f5f5f4',               // Stone 100
+  card: '#FEFCF7',               // Warm ivory white — matches screenshot
   cardDark: '#292524',           // Stone 800
   
   // Text - Stone
@@ -49,7 +49,7 @@ export const colors = {
   prayerLight: '#fcd34d',        // Amber 300
   
   // Status (gentle, non-urgent)
-  success: '#7A9070',            // Medium sage
+  success: '#5F7355',            // Medium sage (darker)
   warning: '#fbbf24',            // Amber 400
   error: '#dc2626',              // Red for errors
 };
