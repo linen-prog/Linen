@@ -21,6 +21,35 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 
+// Timeless daily-gift titles. Replaces any liturgical content the backend
+// may return so the user-visible Daily Gift never references church seasons
+// like Holy Week, Palm Sunday, Easter, Lent, Advent, or Christmas Day.
+const TIMELESS_DAILY_TITLES: Array<{ title: string; description: string }> = [
+  { title: 'Held by Grace', description: 'A space to be with what you\'re carrying.' },
+  { title: 'A Quiet Place to Begin', description: 'Settle into stillness, just for a moment.' },
+  { title: 'Peace for Today', description: 'Let today\'s peace be enough.' },
+  { title: 'Strength for the Way', description: 'A word for the road ahead.' },
+  { title: 'A Gentle Invitation', description: 'You\'re welcome here, exactly as you are.' },
+  { title: 'Return to Stillness', description: 'Come back to your breath, your center.' },
+  { title: 'Bread for the Journey', description: 'Nourishment for the steps ahead.' },
+  { title: 'You Are Not Alone', description: 'Held in love, today and always.' },
+];
+
+// Deterministic per-day rotation. Same date always returns the same title;
+// adjacent dates return different titles. Uses a YYYY-MM-DD string hash mod 8.
+function pickTimelessTitle(date: Date): { title: string; description: string } {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${y}-${m}-${d}`;
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % TIMELESS_DAILY_TITLES.length;
+  return TIMELESS_DAILY_TITLES[idx];
+}
+
 interface WeeklyTheme {
   id: string;
   weekStartDate: string;
@@ -362,7 +391,7 @@ export default function DailyGiftScreen() {
       setIsLoadingGift(true);
       
       const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const response = await authenticatedGet<DailyGiftResponse>(`/api/weekly-theme/current?date=${localDate}`);
+      let response = await authenticatedGet<DailyGiftResponse>(`/api/weekly-theme/current?date=${localDate}`);
       
       if (!isMounted) {
         console.log('[DailyGift] Component unmounted, skipping state updates');
@@ -374,6 +403,25 @@ export default function DailyGiftScreen() {
       }
       
       const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+
+      // Override the backend's themeTitle/themeDescription with a timeless rotation
+      // so liturgical content (Holy Thursday, Palm Sunday, Advent, etc.) never reaches the user.
+      // The liturgicalSeason field is left untouched — it's still passed to /api/somatic/daily-prompt
+      // as opaque AI context.
+      const timeless = pickTimelessTitle(now);
+      console.log(`[DailyGift] ${loadTimestamp} - Applying timeless title override:`, {
+        original: response.weeklyTheme.themeTitle,
+        replacement: timeless.title,
+        liturgicalSeasonPreserved: response.weeklyTheme.liturgicalSeason,
+      });
+      response = {
+        ...response,
+        weeklyTheme: {
+          ...response.weeklyTheme,
+          themeTitle: timeless.title,
+          themeDescription: timeless.description,
+        },
+      };
       
       console.log(`[DailyGift] ${loadTimestamp} - Daily gift loaded successfully:`, {
         timestamp: loadTimestamp,
