@@ -791,7 +791,7 @@ export default function CommunityScreen() {
         {/* Top Banner */}
         <View style={styles.headerBannerWrap}>
           <View style={[styles.headerBanner, { backgroundColor: isDark ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.13)' }]}>
-            <Text style={[styles.headerBannerText, { color: isDark ? '#ffffff' : '#065f46' }]}>
+            <Text style={[styles.headerBannerText, { color: isDark ? '#ffffff' : '#5A6F4F' }]}>
               ✨ You are not alone in this journey
             </Text>
           </View>
@@ -811,7 +811,7 @@ export default function CommunityScreen() {
               }
             }}
           >
-            <ChevronLeft size={24} color="#047857" />
+            <ChevronLeft size={24} color="#8FA381" />
           </TouchableOpacity>
           <Text style={[styles.title, { color: textColor }]}>
             Community
@@ -2412,8 +2412,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reactionBadgeActive: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#047857',
+    backgroundColor: '#EEF2E5',
+    borderColor: '#8FA381',
     borderWidth: 1,
     backgroundColor: colors.primary + '30',
     borderWidth: 1,
@@ -2488,8 +2488,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
   },
   reactionOptionActive: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#047857',
+    backgroundColor: '#EEF2E5',
+    borderColor: '#8FA381',
     borderWidth: 1,
     backgroundColor: colors.primaryLight || '#E8F5E9',
     borderColor: colors.primary,

@@ -1,5 +1,5 @@
 // Warm Linen Color Palette
-const tintColorLight = "#047857"; // Emerald 700
+const tintColorLight = "#8FA381"; // Logo sage
 const tintColorDark = "#ecfdf5"; // Emerald 50
 
 export const zincColors = {
@@ -20,7 +20,7 @@ export const appleBlue = "#007AFF";
 export const appleRed = "#FF3B30";
 
 export const borderColor = "#e7e5e4"; // Stone 200
-export const appleGreen = "#047857"; // Emerald 700
+export const appleGreen = "#8FA381"; // Logo sage
 export const Colors = {
   light: {
     text: "#1c1917",        // Stone 900
@@ -233,10 +233,10 @@ export const LinenColors = {
   placeholder: '#78716c',       // Stone 500
   border: '#e7e5e4',            // Stone 200
   divider: '#e7e5e4',
-  accent: '#047857',            // Emerald 700 (primary green)
-  accentDeep: '#065f46',        // Emerald 800
+  accent: '#8FA381',            // Logo sage (primary green)
+  accentDeep: '#5A6F4F',        // Deep sage
   destructive: '#dc2626',       // Red 600
-  link: '#047857',              // Emerald 700
+  link: '#8FA381',              // Logo sage
 } as const;
 
 export const emojies = [

@@ -174,7 +174,7 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
         screenOptions={{
           headerTransparent: true,
           headerBackTitle: '',
-          headerTintColor: '#047857',
+          headerTintColor: '#8FA381',
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: '400' as const,

@@ -187,7 +187,7 @@ const LINEN_TEXT = "#1c1917";
 const LINEN_TEXT_SECONDARY = "#57534e";
 const LINEN_TEXT_MUTED = "#78716c";
 const LINEN_BORDER = "#e7e5e4";
-const LINEN_PRIMARY = "#047857";
+const LINEN_PRIMARY = "#8FA381";
 
 const styles = StyleSheet.create({
   container: {

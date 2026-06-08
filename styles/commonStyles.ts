@@ -9,12 +9,12 @@ export const colors = {
   backgroundBottom: '#fef3c7',   // Warm cream/amber (bottom)
   backgroundPattern: 'rgba(214, 201, 184, 0.08)', // Subtle pattern overlay at 8% opacity
   
-  // Primary - Emerald/Green
-  primary: '#047857',            // Emerald 700 (primary green)
-  primaryLight: '#ecfdf5',       // Emerald 50 (very light mint)
-  primaryMedium: '#059669',      // Emerald 600 (medium green)
-  primaryDark: '#065f46',        // Emerald 800 (dark green)
-  primaryVeryDark: '#064e3b',    // Emerald 900 (very dark green)
+  // Primary - Sage/Green
+  primary: '#8FA381',            // Logo sage (primary green)
+  primaryLight: '#EEF2E5',       // Very light sage
+  primaryMedium: '#7A9070',      // Medium sage
+  primaryDark: '#5A6F4F',        // Deep sage
+  primaryVeryDark: '#4A5C42',    // Very deep sage
   
   // Background - Stone
   background: '#fafaf9',         // Stone 50 (off-white)
@@ -41,7 +41,7 @@ export const colors = {
   // Functional - Stone
   border: '#e7e5e4',             // Stone 200
   borderDark: '#44403c',         // Stone 700
-  shadow: 'rgba(4, 120, 87, 0.08)',  // Emerald 700 at 8%
+  shadow: 'rgba(143, 163, 129, 0.08)',  // Logo sage at 8%
   shadowDark: 'rgba(0, 0, 0, 0.3)',
   
   // Prayer/Community - Warm tones
@@ -49,7 +49,7 @@ export const colors = {
   prayerLight: '#fcd34d',        // Amber 300
   
   // Status (gentle, non-urgent)
-  success: '#059669',            // Emerald 600
+  success: '#7A9070',            // Medium sage
   warning: '#fbbf24',            // Amber 400
   error: '#dc2626',              // Red for errors
 };

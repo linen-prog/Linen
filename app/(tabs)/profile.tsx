@@ -790,7 +790,7 @@ export default function ProfileScreen() {
                 }
               }}
             >
-              <ChevronLeft size={24} color="#047857" />
+              <ChevronLeft size={24} color="#8FA381" />
             </TouchableOpacity>
           </View>
           <Text style={[styles.headerTitle, { color: isDark ? colors.textDark : colors.text }]}>

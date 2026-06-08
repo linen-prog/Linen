@@ -175,7 +175,7 @@ export default function RecapSettingsScreen() {
             headerBackTitle: '',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: '#047857',
+            headerTintColor: '#8FA381',
             headerTitleStyle: {
               fontSize: 18,
               fontWeight: '400' as const,
@@ -206,7 +206,7 @@ export default function RecapSettingsScreen() {
           headerBackTitle: '',
           headerTransparent: true,
           headerStyle: { backgroundColor: 'transparent' },
-          headerTintColor: '#047857',
+          headerTintColor: '#8FA381',
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: '400' as const,

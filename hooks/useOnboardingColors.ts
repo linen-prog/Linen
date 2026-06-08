@@ -3,7 +3,7 @@
 // dark system modes.
 export function useOnboardingColors() {
   return {
-    primary: "#047857",   // Emerald 700
+    primary: "#8FA381",   // Logo sage
     background: "#fafaf9", // Stone 50
     text: "#1c1917",       // Stone 900
     card: "#f5f5f4",       // Stone 100

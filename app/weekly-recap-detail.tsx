@@ -237,7 +237,7 @@ export default function WeeklyRecapDetailScreen() {
             headerBackTitle: '',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: '#047857',
+            headerTintColor: '#8FA381',
             headerTitleStyle: {
               fontSize: 18,
               fontWeight: '400' as const,
@@ -246,7 +246,7 @@ export default function WeeklyRecapDetailScreen() {
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-                <ChevronLeft size={24} color="#047857" />
+                <ChevronLeft size={24} color="#8FA381" />
               </TouchableOpacity>
             ),
           }}
@@ -270,7 +270,7 @@ export default function WeeklyRecapDetailScreen() {
             headerBackTitle: '',
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerTintColor: '#047857',
+            headerTintColor: '#8FA381',
             headerTitleStyle: {
               fontSize: 18,
               fontWeight: '400' as const,
@@ -279,7 +279,7 @@ export default function WeeklyRecapDetailScreen() {
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-                <ChevronLeft size={24} color="#047857" />
+                <ChevronLeft size={24} color="#8FA381" />
               </TouchableOpacity>
             ),
           }}
@@ -304,7 +304,7 @@ export default function WeeklyRecapDetailScreen() {
           headerBackTitle: '',
           headerTransparent: true,
           headerStyle: { backgroundColor: 'transparent' },
-          headerTintColor: '#047857',
+          headerTintColor: '#8FA381',
           headerTitleStyle: {
             fontSize: 18,
             fontWeight: '400' as const,
@@ -313,7 +313,7 @@ export default function WeeklyRecapDetailScreen() {
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => { console.log('Back pressed from weekly recap detail'); router.back(); }} style={{ paddingRight: 8 }}>
-              <ChevronLeft size={24} color="#047857" />
+              <ChevronLeft size={24} color="#8FA381" />
             </TouchableOpacity>
           ),
         }}

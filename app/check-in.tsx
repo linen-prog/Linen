@@ -759,8 +759,8 @@ export default function CheckInScreen() {
     { id: 'feed' as const, label: 'Feed', icon: 'home' as const },
   ];
 
-  const prayerIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
-  const careIconColor = isDark ? '#6ee7b7' : 'rgba(4,120,87,0.75)';
+  const prayerIconColor = isDark ? '#A8B89A' : 'rgba(143, 163, 129, 0.75)';
+  const careIconColor = isDark ? '#A8B89A' : 'rgba(143, 163, 129, 0.75)';
   const labelColor = isDark ? '#d4d4d8' : 'rgba(120,113,108,0.75)';
   const headerBgColor = isDark ? '#1c1917' : '#faf7f2';
   const inputBgColor = isDark ? colors.cardDark : colors.card;
@@ -791,7 +791,7 @@ export default function CheckInScreen() {
               style={styles.headerBackButton}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <ChevronLeft size={24} color="#047857" />
+              <ChevronLeft size={24} color="#8FA381" />
             </TouchableOpacity>
             <Text style={[styles.headerTitleText, { color: isDark ? '#fafaf9' : '#1c1917', flex: 1 }]} numberOfLines={1}>
               {headerTitle}

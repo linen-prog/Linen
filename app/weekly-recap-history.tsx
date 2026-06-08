@@ -242,7 +242,7 @@ export default function WeeklyRecapHistoryScreen() {
     headerTransparent: true,
     headerStyle: { backgroundColor: 'transparent' },
     headerBackTitle: '',
-    headerTintColor: '#047857',
+    headerTintColor: '#8FA381',
     headerTitleStyle: {
       fontSize: 18,
       fontWeight: '400' as const,
@@ -257,7 +257,7 @@ export default function WeeklyRecapHistoryScreen() {
         }}
         style={{ paddingRight: 8 }}
       >
-        <ChevronLeft size={24} color="#047857" />
+        <ChevronLeft size={24} color="#8FA381" />
       </TouchableOpacity>
     ),
   };

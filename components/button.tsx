@@ -83,7 +83,7 @@ export const Button: React.FC<ButtonProps> = ({
         return zincColors[50];
       case "outline":
       case "ghost":
-        return "#047857"; // Emerald 700 — Linen primary
+        return "#8FA381"; // Emerald 700 — Linen primary
     }
   };
 

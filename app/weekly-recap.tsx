@@ -257,9 +257,9 @@ function MonthlySummarySection({ isDark }: { isDark: boolean }) {
   const navMonthColor = isDark ? '#e7e5e4' : '#292524';
   const arrowColor = isDark ? '#fbbf24' : '#d97706';
   const arrowDisabledColor = isDark ? 'rgba(120, 100, 60, 0.3)' : 'rgba(214, 211, 209, 0.6)';
-  const growthBg = isDark ? 'rgba(6, 78, 59, 0.2)' : 'rgba(209, 250, 229, 0.5)';
-  const growthBorder = '#059669';
-  const growthTextColor = isDark ? '#6ee7b7' : '#065f46';
+  const growthBg = isDark ? 'rgba(90, 111, 79, 0.2)' : 'rgba(214, 226, 200, 0.5)';
+  const growthBorder = '#7A9070';
+  const growthTextColor = isDark ? '#A8B89A' : '#5A6F4F';
   const growthArrowColor = isDark ? '#fbbf24' : '#d97706';
   const journeyBg = isDark ? 'rgba(41, 37, 36, 0.5)' : 'rgba(254, 252, 243, 0.8)';
   const journeyBorder = isDark ? 'rgba(120, 53, 15, 0.12)' : 'rgba(217, 119, 6, 0.08)';
@@ -1051,7 +1051,7 @@ export default function WeeklyRecapScreen() {
     headerTransparent: true,
     headerStyle: { backgroundColor: 'transparent' },
     headerBackTitle: '',
-    headerTintColor: '#047857',
+    headerTintColor: '#8FA381',
     headerTitleStyle: {
       fontSize: 18,
       fontWeight: '400' as const,
@@ -1064,7 +1064,7 @@ export default function WeeklyRecapScreen() {
         style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <ChevronLeft size={24} color="#047857" />
+        <ChevronLeft size={24} color="#8FA381" />
       </TouchableOpacity>
     ),
   };
