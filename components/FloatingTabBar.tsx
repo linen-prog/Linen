@@ -111,30 +111,30 @@ export default function FloatingTabBar({
 
   const isDark = theme.dark;
 
-  const activeIconColor = isDark ? '#a78bfa' : theme.colors.primary;
-  const inactiveIconColor = isDark ? 'rgba(196,181,253,0.45)' : '#000000';
-  const activeLabelColor = isDark ? '#a78bfa' : theme.colors.primary;
-  const inactiveLabelColor = isDark ? 'rgba(196,181,253,0.45)' : '#8E8E93';
+  const activeIconColor = isDark ? '#FFFFFF' : theme.colors.primary;
+  const inactiveIconColor = isDark ? 'rgba(255,255,255,0.45)' : '#000000';
+  const activeLabelColor = isDark ? '#FFFFFF' : theme.colors.primary;
+  const inactiveLabelColor = isDark ? 'rgba(255,255,255,0.45)' : '#8E8E93';
 
   const dynamicStyles = {
     blurContainer: {
       ...styles.blurContainer,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(167,139,250,0.25)' : 'rgba(255,255,255,1)',
+      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,1)',
       ...Platform.select({
         ios: {
           backgroundColor: isDark
-            ? 'rgba(15,8,30,0.85)'
+            ? 'rgba(20,20,20,0.85)'
             : 'rgba(255,255,255,0.6)',
         },
         android: {
           backgroundColor: isDark
-            ? 'rgba(15,8,30,0.92)'
+            ? 'rgba(20,20,20,0.92)'
             : 'rgba(255,255,255,0.6)',
         },
         web: {
           backgroundColor: isDark
-            ? 'rgba(15,8,30,0.92)'
+            ? 'rgba(20,20,20,0.92)'
             : 'rgba(255,255,255,0.6)',
           backdropFilter: 'blur(10px)',
         },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   tabBarGlowDark: {
-    shadowColor: '#7c3aed',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
