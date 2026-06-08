@@ -8,7 +8,7 @@ import { generateText } from 'ai';
 import {
   getUserPersonalizationContext,
   getLiturgicalContext,
-  buildLiturgicalSystemPrompt,
+  buildTimelessSystemPrompt,
 } from '../utils/personalization.js';
 
 // Utility function to get current Sunday in Pacific Time
@@ -36,6 +36,29 @@ function getCurrentDayOfWeekPacific(): number {
   const now = new Date();
   const pacificTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
   return pacificTime.getDay();
+}
+
+// Timeless daily titles rotation
+const TIMELESS_DAILY_TITLES = [
+  { title: 'Held by Grace', description: "A space to be with what you're carrying." },
+  { title: 'A Quiet Place to Begin', description: 'Settle into stillness, just for a moment.' },
+  { title: 'Peace for Today', description: "Let today's peace be enough." },
+  { title: 'Strength for the Way', description: 'A word for the road ahead.' },
+  { title: 'A Gentle Invitation', description: "You're welcome here, exactly as you are." },
+  { title: 'Return to Stillness', description: 'Come back to your breath, your center.' },
+  { title: 'Bread for the Journey', description: 'Nourishment for the steps ahead.' },
+  { title: 'You Are Not Alone', description: 'Held in love, today and always.' },
+];
+
+// Deterministic per-day rotation of timeless titles
+function pickTimelessTitle(dateStr: string): { title: string; description: string } {
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+    hash = hash | 0; // Convert to 32-bit integer
+  }
+  const index = Math.abs(hash) % TIMELESS_DAILY_TITLES.length;
+  return TIMELESS_DAILY_TITLES[index];
 }
 
 export function registerDailyGiftRoutes(app: App) {
@@ -88,19 +111,6 @@ export function registerDailyGiftRoutes(app: App) {
         return reply.status(404).send({ error: 'No content available for today' });
       }
 
-      // Sanitize theme fields if not "Ordinary Time"
-      let sanitizedThemeTitle = theme[0].themeTitle;
-      let sanitizedThemeDescription = theme[0].themeDescription;
-
-      if (theme[0].liturgicalSeason !== 'Ordinary Time') {
-        sanitizedThemeTitle = "Today's Reflection";
-        sanitizedThemeDescription = "A space to be with what you're carrying.";
-        app.logger.debug(
-          { themeId: theme[0].id, liturgicalSeason: theme[0].liturgicalSeason },
-          'Theme fields sanitized for non-Ordinary Time season'
-        );
-      }
-
       // Check if current user has reflected today (if authenticated)
       let hasReflected = false;
       let userId: string | null = null;
@@ -138,8 +148,8 @@ export function registerDailyGiftRoutes(app: App) {
             const personalization = await getUserPersonalizationContext(app, userId);
             console.log('[DailyGift] Personalization block injected for user:', userId);
 
-            const systemPrompt = buildLiturgicalSystemPrompt(liturgical, personalization, 'daily-gift');
-            console.log('[DailyGift] Liturgical calendar context included: true');
+            const systemPrompt = buildTimelessSystemPrompt(liturgical, personalization, 'daily-gift');
+            console.log('[DailyGift] Timeless system prompt generated: true');
 
             // Generate personalized daily reflection using the system prompt
             const { text: generatedReflection } = await generateText({
@@ -169,6 +179,9 @@ export function registerDailyGiftRoutes(app: App) {
         'Daily gift retrieved from weekly theme'
       );
 
+      // Get timeless title rotation for this date
+      const timelessTitle = pickTimelessTitle(today);
+
       return reply.send({
         id: dailyContentRecord[0].id,
         date: today,
@@ -179,8 +192,8 @@ export function registerDailyGiftRoutes(app: App) {
         weeklyTheme: {
           id: theme[0].id,
           liturgicalSeason: theme[0].liturgicalSeason,
-          themeTitle: sanitizedThemeTitle,
-          themeDescription: sanitizedThemeDescription,
+          themeTitle: timelessTitle.title,
+          themeDescription: timelessTitle.description,
         },
       });
     } catch (error) {

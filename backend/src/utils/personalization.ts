@@ -283,3 +283,48 @@ ${instructions}
 
 ${toneRules}`;
 }
+
+export function buildTimelessSystemPrompt(
+  liturgical: LiturgicalContext,
+  personalization: PersonalizationContext,
+  mode: 'daily-gift' | 'check-in'
+): string {
+  const { dominantMoods, dominantSensations, recurringTopics, engagementDepth, recentReflectionSnippets } =
+    personalization;
+
+  let userContextSection = `USER CONTEXT:
+Engagement level: ${engagementDepth}`;
+
+  if (engagementDepth === 'growing' || engagementDepth === 'established') {
+    if (dominantMoods.length > 0) {
+      userContextSection += `\nRecurring emotional themes: ${dominantMoods.join(', ')}`;
+    }
+    if (recurringTopics.length > 0) {
+      userContextSection += `\nTopics this person often returns to: ${recurringTopics.join(', ')}`;
+    }
+  }
+
+  if (engagementDepth === 'established' && recentReflectionSnippets.length > 0) {
+    userContextSection += `\nRecent reflection snippets (for tone/continuity, do not quote directly): ${recentReflectionSnippets.join(' | ')}`;
+  }
+
+  const instructions = `INSTRUCTIONS:
+You are a warm, grounded spiritual companion writing a brief daily reflection for someone seeking gentle presence with God. Use the scripture above as the foundation. Write 2–4 sentences that invite the reader into stillness with this scripture — not a lecture, not a teaching, but a warm invitation to be with the words. Do not reference any church season, calendar day, or liturgical theme. Speak in plain, gentle language. For new users: keep it warm and general, rooted in the scripture. For growing/established users: make it feel personally attuned without quoting them or saying 'based on your reflections'. Do not fabricate details. Keep it gentle, non-preachy, and under 150 words. Write only the reflection text — no headers, no labels, no greeting.`;
+
+  const toneRules = `TONE RULES (always apply):
+- Never say "based on your reflections" or "you mentioned before"
+- Never fabricate emotional details not present in the user context
+- Keep references subtle — weave them in naturally, do not announce them
+- New users get warm, complete, scripture-grounded responses
+- Established users get more specific, emotionally resonant responses
+- Do not reference any church season, calendar day, liturgical theme, feast day, or religious holiday`;
+
+  return `SCRIPTURE FOUNDATION:
+Scripture: ${liturgical.scriptureReference} — "${liturgical.scriptureText}"
+
+${userContextSection}
+
+${instructions}
+
+${toneRules}`;
+}
