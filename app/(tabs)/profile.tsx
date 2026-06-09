@@ -661,6 +661,40 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleReportProblem = async () => {
+    console.log('[Profile] Report a Problem button pressed');
+    const to = 'help@theosomatic.com';
+    const subject = 'Linen App Support Request';
+    const body = `Hi Linen Support,
+
+I'd like to report a problem with the app.
+
+What happened:
+What I expected:
+Device:
+App version, if known:
+
+Thank you.`;
+    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try {
+      const supported = await Linking.canOpenURL(mailto);
+      if (supported) {
+        await Linking.openURL(mailto);
+      } else {
+        Alert.alert(
+          'No email app found',
+          `Please email us directly at ${to}.`
+        );
+      }
+    } catch (error) {
+      console.error('[Profile] Failed to open mail composer:', error);
+      Alert.alert(
+        'Could not open email',
+        `Please email us directly at ${to}.`
+      );
+    }
+  };
+
   const handleRateApp = async () => {
     console.log('[Profile] Rate Linen button pressed');
     const url = Platform.OS === 'ios' ? IOS_REVIEW_URL : ANDROID_REVIEW_URL;
@@ -1254,6 +1288,31 @@ export default function ProfileScreen() {
               </View>
               <Text style={[styles.menuItemText, { color: colors.text }]}>
                 Terms of Use
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleReportProblem}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol
+                  ios_icon_name="questionmark.circle"
+                  android_material_icon_name="help-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                Report a Problem
               </Text>
             </View>
             <IconSymbol
