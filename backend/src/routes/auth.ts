@@ -453,7 +453,7 @@ export function registerAuthRoutes(app: App) {
         // Send email via Resend
         try {
           const resend = new Resend(process.env.RESEND_API_KEY);
-          const fromEmail = process.env.MAGIC_LINK_FROM_EMAIL || 'Linen <no-reply@theosomatic.com>';
+          const fromEmail = process.env.MAGIC_LINK_FROM_EMAIL || 'Linen <help@theosomatic.com>';
           const expiryTimeStr = `${ttlMinutes} minutes`;
 
           await resend.emails.send({
