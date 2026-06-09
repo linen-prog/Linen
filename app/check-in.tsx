@@ -88,12 +88,25 @@ export default function CheckInScreen() {
   // Rotating placeholder state
   const placeholderTexts = [
     "What's on your heart?",
-    "What are you noticing right now?",
-    "Where do you feel this in your body?",
+    "How are you really doing?",
+    "Tell me what's happening...",
+    "I need encouragement...",
+    "I feel overwhelmed...",
+    "Help me slow down...",
   ];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const placeholderOpacity = useRef(new Animated.Value(1)).current;
+  const textInputRef = useRef<TextInput>(null);
+
+  const suggestionChips = [
+    "Help me slow down",
+    "I need encouragement",
+    "Help me name what I'm feeling",
+    "Help me find the next step",
+    "Pray with me",
+    "I feel overwhelmed",
+  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -865,13 +878,41 @@ export default function CheckInScreen() {
           <View style={{
             paddingBottom: insets.bottom,
             backgroundColor: inputBgColor,
-            maxHeight: 120 + insets.bottom,
             borderTopWidth: StyleSheet.hairlineWidth,
             borderTopColor: inputBorder,
           }}>
+            {messages.length === 0 && draftMessage.trim() === '' && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.chipScroll}
+                contentContainerStyle={styles.chipScrollContent}
+              >
+                {suggestionChips.map((chip) => (
+                  <TouchableOpacity
+                    key={chip}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isDark ? colors.primary + '20' : colors.primary + '15',
+                        borderColor: colors.primary + '30',
+                      },
+                    ]}
+                    onPress={() => {
+                      console.log('[CheckIn] Suggestion chip tapped:', chip);
+                      setDraftMessage(chip);
+                      textInputRef.current?.focus();
+                    }}
+                  >
+                    <Text style={[styles.chipText, { color: colors.primary }]}>{chip}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
             <View style={[styles.inputContainer, { backgroundColor: inputBgColor, borderTopWidth: 0 }]}>
               <View style={[styles.inputWrapper, { maxHeight: 120 }]}>
                 <TextInput
+                  ref={textInputRef}
                   style={[styles.input, {
                     backgroundColor: isDark ? colors.cardDark : colors.card,
                     borderColor: inputBorder,
@@ -2463,5 +2504,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  chipScroll: {
+    maxHeight: 44,
+    marginBottom: spacing.sm,
+  },
+  chipScrollContent: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
   },
 });
