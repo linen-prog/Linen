@@ -256,6 +256,20 @@ export default function AuthScreen() {
                 </Text>
               )}
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.troubleLink, isLoading && styles.troubleLinkDisabled]}
+              onPress={() => {
+                console.log('User tapped "Trouble signing in?" — navigating to forgot-password');
+                router.push('/forgot-password');
+              }}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.troubleLinkText}>
+                Trouble signing in?
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -364,5 +378,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  troubleLink: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  troubleLinkDisabled: {
+    opacity: 0.4,
+  },
+  troubleLinkText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.medium,
+    color: colors.primary,
   },
 });

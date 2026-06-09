@@ -8,6 +8,7 @@ import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Alert, Platform } from "react-native";
 import { useNetworkState } from "expo-network";
+import * as Linking from "expo-linking";
 import {
   DefaultTheme,
   DarkTheme,
@@ -21,6 +22,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { BACKEND_URL } from "@/utils/api";
+import { storeBearerToken, storeUserData } from "@/lib/auth";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { colors } from "@/styles/commonStyles";
 import { initializeNotificationHandler } from "@/lib/dailyGiftReminder";
@@ -145,6 +147,7 @@ function RootLayoutProviders() {
       <StatusBar style={statusBarStyle} animated />
       <NavigationThemeProvider value={currentTheme}>
         <AuthProvider>
+          <MagicLinkHandler />
         <SubscriptionProvider>
           <SubscriptionRedirect />
           <NotificationProvider>
@@ -192,6 +195,8 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
         <Stack.Screen name="index" options={{ headerShown: false }} />
         {/* Auth screen (optional - users can skip) */}
         <Stack.Screen name="auth" options={{ headerShown: false }} />
+        {/* Magic-link recovery screen */}
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         {/* Check-In screen (outside tabs to avoid FloatingTabBar blocking input) */}
         <Stack.Screen name="check-in" options={{ headerShown: false }} />
         {/* Open Gift screen (intermediate animation screen) */}
@@ -239,6 +244,92 @@ function RootLayoutNav({ statusBarStyle }: { statusBarStyle: "light" | "dark" })
  * because expo-router loses its navigator reference. Individual screens
  * should handle their own errors internally.
  */
+
+/**
+ * MagicLinkHandler — listens for linen://auth-callback?magic_token=<token> deep links.
+ * Handles both cold-start (getInitialURL) and warm (addEventListener) cases.
+ * Must be mounted inside AuthProvider so it can call setUserDirectly.
+ */
+function MagicLinkHandler() {
+  const { setUserDirectly } = useAuth();
+  const router = useRouter();
+
+  const consumeMagicToken = async (token: string) => {
+    console.log('[MagicLink] Consuming magic token from deep link');
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/verify-magic-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      console.log('[MagicLink] verify-magic-link response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user && data.session?.token) {
+          await storeBearerToken(data.session.token);
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+          };
+          await storeUserData(userData);
+          setUserDirectly(userData);
+          console.log('[MagicLink] Sign-in successful, navigating to tabs');
+          router.replace('/(tabs)');
+        } else {
+          console.warn('[MagicLink] Unexpected success response shape:', data);
+          Alert.alert('Sign-in link issue', 'The sign-in link could not be verified. Please request a new one.');
+          router.replace('/auth');
+        }
+      } else {
+        const data = await response.json().catch(() => ({}));
+        const errorMsg = (data as any).error || 'The sign-in link is invalid or has expired.';
+        console.warn('[MagicLink] Verification failed:', errorMsg);
+        Alert.alert('Sign-in link issue', errorMsg);
+        router.replace('/auth');
+      }
+    } catch (err) {
+      console.error('[MagicLink] Network error verifying magic link:', err);
+      Alert.alert('Sign-in failed', 'Could not verify your sign-in link. Please request a new one.');
+      router.replace('/auth');
+    }
+  };
+
+  const handleUrl = (url: string) => {
+    console.log('[MagicLink] Handling URL:', url);
+    const parsed = Linking.parse(url);
+    const token = parsed.queryParams?.magic_token;
+    if (token && typeof token === 'string') {
+      console.log('[MagicLink] Found magic_token in URL, consuming...');
+      consumeMagicToken(token);
+    }
+  };
+
+  useEffect(() => {
+    // Cold start: app launched via the magic link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('[MagicLink] Cold-start URL:', url);
+        handleUrl(url);
+      }
+    }).catch((err) => {
+      console.warn('[MagicLink] getInitialURL error:', err);
+    });
+
+    // Warm: app already open, link tapped
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log('[MagicLink] Warm deep-link event:', event.url);
+      handleUrl(event.url);
+    });
+
+    return () => subscription.remove();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
 
 function SubscriptionRedirect() {
   const { isSubscribed, loading, checkSubscription, testerBypass, testerBypassLoading } = useSubscription();
