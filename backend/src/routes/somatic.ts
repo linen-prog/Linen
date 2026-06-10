@@ -5,9 +5,10 @@ import * as schema from '../db/schema.js';
 import { createGuestAwareAuth } from '../utils/guest-auth.js';
 import { getUserPersonalizationContext } from '../utils/personalization.js';
 import { gateway } from '@specific-dev/framework';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
-// Seed exercises data (30 total exercises)
+// Seed exercises data (30 total exercises: 8 grounding, 8 breath, 8 movement, 6 release)
 const SEED_EXERCISES = [
   // Grounding category (8)
   {
@@ -255,6 +256,29 @@ const SEED_EXERCISES = [
   },
 ];
 
+// Somatic categories for AI generation (13 total)
+const SOMATIC_CATEGORIES = [
+  'grounding',
+  'orienting',
+  'hand_over_heart',
+  'gentle_release',
+  'posture_prayer',
+  'micro_movement',
+  'sensory_awareness',
+  'body_scan',
+  'receiving',
+  'surrender',
+  'compassion',
+  'stillness',
+  'scripture_embodiment',
+] as const;
+
+// Zod schema for AI output
+const SomaticPromptSchema = z.object({
+  practice: z.string().min(20).max(2000),
+  somaticCategory: z.enum(SOMATIC_CATEGORIES),
+});
+
 // Seed exercises on first startup
 async function seedExercises(app: App) {
   const existingExercises = await app.db
@@ -269,8 +293,6 @@ async function seedExercises(app: App) {
   }
 }
 
-const DAILY_PROMPT_CATEGORIES = ['grounding', 'awareness', 'release', 'playful', 'spiritual'];
-
 export function registerSomaticRoutes(app: App) {
   const requireAuth = createGuestAwareAuth(app);
 
@@ -279,21 +301,45 @@ export function registerSomaticRoutes(app: App) {
     app.logger.error({ err }, 'Failed to seed exercises');
   });
 
-  // Get all somatic exercises
-  app.fastify.get('/api/somatic/exercises', async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    app.logger.info('Fetching all somatic exercises');
+  // Get all somatic exercises ordered by category
+  app.fastify.get(
+    '/api/somatic/exercises',
+    {
+      schema: {
+        description: 'Get all somatic exercises ordered by category',
+        tags: ['somatic'],
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                title: { type: 'string' },
+                description: { type: 'string' },
+                category: { type: 'string', enum: ['grounding', 'breath', 'movement', 'release', 'awareness', 'self-compassion'] },
+                duration: { type: 'string' },
+                instructions: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      app.logger.info('Fetching all somatic exercises');
 
-    try {
-      const exercises = await app.db
-        .select()
-        .from(schema.somaticExercises)
-        .orderBy(schema.somaticExercises.category);
+      try {
+        const exercises = await app.db
+          .select()
+          .from(schema.somaticExercises)
+          .orderBy(schema.somaticExercises.category);
 
-      app.logger.info({ count: exercises.length }, 'Exercises retrieved');
+        app.logger.info({ count: exercises.length }, 'Exercises retrieved');
 
-      return reply.send({
-        exercises: exercises.map((ex) => (
-          {
+        return reply.send(
+          exercises.map((ex) => ({
             id: ex.id,
             title: ex.title,
             description: ex.description,
@@ -301,50 +347,83 @@ export function registerSomaticRoutes(app: App) {
             duration: ex.duration,
             instructions: ex.instructions,
             createdAt: ex.createdAt,
-          }
-        )),
-      });
-    } catch (error) {
-      app.logger.error({ err: error }, 'Failed to fetch exercises');
-      throw error;
+          }))
+        );
+      } catch (error) {
+        app.logger.error({ err: error }, 'Failed to fetch exercises');
+        throw error;
+      }
     }
-  });
+  );
 
   // Get exercises by category
   app.fastify.get(
     '/api/somatic/exercises/:category',
+    {
+      schema: {
+        description: 'Get exercises filtered by category',
+        tags: ['somatic'],
+        params: {
+          type: 'object',
+          required: ['category'],
+          properties: {
+            category: { type: 'string', enum: ['grounding', 'breath', 'movement', 'release'] },
+          },
+        },
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                title: { type: 'string' },
+                description: { type: 'string' },
+                category: { type: 'string' },
+                duration: { type: 'string' },
+                instructions: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Params: { category: string } }>,
       reply: FastifyReply
     ): Promise<void> => {
       const { category } = request.params;
-      const validCategory = category as 'grounding' | 'breath' | 'movement' | 'release';
 
-      app.logger.info({ category: validCategory }, 'Fetching exercises by category');
+      app.logger.info({ category }, 'Fetching exercises by category');
 
       try {
         const exercises = await app.db
           .select()
           .from(schema.somaticExercises)
-          .where(eq(schema.somaticExercises.category, validCategory));
+          .where(eq(schema.somaticExercises.category, category as any));
 
-        app.logger.info({ category: validCategory, count: exercises.length }, 'Category exercises retrieved');
+        app.logger.info({ category, count: exercises.length }, 'Category exercises retrieved');
 
-        return reply.send({
-          exercises: exercises.map((ex) => (
-            {
-              id: ex.id,
-              title: ex.title,
-              description: ex.description,
-              category: ex.category,
-              duration: ex.duration,
-              instructions: ex.instructions,
-              createdAt: ex.createdAt,
-            }
-          )),
-        });
+        return reply.send(
+          exercises.map((ex) => ({
+            id: ex.id,
+            title: ex.title,
+            description: ex.description,
+            category: ex.category,
+            duration: ex.duration,
+            instructions: ex.instructions,
+            createdAt: ex.createdAt,
+          }))
+        );
       } catch (error) {
-        app.logger.error({ err: error, category: validCategory }, 'Failed to fetch category exercises');
+        app.logger.error({ err: error, category }, 'Failed to fetch category exercises');
         throw error;
       }
     }
@@ -353,6 +432,41 @@ export function registerSomaticRoutes(app: App) {
   // Mark exercise as completed
   app.fastify.post(
     '/api/somatic/complete',
+    {
+      schema: {
+        description: 'Mark exercise as completed',
+        tags: ['somatic'],
+        body: {
+          type: 'object',
+          required: ['exerciseId'],
+          properties: {
+            exerciseId: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              completionId: { type: 'string', format: 'uuid' },
+              completedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Body: { exerciseId: string } }>,
       reply: FastifyReply
@@ -409,7 +523,7 @@ export function registerSomaticRoutes(app: App) {
     }
   );
 
-  // Get daily somatic prompt with AI-generated personalization
+  // Get daily somatic prompt with AI-generated guidance
   app.fastify.get(
     '/api/somatic/daily-prompt',
     {
@@ -419,10 +533,10 @@ export function registerSomaticRoutes(app: App) {
         querystring: {
           type: 'object',
           properties: {
-            themeTitle: { type: 'string' },
-            themeDescription: { type: 'string' },
-            liturgicalSeason: { type: 'string' },
-            reflectionPrompt: { type: 'string' },
+            themeTitle: { type: 'string', description: 'Daily theme title' },
+            themeDescription: { type: 'string', description: 'Daily theme description' },
+            liturgicalSeason: { type: 'string', description: 'Liturgical season' },
+            reflectionPrompt: { type: 'string', description: 'Daily reflection prompt' },
           },
         },
         response: {
@@ -430,17 +544,28 @@ export function registerSomaticRoutes(app: App) {
             type: 'object',
             properties: {
               somatic_prompt: { type: 'string' },
-              category: { type: 'string', enum: ['grounding', 'awareness', 'release', 'playful', 'spiritual'] },
+              category: {
+                type: 'string',
+                enum: [
+                  'grounding',
+                  'orienting',
+                  'hand_over_heart',
+                  'gentle_release',
+                  'posture_prayer',
+                  'micro_movement',
+                  'sensory_awareness',
+                  'body_scan',
+                  'receiving',
+                  'surrender',
+                  'compassion',
+                  'stillness',
+                  'scripture_embodiment',
+                ] as string[],
+              },
               cached: { type: 'boolean' },
             },
           },
           401: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
-          500: {
             type: 'object',
             properties: {
               error: { type: 'string' },
@@ -468,7 +593,7 @@ export function registerSomaticRoutes(app: App) {
       app.logger.info({ userId }, 'Somatic daily prompt request');
 
       try {
-        // Step 1: Strict one-per-day cache check using raw SQL
+        // Step 1: Check for cached prompt for today
         const cachedResults = await app.db.execute(
           sql`SELECT prompt_text, category FROM user_somatic_prompts WHERE user_id = ${userId} AND prompt_date = CURRENT_DATE ORDER BY generated_at DESC LIMIT 1`
         );
@@ -476,7 +601,7 @@ export function registerSomaticRoutes(app: App) {
         if (cachedResults?.[0]?.prompt_text) {
           const cachedPrompt = cachedResults[0] as { prompt_text: string; category: string };
           app.logger.info(
-            { userId, fallbackUsed: false, category: cachedPrompt.category },
+            { userId, category: cachedPrompt.category },
             '[Somatic] Returning cached prompt'
           );
           return reply.send({
@@ -486,119 +611,155 @@ export function registerSomaticRoutes(app: App) {
           });
         }
 
-        // Step 2: Category rotation using raw SQL
-        const lastCategoryResults = await app.db.execute(
-          sql`SELECT category FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 1`
+        // Step 2: Fetch last 7 categories for variety
+        const lastCategoriesResults = await app.db.execute(
+          sql`SELECT category FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 7`
         );
 
-        let nextCategory: string;
-        if (!lastCategoryResults || !Array.isArray(lastCategoryResults) || lastCategoryResults.length === 0) {
-          nextCategory = DAILY_PROMPT_CATEGORIES[0];
-        } else {
-          const lastCategory = (lastCategoryResults[0] as { category: string }).category;
-          const currentIndex = DAILY_PROMPT_CATEGORIES.indexOf(lastCategory);
-          const nextIndex = (currentIndex + 1) % DAILY_PROMPT_CATEGORIES.length;
-          nextCategory = DAILY_PROMPT_CATEGORIES[nextIndex];
+        const recentCategories = (
+          lastCategoriesResults && Array.isArray(lastCategoriesResults)
+            ? lastCategoriesResults.map((r: { category: string }) => r.category)
+            : []
+        );
+
+        // Select a category not in recent 7
+        let nextCategory: typeof SOMATIC_CATEGORIES[number] = SOMATIC_CATEGORIES[0];
+        for (const cat of SOMATIC_CATEGORIES) {
+          if (!recentCategories.includes(cat)) {
+            nextCategory = cat;
+            break;
+          }
         }
 
-        // Step 3: Personalization context
+        // Step 3: Get user personalization context
         const personalization = await getUserPersonalizationContext(app, userId);
 
         // Step 4: Theme context from query params
         const { themeTitle, themeDescription, liturgicalSeason, reflectionPrompt } = request.query;
 
-        // Step 5: Recent prompts to avoid repetition using raw SQL
+        // Step 5: Fetch last 10 prompt texts to avoid repetition
         const recentPromptsResults = await app.db.execute(
           sql`SELECT prompt_text FROM user_somatic_prompts WHERE user_id = ${userId} ORDER BY generated_at DESC LIMIT 10`
         );
 
-        const recentPromptTexts = (recentPromptsResults && Array.isArray(recentPromptsResults) ? recentPromptsResults : [])
-          .map((p: { prompt_text: string }) => p.prompt_text);
+        const recentPromptTexts = (
+          recentPromptsResults && Array.isArray(recentPromptsResults)
+            ? recentPromptsResults.map((p: { prompt_text: string }) => p.prompt_text)
+            : []
+        );
 
-        // Step 6: Build AI system prompt
-        let systemPrompt = `You are a somatic guide for a Christian contemplative wellness app. Generate ONE somatic invitation — a brief, embodied practice (2-4 sentences) that invites the user to notice or gently move their body in a spiritually grounded way.
+        // Step 6: Build comprehensive system prompt for Christian somatic devotion writing
+        let systemPrompt = `You are a Christian somatic guide creating embodied spiritual practices. Generate a somatic practice invitation that helps the user embody their faith through their body.
 
-Category for today: ${nextCategory}
-- grounding: feet, floor contact, weight, roots, stability
-- awareness: body scan, noticing sensation, breath awareness
-- release: exhale, unclenching, softening, letting go
-- playful: gentle movement, curiosity, lightness, joy
-- spiritual: posture of prayer, open hands, bowing, stillness before God
+SOMATIC CATEGORIES (13 total):
+- grounding: feet, earth, weight, roots, stability, presence
+- orienting: eyes, gaze, turning, awareness of space and direction
+- hand_over_heart: hand placement, chest awareness, self-compassion, receiving
+- gentle_release: exhale, softening, unclenching, letting go, surrender
+- posture_prayer: standing, kneeling, bowing, open palms, liturgical postures
+- micro_movement: small movements, gentle swaying, subtle gestures
+- sensory_awareness: noticing sensation, texture, temperature, proprioception
+- body_scan: progressive attention through the body, gradual awareness
+- receiving: openness, allowing, expansion, receptivity to grace
+- surrender: releasing control, yielding, trust, vulnerability
+- compassion: self-compassion, loving-kindness, kindness toward self and others
+- stillness: rest, quiet, silence, stillness as prayer
+- scripture_embodiment: body as temple, incarnational faith, embodying scripture
 
-User context:
-- Dominant moods: ${personalization.dominantMoods.join(', ') || 'none'}
-- Dominant sensations: ${personalization.dominantSensations.join(', ') || 'none'}
-- Recurring topics: ${personalization.recurringTopics.join(', ') || 'none'}
-- Engagement depth: ${personalization.engagementDepth}
+TODAY'S CATEGORY: ${nextCategory}
 
-Recent prompts to avoid repeating (do not reuse these):
-${recentPromptTexts.map((t: string) => `- "${t}"`).join('\n')}
+IMPORTANT RULES:
+1. Do NOT start with breath work — always use the assigned category instead of breath-first practices
+2. Scripture-body mapping: Map spiritual truths to specific body parts (e.g., "open heart" for receptivity, "grounded feet" for trust)
+3. Category selection favors variety: Avoid repeating categories from the last 7 days
+4. Always include 3-section structure:
+   - EMBODIED INVITATION: The opening (1-2 sentences inviting the practice)
+   - PRACTICE: The 2-4 sentence instruction of what to do
+   - REST IN GOD'S PRESENCE: A brief closing (1-2 sentences affirming God's presence)
+5. Tone: Warm, gentle, spiritually grounded, inviting, not commanding
+6. Length: 150-300 words total
+7. Avoid highly technical or overly complex instructions
+8. Make practices accessible (no advanced yoga or flexibility required)
 
-Style examples (match this tone and length):
-1. "Place both feet flat on the floor. Feel the ground holding you. Take one slow breath and let your shoulders drop."
-2. "Bring one hand to your chest. Notice what you feel there — warmth, tightness, movement. Stay for three breaths."
-3. "Let your jaw unclench. Let your hands open. Exhale slowly and feel what releases."
-4. "Stand if you're able. Feel your feet. Imagine roots growing down. You are held."
-5. "Gently roll your shoulders back. Open your chest. Breathe in as if receiving something good."`;
+User Personalization Context:
+- Dominant moods: ${personalization.dominantMoods.join(', ') || 'not yet collected'}
+- Dominant sensations: ${personalization.dominantSensations.join(', ') || 'not yet collected'}
+- Recurring topics: ${personalization.recurringTopics.join(', ') || 'not yet collected'}
+- Engagement depth: ${personalization.engagementDepth || 'medium'}
+
+Recent practices (do not repeat these):
+${recentPromptTexts.map((t: string) => `- "${t.substring(0, 80)}..."`).join('\n')}
+
+GOLD-STANDARD EXAMPLES (match this quality and structure):
+1. "EMBODIED INVITATION: Come to your feet. PRACTICE: Stand with feet hip-width apart, feeling the earth beneath. Feel your weight settling down. Let your shoulders soften. Take one breath and imagine roots growing from your feet into solid ground. REST: You are held. God holds you as the earth holds these roots."
+
+2. "EMBODIED INVITATION: Bring your awareness inward. PRACTICE: Place one hand on your heart. Feel the rise and fall of your breath beneath your palm. Notice what's there without changing anything. Let yourself simply receive this moment of aliveness. REST: Your heartbeat is a gift. In this moment, you are exactly where you need to be."`;
 
         // Add theme context if provided
         if (themeTitle || themeDescription || liturgicalSeason || reflectionPrompt) {
           systemPrompt += `
 
-DAILY GIFT THEME (use this to create gentle cohesion — the somatic invitation should feel connected to this theme):
-Season: ${liturgicalSeason || 'none'}
-Theme: ${themeTitle || 'none'} — ${themeDescription || ''}
-Today's reflection: ${reflectionPrompt || ''}
+TODAY'S DAILY GIFT THEME (weave subtle connection — do NOT reference explicitly):
+Liturgical Season: ${liturgicalSeason || 'not specified'}
+Theme: ${themeTitle || 'not specified'}
+Theme Description: ${themeDescription || ''}
+Reflection: ${reflectionPrompt || ''}
 
-Cohesion guidance:
-- If the theme is about peace/rest → prefer breath, softening, grounding
-- If the theme is about courage/strength → prefer posture, feet, chest-opening
-- If the theme is about release/surrender → prefer exhale, hands, shoulders, unclenching
-- If the theme is about presence/awareness → prefer body scan, sensation noticing
-- Keep the connection subtle — do not reference the theme explicitly in the prompt text`;
+THEME COHESION GUIDANCE:
+- If theme is about peace/rest → gentle_release, posture_prayer, stillness, hand_over_heart
+- If theme is about courage/strength → grounding, orienting, posture_prayer, micro_movement
+- If theme is about release/surrender → gentle_release, surrender, hand_over_heart
+- If theme is about presence/awareness → sensory_awareness, body_scan, orienting, stillness
+- If theme is about receiving grace → receiving, hand_over_heart, surrender, compassion
+- Keep the connection subtle — do not explicitly reference the theme in the practice text`;
         }
 
         systemPrompt += `
 
-Return ONLY the somatic invitation text. No title, no label, no explanation. Just the 2-4 sentence invitation.`;
+OUTPUT FORMAT:
+Return ONLY the somatic practice in the 3-section format above. No preamble, no labels, no markdown. Clean text only.`;
 
-        // Step 7: Call AI with openai/gpt-4o-mini
-        const result = await generateText({
+        // Step 7: Call AI using generateObject with Zod schema and gpt-4o-mini
+        const result = await generateObject({
           model: gateway('openai/gpt-4o-mini'),
           system: systemPrompt,
-          prompt: 'Generate the somatic invitation now.',
+          prompt:
+            'Generate the somatic practice now using the exact 3-section structure (EMBODIED INVITATION, PRACTICE, REST IN GOD\'S PRESENCE).',
+          schema: SomaticPromptSchema,
         });
 
-        const generatedPrompt = result.text.trim();
+        const generatedPrompt = result.object.practice;
+        const selectedCategory = result.object.somaticCategory;
 
-        // Step 8: Save to user_somatic_prompts using raw SQL
+        // Step 8: Save generated prompt to user_somatic_prompts with ON CONFLICT DO NOTHING
         await app.db.execute(
           sql`INSERT INTO user_somatic_prompts (user_id, prompt_text, category, prompt_date)
-              VALUES (${userId}, ${generatedPrompt}, ${nextCategory}, CURRENT_DATE)
+              VALUES (${userId}, ${generatedPrompt}, ${selectedCategory}, CURRENT_DATE)
               ON CONFLICT (user_id, prompt_date) DO NOTHING`
         );
 
-        // Step 9: Return success response
+        // Step 9: Return the generated prompt
         app.logger.info(
-          { userId, fallbackUsed: false, category: nextCategory },
-          '[Somatic] Fallback used: false'
+          { userId, category: selectedCategory },
+          '[Somatic] Generated new daily prompt'
         );
         return reply.send({
           somatic_prompt: generatedPrompt,
-          category: nextCategory,
+          category: selectedCategory,
           cached: false,
         });
       } catch (error) {
-        // Safe fallback: always return HTTP 200 with a default prompt
+        // Error fallback: Always return HTTP 200 with a default hand_over_heart prompt
         const errMessage = error instanceof Error ? error.message : 'Unknown error';
         app.logger.error(
-          { userId, fallbackUsed: true, errMessage },
-          `[Somatic] Fallback used: true — reason: ${errMessage}`
+          { userId, errMessage },
+          '[Somatic] Error generating prompt, using default fallback'
         );
 
         return reply.send({
-          somatic_prompt: 'Place one hand on your chest. Take three slow breaths and notice the rise and fall.',
-          category: 'grounding',
+          somatic_prompt:
+            'EMBODIED INVITATION: Place your hand on your heart. PRACTICE: Feel the warmth there. Feel your heartbeat beneath your palm. Notice what you feel — warmth, aliveness, movement. Breathe gently. REST: Your heart is known to God. In this simple awareness, you are held.',
+          category: 'hand_over_heart',
           cached: false,
         });
       }
