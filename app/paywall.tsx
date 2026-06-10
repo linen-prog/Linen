@@ -253,7 +253,7 @@ export default function PaywallScreen() {
       });
       if (success) {
         Alert.alert("Welcome to Linen!", "Your subscription is now active.", [
-          { text: "Continue", onPress: () => router.replace("/(tabs)/(home)") },
+          { text: "Continue", onPress: () => router.replace("/(tabs)") },
         ]);
       }
     } catch (error: unknown) {
@@ -273,7 +273,7 @@ export default function PaywallScreen() {
       console.log("[Paywall] Restore result", { restored });
       if (restored) {
         Alert.alert("Restored!", "Your subscription has been restored.", [
-          { text: "Continue", onPress: () => router.replace("/(tabs)/(home)") },
+          { text: "Continue", onPress: () => router.replace("/(tabs)") },
         ]);
       } else {
         Alert.alert(
@@ -557,7 +557,7 @@ export default function PaywallScreen() {
                     });
                     setWebMockDialogState("hidden");
                     mockWebPurchase();
-                    router.replace("/(tabs)/(home)");
+                    router.replace("/(tabs)");
                   }}
                 >
                   <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
