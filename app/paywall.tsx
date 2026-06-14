@@ -169,7 +169,6 @@ export default function PaywallScreen() {
     restorePurchases,
     mockWebPurchase,
     mockNativePurchase,
-    activateTesterBypass,
   } = useSubscription();
 
   const insets = useSafeAreaInsets();
@@ -471,21 +470,6 @@ export default function PaywallScreen() {
                 <Text style={styles.restoreText}>Restore Purchases</Text>
               )}
             </TouchableOpacity>
-
-            {/* TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION */}
-            {Platform.OS === 'android' && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  console.log('[Paywall] Tester bypass tapped');
-                  await activateTesterBypass();
-                  router.replace('/(tabs)');
-                }}
-                style={styles.testerBypassButton}
-              >
-                <Text style={styles.testerBypassText}>Continue as Tester</Text>
-              </TouchableOpacity>
-            )}
 
             {/* ── 7. Legal footer ── */}
             <View style={styles.legalRow}>
@@ -990,21 +974,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-  testerBypassButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(124,158,135,0.4)',
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  testerBypassText: {
-    fontSize: 13,
-    color: '#7C9E87',
-    fontWeight: '500',
-  },
 });
