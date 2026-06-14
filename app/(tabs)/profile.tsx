@@ -372,11 +372,15 @@ export default function ProfileScreen() {
   const handleUploadPhoto = async () => {
     console.log('ProfileScreen: Upload photo button pressed');
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photos to upload a profile picture.');
-        return;
+      // On Android, launchImageLibraryAsync uses the system photo picker
+      // which requires no READ_MEDIA_IMAGES permission — the OS handles access.
+      // On iOS, we still request permission as required by the platform.
+      if (Platform.OS === 'ios') {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+          Alert.alert('Permission Required', 'Please allow access to your photos to upload a profile picture.');
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
