@@ -229,7 +229,7 @@ export default function WeeklyRecapDetailScreen() {
   if (loading) {
     return (
       <GradientBackground>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -262,7 +262,7 @@ export default function WeeklyRecapDetailScreen() {
   if (!recap) {
     return (
       <GradientBackground>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'bottom']}>
         <Stack.Screen
           options={{
             title: 'Weekly Recap',
@@ -296,7 +296,7 @@ export default function WeeklyRecapDetailScreen() {
 
   return (
     <GradientBackground>
-    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'bottom']}>
       <Stack.Screen
         options={{
           title: 'Weekly Recap',
