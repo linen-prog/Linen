@@ -22,7 +22,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 const STORAGE_KEY = 'daily_gift_reminder_settings';
 
 const IOS_REVIEW_URL = 'https://apps.apple.com/app/id6760556992?action=write-review';
-const ANDROID_REVIEW_URL = 'https://play.google.com/store/apps/details?id=com.linen.linen';
+const ANDROID_REVIEW_URL = 'https://play.google.com/store/apps/details?id=com.linen.app';
 
 type ReminderSettings = {
   enabled: boolean;
