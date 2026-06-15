@@ -146,6 +146,11 @@ export default function HomeScreen() {
     router.navigate('/(tabs)/community');
   };
 
+  const handleProfile = () => {
+    console.log('🏠 [Home] User tapped Profile card');
+    router.navigate('/(tabs)/profile');
+  };
+
   const handleWeeklyRecap = () => {
     console.log('🏠 [Home] User tapped Weekly Recap card');
     console.log('🏠 [Home] Navigating to: /weekly-recap');
@@ -361,6 +366,28 @@ export default function HomeScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* ── Profile ── */}
+              <TouchableOpacity
+                style={[styles.quietCard, styles.profileCard, { backgroundColor: cardBg }]}
+                onPress={handleProfile}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.quietIconCircle, { backgroundColor: colors.primary + '12' }]}>
+                  <IconSymbol
+                    ios_icon_name="person.fill"
+                    android_material_icon_name="person"
+                    size={22}
+                    color={colors.primary}
+                  />
+                </View>
+                <Text style={[styles.quietCardTitle, { color: textColor }]}>
+                  Profile
+                </Text>
+                <Text style={[styles.quietCardSubtitle, { color: textSecondaryColor }]}>
+                  Settings, subscription & more
+                </Text>
+              </TouchableOpacity>
 
             </Animated.View>
           </ScrollView>
@@ -631,5 +658,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textLight,
     paddingLeft: spacing.sm,
+  },
+  profileCard: {
+    alignSelf: 'stretch',
+    marginBottom: 16,
   },
 });
