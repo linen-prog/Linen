@@ -6,7 +6,7 @@ import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { isPaywallDismissed } from "@/utils/paywallSkipFlag";
 
 export function useSubscriptionGuard() {
-  const { isSubscribed, loading, testerBypass, testerBypassLoading } = useSubscription();
+  const { isSubscribed, loading } = useSubscription();
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,16 +20,13 @@ export function useSubscriptionGuard() {
 
   useEffect(() => {
     // Wait for all async state to resolve before making access decisions
-    if (loading || testerBypassLoading || onboardingDone === null || !onboardingDone) return;
+    if (loading || onboardingDone === null || !onboardingDone) return;
     if (!user) return;
     // If the user already dismissed the paywall this session, do not re-open it.
     if (isPaywallDismissed()) return;
-    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-    // Treat testerBypass as a first-class access grant — same as isSubscribed
-    const hasAccess = isSubscribed || testerBypass;
-    console.log('[Access] testerAccessGranted:', testerBypass, '| isSubscribed:', isSubscribed, '| final hasAccess:', hasAccess);
-    if (!hasAccess) {
+    console.log('[Access] isSubscribed:', isSubscribed, '| final hasAccess:', isSubscribed);
+    if (!isSubscribed) {
       router.replace("/paywall");
     }
-  }, [isSubscribed, loading, testerBypassLoading, onboardingDone, user, router, testerBypass]);
+  }, [isSubscribed, loading, onboardingDone, user, router]);
 }

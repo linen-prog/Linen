@@ -33,8 +33,6 @@ import * as SecureStore from "expo-secure-store";
 
 // Import auth hook for user syncing (validated at setup time)
 import { useAuth } from "./AuthContext";
-// TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-import { getTesterBypass, setTesterBypass as setTesterBypassFlag } from "@/utils/testerBypass";
 import { authenticatedGet } from "@/utils/api";
 
 // Read API keys from app.json (expo.extra)
@@ -120,8 +118,6 @@ interface SubscriptionContextType {
   packages: PurchasesPackage[];
   /** Loading state during initialization */
   loading: boolean;
-  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-  testerBypassLoading: boolean;
   /** Whether offerings are currently being fetched */
   offeringsLoading: boolean;
   /** Whether running on web (purchases not available) */
@@ -140,9 +136,6 @@ interface SubscriptionContextType {
   mockWebPurchase: () => void;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
   mockNativePurchase: () => Promise<void>;
-  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-  testerBypass: boolean;
-  activateTesterBypass: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(
@@ -162,9 +155,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const authLoading = (auth?.loading ?? false) as boolean;
 
   const [isSubscribed, setIsSubscribed] = useState(false);
-  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-  const [testerBypass, setTesterBypassState] = useState(false);
-  const [testerBypassLoading, setTesterBypassLoading] = useState(true);
   const [reviewerBypass, setReviewerBypass] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
@@ -221,15 +211,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     let customerInfoListener: { remove: () => void } | null = null;
 
     const initRevenueCat = async () => {
-      // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-      const bypass = await getTesterBypass();
-      if (bypass) {
-        setTesterBypassState(true);
-        console.log('[Access] testerAccessGranted: true');
-        console.log('[Access] final hasAccess: true');
-      }
-      setTesterBypassLoading(false);
-
       // Check reviewer access
       const { isReviewer } = await checkReviewerAccess();
       if (isReviewer) {
@@ -551,16 +532,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setIsSubscribed(true);
   };
 
-  // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-  const activateTesterBypass = async (): Promise<void> => {
-    console.log('[Paywall] Continue as Tester tapped');
-    await setTesterBypassFlag();
-    setTesterBypassState(true);
-    console.log('[Paywall] testerAccessGranted saved: true');
-    console.log('[Access] testerAccessGranted: true');
-    console.log('[Access] final hasAccess: true');
-  };
-
   // Dev-only: simulate a purchase in standard Expo Go for testing subscription-gated features.
   // NOTE: mockNativePurchase is NEVER called automatically — only when explicitly invoked by the user.
   const mockNativePurchase = async (): Promise<void> => {
@@ -573,7 +544,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   return (
     <SubscriptionContext.Provider
       value={{
-        isSubscribed: isSubscribed || testerBypass || reviewerBypass,
+        isSubscribed: isSubscribed || reviewerBypass,
         offerings,
         currentOffering,
         packages,
@@ -586,10 +557,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         refreshSubscription,
         mockWebPurchase,
         mockNativePurchase,
-        // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-        testerBypass,
-        testerBypassLoading,
-        activateTesterBypass,
         reviewerBypass,
       }}
     >

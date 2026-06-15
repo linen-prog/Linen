@@ -332,7 +332,7 @@ function MagicLinkHandler() {
 }
 
 function SubscriptionRedirect() {
-  const { isSubscribed, loading, checkSubscription, testerBypass, testerBypassLoading } = useSubscription();
+  const { isSubscribed, loading, checkSubscription } = useSubscription();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -376,13 +376,10 @@ function SubscriptionRedirect() {
     if (!user) return;
     if (pathname === '/auth' || pathname === '/paywall' || pathname === '/') return;
 
-    // TEMPORARY GOOGLE PLAY CLOSED TESTING BYPASS — REMOVE BEFORE PRODUCTION
-    if (testerBypassLoading) return;
-    const hasAppAccess = isSubscribed || testerBypass;
+    const hasAppAccess = isSubscribed;
     console.log('[PAYWALL REDIRECT BLOCKED/ALLOWED]', {
       screenName: 'RootLayout/SubscriptionRedirect',
       isSubscribed,
-      testerBypass,
       hasAppAccess,
       redirectingToPaywall: !hasAppAccess,
     });
@@ -400,7 +397,7 @@ function SubscriptionRedirect() {
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSubscribed, loading, authLoading, user, pathname, testerBypass, testerBypassLoading]);
+  }, [isSubscribed, loading, authLoading, user, pathname]);
 
   return null;
 }
