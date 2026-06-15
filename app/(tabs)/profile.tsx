@@ -668,15 +668,21 @@ export default function ProfileScreen() {
   const handleReportProblem = async () => {
     console.log('[Profile] Report a Problem button pressed');
     const to = 'help@theosomatic.com';
-    const subject = 'Linen App Support Request';
+    const subject = 'Linen Support Request';
     const body = `Hi Linen Support,
 
-I'd like to report a problem with the app.
+I'm having an issue with:
 
 What happened:
+
+
 What I expected:
+
+
 Device:
-App version, if known:
+Android / iPhone
+
+App version:
 
 Thank you.`;
     const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
