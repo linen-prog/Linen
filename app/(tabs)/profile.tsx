@@ -1284,7 +1284,7 @@ Thank you.`;
             style={styles.menuItem}
             onPress={() => {
               console.log('ProfileScreen: Opening Terms of Use');
-              Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
+              Linking.openURL('https://theosomatic.com/terms');
             }}
           >
             <View style={styles.menuItemLeft}>
