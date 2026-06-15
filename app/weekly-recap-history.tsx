@@ -265,7 +265,7 @@ export default function WeeklyRecapHistoryScreen() {
   if (loading) {
     return (
       <GradientBackground>
-        <SafeAreaView style={styles.container} edges={['bottom']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           <Stack.Screen options={stackOptions} />
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={YELLOW.accent} />
@@ -279,7 +279,7 @@ export default function WeeklyRecapHistoryScreen() {
   if (recaps.length === 0) {
     return (
       <GradientBackground>
-        <SafeAreaView style={styles.container} edges={['bottom']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           <Stack.Screen options={stackOptions} />
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
@@ -297,7 +297,7 @@ export default function WeeklyRecapHistoryScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <Stack.Screen options={stackOptions} />
         <ScrollView
           style={styles.container}
