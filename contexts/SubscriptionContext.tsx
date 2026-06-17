@@ -206,13 +206,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     });
   };
 
-  // Initialize RevenueCat on mount
+  // Initialize RevenueCat on mount (wait for auth to resolve before checking reviewer access)
   useEffect(() => {
+    // Do not run until auth has finished loading
+    if (authLoading) return;
+
     let customerInfoListener: { remove: () => void } | null = null;
 
     const initRevenueCat = async () => {
-      // Check reviewer access
-      const { isReviewer } = await checkReviewerAccess();
+      // Only check reviewer access when a valid authenticated session exists
+      const { isReviewer } = user
+        ? await checkReviewerAccess()
+        : { isReviewer: false };
       if (isReviewer) {
         setReviewerBypass(true);
         console.log('[ReviewerAccess] Reviewer account detected — granting full premium access');
@@ -310,7 +315,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         customerInfoListener.remove();
       }
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]); // Re-run once auth finishes loading so reviewer check has a valid session
 
   // Sync RevenueCat user ID with authenticated user
   useEffect(() => {
