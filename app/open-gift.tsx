@@ -153,6 +153,15 @@ export default function OpenGiftScreen() {
     }, 1500);
   };
 
+  const handleBack = () => {
+    console.log('[OpenGift] Back button pressed');
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
   const handleCommunityPress = () => {
     console.log('🎁 [OpenGift] User tapped Community icon');
     router.navigate('/(tabs)/community');
@@ -191,9 +200,9 @@ export default function OpenGiftScreen() {
             },
             headerLeft: () => (
               <TouchableOpacity
-                onPress={() => { console.log('[OpenGift] Back button pressed'); router.back(); }}
+                onPress={handleBack}
                 style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <ChevronLeft size={24} color="#8FA381" />
               </TouchableOpacity>

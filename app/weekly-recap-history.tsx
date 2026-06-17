@@ -231,6 +231,15 @@ export default function WeeklyRecapHistoryScreen() {
     return months === 1 ? '1 month ago' : `${months} months ago`;
   };
 
+  const handleBack = () => {
+    console.log('Back pressed from recap history');
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
   const handleRecapPress = (weekStartDate: string) => {
     console.log('Viewing recap for week:', weekStartDate);
     router.push(`/weekly-recap-detail?weekStartDate=${weekStartDate}`);
@@ -251,11 +260,9 @@ export default function WeeklyRecapHistoryScreen() {
     },
     headerLeft: () => (
       <TouchableOpacity
-        onPress={() => {
-          console.log('Back pressed from recap history');
-          router.back();
-        }}
+        onPress={handleBack}
         style={{ paddingRight: 8 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <ChevronLeft size={24} color="#8FA381" />
       </TouchableOpacity>
