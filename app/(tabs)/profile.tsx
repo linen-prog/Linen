@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking, KeyboardAvoidingView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Alert, Image, Modal, TextInput, Switch, ActivityIndicator, Linking, KeyboardAvoidingView, Pressable, Clipboard } from 'react-native';
+import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -693,7 +694,17 @@ Thank you.`;
       } else {
         Alert.alert(
           'No email app found',
-          `Please email us directly at ${to}.`
+          `Please email us directly at ${to}.`,
+          [
+            {
+              text: 'Copy Email',
+              onPress: () => {
+                Clipboard.setString(to);
+                Alert.alert('Copied', 'Email address copied to clipboard.');
+              },
+            },
+            { text: 'OK' },
+          ]
         );
       }
     } catch (error) {
@@ -702,6 +713,50 @@ Thank you.`;
         'Could not open email',
         `Please email us directly at ${to}.`
       );
+    }
+  };
+
+  const handleSuggestFeature = async () => {
+    console.log('[Profile] Suggest a Feature button pressed');
+    const to = 'help@theosomatic.com';
+    const subject = 'Feature Suggestion — Linen';
+    const appVersion = Constants.expoConfig?.version ?? 'unknown';
+    const body = `Hi Tina,
+
+I'd love to suggest:
+
+[Type your idea here]
+
+Why this would help me:
+
+[Optional]
+
+Device info:
+${Platform.OS} — v${appVersion}`;
+    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try {
+      const supported = await Linking.canOpenURL(mailto);
+      if (supported) {
+        await Linking.openURL(mailto);
+      } else {
+        Alert.alert(
+          'Email app not found',
+          `You can still send your feature idea to ${to}.`,
+          [
+            {
+              text: 'Copy Email',
+              onPress: () => {
+                Clipboard.setString(to);
+                Alert.alert('Copied', 'Email address copied to clipboard.');
+              },
+            },
+            { text: 'OK' },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('[Profile] Failed to open feature suggestion email:', error);
+      Alert.alert('Could not open email', `Please email us directly at ${to}.`);
     }
   };
 
@@ -1323,6 +1378,31 @@ Thank you.`;
               </View>
               <Text style={[styles.menuItemText, { color: colors.text }]}>
                 Report a Problem
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleSuggestFeature}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol
+                  ios_icon_name="lightbulb"
+                  android_material_icon_name="lightbulb-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                Suggest a Feature
               </Text>
             </View>
             <IconSymbol
