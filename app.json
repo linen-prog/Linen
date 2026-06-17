@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Linen",
-    "slug": "linen",
-    "version": "1.0.17",
+    "slug": "global-rules-app-nbyadb",
+    "version": "1.0.20",
     "orientation": "portrait",
     "icon": "./assets/images/ee6a0f2d-1da2-4b95-921c-78bac1f1bbb0.jpeg",
     "userInterfaceStyle": "automatic",
@@ -38,8 +38,8 @@
         "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.linen.linen",
-      "versionCode": 18,
+      "package": "com.linen.app",
+      "versionCode": 21,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"
@@ -77,7 +77,7 @@
         "projectId": "42cb3245-d8f3-4d83-aea0-82a92646d821"
       },
       "router": {},
-      "backendUrl": "https://b8c8p9647nsp4e7e7vuszxr6hsrsj7zy.app.specular.dev",
+      "backendUrl": "https://prod-proj-vzsxd6r88hwdgq8nwgych-liwg5h36mq-ey.a.run.app",
       "revenueCatApiKeyIos": "appl_RrdxaIRNmetUQthOFOsyYQvBtXO",
       "revenueCatApiKeyAndroid": "goog_mCKdCSODfTyypMKbMNNpWHSNoZf",
       "revenueCatEntitlementId": "pro",
