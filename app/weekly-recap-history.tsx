@@ -5,7 +5,7 @@ import { colors, typography, spacing, borderRadius } from '@/styles/commonStyles
 import { useTheme } from '@/contexts/ThemeContext';
 import { authenticatedGet } from '@/utils/api';
 import { Stack, useRouter } from 'expo-router';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
@@ -258,15 +258,18 @@ export default function WeeklyRecapHistoryScreen() {
       fontFamily: 'Georgia',
       color: '#1c1917',
     },
-    headerLeft: () => (
-      <TouchableOpacity
-        onPress={handleBack}
-        style={{ paddingRight: 8 }}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <ChevronLeft size={24} color="#8FA381" />
-      </TouchableOpacity>
-    ),
+    headerLeft: () => {
+      if (Platform.OS === 'android') return null;
+      return (
+        <TouchableOpacity
+          onPress={handleBack}
+          style={{ paddingRight: 8 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <ChevronLeft size={24} color="#8FA381" />
+        </TouchableOpacity>
+      );
+    },
   };
 
   if (loading) {

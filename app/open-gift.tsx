@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientBackground } from '@/components/GradientBackground';
 import { Stack, useRouter } from 'expo-router';
@@ -198,15 +198,18 @@ export default function OpenGiftScreen() {
               color: '#1c1917',
               fontFamily: 'Georgia',
             },
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={handleBack}
-                style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <ChevronLeft size={24} color="#8FA381" />
-              </TouchableOpacity>
-            ),
+            headerLeft: () => {
+              if (Platform.OS === 'android') return null;
+              return (
+                <TouchableOpacity
+                  onPress={handleBack}
+                  style={{ paddingRight: 8, flexDirection: 'row' as const, alignItems: 'center' as const }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <ChevronLeft size={24} color="#8FA381" />
+                </TouchableOpacity>
+              );
+            },
             headerRight: () => (
               <TouchableOpacity
                 onPress={handleCommunityPress}
